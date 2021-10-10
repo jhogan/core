@@ -349,7 +349,8 @@ class file_file(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            file.directory.radix.delete()
+            with orm.sudo():
+                file.directory.radix.delete()
 
     def it_creates_with_name_kwargs(self):
         name = uuid.uuid4().hex
@@ -1053,7 +1054,8 @@ class file_directory(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            file.directory.radix.delete()
+            with orm.sudo():
+                file.directory.radix.delete()
 
     def it_deletes(self):
         # XXX Test when deleting a floater
