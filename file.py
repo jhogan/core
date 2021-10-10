@@ -1145,9 +1145,13 @@ class directory(inode):
             # varient.
 
             # TODO Write test to ensure radix is always owned by root.
+            
+            import party
             with orm.sudo():
-                cls._radix = cls(id=cls.RadixId, name='radix')
-                cls._radix.save()
+                B()
+                with orm.proprietor(party.company.carapacian):
+                    cls._radix = cls(id=cls.RadixId, name='radix')
+                    cls._radix.save()
 
         return cls._radix
     

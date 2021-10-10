@@ -4003,7 +4003,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             type(self) is ecommerce.user
         )
 
-        if security().user and not security().user.isroot:
+        if sql and security().user and not security().user.isroot:
             if (isroot and crud in ('create', None)):
                 # Allow root to be created without needing a proprietor
                 pass
