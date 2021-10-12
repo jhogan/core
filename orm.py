@@ -4379,7 +4379,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         object's graph to collect their brokenrules. These would include
         the object's constituent collections and composite entity
         objects.
-
         """
 
         brs = entitiesmod.brokenrules()
