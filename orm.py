@@ -2345,7 +2345,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             elif type(e) is list:
                 # TODO I don't think we ever get here any more so remove
                 # this block and its conditional.
-                B()
                 return type(self)(initial=e)
             elif isinstance(e, entities):
                 return e
@@ -4612,7 +4611,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # Access the ``users`` collection via __getattribute__.
             usrs = per.users
-
         """
 
         try:
@@ -4967,6 +4965,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __repr__(self):
         """ Create a string representation of the entity.
         """
+        if self.id is undef:
+            id = '<undef>'
+        else:
+            id = self.id
+
         try:
             name = self.name
         except builtins.AttributeError:
@@ -4980,7 +4983,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         r = (
             f'{type(self).__module__}.'
             f'{type(self).__name__}('
-                f'id={self.id.hex}'
+                f'id={id}'
                 f'{name}'
             ')'
         )

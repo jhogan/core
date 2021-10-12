@@ -24,7 +24,6 @@ Examples:
 TODO:
     
     TODO Enfore the rule that user.name's must be unique
-
 """
 
 from datetime import datetime, date

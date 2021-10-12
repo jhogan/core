@@ -260,6 +260,8 @@ class dom_file(tester.tester):
 
         usr = usr.orm.reloaded()
         f1 = usr.directory['var/avatars/default.gif']
+
+        # XXX We don't need to cast here
         f1 = f1.orm.cast(file.file)
         self.eq(f.body, f1.body)
 

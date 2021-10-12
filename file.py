@@ -1148,7 +1148,6 @@ class directory(inode):
             
             import party
             with orm.sudo():
-                B()
                 with orm.proprietor(party.company.carapacian):
                     cls._radix = cls(id=cls.RadixId, name='radix')
                     cls._radix.save()
