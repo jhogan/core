@@ -3989,34 +3989,37 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     "Can't save invalid object", self
                 )
 
-        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # If we are modifying the record, the security().proprietor must
-        # match the record's proprietor. This ensures one party can't
-        # modify another's records.
-        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # If we are modifying the record, the security().proprietor
+            # must match the record's proprietor. This ensures one party
+            # can't modify another's records.
+            #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
-        # Is ``self`` the root user
-        import ecommerce
-        isroot = (
-            self.id == ecommerce.users.RootUserId and
-            type(self) is ecommerce.user
-        )
+            # Is ``self`` the root user
+            import ecommerce
+            isroot = (
+                self.id == ecommerce.users.RootUserId and
+                type(self) is ecommerce.user
+            )
 
-        if sql and security().user and not security().user.isroot:
-            if (isroot and crud in ('create', None)):
-                # Allow root to be created without needing a proprietor
-                pass
-            else:
-                if self.proprietor__partyid != security().proprietor.id:
-                    try:
-                        propr = self.proprietor
-                    except db.RecordNotFoundError:
-                        # We won't always be able to load the
-                        # proprietor, so just offer the id as as str
-                        # instead.
-                        propr = self.proprietor__partyid
+            sec = security()
+            usr = sec.user
+            if usr and not usr.isroot:
+                if isroot and crud in ('create', None):
+                    # Allow root to be created without needing a
+                    # proprietor
+                    pass
+                else:
+                    if self.proprietor__partyid != sec.proprietor.id:
+                        try:
+                            propr = self.proprietor
+                        except db.RecordNotFoundError:
+                            # We won't always be able to load the
+                            # proprietor, so just offer the id as as str
+                            # instead.
+                            propr = self.proprietor__partyid
 
-                    raise ProprietorError(propr)
+                        raise ProprietorError(propr)
 
         try:
             # Take snapshot of before state
