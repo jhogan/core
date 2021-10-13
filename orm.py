@@ -221,7 +221,7 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
-from dbg import B
+from dbg import B, PM
 from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
@@ -6298,6 +6298,14 @@ class attr:
         This function is injected into imperitive attributes to
         provide easy access to the attributes mapping value.
         """
+
+        # NOTE Varibles are injected into this method as well:
+        # 
+        #     - e: The entity object of the attribute
+        #     - name:  The name of the attribute
+        # 
+        # See _getset() for details.
+
         if v is undef:
             try:
                 return e.orm.mappings[name].value

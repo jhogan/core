@@ -322,6 +322,7 @@ class inode(orm.entity):
 
             # Return the last inode appended above
             return nd
+
         elif isinstance(id, uuid.UUID):
             # Perform a database lookup using the primary key
             return cls(*args, **kwargs)
@@ -1145,7 +1146,6 @@ class directory(inode):
             # varient.
 
             # TODO Write test to ensure radix is always owned by root.
-            
             import party
             with orm.sudo():
                 with orm.proprietor(party.company.carapacian):
