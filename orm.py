@@ -4632,7 +4632,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             raise ex.inner
         except AttributeError as ex:
             raise ex.inner
-        except builtins.AttributeError as ex:
+        except builtins.AttributeError as ex: # TODO Remove the ex
+            pass
+        except sys.modules['orm'].attr.ImperitiveAttributeNotFound:
             pass
 
         self_orm = self.orm
@@ -6326,6 +6328,11 @@ class attr:
         def __init__(self, ex):
             self.inner = ex
 
+    class ImperitiveAttributeNotFound(Exception):
+        """ An AttributeError wrapper. """
+        def __init__(self, ex):
+            self.inner = ex
+
     class wrap:
         """ A decorator to make a method an imperitive attribute. 
         """
@@ -6399,6 +6406,21 @@ class attr:
                 meth = self.fget
             elif isset: 
                 meth = self.fset
+
+            # When orm.__getattribute__ is used to read an attribute on
+            # a object that has an imperative setter but not an
+            # imperative getter, meth is None. This ended up causing an
+            # AttributeError, which __getattribute__ ignored.
+            # coincidentally, this caused the right behaviour occur.
+            # However, for the sake of clarity, we will raise a more
+            # precice exception here.
+            # XXX Experimental
+            if meth is None:
+                ormmod = sys.modules['orm']
+                raise ormmod.attr.ImperitiveAttributeNotFound(
+                    f'No method for {type(instance)}'
+                )
+
 
             # Inject global variable values into the attr() function
             attr.attr.__globals__['name']  =  meth.__name__
