@@ -6293,35 +6293,80 @@ class attr:
         w = attr.wrap(*self.args, **self.kwargs)
         return w
 
-    def attr(v=undef):
-        """ Sets the map's value to ``v``. Returns the mapped
-        value.
+    class attr:
+        """ A callable that represents the `attr()` function that is
+        injected into imperative attributes (@orm.attr). 
 
-        This function is injected into imperitive attributes to
-        provide easy access to the attributes mapping value.
+        When the attr() function is called, either with or without a
+        parameter, the __call__ method is invoked. This allows the
+        imperitive attribute to correctly access and mutate its
+        underlying mapping value.
+
+            class myentity(orm.entity):
+                @orm.attr(str)
+                def myimperative(self):
+                    # Use attr() to get the underlying mapping value
+                    v = attr()
+
+                    # Mutate the value
+                    attr(v := v.upper())
+
+                    # Return the value
+                    return v
+
+                    # Alternatively:
+                    return attr()
         """
+        def __init__(self, name, e):
+            """ Create and initialize the attr() function. 
 
-        # NOTE Varibles are injected into this method as well:
-        # 
-        #     - e: The entity object of the attribute
-        #     - name:  The name of the attribute
-        # 
-        # See _getset() for details.
+            :param: name str: The name of the attribute. In the above
+            example, this would be 'myimperative'.
 
-        if v is undef:
-            try:
-                return e.orm.mappings[name].value
-            except IndexError:
-                # If it's not in the subentity's mapping
-                # collection, make a regular getattr() call on
-                # e's super. 
-                # TODO s/super/sup
-                super = e.orm.super # :=
-                if super:
-                    return getattr(super, name)
-        else:
-            e.__setattr__(name, v, cmp=False, imp=True)
-            return v
+            :param: e orm.entity: The name of the imperative. In the
+            above example, this be the instance of the myentity class
+            referenced as `self`.
+            """
+            self.name = name
+            self.entity = e
+
+        def __call__(self, v=undef):
+            """ This method is called when attr() is called from an
+            imperative. 
+
+            :param: v object: If set to the undef class (defalut) 
+            __call__ acts as an accessor and will return the underlying
+            value. If v is set to a value (other than the undef class),
+            __call__ acts as a mutator and sets the underlying mapping
+            value.
+            """
+
+            # NOTE Varibles are injected into this method as well:
+            # 
+            #     - e: The entity object of the attribute
+            #     - name:  The name of the attribute
+            # 
+            # See _getset() for details.
+
+            name = self.name
+            e = self.entity
+
+            if v is undef:
+                try:
+                    # Act as accessor
+                    return e.orm.mappings[name].value
+                except IndexError:
+                    # If it's not in the subentity's mapping
+                    # collection, make a regular getattr() call on
+                    # e's super. 
+                    # TODO s/super/sup
+                    super = e.orm.super # :=
+                    if super:
+                        return getattr(super, name)
+            else:
+                # Act as mutator
+                e.__setattr__(name, v, cmp=False, imp=True)
+                return v
 
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
@@ -6421,13 +6466,14 @@ class attr:
                     f'No method for {type(instance)}'
                 )
 
+            myattr = attr.attr(meth.__name__, instance)
 
             # Inject global variable values into the attr() function
-            attr.attr.__globals__['name']  =  meth.__name__
-            attr.attr.__globals__['e']     =  instance
+            #myattr.name  =  meth.__name__
+            #myattr.e = instance
 
             # Inject attr() reference into user-level imperitive attribute
-            meth.__globals__['attr'] = attr.attr
+            meth.__globals__['attr'] = myattr
 
             try:
                 # Invoke the imperitive attribute
