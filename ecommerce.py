@@ -299,6 +299,10 @@ class user(orm.entity):
         super().__init__(*args, **kwargs)
 
     name = str
+
+    # TODO Hash is declared twice, once here, as a declarative
+    # attribute, and below an imperative attribute. We we'll want to
+    # remove the former and keep the later.
     hash = bytes(32)
 
     party = party.party

@@ -7446,8 +7446,9 @@ class test_orm(tester):
         with self._chrontest() as t:
             t.run(lambda: self.one(rprs1))
             if rprs1.count != 1:
-                print('This bug has happened befor')
+                print('This bug has happened before')
                 # HAPPENED Jun 2, 2020
+                # HAPPENED Oct 13, 2021
                 B()
             t.retrieved(rprs1)
 

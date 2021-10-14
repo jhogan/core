@@ -6358,7 +6358,7 @@ class attr:
             """ Returns an mapping for the imperitive attribute.
 
             For example, in the below entity declaration, a
-            ``fieldmapping`` would be returned for the `mime` property.
+            ng`` would be returned for the `mime` property.
 
                 class file(inode):
                     @orm.attr(str)
@@ -6388,6 +6388,10 @@ class attr:
             """ Ultimately invokes the explicity attribute setter or
             getter.
             """
+            # XXX Any AttributeError raised here will be swolled by
+            # __getattribute__. We should catch these here and raise
+            # Exceptions instead with the AttributeError as an inner
+            # exception.
             isget = value is undef
             isset = not isget
                 
