@@ -929,20 +929,13 @@ class file_file(tester.tester):
         self.eq('image/gif', f.mime)
         self.eq('image', f.mimetype)
 
-    def it_cant_save_duplicate_file_name(self):
-        ''' Try to create duplicate by name '''
+    def it_can_edit_file(self):
+        name = uuid.uuid4().hex
+        body = uuid.uuid4().hex
 
-        # XXX There is some confusion here. When creating a file
-        # that already exist, the assumption was that we would be
-        # creating a duplicate. However, I think the correct assumption
-        # is that we are trying to clobber the file. We would need to
-        # remove the broknerule that checks the database to see if we
-        # have a duplicate, and instead rename and reimplement this unit
-        # test to ensure that clobbering is possible and that there is
-        # no problem "recreating" (i.e., not caring that they already
-        # exist) directories.
+        f = file.file(f'/home/eboetie/{name}.txt')
+        f.body = body
 
-        f = file.file('/home/eboetie/dup.txt')
         self.expect(None, f.save)
 
         # These lines dereference the radix directory's inodes
@@ -956,31 +949,22 @@ class file_file(tester.tester):
         # Save a reference to radix's existing inodes collection so we can
         # restore it later. Future tests will depend on the inodes in
         # the cache making sense with what's in the database.
-        nds = nd.orm.mappings['inodes']._value
-        try:
-            nd.orm.mappings['inodes']._value = file.inodes()
+        map = nd.orm.mappings['inodes']
+        nds = map._value
+        map._value = file.inodes()
 
-            f = file.file('/home/eboetie/dup.txt')
-            
-            
-            self.one(f.brokenrules)
-            self.expect(entities.BrokenRulesError, lambda: f.save())
-        finally:
-            # Restore old inodes collection to radix
-            nd.orm.mappings['inodes']._value = nds
+        f = file.file(f'/home/eboetie/{name}.txt')
+        self.eq(body, f.body)
 
-        return # XXX
-
-        ''' Try to create duplicate by path '''
-        f = file.file(path='/my/dir/dup.txt')
+        # Edit
+        body = uuid.uuid4().hex
+        f.body = body
         self.expect(None, f.save)
 
-        my = file.directory(path='/my/dir')
-        dir = my['dir']
-        f = file.file(name='dup.txt')
-        dir += f
-        self.one(f.brokenrules)
-        self.expect(entities.BrokenRulesError, my.save)
+        self.eq(body, f.orm.reloaded().body)
+        
+        # Restore old inodes collection to radix
+        map._value = nds
 
     def it_raises_AttributeError_on_file_inodes(self):
         f = file.file('/850cad31/498c/4584')
@@ -1343,23 +1327,6 @@ class file_directory(tester.tester):
         """ TODO Test creating a directory then later adding multiple files
         to it.
         """
-
-    def it_cant_save_duplicate_directory_name(self):
-        ''' Try to create duplicate by name '''
-        dir = file.directory('/var/snowflake')
-        self.expect(None, dir.save)
-
-        var = dir.inode
-        nds = var.orm.super.orm.mappings['inodes'].value
-
-        try:
-            var.orm.super.orm.mappings['inodes'].value = file.inodes()
-            dir = file.directory('/var/snowflake')
-            self.one(dir.brokenrules)
-            self.one(dir.orm.super.brokenrules)
-            self.expect(entities.BrokenRulesError, lambda: dir.save())
-        finally:
-            var.orm.super.orm.mappings['inodes'].value = nds
 
     def it_fails_to_append_a_duplicate(self):
         # XXX

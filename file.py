@@ -142,7 +142,26 @@ class inodes(orm.entities):
             nds = self
             names = key.split('/')
             if len(names) == 1:
-                return super().__getitem__(names[0])
+                try:
+                    # Retrive from cache
+                    return super().__getitem__(names[0])
+                except IndexError:
+                    # If not in cache, look in database
+                    nds = inodes(
+                        f'name = %s and inodeid = %s', 
+                        names[0], self.inode.id
+                    )
+
+                    if nds.issingular:
+                        self += nds.first
+                        return self.last
+                    elif nds.isempty:
+                        raise
+                    else:
+                        raise db.IntegrityError(
+                            f'Multiple inodes for {names[0]} '
+                            f'under {self.inode.name}'
+                        )
             else:
                 nd = nds[names[0]]
                 if isinstance(nd, directory):
