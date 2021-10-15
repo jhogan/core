@@ -84,7 +84,8 @@ class dom_file(tester.tester):
             orm.orm.recreate(foonet)
 
         if hasattr(file.directory, '_radix'):
-            file.directory.radix.delete()
+            with orm.sudo():
+                file.directory.radix.delete()
 
         self.recreateprinciples()
 
@@ -261,8 +262,6 @@ class dom_file(tester.tester):
         usr = usr.orm.reloaded()
         f1 = usr.directory['var/avatars/default.gif']
 
-        # XXX We don't need to cast here
-        f1 = f1.orm.cast(file.file)
         self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
@@ -1297,7 +1296,7 @@ class file_directory(tester.tester):
 
         self.eq(dir0.name, dir1.inode.name)
         self.eq(dir1.name, dir2.inode.name)
-        return
+        return # XXX
 
         for dir in (dir0, dir1, dir2):
             self.eq((True, False, False), dir.orm.persistencestate)

@@ -73,8 +73,6 @@ class site(asset.asset):
 
     @property
     def resources(self):
-        # We may not need the try:except logic here if we decide to
-        # implement the suggestion at XXX:bda97447 
         try:
             self.directory['resources']
         except IndexError:

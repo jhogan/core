@@ -6468,10 +6468,6 @@ class attr:
 
             myattr = attr.attr(meth.__name__, instance)
 
-            # Inject global variable values into the attr() function
-            #myattr.name  =  meth.__name__
-            #myattr.e = instance
-
             # Inject attr() reference into user-level imperitive attribute
             meth.__globals__['attr'] = myattr
 

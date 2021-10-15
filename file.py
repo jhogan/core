@@ -136,8 +136,6 @@ class inodes(orm.entities):
         If ``key`` is not a str, the default behavior is used.
         """
 
-        # XXX:bda97447 If we can't find an inode memoized, I think we
-        # should go ahead and search the database here.
         if isinstance(key, str):
             nds = self
             names = key.split('/')

@@ -83,6 +83,15 @@ class testers(entities.entities):
                     f'{subcls.__name__}.__init__: {ex}'
                 )
 
+            # TODO Capture exceptions here and collected any tester
+            # class that failed construction. An exception in a tests
+            # summary should be display at the end of the tests run just
+            # where we would expected to find assertion errors and
+            # exceptions that occured in the test. Currently, the tests
+            # just stall since there is no generic `except Exception`
+            # block to deal with this; they just bubble up, uncaught,
+            # and terminate the process.
+
             inst.testers = self
             self += inst
 
