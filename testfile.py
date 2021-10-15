@@ -971,19 +971,22 @@ class file_file(tester.tester):
         self.expect(AttributeError, lambda: f.inodes)
 
     def it_ensures_name_cant_have_slashes(self):
-        return
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # XXX This is a security issue. 'name' is being set in the
-        # constructor. This should be accepted functionality but the
-        # slashes should't be allowed. What's really bad though is this
-        # is actually causing the real /var/log/kern.log to be open.
-        # It's not being opened and clobber only because we are running
-        # the tests as radix. This is bad.
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        f = file.file(name='/var/log/kern.log')
-        f.body = '1 2 3'
-        f.save()
+        self.expect(
+            ValueError, lambda: file.file(name='/var/log/kern.log')
+        )
 
+        self.expect(
+            ValueError, lambda: file.file(name='\\var\\log\\kern.log')
+        )
+
+        def ass():
+            f.name = '/var/log/kern.log'
+
+        f = file.file(name='derp')
+        self.expect(
+            ValueError, ass
+        )
+        
     def it_becomes_dirty_when_body_is_changed(self):
         f = file.file('/var/log/kern.log')
         f.body = '1 2 3'

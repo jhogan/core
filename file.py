@@ -199,8 +199,17 @@ class inode(orm.entity):
     long to make a good class name.
     """
 
-    # The name attribute of the file sytem object
-    name = str
+    # The name attribute of the file system object
+    @orm.attr(str)
+    def name(self, v):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # For securty reasons, disallow names in path
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if '/' in v or '\\' in v:
+            raise ValueError(
+                'File names cannot contain slashes'
+            )
+        attr(v)
 
     # The collection of inodes each inode will have. This line makes
     # inodes recursive (self-referencing).
@@ -526,7 +535,14 @@ class inode(orm.entity):
         """ Return the path of the file (as str) as located within the
         HDD's filesystem.
         """
-        return os.path.join(self.head, self.name)
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Be sure to strip slashes in the second argument to
+        # os.path.join. Counter-intuitively, a leading slash causes
+        # os.path.join to discard the first argument (self.head) an
+        # return the second argument with the leading slash.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        name = self.name.lstrip('/\\')
+        return os.path.join(self.head, name)
 
     @property
     def relative(self):
@@ -671,6 +687,22 @@ class file(inode):
         docstring at inode.__new__ for details.
         """
         self._body = None
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Allowing names to have slashed can be a security problem
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        try:
+            name = kwargs['name']
+        except KeyError:
+            pass
+        else:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # Disallow names in path
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            if '/' in name or '\\' in name:
+                raise ValueError(
+                    'File names cannot contain slashes'
+                )
 
         super().__init__(*args, **kwargs)
 
