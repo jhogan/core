@@ -476,6 +476,9 @@ class resultfield(entitiesmod.entity):
 class RecordNotFoundError(Exception):
     pass
 
+class IntegrityError(Exception):
+    pass
+
 class pool(entitiesmod.entity):
     _default = None
 
