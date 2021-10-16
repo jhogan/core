@@ -518,24 +518,56 @@ class url(orm.entity):
 
     @property
     def scheme(self):
+        """ Returns the scheme (sometimes refered to as the protocol)
+        portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "scheme" would be returned.
+        """
         return urllib.parse.urlparse(self.address).scheme
 
     @property
     def host(self):
+        """ Returns the hostname portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "netloc" would be returned.
+        """
         return urllib.parse.urlsplit(self.address).hostname
 
     @property
     def port(self):
-        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """ Returns the port portion of the URL as an int.
+
+        Given the URL "scheme://netloc:1234/path;parameters?query#fragment",
+        1234 would be returned.
         """
         return urllib.parse.urlparse(self.address).port
 
     @property
     def paths(self):
+        """ Returns a list of path elements in the URL.
+
+        Given the URL:
+        
+             scheme://netloc:1234/path/to/resource?query#fragment
+        
+        The return would be:
+       
+            ['path', 'to', 'resource']
+        """
+
         return [x for x in self.path.split(os.sep) if x]
 
     @property
     def path(self):
+        """ Returns the path portion of the URL.
+
+        Given the URL:
+            scheme://netloc:1234/path/to/resource;parameters?query#fragment
+
+        returns: '/path/to/resource;parameters'
+        """
         return urllib.parse.urlparse(self.address).path
 
     @property
