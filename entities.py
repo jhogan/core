@@ -6,6 +6,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
+"Entities must not be multiplied beyond necessity"
+# John Punch
+
 """ This module contains the ``entities`` class - an important class
 designed to maintain collections of ``entity`` subclass instances
 (``entity`` is also contained in this module). The ``entities`` class

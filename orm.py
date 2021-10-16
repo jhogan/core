@@ -8,6 +8,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 ########################################################################
 
+"Plurality must never be posited without necessity"
+# William of Ockham
+
 "Simplicity is complexity resolved." 
 # Constantin Brancusi
 
