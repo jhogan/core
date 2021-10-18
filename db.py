@@ -526,7 +526,33 @@ class pool(entitiesmod.entity):
         self.push(conn)
 
 class operationeventargs(entitiesmod.eventargs):
+    """ An eventargs class to note the details of a database operation
+    such as a connection.
+    """
     def __init__(self, e, op, sql, args, preposition):
+        """ Create the eventarg.
+        
+        :param: e object: The object invoking the operation.
+
+        :param: op str: The name of the operation such as 'reconnect'.
+
+        :param: sql str: The SQL involved in the operation.
+
+        :param: args list|tuple: The parameterized arguments for the
+        SQL.
+
+        :param: preposition str: Indicates the temporal relationship
+        betwen the firing of the event and the event itself. Values
+        include 'before' and 'after'.
+        """
+
+        # TODO We could probably remove self.entity from this class
+        # because it is redundant with the src argument that the would
+        # used to fire the event.
+
+        # TODO Instead of a preposition argument, we SHOULD use events
+        # with the names prefixed with "before" and "after". This is the
+        # convention after all.
         self.entity  =  e
         self.op      =  op
         self.sql     =  sql
@@ -542,6 +568,11 @@ class operationeventargs(entitiesmod.eventargs):
 
     @property
     def cancel(self):
+        """ If cancel is True, the operation will not be executed.
+
+        Event handelers can set `cancel` to True if they want to cause a
+        cancelation of the operation. The default is obviously  False.
+        """
         return self._cancel
 
     @cancel.setter
