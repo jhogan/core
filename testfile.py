@@ -1092,19 +1092,19 @@ class file_directory(tester.tester):
         self.false(rm_me in file.directory.radix)
 
         ''' Delete a cached-only directory with an empty file '''
-        # Recreate non-persisted, though cached, directory
+        # Recreate non-persisted, though cached, file
         file_dat = file.file('/tmp/rm-me/file.dat')
 
         rm_me = file_dat.inode
 
-        # rm_me and file_dat wil obvisoly be in the cache
+        # rm_me and file_dat will obviously be in the cache
         self.true(file_dat in file.directory.radix)
         self.true(rm_me in file.directory.radix)
 
         # Deleting here only means: remove from radix cache
         rm_me.delete()
 
-        # Ensure the delete directory and file are removed from the
+        # Ensure the deleted directory and file are removed from the
         # radix cache
         self.false(file_dat in file.directory.radix)
         self.false(rm_me in file.directory.radix)

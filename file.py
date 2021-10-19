@@ -117,7 +117,7 @@ class inodes(orm.entities):
             # Reset nd's comp
             while nd:
                 with suppress(KeyError):
-                    # Just delete the monkey match reference
+                    # Just delete the monkey patch reference
                     del nd.__dict__['inode']
 
                 if type(nd) is inode:
