@@ -1326,7 +1326,6 @@ class file_directory(tester.tester):
 
         self.eq(dir0.name, dir1.inode.name)
         self.eq(dir1.name, dir2.inode.name)
-        return # XXX
 
         for dir in (dir0, dir1, dir2):
             self.eq((True, False, False), dir.orm.persistencestate)
@@ -1339,20 +1338,20 @@ class file_directory(tester.tester):
         # We haven't created a file in this directory yet, so there is
         # no reason it should `exists` on the HDD.
         self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'abc'))
+        self.is_(file.directory.radix, dir.inode)
+        self.eq(join(dir.store, 'radix/abc'), dir.path)
         self.one(dir.inodes)
 
         dir = dir.inodes.first
         self.false(dir.exists)
         self.eq(dir0.id, dir.inode.id)
-        self.eq(dir.path, join(dir.store, 'abc/def'))
+        self.eq(dir.path, join(dir.store, 'radix/abc/def'))
         self.one(dir.inodes)
 
         dir = dir.inodes.first
         self.false(dir.exists)
         self.eq(dir1.id, dir.inode.id)
-        self.eq(dir.path, join(dir.store, 'abc/def/ghi'))
+        self.eq(dir.path, join(dir.store, 'radix/abc/def/ghi'))
         self.zero(dir.inodes)
 
     def it_updates_with_file(self):
@@ -1361,8 +1360,6 @@ class file_directory(tester.tester):
         """
 
     def it_fails_to_append_a_duplicate(self):
-        # XXX
-        return
         apple = file.file('apple')
         tree = file.directory('/var/tree')
 
@@ -1373,6 +1370,7 @@ class file_directory(tester.tester):
         # We shouldn't be able to add a float with the same name
         # twice.
         def f():
+            nonlocal tree
             tree += apple
         self.expect(ValueError, f)
 
