@@ -93,8 +93,8 @@ class dom_file(tester.tester):
         ws = foonet()
 
         ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
-            integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
+            integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
             local = True,
         )
 
@@ -1045,9 +1045,39 @@ class file_directory(tester.tester):
             with orm.sudo():
                 file.directory.radix.delete()
 
-    def it_deletes(self):
-        # XXX Test when deleting a floater
+    def it_deletes_from_floaters(self):
+        ''' Delete a cached-only floating directory '''
+        # Create non-persisted, though cached, directory
+        rm_me = file.directory('rm-me')
 
+        # It will obviously be in the floater cached
+        self.true(rm_me in file.directory.floaters)
+
+        # Deleting here only means: remove from floaters cache
+        rm_me.delete()
+
+        # Ensure the delete directory is removed from the floater cache
+        self.false(rm_me in file.directory.floaters)
+
+        ''' Delete a cached-only directory with an empty file '''
+        # Recreate non-persisted, though cached, floating file
+        file_dat = file.file('rm-me/file.dat')
+
+        rm_me = file_dat.inode
+
+        # rm_me and file_dat will obviously be in the cache
+        self.true(file_dat in file.directory.floaters)
+        self.true(rm_me in file.directory.floaters)
+
+        # Deleting here only means: remove from floaters cache
+        rm_me.delete()
+
+        # Ensure the deleted directory and file are removed from the
+        # floaters cache
+        self.false(file_dat in file.directory.floaters)
+        self.false(rm_me in file.directory.floaters)
+
+    def it_deletes_from_radix(self):
         ''' Delete a cached-only directory '''
         # Create non-persisted, though cached, directory
         rm_me = file.directory('/tmp/rm-me')

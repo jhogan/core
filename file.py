@@ -95,6 +95,13 @@ class inodes(orm.entities):
         radix = directory.radix
         nd = eargs.entity
 
+        for nd1 in self:
+            if nd.name == nd1.name:
+                raise ValueError(
+                    f'Cannot add inode {nd.name}. An inode with this '
+                    'name already exists.'
+                )
+
         # The search through the floaters directory (`nd in flts`) cause
         # a load of the directory structure and sets the composite of nd
         # back to flts. Capture the composite here and reassign later.
@@ -404,6 +411,11 @@ class inode(orm.entity):
         """ Removes the inode from the HDD, database and the radix
         cache. 
         """
+
+        # Determine if self is a floater before we remove it from its
+        # parent.
+        isfloater = self.isfloater
+
         # Remove from radix cache
         rent = self.inode
         if rent:
@@ -411,6 +423,14 @@ class inode(orm.entity):
             nds.remove(self, trash=False)
         else:
             nds = None
+
+        # If self was a floater, return because floaters won't be on the
+        # HDD or in the DB. We also don't want deleting a floater to
+        # cascade into the colection of floaters, causing unsaved
+        # floaters to be saved. This would result in a BrokenRulesError
+        # being raised.
+        if isfloater:
+            return
 
         try:
             # Don't care if it dosn't exist
