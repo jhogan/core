@@ -4038,9 +4038,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.onbeforesave(self, eargs)
 
+                # If an event handler suscribing to onbeforesave didn't
+                # cancel the save...
                 if not eargs.cancel:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Unless override is True, thes the creatability,
+                    # Unless override is True, test the creatability,
                     # updatability or deletability of the entity given
                     # the crud.
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
