@@ -1045,6 +1045,22 @@ class file_directory(tester.tester):
             with orm.sudo():
                 file.directory.radix.delete()
 
+    def it_creates_radix_as_a_carapacian_property(self):
+        import party
+
+        self.eq(
+            party.company.CarapacianId,
+            file.directory.radix.proprietor.id
+        )
+
+    def it_creates_floaters_as_a_carapacian_property(self):
+        import party
+
+        self.eq(
+            party.company.CarapacianId,
+            file.directory.floaters.proprietor.id
+        )
+
     def it_deletes_from_floaters(self):
         ''' Delete a cached-only floating directory '''
         # Create non-persisted, though cached, directory

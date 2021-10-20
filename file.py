@@ -57,10 +57,6 @@ TODOs:
         inodes.delete()
         directories.delete()
         files.delete()
-
-    XXX Ensure that radix and _floaters are always have carapacian as
-    their proprietors. This should be implemented after 'main' is merged
-    into this branch since it contains party.carapacian.
 """
 
 from config import config
@@ -1305,7 +1301,8 @@ class directory(inode):
 
             # TODO Write test to ensure floaters is always owned by
             # root.
-            with orm.sudo():
+            import party
+            with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     cls._floaters = cls(cls.FloatersId)
                 except db.RecordNotFoundError:
