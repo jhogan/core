@@ -91,6 +91,14 @@ class inodes(orm.entities):
         radix = directory.radix
         nd = eargs.entity
 
+        ''' Disallow inodes with same name being added'''
+        # Disallow this::
+        #
+        #     dir = dirctory('/etc')
+        #     dir += file('test')
+        #
+        #     # This will raise a ValueError
+        #     dir += file('test')  
         for nd1 in self:
             if nd.name == nd1.name:
                 raise ValueError(
@@ -103,11 +111,14 @@ class inodes(orm.entities):
         # back to flts. Capture the composite here and reassign later.
         comp = nd.inode
 
-        # If the node being added is within the floaters directory
-        # XXX Why are we testing if nd is in radix? Add comment
-        # explaining.
+        ''' If the inode being added is already in the floaters or radix
+        cache, make sure the composite of the inode being added is set
+        correctly in case we are moving from floaters to radix or
+        within radix (it_moves_cached_files).
+        '''
+        # If the node being added is within the floaters directory...
         if nd in flts or nd in radix:
-            # Remove it from the floaters directory
+            # Remove it from the floaters/radix directory
             nd.inode.inodes.remove(nd, trash=False)
 
             # Reset nd's comp
@@ -120,7 +131,7 @@ class inodes(orm.entities):
                     nd.orm.mappings['inode'].value = comp
                     nd.orm.mappings['inodeid'].value = comp.id
 
-                # Repeat with al supers
+                # Repeat with all supers
                 nd = nd.orm.super
 
     def __call__(self, key):
@@ -595,7 +606,7 @@ class inode(orm.entity):
                 brs += f'Cannot create "{self.name}": inode exist'
                 break
 
-        # XXX Create brokenrules object via instatiation so we know
+        # XXX Create brokenrules object via instantiation so we know
         # which inode has the brokenrule. Also update tests for these.
         if self.isfloater:
             brs += f'"{self.name}" is a floater'
