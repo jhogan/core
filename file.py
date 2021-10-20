@@ -1338,4 +1338,6 @@ class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the
     digest stored in the database with the digest computer from a file's
     contents (``file.body``). 
+    
+    Note, this should not be confused with db.IntegrityError.
     """

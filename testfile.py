@@ -1468,26 +1468,23 @@ class file_resource(tester.tester):
 
         # It will continue to not exist on the HDD.
         self.false(f.exists)
-        # XXX
-        return
 
-        ''' Delete a cached and saved resource that has a body'''
+        ''' Delete a cached but non-local resource that has'''
         # Recreate and save
-        f = file.resource('/tmp/rm-me')
+        f = file.resource(
+            url='https://cdnjs.cloudflare.com/ajax/libs/jquery.pin/1.0.1/jquery.pin.min.js',
+            integrity = 'sha512-t5P4NJ2q6h3FQuy5yBjT136TpxDeHq5x/bBdSa810zUuRHqmsw6v36+Tz+V9w9lP7jgZrec/MpSxG1VrvFrwCQ==',
+            local = False
+        )
 
-        # Add that body
-        f.body = 'hot'
+        # It will not be in the radix cached
+        self.false(f in file.directory.radix)
 
-        f.save()
+        # It will not be in the database
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
 
-        # It will be back in the radix cached
-        self.true(f in file.directory.radix)
-
-        # It will be in the database
-        self.expect(None, f.orm.reloaded)
-
-        # It will exist in the HDD
-        self.true(f.exists)
+        # It will not exist in the HDD
+        self.false(f.exists)
 
         # Now delete it
         f.delete()
@@ -1495,18 +1492,11 @@ class file_resource(tester.tester):
         # It will be removed from the cache
         self.false(f in file.directory.radix)
 
-        # It will no longer be in the database
+        # It will still not be in the database
         self.expect(db.RecordNotFoundError, f.orm.reloaded)
 
-        # It will not exist on the HDD.
+        # It will still not exist on the HDD.
         self.false(f.exists)
-        # XXX
-        # Ensure we:
-        #     Delete from HDD. Note that resources don't always have
-        #     resources stored on HDD.
-        #     Delete from DB
-        #     Remove from radix cache
-        ...
 
     def it_passes_integrity_check(self):
         def get():
@@ -1539,22 +1529,19 @@ class file_resource(tester.tester):
 
         path = os.path.join(
             file.inode.store, 
-            'resources/cdnjs.cloudflare.com/ajax/libs/mathjs/7.5.1/math.js'
+            'radix/cdnjs.cloudflare.com/ajax/libs/mathjs/7.5.1/math.js'
         )
 
         def get(integrity):
-            return file.resource(
+            resx = file.resource(
                 url = 'https://cdnjs.cloudflare.com/ajax/libs/mathjs/7.5.1/math.js',
                 integrity = integrity,
                 local = True
             )
+            resx.save()
 
         # `get()` with `tegridy`. We should get an IntegrityError
         # because `tegridy` is the wrong digest.
-
-        # XXX The below code was working fine until I started reworking
-        # file.resources.
-        return
         res = self.expect(file.IntegrityError, lambda : get(tegridy))
         self.false(os.path.exists(path))
 
