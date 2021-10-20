@@ -1947,35 +1947,59 @@ class footer(element):
     """
 
 class text(element):
+    """ Represents a text node in an HTML document.
+
+    See the following for information about a text nodes:
+        
+        https://developer.mozilla.org/en-US/docs/Web/API/Text
+    """
     def __init__(self, v, esc=True, *args, **kwargs):
+        """ Create the text node.
+
+        :param: v str: The value of the text node; i.e., the text
+        itself.
+
+        :param: esc bool: Convert the characters &, < and > in v to
+        HTML-safe sequences. 
+        """
         super().__init__(*args, **kwargs)
 
         self._value = v
-        self._html = v
 
+        # We may want to do this in the html accessor
+        self._html = v
         if esc:
             self._html = htmlmod.escape(self._value)
 
     def clone(self):
+        """ Create a new text node with the same text value as this text
+        node.
+        """
         el = type(self)(self._value)
 
         # We can't append elements to a text node
         if not isinstance(self, text):
+            # TODO Is it possible to get here?
             el += self.elements.clone()
+
+        # TODO I'm not sure how text nodes could even have attributes.
+        # We may want to remove this and prevent text nodes from having
+        # attributes. There may be some special cases where this makes
+        # sense but I've forgotten about them at the moment.
         el.attributes = self.attributes.clone()
 
         return el
 
     def __str__(self):
+        """ Return the text value of the text node.
+        """
         return self.value
 
     @property
     def html(self):
-        """ Returns the HTML representation of the text node.
-
-        For effeciency, needless whitespace will be removed.
+        """ Returns the HTML representation of the text node.  For
+        effeciency, needless whitespace will be removed.
         """
-
         return dedent(self._html).strip('\n')
 
     @html.setter
@@ -1984,6 +2008,8 @@ class text(element):
 
     @property
     def value(self):
+        """ Return the text value of the text node.
+        """
         return self._value
 
 class wbrs(elements):
