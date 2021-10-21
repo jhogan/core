@@ -630,51 +630,6 @@ class inode(orm.entity):
 class files(inodes):
     """ Represents a collection of ``file`` objects.
     """
-    def append(self, e, *args, **kwargs):
-        comp = ws = path = None
-
-        # Get the composite (website) of the files collection if there
-        # is one.
-        
-        # XXX I'm not sure why I hard-coded site here. Why don't we use
-        # self.orm.composite, or have ``site`` subscribe to the onadd
-        # event. Try to explain with a TODO, if not correct it all
-        # together.
-        # 
-        # UPDATE: I think this has been corrected by the addition of
-        # pom.site.directory and pom.site.resource. We can probably
-        # remove all this.
-        try:
-            ws = self.site
-        except AttributeError:
-            try:
-                ws = self.page.site
-            except AttributeError:
-                pass
-            else:
-                comp = ws
-        else:
-            comp = ws
-
-        if comp:
-            path = f'/{comp.id.hex}'
-            try:
-                uuid.UUID(hex=e.root.name)
-            except ValueError as ex:
-                # The root directory's name is not a UUID
-                pass
-            else:
-                # If the root name and the composite's name are the
-                # same, then set `path` to None so the directory isn't
-                # prepended below.
-                if e.root.name == comp.id.hex:
-                    path = None
-
-        if path:
-            dir = directory(path)
-            dir += e.root
-
-        super().append(obj=e, *args, **kwargs)
 
 class file(inode):
     """ Represents a file in the DB and on the HDD.
