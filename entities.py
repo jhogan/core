@@ -1304,17 +1304,11 @@ class entities:
 
         r._ls.append(t)
 
-        # XXX Comment and test
-        isa = isinstance
-        raise_  = not isa(self, event) and not isa(self, indexes)
-
-        if raise_:
-            self.onbeforeadd(self, entityaddeventargs(t))
+        self.onbeforeadd(self, entityaddeventargs(t))
 
         self._ls.append(t)
 
-        if raise_:
-            self.onadd(self, entityaddeventargs(t))
+        self.onadd(self, entityaddeventargs(t))
 
         return r
 
