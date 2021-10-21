@@ -2013,7 +2013,8 @@ class text(element):
         return self._value
 
 class wbrs(elements):
-    pass
+    """ A class used to contain a collection of ``wbr`` elements.
+    """
 
 class wbr(element):
     """The HTML <wbr> element represents a word break opportunity—a
@@ -2028,8 +2029,10 @@ class wbr(element):
 wordbreaks = wbrs
 wordbreak = wbr
 
+# TODO This can be renamed to brs and br
 class breaks(elements):
-    pass
+    """ A class used to contain a collection of ``br`` elements.
+    """
 
 class break_(element):
     """ The HTML <br> element produces a line break in text
@@ -2042,11 +2045,18 @@ class break_(element):
     tag = 'br'
 
 class comments(elements):
-    pass
+    """ A class used to contain a collection of ``comment`` elements.
+    """
 
 class comment(element):
+    """ Represents an HTML comment.
+    """
     tag = '<!---->'
     def __init__(self, txt, *args, **kwargs):
+        """ Create the comment.
+
+        :param: txt str: The comment itself.
+        """
         super().__init__(*args, **kwargs)
         self._text = txt
 
@@ -2058,6 +2068,8 @@ class comment(element):
 
     @property
     def pretty(self):
+        """ Returns an human-friendly representation of the comment.
+        """
         return '<!--%s-->' % self._text
     
 class forms(elements):
