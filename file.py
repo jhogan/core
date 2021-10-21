@@ -607,13 +607,23 @@ class inode(orm.entity):
         # the validation level.
         for nd in nds:
             if self.id != nd.id and nd.name == self.name:
-                brs += f'Cannot create "{self.name}": inode exist'
+                brs += entities.brokenrule(
+                    msg   =  f'Cannot create "{self.name}": inode exist',
+                    prop  =  'name', 
+                    type  =  'unique', 
+                    e     =  self
+                )
                 break
 
-        # XXX Create brokenrules object via instantiation so we know
-        # which inode has the brokenrule. Also update tests for these.
+        # Can't save floaters. Floaters are temporary inodes which must
+        # be moved to the radix cached before being saved.
         if self.isfloater:
-            brs += f'"{self.name}" is a floater'
+            brs += entities.brokenrule(
+                msg   =  f'"{self.name}" is a floater',
+                prop  =  'isfloater', 
+                type  =  'valid', 
+                e     =  self
+            )
 
         return brs
 

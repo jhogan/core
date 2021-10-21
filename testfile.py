@@ -575,10 +575,20 @@ class file_file(tester.tester):
     def it_wont_save_floaters(self):
         flt = file.file('we/are/all/floaters')
 
-        self.four(flt.brokenrules)
-        self.four(flt.inode.brokenrules)
-        self.four(flt.inode.inode.brokenrules)
-        self.four(flt.inode.inode.inode.brokenrules)
+        brss = (
+            flt.brokenrules,
+            flt.inode.brokenrules,
+            flt.inode.inode.brokenrules,
+            flt.inode.inode.inode.brokenrules,
+        )
+
+        for brs in brss:
+            self.four(brs)
+            for br in brs:
+                self.eq('isfloater', br.property)
+                self.eq('valid', br.type)
+                self.true(br.entity.isfloater)
+
 
         self.ge(file.directory.floaters.brokenrules.count, 4)
 
