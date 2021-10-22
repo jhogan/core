@@ -1023,7 +1023,6 @@ class directory(inode):
             assert ls in usr
             assert bin in usr
         """
-        # XXX Write tests
         for nd1 in self:
             if nd.id == nd1.id:
                 return True

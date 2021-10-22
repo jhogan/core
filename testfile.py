@@ -1055,6 +1055,34 @@ class file_directory(tester.tester):
             with orm.sudo():
                 file.directory.radix.delete()
 
+    def it_searches_with__contains__(self):
+        radix = file.directory.radix
+        flts = file.directory._floaters
+
+        path = '/a/deeply/nested/cached/inode'
+
+        ''' Test while cached in radix '''
+        f = file.file(path)
+
+        sup = f
+
+        while sup is not radix:
+            self.true(sup in radix, sup.name)
+            self.true(sup in sup.inode)
+            sup = sup.inode
+
+        ''' Test while cached in radix '''
+        # Strip the leading / to cache in floaters
+        f = file.file(path.lstrip('/'))
+
+        sup = f
+        while sup is not flts:
+            self.true(sup in flts, sup.name)
+            self.true(sup.isfloater, sup.name)  # Just making sure
+            self.false(sup in radix, sup.name)  # Just making sure
+            self.true(sup in sup.inode)
+            sup = sup.inode
+        
     def it_creates_radix_as_a_carapacian_property(self):
         import party
 
