@@ -87,7 +87,7 @@ class inodes(orm.entities):
         self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
-        flts = directory.floaters
+        flts = directory._floaters
         radix = directory.radix
         nd = eargs.entity
 
@@ -318,7 +318,7 @@ class inode(orm.entity):
                     
                     dir = directory.radix
                 else:
-                    dir = directory.floaters
+                    dir = directory._floaters
 
                 # Create a net object to capture the details of the find
                 # operation.
@@ -468,7 +468,7 @@ class inode(orm.entity):
     def isfloater(self):
         """ Returns True if the inode is in the floater cache.
         """
-        return self in directory.floaters
+        return self in directory._floaters
 
     @property
     def inode(self):
@@ -1238,9 +1238,8 @@ class directory(inode):
         """
         return self.id == self.RadixId and self.inode is None
 
-    # XXX This should be private (_floaters)
     @classproperty
-    def floaters(cls):
+    def _floaters(cls):
         """ Returns a directory to store inodes under until they are
         ready to be attached to the the radix cache. 
 
@@ -1252,7 +1251,7 @@ class directory(inode):
         /), it isn't attached to the radix. It just floats in the
         floaters cache. 
 
-            assert f in directory.floaters
+            assert f in directory._floaters
             assert f not in directory.radix
 
         This is fine, but to get the file properly in the
@@ -1266,14 +1265,14 @@ class directory(inode):
         is put under mydirectory and thus a part of the radix cache. It
         will also be removed from the floaters cache.
 
-            assert f not in directory.floaters
+            assert f not in directory._floaters
             assert f in directory.radix
 
         Now we can save f:
 
             f.save()
         """
-        if not hasattr(cls, '_floaters'):
+        if not hasattr(cls, '_flts'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
             # be ``directoy`` but there is no reason it should be
@@ -1284,11 +1283,11 @@ class directory(inode):
             import party
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
-                    cls._floaters = cls(cls.FloatersId)
+                    cls._flts = cls(cls.FloatersId)
                 except db.RecordNotFoundError:
-                    cls._floaters = cls(id=cls.FloatersId, name='.floaters')
-                    cls._floaters.save()
-        return cls._floaters
+                    cls._flts = cls(id=cls.FloatersId, name='.floaters')
+                    cls._flts.save()
+        return cls._flts
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead

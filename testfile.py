@@ -360,7 +360,7 @@ class file_file(tester.tester):
         self.isnot(f, f1)
 
         radix = file.directory.radix
-        floaters = file.directory.floaters
+        floaters = file.directory._floaters
         self.false(f in floaters)
         self.false(f in radix)
 
@@ -494,12 +494,12 @@ class file_file(tester.tester):
 
         for nd in (f, f1, f2):
             self.type(file.file, nd)
-            self.true(nd in file.directory.floaters)
+            self.true(nd in file.directory._floaters)
 
         ''' Nested '''
         f = file.file('berp/derp/flerp/herp/gerp/slerp')
 
-        flts = file.directory.floaters
+        flts = file.directory._floaters
 
         self.is_(f, flts['berp/derp/flerp/herp/gerp/slerp'])
 
@@ -522,7 +522,7 @@ class file_file(tester.tester):
 
     def it_appends_floaters(self):
         ''' Shallow '''
-        flts = file.directory.floaters
+        flts = file.directory._floaters
 
         f = file.file('test')
 
@@ -590,7 +590,7 @@ class file_file(tester.tester):
                 self.true(br.entity.isfloater)
 
 
-        self.ge(file.directory.floaters.brokenrules.count, 4)
+        self.ge(file.directory._floaters.brokenrules.count, 4)
 
     def it_moves_cached_files(self):
         vim = file.file('/usr/bin/vim')
@@ -1068,7 +1068,7 @@ class file_directory(tester.tester):
 
         self.eq(
             party.company.CarapacianId,
-            file.directory.floaters.proprietor.id
+            file.directory._floaters.proprietor.id
         )
 
     def it_deletes_from_floaters(self):
@@ -1077,13 +1077,13 @@ class file_directory(tester.tester):
         rm_me = file.directory('rm-me')
 
         # It will obviously be in the floater cached
-        self.true(rm_me in file.directory.floaters)
+        self.true(rm_me in file.directory._floaters)
 
         # Deleting here only means: remove from floaters cache
         rm_me.delete()
 
         # Ensure the delete directory is removed from the floater cache
-        self.false(rm_me in file.directory.floaters)
+        self.false(rm_me in file.directory._floaters)
 
         ''' Delete a cached-only directory with an empty file '''
         # Recreate non-persisted, though cached, floating file
@@ -1092,16 +1092,16 @@ class file_directory(tester.tester):
         rm_me = file_dat.inode
 
         # rm_me and file_dat will obviously be in the cache
-        self.true(file_dat in file.directory.floaters)
-        self.true(rm_me in file.directory.floaters)
+        self.true(file_dat in file.directory._floaters)
+        self.true(rm_me in file.directory._floaters)
 
         # Deleting here only means: remove from floaters cache
         rm_me.delete()
 
         # Ensure the deleted directory and file are removed from the
         # floaters cache
-        self.false(file_dat in file.directory.floaters)
-        self.false(rm_me in file.directory.floaters)
+        self.false(file_dat in file.directory._floaters)
+        self.false(rm_me in file.directory._floaters)
 
     def it_deletes_from_radix(self):
         ''' Delete a cached-only directory '''
