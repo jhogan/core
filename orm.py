@@ -4039,9 +4039,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.onbeforesave(self, eargs)
 
+                # If an event handler suscribing to onbeforesave didn't
+                # cancel the save...
                 if not eargs.cancel:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Unless override is True, thes the creatability,
+                    # Unless override is True, test the creatability,
                     # updatability or deletability of the entity given
                     # the crud.
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -4380,7 +4382,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         object's graph to collect their brokenrules. These would include
         the object's constituent collections and composite entity
         objects.
-
         """
 
         brs = entitiesmod.brokenrules()

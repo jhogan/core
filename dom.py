@@ -1947,35 +1947,59 @@ class footer(element):
     """
 
 class text(element):
+    """ Represents a text node in an HTML document.
+
+    See the following for information about a text nodes:
+        
+        https://developer.mozilla.org/en-US/docs/Web/API/Text
+    """
     def __init__(self, v, esc=True, *args, **kwargs):
+        """ Create the text node.
+
+        :param: v str: The value of the text node; i.e., the text
+        itself.
+
+        :param: esc bool: Convert the characters &, < and > in v to
+        HTML-safe sequences. 
+        """
         super().__init__(*args, **kwargs)
 
         self._value = v
-        self._html = v
 
+        # We may want to do this in the html accessor
+        self._html = v
         if esc:
             self._html = htmlmod.escape(self._value)
 
     def clone(self):
+        """ Create a new text node with the same text value as this text
+        node.
+        """
         el = type(self)(self._value)
 
         # We can't append elements to a text node
         if not isinstance(self, text):
+            # TODO Is it possible to get here?
             el += self.elements.clone()
+
+        # TODO I'm not sure how text nodes could even have attributes.
+        # We may want to remove this and prevent text nodes from having
+        # attributes. There may be some special cases where this makes
+        # sense but I've forgotten about them at the moment.
         el.attributes = self.attributes.clone()
 
         return el
 
     def __str__(self):
+        """ Return the text value of the text node.
+        """
         return self.value
 
     @property
     def html(self):
-        """ Returns the HTML representation of the text node.
-
-        For effeciency, needless whitespace will be removed.
+        """ Returns the HTML representation of the text node.  For
+        effeciency, needless whitespace will be removed.
         """
-
         return dedent(self._html).strip('\n')
 
     @html.setter
@@ -1984,10 +2008,13 @@ class text(element):
 
     @property
     def value(self):
+        """ Return the text value of the text node.
+        """
         return self._value
 
 class wbrs(elements):
-    pass
+    """ A class used to contain a collection of ``wbr`` elements.
+    """
 
 class wbr(element):
     """The HTML <wbr> element represents a word break opportunity—a
@@ -2002,8 +2029,10 @@ class wbr(element):
 wordbreaks = wbrs
 wordbreak = wbr
 
+# TODO This can be renamed to brs and br
 class breaks(elements):
-    pass
+    """ A class used to contain a collection of ``br`` elements.
+    """
 
 class break_(element):
     """ The HTML <br> element produces a line break in text
@@ -2016,11 +2045,18 @@ class break_(element):
     tag = 'br'
 
 class comments(elements):
-    pass
+    """ A class used to contain a collection of ``comment`` nodes.
+    """
 
 class comment(element):
+    """ Represents an HTML comment.
+    """
     tag = '<!---->'
     def __init__(self, txt, *args, **kwargs):
+        """ Create the comment.
+
+        :param: txt str: The comment itself.
+        """
         super().__init__(*args, **kwargs)
         self._text = txt
 
@@ -2032,16 +2068,28 @@ class comment(element):
 
     @property
     def pretty(self):
+        """ Returns an human-friendly representation of the comment.
+        """
         return '<!--%s-->' % self._text
     
 class forms(elements):
-    pass
+    """ A class used to contain a collection of ``form`` elements.
+    """
 
 class form(element):
+    """ Represents an HTML <form> element.
+    """
     @property
     def post(self):
+        """ Returns a percent-encoded ASCII text string containing the
+        value of the input elements (input, select and textarea) in the
+        form.
+        """
+
+        # Get input elements
         els = self['input, select, textarea']
 
+        # Build dict with values of input elements
         d = dict()
         for el in els:
             if isinstance(el, input):
@@ -2057,11 +2105,19 @@ class form(element):
             elif isinstance(el, textarea):
                 d[el.name] = el.text
 
+        # Convert the dict to a percent-encoded ASCII text string and
+        # return.
         # See https://docs.python.org/3/library/urllib.request.html#urllib-examples
         return urllib.parse.urlencode(d, doseq=True).encode('ascii')
 
     @post.setter
     def post(self, v):
+        """ Sets the value of the form elements in the form with a query
+        string.
+        
+        :param: v str: A query string given as a string argument (data of
+        type application/x-www-form-urlencoded). 
+        """
         d = urllib.parse.parse_qs(v)
 
         for k, v in d.items():
@@ -2075,6 +2131,18 @@ class form(element):
 
     @property
     def method(self):
+        """ Returns the method attribute of the form. 
+
+        For example, if the form were represented like this in HTML:
+            
+            <form method="GET">
+                ...
+            </form>
+
+        then 'GET' would be returned.
+        """
+        # TODO We should probably always return as uppercase for the
+        # sake of consistency and predictability
         return self.attributes['method'].value
 
     @method.setter

@@ -124,7 +124,7 @@ class inodes(orm.entities):
             # Reset nd's comp
             while nd:
                 with suppress(KeyError):
-                    # Just delete the monkey patch reference
+                    # Just delete the monkey-patched reference
                     del nd.__dict__['inode']
 
                 if type(nd) is inode:
@@ -1315,7 +1315,7 @@ class directory(inode):
 
 class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the
-    digest stored in the database with the digest computer from a file's
+    digest stored in the database with the digest computed from a file's
     contents (``file.body``). 
     
     Note, this should not be confused with db.IntegrityError.

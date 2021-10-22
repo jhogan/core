@@ -65,6 +65,21 @@ class site(asset.asset):
 
     @orm.attr(file.directory)
     def directory(self):
+        """ Returns the site's main directory.
+
+        This directory is a good place to put the site's main resource
+        artifacts like CSS and JavaScript libraries. It's also a good
+        place to store other files belonging to the site such as the
+        site's logo are the site's user avatars - although the
+        ecommerce.user.directory entity would be a better place to store
+        user specific files.
+
+        Note that this returns a ``directory`` from the file module so
+        it behaves like a file-sytem directory and an ORM entity. It is
+        a constituent of the ``site`` class so calling the site`s save()
+        method will cascade the persistance operations into the
+        directory and any inodes beneath it.
+        """
         dir = attr()
         if dir is None:
             dir = file.directory(f'/pom/site/{self.id.hex}')
@@ -73,6 +88,12 @@ class site(asset.asset):
 
     @property
     def resources(self):
+        """ Returns the collection of inodes in the sites's resources
+        directory. If the 'resources' directory doesn't exist, it is
+        created.
+        """
+        # We may not need the try:except logic here if we decide to
+        # implement the suggestion at XXX:bda97447 
         try:
             self.directory['resources']
         except IndexError:
