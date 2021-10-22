@@ -6443,36 +6443,38 @@ class attr:
             """ Ultimately invokes the explicity attribute setter or
             getter.
             """
-            # XXX Any AttributeError raised here will be swolled by
-            # __getattribute__. We should catch these here and raise
-            # Exceptions instead with the AttributeError as an inner
-            # exception.
-            isget = value is undef
-            isset = not isget
-                
-            if isget:
-                meth = self.fget
-            elif isset: 
-                meth = self.fset
+            try:
+                isget = value is undef
+                isset = not isget
+                    
+                if isget:
+                    meth = self.fget
+                elif isset: 
+                    meth = self.fset
 
-            # When orm.__getattribute__ is used to read an attribute on
-            # a object that has an imperative setter but not an
-            # imperative getter, meth is None. This ended up causing an
-            # AttributeError, which __getattribute__ ignored.
-            # coincidentally, this caused the right behaviour occur.
-            # However, for the sake of clarity, we will raise a more
-            # precice exception here.
-            # XXX Experimental
-            if meth is None:
-                ormmod = sys.modules['orm']
-                raise ormmod.attr.ImperitiveAttributeNotFound(
-                    f'No method for {type(instance)}'
-                )
+                # When orm.__getattribute__ is used to read an attribute on
+                # a object that has an imperative setter but not an
+                # imperative getter, meth is None. This ended up causing an
+                # AttributeError, which __getattribute__ ignored.
+                # Coincidentally, this caused the right behaviour to occur.
+                # However, for the sake of clarity, we will raise a more
+                # precice exception here.
+                if meth is None:
+                    ormmod = sys.modules['orm']
+                    raise ormmod.attr.ImperitiveAttributeNotFound(
+                        f'No method for {type(instance)}'
+                    )
 
-            myattr = attr.attr(meth.__name__, instance)
+                myattr = attr.attr(meth.__name__, instance)
 
-            # Inject attr() reference into user-level imperitive attribute
-            meth.__globals__['attr'] = myattr
+                # Inject attr() reference into user-level imperitive attribute
+                meth.__globals__['attr'] = myattr
+            except AttributeError as ex:
+                # Any AttributeError raised here would be swolled by
+                # __getattribute__. We catch these here and raise
+                # Exceptions instead with the AttributeError as an inner
+                # exception.
+                raise Exception(str(ex)) from ex
 
             try:
                 # Invoke the imperitive attribute
