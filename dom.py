@@ -2045,7 +2045,7 @@ class break_(element):
     tag = 'br'
 
 class comments(elements):
-    """ A class used to contain a collection of ``comment`` elements.
+    """ A class used to contain a collection of ``comment`` nodes.
     """
 
 class comment(element):
@@ -2073,13 +2073,23 @@ class comment(element):
         return '<!--%s-->' % self._text
     
 class forms(elements):
-    pass
+    """ A class used to contain a collection of ``form`` elements.
+    """
 
 class form(element):
+    """ Represents an HTML <form> element.
+    """
     @property
     def post(self):
+        """ Returns a percent-encoded ASCII text string containing the
+        value of the input elements (input, select and textarea) in the
+        form.
+        """
+
+        # Get input elements
         els = self['input, select, textarea']
 
+        # Build dict with values of input elements
         d = dict()
         for el in els:
             if isinstance(el, input):
@@ -2095,11 +2105,19 @@ class form(element):
             elif isinstance(el, textarea):
                 d[el.name] = el.text
 
+        # Convert the dict to a percent-encoded ASCII text string and
+        # return.
         # See https://docs.python.org/3/library/urllib.request.html#urllib-examples
         return urllib.parse.urlencode(d, doseq=True).encode('ascii')
 
     @post.setter
     def post(self, v):
+        """ Sets the value of the form elements in the form with a query
+        string.
+        
+        :param: v str: A query string given as a string argument (data of
+        type application/x-www-form-urlencoded). 
+        """
         d = urllib.parse.parse_qs(v)
 
         for k, v in d.items():
@@ -2113,6 +2131,18 @@ class form(element):
 
     @property
     def method(self):
+        """ Returns the method attribute of the form. 
+
+        For example, if the form were represented like this in HTML:
+            
+            <form method="GET">
+                ...
+            </form>
+
+        then 'GET' would be returned.
+        """
+        # TODO We should probably always return as uppercase for the
+        # sake of consistency and predictability
         return self.attributes['method'].value
 
     @method.setter
