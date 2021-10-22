@@ -1022,7 +1022,16 @@ class directory(inode):
 
             assert ls in usr
             assert bin in usr
+
+        Note that this only searches the inodes that are cached in
+        memory. See NOTE below.
         """
+
+        # NOTE This will only search what is cached, not what is in the
+        # database. This may be deceptive to the user, though. We may
+        # want to consider a solution to this. Perhaps an alternative
+        # way that would check if a directory contains an inode that
+        # does involve an exhaustive search of the database.
         for nd1 in self:
             if nd.id == nd1.id:
                 return True
@@ -1080,7 +1089,6 @@ class directory(inode):
             r += ')'
             return r
 
-    # XXX We may be able to rename this __getitem__
     def find(self, key, net=None, recursing=False):
         """ Recursively search for a path starting at self.
 
@@ -1111,9 +1119,13 @@ class directory(inode):
             # `bin` was found, though
             assert net.found[0].name == 'bin'
 
-            # But `init` was not found. Must be in /usr/sbin
+            # But `init` was not found. Maybe it's in /usr/sbin ...
             assert net.wanting[0].name == 'init'
         """
+
+        # NOTE `find` is sort of similar to `__getitem__`. It would be
+        # nice if we could consolidate these two methods if possible.
+
         if isinstance(key, list):
             # Key must be the path structured as a list, which is what
             # we want.
