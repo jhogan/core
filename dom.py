@@ -2151,14 +2151,33 @@ class form(element):
 
     @property
     def novalidate(self):
+        """ This boolean attribute indicates that the form shouldn't be
+        validated when submitted. If this attribute is not set (and
+        therefore the form is validated), it can be overridden by a
+        formnovalidate attribute on a <button>, <input type="submit">,
+        or <input type="image"> element belonging to the form.
+        """
+        # TODO:369795a1 @property's for boolean attribute should return
+        # True or False and their setters should accept only True and
+        # False. If a user really wants to violate the boolean nature of
+        # an attribute (e.g., <form novalidate="novalidate">) then they
+        # can use the attributes collection directly
+        # (frm.attributes['novalidate'] = 'novalidate').
         return self.attributes['novalidate'].value
 
     @novalidate.setter
     def novalidate(self, v):
+        # TODO:369795a1 
         self.attributes['novalidate'].value = v
 
     @property
     def accept_charset(self):
+        """ Space-separated character encodings the server accepts. The
+        browser uses them in the order in which they are listed. The
+        default value means the same encoding as the page. (In previous
+        versions of HTML, character encodings could also be delimited by
+        commas.)
+        """
         return self.attributes['accept-charset'].value
 
     @accept_charset.setter
@@ -2167,6 +2186,10 @@ class form(element):
 
     @property
     def action(self):
+        """The URL that processes the form submission. This value can be
+        overridden by a formaction attribute on a <button>, <input
+        type="submit">, or <input type="image"> element.
+        """
         return self.attributes['action'].value
 
     @action.setter
@@ -2175,6 +2198,28 @@ class form(element):
 
     @property
     def target(self):
+        """ Indicates where to display the response after submitting the
+        form. In HTML 4, this is the name/keyword for a frame. In HTML5,
+        it is a name/keyword for a browsing context (for example, tab,
+        window, or iframe). The following keywords have special
+        meanings:
+
+            _self (default): Load into the same browsing context as the
+            current one.
+
+            _blank: Load into a new unnamed browsing context.
+
+            _parent: Load into the parent browsing context of the
+            current one. If no parent, behaves the same as _self.
+
+            _top: Load into the top-level browsing context (i.e., the
+            browsing context that is an ancestor of the current one and
+            has no parent). If no parent, behaves the same as _self.
+
+            This value can be overridden by a formtarget attribute on a
+            <button>, <input type="submit">, or <input type="image">
+            element.
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -2182,15 +2227,21 @@ class form(element):
         self.attributes['target'].value = v
 
     @property
-    def accept(self):
-        return self.attributes['accept'].value
-
-    @accept.setter
-    def accept(self, v):
-        self.attributes['accept'].value = v
-
-    @property
     def enctype(self):
+        """ If the value of the method attribute is post, enctype is the
+        MIME type of the form submission. Possible values:
+
+            - application/x-www-form-urlencoded: The default value.
+
+            - multipart/form-data: Use this if the form contains <input>
+              elements with type=file.  
+
+            - text/plain: Introduced by HTML5 for debugging purposes.
+
+        This value can be overridden by formenctype attributes on
+        <button>, <input type="submit">, or <input type="image">
+        elements.
+        """
         return self.attributes['enctype'].value
 
     @enctype.setter
@@ -2199,6 +2250,10 @@ class form(element):
 
     @property
     def name(self):
+        """ The name of the form. The value must not be the empty
+        string, and must be unique among the form elements in the forms
+        collection that it is in, if any.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2207,6 +2262,16 @@ class form(element):
 
     @property
     def autocomplete(self):
+        """ Indicates whether input elements can by default have their
+        values automatically completed by the browser. autocomplete
+        attributes on form elements override it on <form>. Possible
+        values:
+
+            off: The browser may not automatically complete entries.
+            (Browsers tend to ignore this for suspected login forms)
+
+            on: The browser may automatically complete entries.
+        """
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
