@@ -2279,12 +2279,49 @@ class form(element):
         self.attributes['autocomplete'].value = v
 
 class links(elements):
-    pass
+    """ A class used to contain a collection of ``link`` elements.
+    """
 
 class link(element):
+    """ The <link> HTML element specifies relationships between the
+    current document and an external resource. This element is most
+    commonly used to link to stylesheets, but is also used to establish
+    site icons (both "favicon" style icons and icons for the home screen
+    and apps on mobile devices) among other things.
+    """
     isvoid = True
     @property
     def crossorigin(self):
+        """ This enumerated attribute indicates whether CORS must be
+        used when fetching the resource. CORS-enabled images can be
+        reused in the <canvas> element without being tainted. The
+        allowed values are: 
+
+            anonymous
+
+                A cross-origin request (i.e. with an Origin HTTP header)
+                is performed, but no credential is sent (i.e. no cookie,
+                X.509 certificate, or HTTP Basic authentication). If the
+                server does not give credentials to the origin site (by
+                not setting the Access-Control-Allow-Origin HTTP header)
+                the resource will be tainted and its usage restricted.  
+
+            use-credentials
+
+                A cross-origin request (i.e. with an Origin HTTP header)
+                is performed along with a credential sent (i.e. a
+                cookie, certificate, and/or HTTP Basic authentication is
+                performed). If the server does not give credentials to
+                the origin site (through
+                Access-Control-Allow-Credentials HTTP header), the
+                resource will be tainted and its usage restricted.
+
+        If the attribute is not present, the resource is fetched without
+        a CORS request (i.e. without sending the Origin HTTP header),
+        preventing its non-tainted usage. If invalid, it is handled as
+        if the enumerated keyword anonymous was used. See CORS settings
+        attributes for additional information.
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -2293,6 +2330,9 @@ class link(element):
 
     @property
     def referrerpolicy(self):
+        """ A string indicating which referrer to use when fetching the
+        resource:
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -2301,6 +2341,11 @@ class link(element):
 
     @property
     def integrity(self):
+        """ Contains inline metadata — a base64-encoded cryptographic
+        hash of the resource (file) you’re telling the browser to fetch.
+        The browser can use this to verify that the fetched resource has
+        been delivered free of unexpected manipulation. 
+        """
         return self.attributes['integrity'].value
 
     @integrity.setter
@@ -2309,6 +2354,11 @@ class link(element):
 
     @property
     def hreflang(self):
+        """ This attribute indicates the language of the linked
+        resource. It is purely advisory. Allowed values are specified by
+        RFC 5646: Tags for Identifying Languages (also known as BCP 47).
+        Use this attribute only if the href attribute is present.
+        """
         return self.attributes['hreflang'].value
 
     @hreflang.setter
@@ -2317,6 +2367,10 @@ class link(element):
 
     @property
     def importance(self):
+        """ Indicates the relative fetch priority for the resource.
+
+        See: https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -2325,6 +2379,12 @@ class link(element):
 
     @property
     def media(self):
+        """ This attribute specifies the media that the linked resource
+        applies to. Its value must be a media type / media query. This
+        attribute is mainly useful when linking to external stylesheets
+        — it allows the user agent to pick the best adapted one for the
+        device it runs on.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -2333,6 +2393,9 @@ class link(element):
 
     @property
     def href(self):
+        """ This attribute specifies the URL of the linked resource. A
+        URL can be absolute or relative.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -2341,6 +2404,11 @@ class link(element):
 
     @property
     def sizes(self):
+        """ This attribute defines the sizes of the icons for visual
+        media contained in the resource. It must be present only if the
+        rel contains a value of icon or a non-standard type such as
+        Apple's apple-touch-icon.
+        """
         return self.attributes['sizes'].value
 
     @sizes.setter
@@ -2349,6 +2417,10 @@ class link(element):
 
     @property
     def rel(self):
+        """ This attribute names a relationship of the linked document
+        to the current document. The attribute must be a space-separated
+        list of link type values.
+        """
         return self.attributes['rel'].value
 
     @rel.setter
