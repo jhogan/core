@@ -2428,11 +2428,19 @@ class link(element):
         self.attributes['rel'].value = v
 
 class buttons(elements):
-    pass
+    """ A class used to contain a collection of ``button`` elements.
+    """
 
 class button(element):
     @property
     def formtarget(self):
+        """ If the button is a submit button, this attribute is an
+        author-defined name or standardized, underscore-prefixed keyword
+        indicating where to display the response from submitting the
+        form. This is the name of, or keyword for, a browsing context (a
+        tab, window, or <iframe>). If this attribute is specified, it
+        overrides the target attribute of the button's form owner.
+        """
         return self.attributes['formtarget'].value
 
     @formtarget.setter
@@ -2441,6 +2449,10 @@ class button(element):
 
     @property
     def formaction(self):
+        """ The URL that processes the information submitted by the
+        button. Overrides the action attribute of the button's form
+        owner. Does nothing if there is no form owner.
+        """
         return self.attributes['formaction'].value
 
     @formaction.setter
@@ -2449,6 +2461,10 @@ class button(element):
 
     @property
     def autofocus(self):
+        """ This Boolean attribute specifies that the button should have
+        input focus when the page loads. Only one element in a document
+        can have this attribute.
+        """
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -2457,6 +2473,9 @@ class button(element):
 
     @property
     def type(self):
+        """ The default behavior of the button. Possible values are:
+        submit, reset and button.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -2465,6 +2484,11 @@ class button(element):
 
     @property
     def formnovalidate(self):
+        """ If the button is a submit button, this Boolean attribute
+        specifies that the form is not to be validated when it is
+        submitted. If this attribute is True, it overrides the
+        novalidate attribute of the button's form owner.
+        """
         return self.attributes['formnovalidate'].value
 
     @formnovalidate.setter
@@ -2473,6 +2497,12 @@ class button(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the button with (its form
+        owner). The value of this attribute must be the id of a <form>
+        in the same document. (If this attribute is not set, the
+        <button> is associated with its ancestor <form> element, if
+        any.)
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2481,6 +2511,10 @@ class button(element):
 
     @property
     def name(self):
+        """ The name of the button, submitted as a pair with the
+        button’s value as part of the form data, when that button is
+        used to submit the form.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2489,6 +2523,10 @@ class button(element):
 
     @property
     def formenctype(self):
+        """ If the button is a submit button (it's inside/associated
+        with a <form> and doesn't have type="button"), specifies how to
+        encode the form data that is submitted. 
+        """
         return self.attributes['formenctype'].value
 
     @formenctype.setter
@@ -2497,6 +2535,9 @@ class button(element):
 
     @property
     def disabled(self):
+        """ This Boolean attribute prevents the user from interacting
+        with the button: it cannot be pressed or focused.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -2505,6 +2546,10 @@ class button(element):
 
     @property
     def value(self):
+        """ Defines the value associated with the button’s name when
+        it’s submitted with the form data. This value is passed to the
+        server in params when the form is submitted using this button.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -2513,6 +2558,11 @@ class button(element):
 
     @property
     def formmethod(self):
+        """ If the button is a submit button (it's inside/associated
+        with a <form> and doesn't have type="button"), this attribute
+        specifies the HTTP method used to submit the form. Possible
+        values: POST and GET.
+        """
         return self.attributes['formmethod'].value
 
     @formmethod.setter
