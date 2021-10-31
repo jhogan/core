@@ -1846,9 +1846,9 @@ class p(element):
     such as images or form fields.
     """
 
-# TODO Remove this line. Since we will likely ``import dom`` instead of
-# `from dom import p`, we don't need to create a user-friendly alias for
-# p. Instantiating like this should work fine::
+# TODO:dea3866d Remove this line. Since we will likely ``import dom``
+# instead of `from dom import p`, we don't need to create a
+# user-friendly alias for p. Instantiating like this should work fine::
 #
 #    ### from dom import p, a, div
 #    import dom
@@ -2570,32 +2570,63 @@ class button(element):
         self.attributes['formmethod'].value = v
 
 class navs(elements):
-    pass
+    """ A class used to contain a collection of ``nav`` elements.
+    """
 
 class nav(element):
-    pass
+    """ The <nav> HTML element represents a section of a page whose
+    purpose is to provide navigation links, either within the current
+    document or to other documents. Common examples of navigation
+    sections are menus, tables of contents, and indexes.
+    """
 
 class lis(elements):
-    pass
+    """ A class used to contain a collection of ``li`` elements.
+    """
 
 class li(element):
+    """ The <li> HTML element is used to represent an item in a list. It
+    must be contained in a parent element: an ordered list (<ol>), an
+    unordered list (<ul>), or a menu (<menu>). In menus and unordered
+    lists, list items are usually displayed using bullet points. In
+    ordered lists, they are usually displayed with an ascending counter
+    on the left, such as a number or letter.
+    """
     @property
     def value(self):
+        """ This integer attribute indicates the current ordinal value
+        of the list item as defined by the <ol> element. The only
+        allowed value for this attribute is a number, even if the list
+        is displayed with Roman numerals or letters. List items that
+        follow this one continue numbering from the value set. The value
+        attribute has no meaning for unordered lists (<ul>) or for menus
+        (<menu>).
+        """
         return self.attributes['value'].value
 
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
 
+# TODO:dea3866d Remove
 listitems = lis
 listitem = li
 
 class outputs(elements):
-    pass
+    """ A class used to contain a collection of ``output`` elements.
+    """
 
 class output(element):
+    """ The <output> HTML element is a container element into which a
+    site or app can inject the results of a calculation or the outcome
+    of a user action.
+    """
     @property
     def for_(self):
+        """ A space-separated list of other elements’ ids, indicating
+        that those elements contributed input values to (or otherwise
+        affected) the calculation.
+        """
         return self.attributes['for'].value
 
     @for_.setter
@@ -2604,6 +2635,12 @@ class output(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the output with (its form
+        owner). The value of this attribute must be the id of a <form>
+        in the same document. (If this attribute is not set, the
+        <output> is associated with its ancestor <form> element, if
+        any.)
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2612,6 +2649,8 @@ class output(element):
 
     @property
     def name(self):
+        """ The element's name. Used in the form.elements API.
+        """
         return self.attributes['name'].value
 
     @name.setter
