@@ -29,10 +29,9 @@ import textwrap
 import urllib
 import uuid
 import www
-""" 
 
-This module provides unit testing for the core framework, web pages, and
-any other code in the core repository.
+""" This module provides unit testing for the core framework, web pages,
+and any other code in the core repository.
 
 TODOs:
     TODO Ensure tester.py won't run in non-dev environment
@@ -46,7 +45,7 @@ TODOs:
     this.
 
     TODO Remove all the assert* methods. Replace their invocations with
-    the terser sames, i.e., s/assertEquals/eq/.
+    the terser names, i.e., s/assertEquals/eq/.
 """
 
 class invoketesteventargs(entities.eventargs):

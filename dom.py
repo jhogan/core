@@ -29,6 +29,75 @@ import uuid
 
 """
 An implementation of the HTML5 DOM.
+
+This implementation is similar to the DOM implementation used in
+browsers to read and manipulate DOM objects with JavaScript.
+
+Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
+that inherits from the ``element`` base class. Each of these subclasses
+has a corresposting collection class when there is a need to present
+elements bundled by type. For example, the ``form`` class has a
+``forms`` collection class.
+
+Each element subclass has a @property getter and setter for each of the
+HTML5 attributes of the element. Only standard HTML5 attributes are
+available as properties, although the ``attributes`` collection of any
+element can be used to get around this in case there is a legitamate
+need.
+
+The following is an example of how to create a basic HTML5 document::
+
+    import dom
+
+    # Create the root tag (<html>)
+    html = dom.html()
+
+    # Create the <head> and <body>
+    head = dom.head()
+    body = dom.body()
+
+    # Append head and body to html
+    html += head
+    html += body
+
+    # Add a <title> to head
+    head += dom.title('My Home Page')
+    
+    # Let's give the body an id attribute, i.e., <body id="my-id">
+    body.id = 'my-id'
+
+    # Above, body has an id property, because the id attribute is a
+    # standard HTML5 attribute of all elements. However, bgcolor is a
+    # depricated attribute, so we have to use the ``attributes``
+    # collection. Of course we shouldn't use depricated properties, but
+    # if we have to for some reason, this is how.
+    body.attributes['bgcolor'] = 'black'
+
+    # The HTML string for this can be captured using the ``html``
+    # proprety.
+    print(html.html)
+
+    # The above wouldn't have linefeeds or tabs and would be suitable
+    # for consumption by a program like a browser or some other parser.
+    # To get a nice output for human consumption, use the ``pretty``
+    # proprety::
+    >>> print(html.pretty)
+    <html>
+        <head>
+            <title>
+        </head>
+        <body id="my-id" bgcolor="black">
+        <=body>
+    </html>
+
+    # In addition to building HTML document, we can use the ``html``
+    # class to build a DOM from an HTML string:
+
+    # Parse the html.html string to build html1
+    html1 = dom.html(html.html)
+
+    # Both DOMs will produces the same HTML.
+    assert html.html == html1.html
 """
 
 """
@@ -2658,11 +2727,22 @@ class output(element):
         self.attributes['name'].value = v
 
 class fieldsets(elements):
-    pass
+    """ A class used to contain a collection of ``fieldset`` elements.
+    """
 
 class fieldset(element):
+    """ The <fieldset> HTML element is used to group several controls as
+    well as labels (<label>) within a web form.
+    """
     @property
     def form(self):
+        """ This attribute takes the value of the id attribute of a
+        <form> element you want the <fieldset> to be part of, even if it
+        is not inside the form. Please note that usage of this is
+        confusing — if you want the <input> elements inside the
+        <fieldset> to be associated with the form, you need to use the
+        form attribute directly on those elements.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2671,6 +2751,8 @@ class fieldset(element):
 
     @property
     def name(self):
+        """ The name associated with the group.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2679,6 +2761,14 @@ class fieldset(element):
 
     @property
     def disabled(self):
+        """ If this boolean attribute is set, all form controls that are
+        descendants of the <fieldset>, are disabled, meaning they are
+        not editable and won't be submitted along with the <form>. They
+        won't receive any browsing events, like mouse clicks or
+        focus-related events. By default browsers display such controls
+        grayed out. Note that form elements inside the <legend> element
+        won't be disabled.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -2686,31 +2776,26 @@ class fieldset(element):
         self.attributes['disabled'].value = v
 
 class tfoots(elements):
-    pass
+    """ A class used to contain a collection of ``tfoot`` elements.
+    """
 
 class tfoot(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <tfoot> HTML element defines a set of rows summarizing the
+    columns of the table.
+    """
 
 class params(elements):
-    pass
+    """ A class used to contain a collection of ``param`` elements.
+    """
 
 class param(element):
+    """ The <param> HTML element defines parameters for an <object>
+    element.
+    """
     @property
     def name(self):
+        """ Name of the parameter.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2719,6 +2804,8 @@ class param(element):
 
     @property
     def value(self):
+        """ Specifies the value of the parameter.
+        """
         return self.attributes['value'].value
 
     @value.setter
