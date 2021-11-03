@@ -2813,10 +2813,37 @@ class param(element):
         self.attributes['value'].value = v
 
 class as_(elements):
-    pass
+    """ A class used to contain a collection of ``a`` elements.
+    """
 
 class a(element):
+    """ The <a> HTML element (or anchor element), with its href
+    attribute, creates a hyperlink to web pages, files, email addresses,
+    locations in the same page, or anything else a URL can address.
+
+    Content within each <a> should indicate the link's destination. If
+    the href attribute is present, pressing the enter key while focused
+    on the <a> element will activate it.
+    """
     def __init__(self, body=None, *args, **kwargs):
+        """ Create an anchor element.
+
+        :param: body file.file|str|element|elements: This override deals
+        with body as a file.file type. For the other types, consult the
+        docstring at element.__init__.
+
+        When the body is a file.file type, the path of the file can be
+        used as the href. The basename of the file.file becomes the text
+        of of the node.
+        """
+        # NOTE The body as file.file version of the constructor could
+        # use a lot more work. The file.basename doesn't seem to exist,
+        # and it's not clear at the moment if file.path would amount to
+        # a correct (relative) url. As a side note, we should also
+        # except body as ecommerce.url for obvious reason. We should
+        # also test if body is file.resource because, in that case, we
+        # do have a url proprety that would be appropriate for self.href
+        # assuming body.local is False.
         if isinstance(body, file.file):
             self.href = body.path
             body = body.basename
@@ -2825,6 +2852,8 @@ class a(element):
 
     @property
     def referrerpolicy(self):
+        """ How much of the referrer to send when following the link.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -2833,6 +2862,9 @@ class a(element):
 
     @property
     def target(self):
+        """ Where to display the linked URL, as the name for a browsing
+        context (a tab, window, or <iframe>).
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -2841,6 +2873,10 @@ class a(element):
 
     @property
     def hreflang(self):
+        """ Hints at the human language of the linked URL. No built-in
+        functionality. Allowed values are the same as the global
+        ``lang`` attribute (``element.lang``).
+        """
         return self.attributes['hreflang'].value
 
     @hreflang.setter
@@ -2849,6 +2885,10 @@ class a(element):
 
     @property
     def ping(self):
+        """ A space-separated list of URLs. When the link is followed,
+        the browser will send POST requests with the body PING to the
+        URLs. Typically for tracking.
+        """
         return self.attributes['ping'].value
 
     @ping.setter
@@ -2857,6 +2897,13 @@ class a(element):
 
     @property
     def media(self):
+        """ The media attribute specifies what media or device the
+        linked document is optimized for.  This attribute is used to
+        specify that the target URL is designed for special devices
+        (like iPhone), speech or print media.  This attribute can accept
+        several values.  Only used if the href attribute is present.
+        Note: This attribute is purely advisory.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -2865,6 +2912,10 @@ class a(element):
 
     @property
     def href(self):
+        """ The URL that the hyperlink points to. Links are not
+        restricted to HTTP-based URLs — they can use any URL scheme
+        supported by browsers.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -2873,6 +2924,9 @@ class a(element):
 
     @property
     def download(self):
+        """ Prompts the user to save the linked URL instead of
+        navigating to it.
+        """
         return self.attributes['download'].value
 
     @download.setter
@@ -2881,6 +2935,9 @@ class a(element):
 
     @property
     def rel(self):
+        """ The relationship of the linked URL as space-separated link
+        types.
+        """
         return self.attributes['rel'].value
 
     @rel.setter
@@ -2888,12 +2945,15 @@ class a(element):
         self.attributes['rel'].value = v
 
     @property
-    def shape(self):
-        return self.attributes['shape'].value
+    def type(self):
+        """ Hints at the linked URL’s format with a MIME type. No
+        built-in functionality.
+        """
+        return self.attributes['type'].value
 
-    @shape.setter
-    def shape(self, v):
-        self.attributes['shape'].value = v
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
 
 anchors = as_
 anchor = a
