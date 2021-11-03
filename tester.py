@@ -110,8 +110,6 @@ class testers(entities.entities):
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
                     inst._failures += failure(ex, assert_=meth[0])
-                finally:
-                    inst.eventregistrations.unregister()
         print('')
 
     @property
@@ -218,7 +216,6 @@ class tester(entities.entity):
         import orm
         self._failures = failures()
         self.testers = testers
-        self.eventregistrations = eventregistrations()
 
         orm.security().owner = self.user
         orm.security().proprietor = self.company
@@ -490,9 +487,6 @@ class tester(entities.entity):
     @staticmethod
     def dedent(str, *args):
         return textwrap.dedent(str).strip() % args
-
-    def register(self, event, handler):
-        self.eventregistrations.register(event, handler)
 
     def all(self, actual, msg=None):
         if not all(actual):
@@ -967,29 +961,6 @@ class tester(entities.entity):
             statuscode0 = int(statuscode[:3])
             # TODO:ed602720
             return httpresponse(statuscode0, statusmessage, resheads, body)
-
-class eventregistrations(entities.entities):
-    def register(self, event, handler):
-        er = eventregistration(event, handler)
-        er.register()
-        self += er
-
-    def unregister(self):
-        for er in self:
-            er.unregister()
-        self.clear()
-
-class eventregistration(entities.entity):
-    def __init__(self, event, handler):
-        self.event = event
-        self.handler = handler
-        super().__init__()
-
-    def register(self):
-        self.event += self.handler
-
-    def unregister(self):
-        self.event -= self.handler
 
 class httpresponse(entities.entity):
     # TODO:ed602720 Is this dead code. Shouldn't we be using
