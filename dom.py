@@ -2959,11 +2959,21 @@ anchors = as_
 anchor = a
 
 class audios(elements):
-    pass
+    """ A class used to contain a collection of ``audio`` elements.
+    """
 
 class audio(element):
+    """ The <audio> HTML element is used to embed sound content in
+    documents. It may contain one or more audio sources, represented
+    using the src attribute or the <source> element: the browser will
+    choose the most suitable one. It can also be the destination for
+    streamed media, using a MediaStream.
+    """
     @property
     def crossorigin(self):
+        """ This enumerated attribute indicates whether to use CORS to
+        fetch the related audio file.
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -2972,6 +2982,11 @@ class audio(element):
 
     @property
     def loop(self):
+        """ A Boolean attribute: if specified, the audio player will
+        automatically seek back to the start upon reaching the end of
+        the audio.
+        """
+
         return self.attributes['loop'].value
 
     @loop.setter
@@ -2988,6 +3003,11 @@ class audio(element):
 
     @property
     def src(self):
+        """ The URL of the audio to embed. This is subject to HTTP
+        access controls. This is optional; you may instead use the
+        <source> element within the audio block to specify the audio to
+        embed.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -2996,6 +3016,10 @@ class audio(element):
 
     @property
     def controls(self):
+        """ If this attribute is present, the browser will offer
+        controls to allow the user to control audio playback, including
+        volume, seeking, and pause/resume playback.
+        """
         return self.attributes['controls'].value
 
     @controls.setter
@@ -3004,6 +3028,10 @@ class audio(element):
 
     @property
     def autoplay(self):
+        """ A Boolean attribute: if specified, the audio will
+        automatically begin playback as soon as it can do so, without
+        waiting for the entire audio file to finish downloading.
+        """
         return self.attributes['autoplay'].value
 
     @autoplay.setter
@@ -3012,6 +3040,9 @@ class audio(element):
 
     @property
     def muted(self):
+        """ A Boolean attribute that indicates whether the audio will be
+        initially silenced. Its default value is false.
+        """
         return self.attributes['muted'].value
 
     @muted.setter
@@ -3020,6 +3051,10 @@ class audio(element):
 
     @property
     def preload(self):
+        """ This enumerated attribute is intended to provide a hint to
+        the browser about what the author thinks will lead to the best
+        user experience.
+        """
         return self.attributes['preload'].value
 
     @preload.setter
@@ -3027,7 +3062,8 @@ class audio(element):
         self.attributes['preload'].value = v
 
 class bases(elements):
-    pass
+    """ A class used to contain a collection of ``base`` elements.
+    """
 
 class base(element):
     """ The HTML <base> element specifies the base URL to use for all
@@ -3038,6 +3074,10 @@ class base(element):
 
     @property
     def target(self):
+        """ A keyword or author-defined name of the default browsing
+        context to show the results of navigation from <a>, <area>, or
+        <form> elements without explicit target attributes.
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -3046,6 +3086,9 @@ class base(element):
 
     @property
     def href(self):
+        """ The base URL to be used throughout the document for relative
+        URLs. Absolute and relative URLs are allowed.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -3053,12 +3096,20 @@ class base(element):
         self.attributes['href'].value = v
 
 class imgs(elements):
-    pass
+    """ A class used to contain a collection of ``img`` elements.
+    """
 
 class img(element):
+    """ The <img> HTML element embeds an image into the document.
+    """
     isvoid = True
     @property
     def crossorigin(self):
+        """ Indicates if the fetching of the image must be done using a
+        CORS request. Image data from a CORS-enabled image returned from
+        a CORS request can be reused in the <canvas> element without
+        being marked "tainted".
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -3067,6 +3118,9 @@ class img(element):
 
     @property
     def referrerpolicy(self):
+        """ A string indicating which referrer to use when fetching the
+        resource.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -3075,6 +3129,8 @@ class img(element):
 
     @property
     def loading(self):
+        """ Indicates how the browser should load the image.
+        """
         return self.attributes['loading'].value
 
     @loading.setter
@@ -3083,6 +3139,9 @@ class img(element):
 
     @property
     def height(self):
+        """ The intrinsic height of the image, in pixels. Must be an
+        integer without a unit.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3091,6 +3150,12 @@ class img(element):
 
     @property
     def intrinsicsize(self):
+        """ This attribute tells the browser to ignore the actual
+        intrinsic size of the image and pretend it’s the size specified
+        in the attribute. Specifically, the image would raster at these
+        dimensions and naturalWidth/naturalHeight on images would return
+        the values specified in this attribute.
+        """
         return self.attributes['intrinsicsize'].value
 
     @intrinsicsize.setter
@@ -3099,6 +3164,12 @@ class img(element):
 
     @property
     def src(self):
+        """ The image URL. Mandatory for the <img> element. On browsers
+        supporting srcset, src is treated like a candidate image with a
+        pixel density descriptor 1x, unless an image with this pixel
+        density descriptor is already defined in srcset, or unless
+        srcset contains w descriptors.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -3107,6 +3178,10 @@ class img(element):
 
     @property
     def ismap(self):
+        """ This boolean attribute indicates that the image is part of a
+        server-side map. If so, the coordinates where the user clicked
+        on the image are sent to the server.
+        """
         return self.attributes['ismap'].value
 
     @ismap.setter
@@ -3115,6 +3190,13 @@ class img(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -3123,6 +3205,9 @@ class img(element):
 
     @property
     def usemap(self):
+        """ The partial URL (starting with #) of an image map associated
+        with the element.
+        """
         return self.attributes['usemap'].value
 
     @usemap.setter
@@ -3130,15 +3215,9 @@ class img(element):
         self.attributes['usemap'].value = v
 
     @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
     def alt(self):
+        """ Defines an alternative text description of the image.
+        """
         return self.attributes['alt'].value
 
     @alt.setter
@@ -3147,6 +3226,9 @@ class img(element):
 
     @property
     def sizes(self):
+        """ One or more strings separated by commas, indicating a set of
+        source sizes.
+        """
         return self.attributes['sizes'].value
 
     @sizes.setter
@@ -3155,6 +3237,9 @@ class img(element):
 
     @property
     def width(self):
+        """ The intrinsic width of the image in pixels. Must be an
+        integer without a unit.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -3162,15 +3247,10 @@ class img(element):
         self.attributes['width'].value = v
 
     @property
-    def border(self):
-        return self.attributes['border'].value
-
-    @border.setter
-    def border(self, v):
-        self.attributes['border'].value = v
-
-    @property
     def srcset(self):
+        """ One or more strings separated by commas, indicating possible
+        image sources for the user agent to use.
+        """
         return self.attributes['srcset'].value
 
     @srcset.setter
@@ -3179,6 +3259,8 @@ class img(element):
 
     @property
     def decoding(self):
+        """ Provides an image decoding hint to the browser.
+        """
         return self.attributes['decoding'].value
 
     @decoding.setter
@@ -4761,6 +4843,13 @@ class script(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -5310,6 +5399,13 @@ class iframe(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
