@@ -29,6 +29,7 @@ import textwrap
 import urllib
 import uuid
 import www
+import resource
 
 """ This module provides unit testing for the core framework, web pages,
 and any other code in the core repository.
@@ -55,9 +56,11 @@ class invoketesteventargs(entities.eventargs):
 
 class testers(entities.entities):
     def __init__(self, initial=None):
-        self.oninvoketest = entities.event()
+        self.onbeforeinvoketest = entities.event()
+
         super().__init__(initial=initial)
         self.breakonexception = False
+
 
     def run(self, tu=None):
         # TODO testclass and testmethod would probably be better as
@@ -102,7 +105,7 @@ class testers(entities.entities):
                     continue
                 try:
                     eargs = invoketesteventargs(subcls, meth)
-                    self.oninvoketest(self, eargs)
+                    self.onbeforeinvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
                     if self.breakonexception:
@@ -1077,12 +1080,11 @@ class cli:
 
         self.parseargs()
 
-        self.registertraceevents()
-
     @property
     def testers(self):
         if self._testers is None:
             self._testers = testers()
+            self._testers.onbeforeinvoketest += self._testers_onbeforeinvoketest
         return self._testers
 
     @classmethod
@@ -1164,14 +1166,12 @@ class cli:
         self.testers.breakonexception = self.args.breakonexception
         self.testers.rebuildtables = self.args.rebuildtables
 
-    def registertraceevents(self):
-        ts = self.testers
-        ts.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-
-        def f(src, eargs):
-            print(eargs.class_.__name__ + '.' + eargs.method[0], flush=True)
-
-        ts.oninvoketest += f
+    def _testers_onbeforeinvoketest(self, src, eargs):
+        mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        mbs = int(mbs / 1000)
+        cls = eargs.class_.__name__
+        meth = eargs.method[0]
+        print(f'# {mbs}M {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
     pass
