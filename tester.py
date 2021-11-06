@@ -1065,12 +1065,12 @@ class failure(entities.entity):
         
 class cli:
     def __init__(self):
-        # If we are instantiating, convert the @classmethod cli.run to the
-        # instance method cli._run. This makes it possible to call the run()
-        # method either as cli.run() or cli().run(). This also works with
-        # subclasses of cli. This makes it convenient for unit test developers
-        # who may or may not want to customize or override the default
-        # implementation.
+        # If we are instantiating, convert the @classmethod cli.run to
+        # the instance method cli._run. This makes it possible to call
+        # the run() method either as cli.run() or cli().run(). This also
+        # works with subclasses of cli. This makes it convenient for
+        # unit test developers who may or may not want to customize or
+        # override the default implementation.
         #
         # See M. I. Wright's comment at:
         # https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod
