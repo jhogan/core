@@ -1620,6 +1620,7 @@ class element(entities.entity):
         :param: includeself bool: If True, this element will be the
         first entry in the collection returned.
         """
+        # TODO s/includeself/accompany/
         els = elements()
         rent = self.parent
 
@@ -1632,10 +1633,15 @@ class element(entities.entity):
 
     @property
     def siblings(self):
+        """ Returns an ``elements`` collection containing all the sibling
+        of this element.
+        """
         return self.getsiblings()
 
     @property
     def previous(self):
+        """ Return the immediately preceding sibling.
+        """
         sibs = self.getsiblings(includeself=True)
 
         # If it only has self
@@ -1651,6 +1657,9 @@ class element(entities.entity):
 
     @property
     def preceding(self):
+        """ Return an elements collection containing all the siblings
+        that precede this element.
+        """
         els = elements()
         for el in self.getsiblings(includeself=True):
             if el is self:
@@ -1660,6 +1669,8 @@ class element(entities.entity):
 
     @property
     def next(self):
+        """ Return the immediately following sibling.
+        """
         raise NotImplementedError()
 
         # NOTE The below may work but has not been tested
@@ -1669,12 +1680,27 @@ class element(entities.entity):
                 
     @property
     def children(self):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are not included. To get comment and text nodes as well, use
+        ``elements``.
+
+        """
         initial = (
             x for x in self.elements if type(x) not in (comment, text)
         )
         return elements(initial=initial)
 
     def getchildren(self, recursive=False):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are not included. To get comment and text nodes as well, use
+        ``getelements``.
+
+        :param: recursive bool: If True, the collection will contain all
+        child elements beneath this element; not just the the immediate
+        child elements.
+        """
         els = elements()
         for el in self.children:
             els += el
@@ -1685,9 +1711,21 @@ class element(entities.entity):
 
     @property
     def all(self):
+        """ Returns a new ``elements`` collection containing all the
+        elements under this element including text and comment nodes.
+        """
         return self.getelements(recursive=True)
 
     def getelements(self, recursive=False):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are included as well. To exclude comment and text nodes as well,
+        use ``getchildren``.
+
+        :param: recursive bool: If True, the collection will contain all
+        child elements beneath this element; not just the the immediate
+        child elements.
+        """
         els = elements()
         for el in self.elements:
             els += el
@@ -1699,6 +1737,11 @@ class element(entities.entity):
 
     @property
     def elements(self):
+        """ Returns the ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are included as well. To exclude comment and text nodes as well,
+        use ``children``.
+        """
         if not hasattr(self, '_elements'):
             self._elements = elements()
             self._elements.onadd += self._elements_onadd
@@ -1711,6 +1754,8 @@ class element(entities.entity):
 
     @property
     def classes(self):
+        """ Returns the class attribute.
+        """
         return self.attributes['class']
 
     @classes.setter
@@ -1719,6 +1764,8 @@ class element(entities.entity):
 
     @property
     def attributes(self):
+        """ Returns the class attribute.
+        """
         if not hasattr(self, '_attributes'):
             self._attributes = attributes(self)
         return self._attributes
@@ -1728,6 +1775,22 @@ class element(entities.entity):
         self._attributes = v
 
     def __lshift__(self, el):
+        """ Inserts ``el` at the begining of the elements collection.
+
+        :param: el str|element:
+            if el is str:
+                A new text node will be created with el as the text
+                node's text property. The text node will be unshfted
+                into the child elements collection.
+
+            if el is element:
+                The el will simply be unshifted onto the child elements
+                collection.
+        """
+
+        # TODO We could probably override unshift instead. That way the
+        # ``unshift()`` method and the << operate would work. As it
+        # stands, ``unshift()`` would not use the overridden behavior.
         if type(el) is str:
             el = text(el)
 
@@ -1738,6 +1801,18 @@ class element(entities.entity):
         return self
 
     def __iadd__(self, el):
+        """ Push ``el` at the top of the elements collection.
+
+        :param: el str|element:
+            if el is str:
+                A new text node will be created with el as the text
+                node's text property. The text node will be unshfted
+                into the child elements collection.
+
+            if el is element:
+                The el will simply be pushed onto the child elements
+                collection.
+        """
         # TODO There is some redunancy between this and __lshift__.
         # Also, shouldn't this redundent logic be put in the overrides
         # element.append and element.insertbefore (which don't actually
