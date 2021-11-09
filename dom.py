@@ -1828,6 +1828,22 @@ class element(entities.entity):
 
     @classproperty
     def tag(cls):
+        """ Returns the name of the element.
+
+            # Invoked as a classproperty
+            assert 'head' == dom.head.tag
+
+            # Invoked as an regular (instance) @property
+            assert 'head' == dom.head().tag
+
+        Note that subclasses of elements will always return the HTML5
+        tag name:
+
+            class lead(dom.p):
+                pass
+
+            assert 'p' == lead.tag
+        """
         if type(cls) is not type:
             cls = type(cls)
 
@@ -3342,71 +3358,35 @@ class img(element):
     def decoding(self, v):
         self.attributes['decoding'].value = v
 
+# TODO:dea3866d
 images = imgs
 image = img
 
+# TODO;dea3866d Rename to trs and tr
 class tablerows(elements):
-    pass
+    """ A class used to contain a collection of ``trs`` elements.
+    """
 
 class tablerow(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-class applets(elements):
-    pass
-
-class applet(element):
-    @property
-    def code(self):
-        return self.attributes['code'].value
-
-    @code.setter
-    def code(self, v):
-        self.attributes['code'].value = v
-
-    @property
-    def codebase(self):
-        return self.attributes['codebase'].value
-
-    @codebase.setter
-    def codebase(self, v):
-        self.attributes['codebase'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
-    def alt(self):
-        return self.attributes['alt'].value
-
-    @alt.setter
-    def alt(self, v):
-        self.attributes['alt'].value = v
+    """ The <tr> HTML element defines a row of cells in a table. The
+    row's cells can then be established using a mix of <td> (data cell)
+    and <th> (header cell) elements.
+    """
 
 class objects(elements):
-    pass
+    """ A class used to contain a collection of ``trs`` elements.
+    """
 
 class object(element):
+    """ The <object> HTML element represents an external resource, which
+    can be treated as an image, a nested browsing context, or a resource
+    to be handled by a plugin.
+    """
     @property
     def data(self):
+        """ The address of the resource as a valid URL. At least one of
+        data and type must be defined.
+        """
         return self.attributes['data'].value
 
     @data.setter
@@ -3415,6 +3395,9 @@ class object(element):
 
     @property
     def type(self):
+        """ The content type of the resource specified by data. At least
+        one of data and type must be defined.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -3423,6 +3406,9 @@ class object(element):
 
     @property
     def height(self):
+        """ The height of the displayed resource, in CSS pixels.
+        (Absolute values only. NO percentages)
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3431,6 +3417,10 @@ class object(element):
 
     @property
     def form(self):
+        """ The form element, if any, that the object element is
+        associated with (its form owner). The value of the attribute
+        must be an ID of a <form> element in the same document.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -3439,6 +3429,8 @@ class object(element):
 
     @property
     def name(self):
+        """ The name of valid browsing context.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -3447,6 +3439,9 @@ class object(element):
 
     @property
     def usemap(self):
+        """ A hash-name reference to a <map> element; that is a '#'
+        followed by the value of a name of a map element.
+        """
         return self.attributes['usemap'].value
 
     @usemap.setter
@@ -3455,19 +3450,15 @@ class object(element):
 
     @property
     def width(self):
+        """ The width of the display resource, in CSS pixels.  (Absolute
+        values only. NO percentages)
+        """
         return self.attributes['width'].value
 
     @width.setter
     def width(self, v):
         self.attributes['width'].value = v
 
-    @property
-    def border(self):
-        return self.attributes['border'].value
-
-    @border.setter
-    def border(self, v):
-        self.attributes['border'].value = v
 
 class cols(elements):
     pass
@@ -3799,6 +3790,7 @@ class uls(elements):
 class ul(element):
     pass
 
+# TODO:dea3866d
 unorderedlists = uls
 unorderedlist = ul
 
@@ -5251,6 +5243,7 @@ class h6(element):
     """
     pass
 
+# TODO:dea3866d
 heading1 = h1
 heading2 = h2
 heading3 = h3
@@ -5285,6 +5278,7 @@ class hr(element):
     def color(self, v):
         self.attributes['color'].value = v
 
+# TODO:dea3866d
 hrules = hrs
 hrule = hr
 
@@ -5553,6 +5547,7 @@ class s(element):
     """
     pass
 
+# TODO:dea3866d
 strikethroughs = ss
 strikethrough = s
 
@@ -5570,6 +5565,7 @@ class em(element):
     """
     pass
 
+# TODO:dea3866d
 emphases = ems
 emphasis = em
 
@@ -5586,6 +5582,7 @@ class i(element):
     """
     pass
 
+# TODO:dea3866d
 italics = is_
 italic = i
 
@@ -5605,6 +5602,7 @@ class b(element):
     """
     pass
 
+# TODO:dea3866d
 bolds = bs
 bold = b
 
@@ -5618,6 +5616,7 @@ class div(element):
     """
     pass
 
+# TODO:dea3866d
 divisions = divs
 division = div
 
@@ -5647,6 +5646,7 @@ class dl(element):
     """
     pass
 
+# TODO:dea3866d
 descriptionlists = dls
 descriptionlist = dl
 
@@ -5664,6 +5664,7 @@ class dt(element):
     """
     pass
 
+# TODO:dea3866d
 definitionlists = dts
 definitionlist  = dt
 
@@ -5678,6 +5679,7 @@ class dd(element):
     """
     pass
 
+# TODO:dea3866d
 descriptiondetails = dds
 descriptiondetail  = dd
 
