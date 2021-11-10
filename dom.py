@@ -3461,39 +3461,44 @@ class object(element):
 
 
 class cols(elements):
-    pass
+    """ A class used to contain a collection of ``col`` elements.
+    """
 
 class col(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
+    """ The <col> HTML element defines a column within a table and is
+    used for defining common semantics on all common cells. It is
+    generally found within a <colgroup> element.
+    """
     @property
     def span(self):
+        """ This attribute contains a positive integer indicating the
+        number of consecutive columns the <col> element spans. If not
+        present, its default value is 1.
+        """
         return self.attributes['span'].value
 
     @span.setter
     def span(self, v):
         self.attributes['span'].value = v
 
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
 class maps(elements):
-    pass
+    """ A class used to contain a collection of ``map`` elements.
+    """
 
 class map(element):
+    """ The <map> HTML element is used with <area> elements to define an
+    image map (a clickable link area).
+    """
     @property
     def name(self):
+        """ The name attribute gives the map a name so that it can be
+        referenced. The attribute must be present and must have a
+        non-empty value with no space characters. The value of the name
+        attribute must not be equal to the value of the name attribute
+        of another <map> element in the same document. If the id
+        attribute is also specified, both attributes must have the same
+        value.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -3501,11 +3506,19 @@ class map(element):
         self.attributes['name'].value = v
 
 class embeds(elements):
-    pass
+    """ A class used to contain a collection of ``embed`` elements.
+    """
 
 class embed(element):
+    """ The <embed> HTML element embeds external content at the
+    specified point in the document. This content is provided by an
+    external application or other source of interactive content such as
+    a browser plug-in.
+    """
     @property
     def type(self):
+        """ The MIME type to use to select the plug-in to instantiate.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -3514,6 +3527,9 @@ class embed(element):
 
     @property
     def height(self):
+        """ The displayed height of the resource, in CSS pixels. This
+        must be an absolute value; percentages are not allowed.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3522,6 +3538,8 @@ class embed(element):
 
     @property
     def src(self):
+        """ The URL of the resource being embedded.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -3530,6 +3548,9 @@ class embed(element):
 
     @property
     def width(self):
+        """ The displayed width of the resource, in CSS pixels. This
+        must be an absolute value; percentages are not allowed.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -3537,11 +3558,19 @@ class embed(element):
         self.attributes['width'].value = v
 
 class meters(elements):
-    pass
+    """ A class used to contain a collection of ``embed`` elements.
+    """
 
 class meter(element):
+    """ The <meter> HTML element represents either a scalar value within
+    a known range or a fractional value.
+    """
     @property
     def min(self):
+        """ The lower numeric bound of the measured range. This must be
+        less than the maximum value (max attribute), if specified.  If
+        unspecified, the minimum value is 0.
+        """
         return self.attributes['min'].value
 
     @min.setter
@@ -3550,6 +3579,15 @@ class meter(element):
 
     @property
     def optimum(self):
+        """ This attribute indicates the optimal numeric value. It must
+        be within the range (as defined by the min attribute and max
+        attribute). When used with the low attribute and high attribute,
+        it gives an indication where along the range is considered
+        preferable. For example, if it is between the min attribute and
+        the low attribute, then the lower range is considered preferred.
+        The browser may color the meter's bar differently depending on
+        whether the value is less than or equal to the optimum value.
+        """
         return self.attributes['optimum'].value
 
     @optimum.setter
@@ -3558,6 +3596,13 @@ class meter(element):
 
     @property
     def high(self):
+        """ The lower numeric bound of the high end of the measured
+        range. This must be less than the maximum value (max attribute),
+        and it also must be greater than the low value and minimum value
+        (low attribute and min attribute, respectively), if any are
+        specified. If unspecified, or if greater than the maximum value,
+        the high value is equal to the maximum value.
+        """
         return self.attributes['high'].value
 
     @high.setter
@@ -3566,6 +3611,14 @@ class meter(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the <meter> element with
+        (its form owner). The value of this attribute must be the id of
+        a <form> in the same document. If this attribute is not set, the
+        <meter> is associated with its ancestor <form> element, if any.
+        This attribute is only used if the <meter> element is being used
+        as a form-associated element, such as one displaying a range
+        corresponding to an <input type="number">.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -3574,6 +3627,10 @@ class meter(element):
 
     @property
     def max(self):
+        """ The upper numeric bound of the measured range. This must be
+        greater than the minimum value (min attribute), if specified. If
+        unspecified, the maximum value is 1.
+        """
         return self.attributes['max'].value
 
     @max.setter
@@ -3582,6 +3639,13 @@ class meter(element):
 
     @property
     def value(self):
+        """ The current numeric value. This must be between the minimum
+        and maximum values (min attribute and max attribute) if they are
+        specified. If unspecified or malformed, the value is 0. If
+        specified, but not within the range given by the min attribute
+        and max attribute, the value is equal to the nearest end of the
+        range.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -3590,6 +3654,13 @@ class meter(element):
 
     @property
     def low(self):
+        """ The upper numeric bound of the low end of the measured
+        range. This must be greater than the minimum value (min
+        attribute), and it also must be less than the high value and
+        maximum value (high attribute and max attribute, respectively),
+        if any are specified. If unspecified, or if less than the
+        minimum value, the low value is equal to the minimum value.
+        """
         return self.attributes['low'].value
 
     @low.setter
