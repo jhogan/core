@@ -3668,13 +3668,35 @@ class meter(element):
         self.attributes['low'].value = v
 
 class times(elements):
-    pass
+    """ A class used to contain a collection of ``time`` elements.
+    """
 
 class time(element):
+    """ The <time> HTML element represents a specific period in time. It
+    may include the datetime attribute to translate dates into
+    machine-readable format, allowing for better search engine results
+    or custom features such as reminders.
+
+    It may represent one of the following:
+
+        * A time on a 24-hour clock.
+
+        * A precise date in the Gregorian calendar (with optional time and
+        timezone information).
+
+        * A valid time duration.
+    """
     def __init__(self, dt=None, *args, **kwargs):
+        """ Create a <time> element.
+
+        :param: dt primative.datetime: The datetime object intended to
+        be used for the `datetime` attribute.
+        """
         super().__init__(*args, *kwargs)
+
         if dt is None:
             return
+
         if not isinstance(dt, primative.datetime):
             raise TypeError(
                 'Use primative.datettime to ensure timezone '
@@ -3686,6 +3708,9 @@ class time(element):
 
     @property
     def datetime(self):
+        """ This attribute indicates the time and/or date of the element
+        and must be in one of the formats described below.
+        """
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -3693,39 +3718,31 @@ class time(element):
         self.attributes['datetime'].value = v
 
 class bodies(elements):
-    pass
+    """ A class used to contain a collection of ``body`` elements.
+    """
 
 class body(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def background(self):
-        return self.attributes['background'].value
-
-    @background.setter
-    def background(self, v):
-        self.attributes['background'].value = v
+    """ The <body> HTML element represents the content of an HTML
+    document. There can be only one <body> element in a document.
+    """
 
 class progresses(elements):
-    pass
+    """ A class used to contain a collection of ``progress`` elements.
+    """
 
 class progress(element):
-    @property
-    def form(self):
-        return self.attributes['form'].value
-
-    @form.setter
-    def form(self, v):
-        self.attributes['form'].value = v
+    """ The <progress> HTML element displays an indicator showing the
+    completion progress of a task, typically displayed as a progress
+    bar.
+    """
 
     @property
     def max(self):
+        """ This attribute describes how much work the task indicated by
+        the progress element requires. The max attribute, if present,
+        must have a value greater than 0 and be a valid floating point
+        number. The default value is 1.
+        """
         return self.attributes['max'].value
 
     @max.setter
@@ -3734,6 +3751,13 @@ class progress(element):
 
     @property
     def value(self):
+        """ This attribute specifies how much of the task that has been
+        completed. It must be a valid floating point number between 0
+        and max, or between 0 and 1 if max is omitted. If there is no
+        value attribute, the progress bar is indeterminate; this
+        indicates that an activity is ongoing with no indication of how
+        long it is expected to take.
+        """
         return self.attributes['value'].value
 
     @value.setter
