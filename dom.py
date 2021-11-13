@@ -3765,11 +3765,27 @@ class progress(element):
         self.attributes['value'].value = v
 
 class commands(elements):
-    pass
+    """ A class used to contain a collection of ``command`` elements.
+    """
 
 class command(element):
+    """ The command element represents a command that the user can
+    invoke.  A command can be part of a context menu or toolbar, using
+    the menu element, or can be put anywhere else in the page, to define
+    a keyboard shortcut.
+    """
+
+    # NOTE This is sort of an oddball. It appears to only be supported
+    # by IE, although it is part of the HTML5 standard.
     @property
     def radiogroup(self):
+        """ The radiogroup attribute gives the name of the group of
+        commands that will be toggled when the command itself is
+        toggled, for commands whose type attribute has the value
+        "radio". The scope of the name is the child list of the parent
+        element. The attribute must be omitted unless the type attribute
+        is in the Radio state.
+        """
         return self.attributes['radiogroup'].value
 
     @radiogroup.setter
@@ -3778,6 +3794,11 @@ class command(element):
 
     @property
     def icon(self):
+        """ The icon attribute gives a picture that represents the
+        command. If the attribute is specified, the attribute's value
+        must contain a valid non-empty URL potentially surrounded by
+        spaces.
+        """
         return self.attributes['icon'].value
 
     @icon.setter
@@ -3786,6 +3807,9 @@ class command(element):
 
     @property
     def type(self):
+        """ The type IDL attribute must reflect the content attribute of
+        the same name, limited to only known values.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -3794,6 +3818,11 @@ class command(element):
 
     @property
     def checked(self):
+        """ The checked attribute is a boolean attribute that, if
+        present, indicates that the command is selected. The attribute
+        must be omitted unless the type attribute is in either the
+        Checkbox state or the Radio state.
+        """
         return self.attributes['checked'].value
 
     @checked.setter
@@ -3809,11 +3838,23 @@ class command(element):
         self.attributes['disabled'].value = v
 
 class blockquotes(elements):
-    pass
+    """ A class used to contain a collection of ``blockquote`` elements.
+    """
 
 class blockquote(element):
+    """ The <blockquote> HTML element indicates that the enclosed text
+    is an extended quotation. Usually, this is rendered visually by
+    indentation. A URL for the source of the quotation may be given
+    using the cite attribute, while a text representation of the source
+    can be given using the <cite> element.
+    """
     @property
     def cite(self):
+        """ A URL that designates a source document or message for the
+        information quoted. This attribute is intended to point to
+        information explaining the context or the reference for the
+        quote.
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -3821,11 +3862,21 @@ class blockquote(element):
         self.attributes['cite'].value = v
 
 class options(elements):
-    pass
+    """ A class used to contain a collection of ``option`` elements.
+    """
 
 class option(element):
+    """ The <option> HTML element is used to define an item contained in
+    a <select>, an <optgroup>, or a <datalist> element. As such,
+    <option> can represent menu items in popups and other lists of items
+    in an HTML document.
+    """
     @property
     def label(self):
+        """ This attribute is text for the label indicating the meaning
+        of the option. If the label attribute isn't defined, its value
+        is that of the element text content.
+        """
         return self.attributes['label'].value
 
     @label.setter
@@ -3834,6 +3885,13 @@ class option(element):
 
     @property
     def disabled(self):
+        """ If this Boolean attribute is set, this option is not
+        checkable. Often browsers grey out such control and it won't
+        receive any browsing event, like mouse clicks or focus-related
+        ones. If this attribute is not set, the element can still be
+        disabled if one of its ancestors is a disabled <optgroup>
+        element.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3842,6 +3900,12 @@ class option(element):
 
     @property
     def selected(self):
+        """ If present, this Boolean attribute indicates that the option
+        is initially selected. If the <option> element is the descendant
+        of a <select> element whose multiple attribute is not set, only
+        one single <option> of this <select> element may have the
+        selected attribute.
+        """
         return self.attributes['selected'].value
 
     @selected.setter
@@ -3853,6 +3917,11 @@ class option(element):
 
     @property
     def value(self):
+        """ The content of this attribute represents the value to be
+        submitted with the form, should this option be selected. If this
+        attribute is omitted, the value is taken from the text content
+        of the option element.
+        """
         return self.attributes['value'].value
 
     @value.setter
