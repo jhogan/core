@@ -3929,11 +3929,18 @@ class option(element):
         self.attributes['value'].value = v
 
 class canvass(elements):
-    pass
+    """ A class used to contain a collection of ``canvas`` elements.
+    """
 
 class canvas(element):
+    """ Use the HTML <canvas> element with either the canvas scripting
+    API or the WebGL API to draw graphics and animations.
+    """
     @property
     def height(self):
+        """ The height of the coordinate space in CSS pixels. Defaults
+        to 150.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3942,6 +3949,9 @@ class canvas(element):
 
     @property
     def width(self):
+        """ The width of the coordinate space in CSS pixels. Defaults to
+        300.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -3949,21 +3959,31 @@ class canvas(element):
         self.attributes['width'].value = v
 
 class uls(elements):
-    pass
+    """ A class used to contain a collection of ``ul`` elements.
+    """
 
 class ul(element):
-    pass
+    """ The <ul> HTML element represents an unordered list of items,
+    typically rendered as a bulleted list.
+    """
 
 # TODO:dea3866d
 unorderedlists = uls
 unorderedlist = ul
 
 class ols(elements):
-    pass
+    """ A class used to contain a collection of ``ol`` elements.
+    """
 
 class ol(element):
+    """ The <ol> HTML element represents an ordered list of items —
+    typically rendered as a numbered list.
+    """
     @property
     def reversed(self):
+        """ This Boolean attribute specifies that the list’s items are
+        in reverse order. Items will be numbered from high to low.
+        """
         return self.attributes['reversed'].value
 
     @reversed.setter
@@ -3972,70 +3992,59 @@ class ol(element):
 
     @property
     def start(self):
+        """ An integer to start counting from for the list items. Always
+        an Arabic numeral (1, 2, 3, etc.), even when the numbering type
+        is letters or Roman numerals. For example, to start numbering
+        elements from the letter "d" or the Roman numeral "iv," use
+        start="4".
+        """
         return self.attributes['start'].value
 
     @start.setter
     def start(self, v):
         self.attributes['start'].value = v
 
-class keygens(elements):
-    pass
-
-class keygen(element):
     @property
-    def autofocus(self):
-        return self.attributes['autofocus'].value
+    def type(self):
+        """ Sets the numbering type:
 
-    @autofocus.setter
-    def autofocus(self, v):
-        self.attributes['autofocus'].value = v
+              * a for lowercase letters
+              * A for uppercase letters
+              * i for lowercase Roman numerals
+              * I for uppercase Roman numerals
+              * 1 for numbers (default)
 
-    @property
-    def form(self):
-        return self.attributes['form'].value
+           The specified type is used for the entire list unless a
+           different type attribute is used on an enclosed <li> element.
 
-    @form.setter
-    def form(self, v):
-        self.attributes['form'].value = v
+           Note: Unless the type of the list number matters (like legal
+           or technical documents where items are referenced by their
+           number/letter), use the CSS list-style-type property instead.
+        """
+        return self.attributes['type'].value
 
-    @property
-    def name(self):
-        return self.attributes['name'].value
-
-    @name.setter
-    def name(self, v):
-        self.attributes['name'].value = v
-
-    @property
-    def disabled(self):
-        return self.attributes['disabled'].value
-
-    @disabled.setter
-    def disabled(self, v):
-        self.attributes['disabled'].value = v
-
-    @property
-    def keytype(self):
-        return self.attributes['keytype'].value
-
-    @keytype.setter
-    def keytype(self, v):
-        self.attributes['keytype'].value = v
-
-    @property
-    def challenge(self):
-        return self.attributes['challenge'].value
-
-    @challenge.setter
-    def challenge(self, v):
-        self.attributes['challenge'].value = v
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
 
 class tracks(elements):
-    pass
+    """ A class used to contain a collection of ``track`` elements.
+    """
 
 class track(element):
+    """ The <track> HTML element is used as a child of the media
+    elements, <audio> and <video>. It lets you specify timed text tracks
+    (or time-based data), for example to automatically handle subtitles.
+    The tracks are formatted in WebVTT format (.vtt files) — Web Video
+    Text Tracks.
+    """
     @property
     def default(self):
+        """ This attribute indicates that the track should be enabled
+        unless the user's preferences indicate that another track is
+        more appropriate. This may only be used on one track element per
+        media element.
+        """
         return self.attributes['default'].value
 
     @default.setter
@@ -4048,10 +4057,18 @@ class track(element):
 
     @label.setter
     def label(self, v):
+        """ A user-readable title of the text track which is used by the
+        browser when listing available text tracks.
+        """
         self.attributes['label'].value = v
 
     @property
     def src(self):
+        """ Address of the track (.vtt file). Must be a valid URL. This
+        attribute must be specified and its URL value must have the same
+        origin as the document — unless the <audio> or <video> parent
+        element of the track element has a crossorigin attribute.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -4060,6 +4077,10 @@ class track(element):
 
     @property
     def srclang(self):
+        """ Language of the track text data. It must be a valid BCP 47
+        language tag. If the kind attribute is set to subtitles, then
+        srclang must be defined.
+        """
         return self.attributes['srclang'].value
 
     @srclang.setter
@@ -4068,6 +4089,9 @@ class track(element):
 
     @property
     def kind(self):
+        """ How the text track is meant to be used. If omitted the
+        default kind is subtitles. 
+        """
         return self.attributes['kind'].value
 
     @kind.setter
