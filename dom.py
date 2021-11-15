@@ -2625,6 +2625,7 @@ class button(element):
         input focus when the page loads. Only one element in a document
         can have this attribute.
         """
+        # TODO:369795a1 @
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -2649,6 +2650,7 @@ class button(element):
         submitted. If this attribute is True, it overrides the
         novalidate attribute of the button's form owner.
         """
+        # TODO:369795a1 @
         return self.attributes['formnovalidate'].value
 
     @formnovalidate.setter
@@ -2698,6 +2700,7 @@ class button(element):
         """ This Boolean attribute prevents the user from interacting
         with the button: it cannot be pressed or focused.
         """
+        # TODO:369795a1 @
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -2860,6 +2863,7 @@ class fieldset(element):
         grayed out. Note that form elements inside the <legend> element
         won't be disabled.
         """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3077,6 +3081,7 @@ class audio(element):
         automatically seek back to the start upon reaching the end of
         the audio.
         """
+        # TODO:369795a1
 
         return self.attributes['loop'].value
 
@@ -3123,6 +3128,7 @@ class audio(element):
         automatically begin playback as soon as it can do so, without
         waiting for the entire audio file to finish downloading.
         """
+        # TODO:369795a1
         return self.attributes['autoplay'].value
 
     @autoplay.setter
@@ -3134,6 +3140,7 @@ class audio(element):
         """ A Boolean attribute that indicates whether the audio will be
         initially silenced. Its default value is false.
         """
+        # TODO:369795a1
         return self.attributes['muted'].value
 
     @muted.setter
@@ -3273,6 +3280,7 @@ class img(element):
         server-side map. If so, the coordinates where the user clicked
         on the image are sent to the server.
         """
+        # TODO:369795a1
         return self.attributes['ismap'].value
 
     @ismap.setter
@@ -3711,6 +3719,8 @@ class time(element):
         """ This attribute indicates the time and/or date of the element
         and must be in one of the formats described below.
         """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -3823,6 +3833,7 @@ class command(element):
         must be omitted unless the type attribute is in either the
         Checkbox state or the Radio state.
         """
+        # TODO:369795a1
         return self.attributes['checked'].value
 
     @checked.setter
@@ -3892,6 +3903,7 @@ class option(element):
         disabled if one of its ancestors is a disabled <optgroup>
         element.
         """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3906,6 +3918,7 @@ class option(element):
         one single <option> of this <select> element may have the
         selected attribute.
         """
+        # TODO:369795a1
         return self.attributes['selected'].value
 
     @selected.setter
@@ -3984,6 +3997,7 @@ class ol(element):
         """ This Boolean attribute specifies that the list’s items are
         in reverse order. Items will be numbered from high to low.
         """
+        # TODO:369795a1
         return self.attributes['reversed'].value
 
     @reversed.setter
@@ -4099,11 +4113,28 @@ class track(element):
         self.attributes['kind'].value = v
 
 class dels(elements):
-    pass
+    """ A class used to contain a collection of ``del`` elements.
+    """
 
 class del_(element):
+    """ The <del> HTML element represents a range of text that has been
+    deleted from a document. This can be used when rendering "track
+    changes" or source code diff information, for example. The <ins>
+    element can be used for the opposite purpose: to indicate text that
+    has been added to the document.
+    """
     @property
     def datetime(self):
+        """ This attribute indicates the time and date of the change and
+        must be a valid date string with an optional time. If the value
+        cannot be parsed as a date with an optional time string, the
+        element does not have an associated time stamp. For the format
+        of the string without a time, see Date strings. The format of
+        the string if it includes both date and time is covered in Local
+        date and time strings.
+        """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -4112,6 +4143,9 @@ class del_(element):
 
     @property
     def cite(self):
+        """ A URI for a resource that explains the change (for example,
+        meeting minutes).
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -4119,31 +4153,36 @@ class del_(element):
         self.attributes['cite'].value = v
 
 class tbodys(elements):
-    pass
+    """ A class used to contain a collection of ``tbody`` elements.
+    """
 
 class tbody(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <tbody> HTML element encapsulates a set of table rows (<tr>
+    elements), indicating that they comprise the body of the table
+    (<table>).
+    """
 
 class inss(elements):
-    pass
+    """ A class used to contain a collection of ``ins`` elements.
+    """
 
 class ins(element):
+    """ The <ins> HTML element represents a range of text that has been
+    added to a document. You can use the <del> element to similarly
+    represent a range of text that has been deleted from the document.
+    """
     @property
     def datetime(self):
+        """ This attribute indicates the time and date of the change and
+        must be a valid date with an optional time string. If the value
+        cannot be parsed as a date with an optional time string, the
+        element does not have an associated time stamp. For the format
+        of the string without a time, see Format of a valid date string.
+        The format of the string if it includes both date and time is
+        covered in Format of a valid local date and time string.
+        """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -4152,6 +4191,10 @@ class ins(element):
 
     @property
     def cite(self):
+        """ This attribute defines the URI of a resource that explains
+        the change, such as a link to meeting minutes or a ticket in a
+        troubleshooting system.
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -4159,9 +4202,15 @@ class ins(element):
         self.attributes['cite'].value = v
 
 class textareas(elements):
-    pass
+    """ A class used to contain a collection of ``textarea`` elements.
+    """
 
 class textarea(element):
+    """ The <textarea> HTML element represents a multi-line plain-text
+    editing control, useful when you want to allow users to enter a
+    sizeable amount of free-form text, for example a comment on a review
+    or feedback form.
+    """
     @property
     def readonly(self):
         return self.attributes['readonly'].value
@@ -4204,6 +4253,12 @@ class textarea(element):
 
     @property
     def autofocus(self):
+        """ This Boolean attribute lets you specify that a form control
+        should have input focus when the page loads. Only one
+        form-associated element in a document can have this attribute
+        specified.
+        """
+        # TODO:369795a1
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -4276,6 +4331,30 @@ class textarea(element):
 
     @property
     def autocomplete(self):
+        """ This attribute indicates whether the value of the control
+        can be automatically completed by the browser. Possible values
+        are:
+
+              * off: The user must explicitly enter a value into this field for
+              every use, or the document provides its own
+              auto-completion method; the browser does not automatically
+              complete the entry.
+
+              * on: The browser can automatically complete the value based on
+              values that the user has entered during previous uses.
+
+        If the autocomplete attribute is not specified on a
+        <textarea> element, then the browser uses the autocomplete
+        attribute value of the <textarea> element's form owner. The
+        form owner is either the <form> element that this <textarea>
+        element is a descendant of or the form element whose id is
+        specified by the form attribute of the input element. For
+        more information, see the autocomplete attribute in <form>.
+        """
+
+        # TODO Convert this property to a boolean one, such that it only
+        # accepts and returns only True or False. The actual value for
+        # the attribute would still be 'off' and 'on'.
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
@@ -4289,6 +4368,35 @@ class textarea(element):
     @inputmode.setter
     def inputmode(self, v):
         self.attributes['inputmode'].value = v
+
+    @property
+    def autocorrect(self):
+        """ This attribute indicates whether the value of the control
+        can be automatically completed by the browser. Possible values
+        are:
+
+            * off: The user must explicitly enter a value into this field for
+            every use, or the document provides its own auto-completion
+            method; the browser does not automatically complete the
+            entry.
+
+            * on: The browser can automatically complete the value based on
+            values that the user has entered during previous uses.
+
+        If the autocomplete attribute is not specified on a <textarea>
+        element, then the browser uses the autocomplete attribute value
+        of the <textarea> element's form owner. The form owner is either
+        the <form> element that this <textarea> element is a descendant
+        of or the form element whose id is specified by the form
+        attribute of the input element. For more information, see the
+        autocomplete attribute in <form>.
+		"""
+        # TODO:369795a1
+        return self.attributes['autocorrect'].value
+
+    @autocorrect.setter
+    def autocorrect(self, v):
+        self.attributes['autocorrect'].value = v
 
 class captions(elements):
     pass
