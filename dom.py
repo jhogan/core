@@ -4211,8 +4211,16 @@ class textarea(element):
     sizeable amount of free-form text, for example a comment on a review
     or feedback form.
     """
+
     @property
     def readonly(self):
+        """ This Boolean attribute indicates that the user cannot modify
+        the value of the control. Unlike the disabled attribute, the
+        readonly attribute does not prevent the user from clicking or
+        selecting in the control. The value of a read-only control is
+        still submitted with the form.
+        """
+        # TODO:369795a1
         return self.attributes['readonly'].value
 
     @readonly.setter
@@ -4229,6 +4237,10 @@ class textarea(element):
 
     @property
     def cols(self):
+        """ The visible width of the text control, in average character
+        widths. If it is specified, it must be a positive integer. If it
+        is not specified, the default value is 20.
+        """
         return self.attributes['cols'].value
 
     @cols.setter
@@ -4237,6 +4249,9 @@ class textarea(element):
 
     @property
     def required(self):
+        """ This attribute specifies that the user must fill in a value
+        before submitting a form.
+        """
         return self.attributes['required'].value
 
     @required.setter
@@ -4244,7 +4259,30 @@ class textarea(element):
         self.attributes['required'].value = v
 
     @property
+    def spellcheck(self):
+        """ Specifies whether the <textarea> is subject to spell
+        checking by the underlying browser/OS. The value can be:
+
+            true: Indicates that the element needs to have its spelling
+            and grammar checked.
+
+            default: Indicates that the element is to act according to
+            a default behavior, possibly based on the parent element's
+            own spellcheck value.
+
+            false: Indicates that the element should not be spell
+            checked.
+        """
+        return self.attributes['spellcheck'].value
+
+    @spellcheck.setter
+    def spellcheck(self, v):
+        self.attributes['spellcheck'].value = v
+
+    @property
     def rows(self):
+        """ The number of visible text lines for the control.
+        """
         return self.attributes['rows'].value
 
     @rows.setter
@@ -4275,6 +4313,14 @@ class textarea(element):
 
     @property
     def form(self):
+        """ The form element that the <textarea> element is associated
+        with (its "form owner"). The value of the attribute must be the
+        id of a form element in the same document. If this attribute is
+        not specified, the <textarea> element must be a descendant of a
+        form element. This attribute enables you to place <textarea>
+        elements anywhere within a document, not just as descendants of
+        form elements.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -4283,6 +4329,14 @@ class textarea(element):
 
     @property
     def placeholder(self):
+        """ A hint to the user of what can be entered in the control.
+        Carriage returns or line-feeds within the placeholder text must
+        be treated as line breaks when rendering the hint.
+
+        Note: Placeholders should only be used to show an example of the
+        type of data that should be entered into a form; they are not a
+        substitute for a proper <label> element tied to the input.
+        """
         return self.attributes['placeholder'].value
 
     @placeholder.setter
@@ -4299,6 +4353,8 @@ class textarea(element):
 
     @property
     def name(self):
+        """ The name of the control.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -4307,14 +4363,28 @@ class textarea(element):
 
     @property
     def maxlength(self):
+        """ The maximum number of characters (UTF-16 code units) that
+        the user can enter. If this value isn't specified, the user can
+        enter an unlimited number of characters.
+        """
         return self.attributes['maxlength'].value
 
     @maxlength.setter
     def maxlength(self, v):
+        """ The minimum number of characters (UTF-16 code units)
+        required that the user should enter.
+        """
         self.attributes['maxlength'].value = v
 
     @property
     def disabled(self):
+        """ This Boolean attribute indicates that the user cannot
+        interact with the control. If this attribute is not specified,
+        the control inherits its setting from the containing element,
+        for example <fieldset>; if there is no containing element when
+        the disabled attribute is set, the control is enabled.
+        """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -4323,6 +4393,23 @@ class textarea(element):
 
     @property
     def wrap(self):
+		""" Indicates how the control wraps text. Possible values are:
+
+              hard: The browser automatically inserts line breaks
+              (CR+LF) so that each line has no more than the width of
+              the control; the cols attribute must also be specified for
+              this to take effect.
+
+              soft: The browser ensures that all line breaks in the
+              value consist of a CR+LF pair, but does not insert any
+              additional line breaks.
+
+              off: Like soft but changes appearance to white-space: pre
+              so line segments exceeding cols are not wrapped and the
+              <textarea> becomes horizontally scrollable.
+
+           If this attribute is not specified, soft is its default value.
+        """
         return self.attributes['wrap'].value
 
     @wrap.setter
@@ -4399,21 +4486,26 @@ class textarea(element):
         self.attributes['autocorrect'].value = v
 
 class captions(elements):
-    pass
+    """ A class used to contain a collection of ``caption`` elements.
+    """
 
 class caption(element):
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <caption> HTML element specifies the caption (or title) of a
+    table.
+    """
 
 class inputs(elements):
-    pass
+    """ A class used to contain a collection of ``caption`` elements.
+    """
 
 class input(element):
+    """ The <input> HTML element is used to create interactive controls
+    for web-based forms in order to accept data from the user; a wide
+    variety of types of input data and control widgets are available,
+    depending on the device and user agent. The <input> element is one
+    of the most powerful and complex in all of HTML due to the sheer
+    number of combinations of input types and attributes.
+    """
     isvoid = True
     @property
     def min(self):
@@ -4441,6 +4533,26 @@ class input(element):
 
     @property
     def dirname(self):
+        """ Valid for text and search input types only, the dirname
+        attribute enables the submission of the directionality of the
+        element. When included, the form control will submit with two
+        name/value pairs: the first being the name and value, the second
+        being the value of the dirname as the name with the value of ltr
+        or rtl being set by the browser.
+
+            <form action="page.html" method="post">
+                <label>
+                    Fruit: 
+                    <input type="text" name="fruit" dirname="fruit.dir" value="cherry">
+                </label>
+                <input type="submit"/>
+            </form>
+            <!-- page.html?fruit=cherry&fruit.dir=ltr -->
+
+        When the form above is submitted, the input cause both the
+        name/value pair of fruit=cherry and the dirname / direction pair
+        of fruit.dir=ltr to be sent.
+        """
         return self.attributes['dirname'].value
 
     @dirname.setter
@@ -4472,7 +4584,51 @@ class input(element):
         self.attributes['multiple'].value = v
 
     @property
+    def capture(self):
+        """ Introduced in the HTML Media Capture specification and valid
+        for the file input type only, the capture attribute defines
+        which media—microphone, video, or camera—should be used to
+        capture a new file for upload with file upload control in
+        supporting scenarios. See the file input type.
+        """
+        return self.attributes['capture'].value
+
+    @capture.setter
+    def capture(self, v):
+        self.attributes['capture'].value = v
+
+    @property
     def autofocus(self):
+        """ A Boolean attribute which, if present, indicates that the
+        input should automatically have focus when the page has finished
+        loading (or when the <dialog> containing the element has been
+        displayed).
+
+        Note: An element with the autofocus attribute may gain focus
+        before the DOMContentLoaded event is fired.
+
+        No more than one element in the document may have the autofocus
+        attribute. If put on more than one element, the first one with
+        the attribute receives focus.
+
+        The autofocus attribute cannot be used on inputs of type hidden,
+        since hidden inputs cannot be focused.
+
+        Warning: Automatically focusing a form control can confuse
+        visually-impaired people using screen-reading technology and
+        people with cognitive impairments. When autofocus is assigned,
+        screen-readers "teleport" their user to the form control without
+        warning them beforehand.
+
+        Use careful consideration for accessibility when applying the
+        autofocus attribute. Automatically focusing on a control can
+        cause the page to scroll on load. The focus can also cause
+        dynamic keyboards to display on some touch devices. While a
+        screen reader will announce the label of the form control
+        receiving focus, the screen reader will not announce anything
+        before the label, and the sighted user on a small device will
+        equally miss the context created by the preceding content.
+        """
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -4481,6 +4637,15 @@ class input(element):
 
     @property
     def type(self):
+    """ How an <input> works varies considerably depending on the value
+    of its type attribute, hence the different types are covered in
+    their own separate reference pages. If this attribute is not
+    specified, the default type adopted is text.
+
+    The available types are as follows: button, checkbox, color, date,
+    datetime-local, email, file, hidden, image, month, number, password,
+    radio, range, reset, search, submit, tel, text, time, url, week, 
+    """
         return self.attributes['type'].value
 
     @type.setter
@@ -4513,6 +4678,10 @@ class input(element):
 
     @property
     def accept(self):
+        """ Valid for the file input type only, the accept attribute
+        defines which file types are selectable in a file upload
+        control. See the file input type.
+        """
         return self.attributes['accept'].value
 
     @accept.setter
@@ -4545,6 +4714,18 @@ class input(element):
 
     @property
     def form(self):
+        """ A string specifying the <form> element with which the input
+        is associated (that is, its form owner). This string's value, if
+        present, must match the id of a <form> element in the same
+        document. If this attribute isn't specified, the <input> element
+        is associated with the nearest containing form, if any.
+
+        The form attribute lets you place an input anywhere in the
+        document but have it included with a form elsewhere in the
+        document.
+
+        Note: An input can only be associated with one form.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -4553,6 +4734,27 @@ class input(element):
 
     @property
     def checked(self):
+        """ Valid for both radio and checkbox types, checked is
+        a Boolean attribute. If present on a radio type, it indicates
+        that the radio button is the currently selected one in the group
+        of same-named radio buttons. If present on a checkbox type, it
+        indicates that the checkbox is checked by default (when the page
+        loads). It does not indicate whether this checkbox is currently
+        checked: if the checkbox’s state is changed, this content
+        attribute does not reflect the change. (Only the
+        HTMLInputElement’s checked IDL attribute is updated.)
+
+        Note: Unlike other input controls, a checkboxes and radio
+        buttons value are only included in the submitted data if they
+        are currently checked. If they are, the name and the value(s) of
+        the checked controls are submitted.
+
+        For example, if a checkbox whose name is fruit has a value of
+        cherry, and the checkbox is checked, the form data submitted
+        will include fruit=cherry. If the checkbox isn't active, it
+        isn't listed in the form data at all. The default value for
+        checkboxes and radio buttons is on.
+        """
         return self.attributes['checked'].value
 
     @checked.setter
@@ -4625,6 +4827,20 @@ class input(element):
 
     @property
     def disabled(self):
+        """ A Boolean attribute which, if present, indicates that the
+        user should not be able to interact with the input. Disabled
+        inputs are typically rendered with a dimmer color or using some
+        other form of indication that the field is not available for
+        use.
+
+        Specifically, disabled inputs do not receive the click event,
+        and disabled inputs are not submitted with the form.
+
+        Note: Although not required by the specification, Firefox will
+        by default persist the dynamic disabled state of an <input>
+        across page loads. Use the autocomplete attribute to control
+        this feature.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -4633,6 +4849,11 @@ class input(element):
 
     @property
     def alt(self):
+        """ Valid for the image button only, the alt attribute provides
+        alternative text for the image, displaying the value of the
+        attribute if the image scr is missing or otherwise fails to
+        load.
+        """
         return self.attributes['alt'].value
 
     @alt.setter
@@ -4649,6 +4870,22 @@ class input(element):
 
     @property
     def autocomplete(self):
+        """ (Not a Boolean attribute!) The autocomplete attribute takes
+        as its value a space-separated string that describes what, if
+        any, type of autocomplete functionality the input should
+        provide. A typical implementation of autocomplete recalls
+        previous values entered in the same input field, but more
+        complex forms of autocomplete can exist. For instance, a browser
+        could integrate with a device's contacts list to autocomplete
+        email addresses in an email input field.
+
+        The autocomplete attribute is valid on hidden, text, search,
+        url, tel, email, date, month, week, time, datetime-local,
+        number, range, color, and password. This attribute has no effect
+        on input types that do not return numeric or text data, being
+        valid for all input types except checkbox, radio, file, or any
+        of the button types.
+        """
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
