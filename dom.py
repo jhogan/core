@@ -4393,22 +4393,22 @@ class textarea(element):
 
     @property
     def wrap(self):
-		""" Indicates how the control wraps text. Possible values are:
+        """ Indicates how the control wraps text. Possible values are:
 
-              hard: The browser automatically inserts line breaks
-              (CR+LF) so that each line has no more than the width of
-              the control; the cols attribute must also be specified for
-              this to take effect.
+        hard: The browser automatically inserts line breaks
+        (CR+LF) so that each line has no more than the width of
+        the control; the cols attribute must also be specified for
+        this to take effect.
 
-              soft: The browser ensures that all line breaks in the
-              value consist of a CR+LF pair, but does not insert any
-              additional line breaks.
+        soft: The browser ensures that all line breaks in the
+        value consist of a CR+LF pair, but does not insert any
+        additional line breaks.
 
-              off: Like soft but changes appearance to white-space: pre
-              so line segments exceeding cols are not wrapped and the
-              <textarea> becomes horizontally scrollable.
+        off: Like soft but changes appearance to white-space: pre
+        so line segments exceeding cols are not wrapped and the
+        <textarea> becomes horizontally scrollable.
 
-           If this attribute is not specified, soft is its default value.
+        If this attribute is not specified, soft is its default value.
         """
         return self.attributes['wrap'].value
 
@@ -4450,6 +4450,11 @@ class textarea(element):
 
     @property
     def inputmode(self):
+        """ Global value valid for all elements, it provides a hint to
+        browsers as to the type of virtual keyboard configuration to use
+        when editing this element or its contents. Values include none,
+        text, tel, url, email, numeric, decimal, and search.
+        """
         return self.attributes['inputmode'].value
 
     @inputmode.setter
@@ -4509,6 +4514,26 @@ class input(element):
     isvoid = True
     @property
     def min(self):
+        """ Valid for date, month, week, time, datetime-local, number,
+        and range, it defines the most negative value in the range of
+        permitted values. If the value entered into the element is less
+        than this this, the element fails constraint validation. If the
+        value of the min attribute isn't a number, then the element has
+        no minimum value.
+
+        This value must be less than or equal to the value of the max
+        attribute. If the min attribute is present but is not specified
+        or is invalid, no min value is applied. If the min attribute is
+        valid and a non-empty value is less than the minimum allowed by
+        the min attribute, constraint validation will prevent form
+        submission. See Client-side validation for more information.
+
+        There is a special case: if the data type is periodic (such as
+        for dates or times), the value of max may be lower than the
+        value of min, which indicates that the range may wrap around;
+        for example, this allows you to specify a time range from 10 PM
+        to 4 AM.
+        """
         return self.attributes['min'].value
 
     @min.setter
@@ -4525,6 +4550,9 @@ class input(element):
 
     @property
     def formtarget(self):
+        """ Browsing context for form submission. Valid for the image
+        and submit input types only.
+        """
         return self.attributes['formtarget'].value
 
     @formtarget.setter
@@ -4569,6 +4597,9 @@ class input(element):
 
     @property
     def formaction(self):
+        """ URL to use for form submission  Valid for the image and
+        submit input types only.
+        """
         return self.attributes['formaction'].value
 
     @formaction.setter
@@ -4577,6 +4608,11 @@ class input(element):
 
     @property
     def multiple(self):
+        """ The Boolean multiple attribute, if set, means the user can
+        enter comma separated email addresses in the email widget or can
+        choose more than one file with the file input. See the email and
+        file input type.
+        """
         return self.attributes['multiple'].value
 
     @multiple.setter
@@ -4637,15 +4673,15 @@ class input(element):
 
     @property
     def type(self):
-    """ How an <input> works varies considerably depending on the value
-    of its type attribute, hence the different types are covered in
-    their own separate reference pages. If this attribute is not
-    specified, the default type adopted is text.
+        """ How an <input> works varies considerably depending on the value
+        of its type attribute, hence the different types are covered in
+        their own separate reference pages. If this attribute is not
+        specified, the default type adopted is text.
 
-    The available types are as follows: button, checkbox, color, date,
-    datetime-local, email, file, hidden, image, month, number, password,
-    radio, range, reset, search, submit, tel, text, time, url, week, 
-    """
+        The available types are as follows: button, checkbox, color, date,
+        datetime-local, email, file, hidden, image, month, number, password,
+        radio, range, reset, search, submit, tel, text, time, url, week, 
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -4662,6 +4698,10 @@ class input(element):
 
     @property
     def height(self):
+        """ Valid for the image input button only, the height is the
+        height of the image file to display to represent the graphical
+        submit button. See the image input type.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -4698,6 +4738,29 @@ class input(element):
 
     @property
     def pattern(self):
+        """ The pattern attribute, when specified, is a regular
+        expression that the input's value must match in order for the
+        value to pass constraint validation. It must be a valid
+        JavaScript regular expression, as used by the RegExp type, and
+        as documented in our guide on regular expressions; the 'u' flag
+        is specified when compiling the regular expression, so that the
+        pattern is treated as a sequence of Unicode code points, instead
+        of as ASCII. No forward slashes should be specified around the
+        pattern text.
+
+        If the pattern attribute is present but is not specified or is
+        invalid, no regular expression is applied and this attribute is
+        ignored completely. If the pattern attribute is valid and a
+        non-empty value does not match the pattern, constraint
+        validation will prevent form submission.
+
+        Note: If using the pattern attribute, inform the user about the
+        expected format by including explanatory text nearby. You can
+        also include a title attribute to explain what the requirements
+        are to match the pattern; most browsers will display this title
+        as a tooltip. The visible explanation is required for
+        accessibility. The tooltip is an enhancement.
+		"""
         return self.attributes['pattern'].value
 
     @pattern.setter
@@ -4706,6 +4769,9 @@ class input(element):
 
     @property
     def formnovalidate(self):
+        """ Bypass form control validation for form submission. Valid
+        for the image and submit input types only.
+        """
         return self.attributes['formnovalidate'].value
 
     @formnovalidate.setter
@@ -4771,6 +4837,18 @@ class input(element):
 
     @property
     def minlength(self):
+        """ Valid for text, search, url, tel, email, and password, it
+        defines the minimum number of characters (as UTF-16 code units)
+        the user can enter into the entry field. This must be an
+        non-negative integer value smaller than or equal to the value
+        specified by maxlength. If no minlength is specified, or an
+        invalid value is specified, the input has no minimum length.
+
+        The input will fail constraint validation if the length of the
+        text entered into the field is fewer than minlength UTF-16 code
+        units long, preventing form submission.  See Client-side
+        validation for more information.
+        """
         return self.attributes['minlength'].value
 
     @minlength.setter
@@ -4779,6 +4857,28 @@ class input(element):
 
     @property
     def list(self):
+        """ The value given to the list attribute should be the id of a
+        <datalist> element located in the same document. The <datalist>
+        provides a list of predefined values to suggest to the user for
+        this input. Any values in the list that are not compatible with
+        the type are not included in the suggested options. The values
+        provided are suggestions, not requirements: users can select
+        from this predefined list or provide a different value.
+
+        It is valid on text, search, url, tel, email, date, month, week,
+        time, datetime-local, number, range, and color.
+
+        Per the specifications, the list attribute is not supported by
+        the hidden, password, checkbox, radio, file, or any of the
+        button types.
+
+        Depending on the browser, the user may see a custom color
+        palette suggested, tic marks along a range, or even a input that
+        opens like a <select> but allows for non-listed values.  Check
+        out the browser compatibility table for the other input types.
+
+        See the <datalist> element.
+        """
         return self.attributes['list'].value
 
     @list.setter
@@ -4787,6 +4887,19 @@ class input(element):
 
     @property
     def max(self):
+        """ Valid for date, month, week, time, datetime-local, number,
+        and range, it defines the greatest value in the range of
+        permitted values. If the value entered into the element exceeds
+        this, the element fails constraint validation. If the value of
+        the max attribute isn't a number, then the element has no
+        maximum value.
+
+        There is a special case: if the data type is periodic (such as
+        for dates or times), the value of max may be lower than the
+        value of min, which indicates that the range may wrap around;
+        for example, this allows you to specify a time range from 10 PM
+        to 4 AM.
+        """
         return self.attributes['max'].value
 
     @max.setter
@@ -4795,6 +4908,66 @@ class input(element):
 
     @property
     def name(self):
+        """ A string specifying a name for the input control. This name
+        is submitted along with the control's value when the form data
+        is submitted.
+
+        Consider the name a required attribute (even though it's not).
+        If an input has no name specified, or name is empty, the input's
+        value is not submitted with the form! (Disabled controls,
+        unchecked radio buttons, unchecked checkboxes, and reset buttons
+        are also not sent.)
+
+        There are two special cases:
+
+        1. _charset_ : If used as the name of an <input> element of type
+        hidden, the input's value is automatically set by the user agent
+        to the character encoding being used to submit the form.  2.
+        isindex: For historical reasons, the name isindex is not
+        allowed.
+
+        The name attribute creates a unique behavior for radio buttons.
+
+        Only one radio button in a same-named group of radio buttons can
+        be checked at a time. Selecting any radio button in that group
+        automatically deselects any currently-selected radio button in
+        the same group. The value of that one checked radio button is
+        sent along with the name if the form is submitted,
+
+        When tabbing into a series of same-named group of radio buttons,
+        if one is checked, that one will receive focus. If they aren't
+        grouped together in source order, if one of the group is
+        checked, tabbing into the group starts when the first one in the
+        group is encountered, skipping all those that aren't checked. In
+        other words, if one is checked, tabbing skips the unchecked
+        radio buttons in the group. If none are checked, the radio
+        button group receives focus when the first button in the same
+        name group is reached.
+
+        Once one of the radio buttons in a group has focus, using the
+        arrow keys will navigate through all the radio buttons of the
+        same name, even if the radio buttons are not grouped together in
+        the source order.
+
+        When an input element is given a name, that name becomes a
+        property of the owning form element's HTMLFormElement.elements
+        property. If you have an input whose name is set to guest and
+        another whose name is hat-size, the following code can be used:
+
+            let form = document.querySelector("form");
+
+            let guestName = form.elements.guest; let hatSize =
+            form.elements["hat-size"];
+
+        When this code has run, guestName will be the HTMLInputElement
+        for the guest field, and hatSize the object for the hat-size
+        field.
+
+        Warning: Avoid giving form elements a name that corresponds to a
+        built-in property of the form, since you would then override the
+        predefined property or method with this reference to the
+        corresponding input.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -4803,6 +4976,19 @@ class input(element):
 
     @property
     def maxlength(self):
+        """ Valid for text, search, url, tel, email, and password, it
+        defines the maximum number of characters (as UTF-16 code units)
+        the user can enter into the field. This must be an integer value
+        0 or higher. If no maxlength is specified, or an invalid value
+        is specified, the field has no maximum length. This value must
+        also be greater than or equal to the value of minlength.
+
+        The input will fail constraint validation if the length of the
+        text entered into the field is greater than maxlength UTF-16
+        code units long. By default, browsers prevent users from
+        entering more characters than allowed by the maxlength
+        attribute. See Client-side validation for more information.
+        """
         return self.attributes['maxlength'].value
 
     @maxlength.setter
@@ -4819,6 +5005,9 @@ class input(element):
 
     @property
     def formenctype(self):
+        """ Form data set encoding type to use for form submission. Only
+        valid for image and submit input types.
+        """
         return self.attributes['formenctype'].value
 
     @formenctype.setter
@@ -4902,6 +5091,9 @@ class input(element):
 
     @property
     def formmethod(self):
+        """ HTTP method to use for form submission. Valid for the image
+        and submit input types only.
+        """
         return self.attributes['formmethod'].value
 
     @formmethod.setter
