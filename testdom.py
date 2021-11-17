@@ -2135,7 +2135,7 @@ class dom_element(tester.tester):
         attrs = (
             'referrerpolicy',  'target',  'hreflang',
             'ping',            'media',   'href',
-            'download',        'rel',     'shape',
+            'download',        'rel',     
         )
 
         for i, attr in enumerate(attrs):
