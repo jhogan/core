@@ -4393,22 +4393,20 @@ class textarea(element):
 
     @property
     def wrap(self):
-		""" Indicates how the control wraps text. Possible values are:
+        """ Indicates how the control wraps text. Possible values are:
+        hard: The browser automatically inserts line breaks (CR+LF) so
+        that each line has no more than the width of the control; the
+        cols attribute must also be specified for this to take effect.
 
-              hard: The browser automatically inserts line breaks
-              (CR+LF) so that each line has no more than the width of
-              the control; the cols attribute must also be specified for
-              this to take effect.
+        soft: The browser ensures that all line breaks in the value
+        consist of a CR+LF pair, but does not insert any additional line
+        breaks.
 
-              soft: The browser ensures that all line breaks in the
-              value consist of a CR+LF pair, but does not insert any
-              additional line breaks.
+        off: Like soft but changes appearance to white-space: pre so
+        line segments exceeding cols are not wrapped and the <textarea>
+        becomes horizontally scrollable.
 
-              off: Like soft but changes appearance to white-space: pre
-              so line segments exceeding cols are not wrapped and the
-              <textarea> becomes horizontally scrollable.
-
-           If this attribute is not specified, soft is its default value.
+        If this attribute is not specified, soft is its default value.
         """
         return self.attributes['wrap'].value
 
@@ -4637,15 +4635,15 @@ class input(element):
 
     @property
     def type(self):
-    """ How an <input> works varies considerably depending on the value
-    of its type attribute, hence the different types are covered in
-    their own separate reference pages. If this attribute is not
-    specified, the default type adopted is text.
+        """ How an <input> works varies considerably depending on the value
+        of its type attribute, hence the different types are covered in
+        their own separate reference pages. If this attribute is not
+        specified, the default type adopted is text.
 
-    The available types are as follows: button, checkbox, color, date,
-    datetime-local, email, file, hidden, image, month, number, password,
-    radio, range, reset, search, submit, tel, text, time, url, week, 
-    """
+        The available types are as follows: button, checkbox, color, date,
+        datetime-local, email, file, hidden, image, month, number, password,
+        radio, range, reset, search, submit, tel, text, time, url, week, 
+        """
         return self.attributes['type'].value
 
     @type.setter
