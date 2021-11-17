@@ -4394,7 +4394,6 @@ class textarea(element):
     @property
     def wrap(self):
         """ Indicates how the control wraps text. Possible values are:
-
         hard: The browser automatically inserts line breaks
         (CR+LF) so that each line has no more than the width of
         the control; the cols attribute must also be specified for

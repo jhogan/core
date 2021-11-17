@@ -3068,8 +3068,8 @@ class entitymeta(type):
                 )
 
         # Make sure the `orm` has a reference to the entities collection
-        # class and that the entities collection class has a referenc to
-        # the orm.
+        # class and that the entities collection class has a reference
+        # to the orm.
         orm_.entities = body['entities']
         orm_.entities.orm = orm_
 
@@ -3082,6 +3082,7 @@ class entitymeta(type):
         # the `orm` here and remove it from this entity class's
         # namespace. 
         try:
+            # TODO We can use body.pop here, probably
             orm_.table = body['table']
             del body['table']
         except KeyError:
@@ -3333,9 +3334,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.onafterreconnect  +=  self._self_onafterreconnect
 
             super().__init__()
+
+            # If no id was passed to the constructor
             if o is None:
+                # We are working with new orm.entity
                 self.orm.isnew = True
                 self.orm.isdirty = False
+
+                # Assigne an id
                 self.id = uuid4()
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣

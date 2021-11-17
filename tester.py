@@ -18,12 +18,14 @@ import builtins
 import dom
 import ecommerce
 import entities
+import gc
 import inspect
 import io
 import json
 import pdb
 import pom
 import primative
+import resource
 import sys
 import textwrap
 import urllib
@@ -55,9 +57,11 @@ class invoketesteventargs(entities.eventargs):
 
 class testers(entities.entities):
     def __init__(self, initial=None):
-        self.oninvoketest = entities.event()
+        self.onbeforeinvoketest = entities.event()
+
         super().__init__(initial=initial)
         self.breakonexception = False
+
 
     def run(self, tu=None):
         # TODO testclass and testmethod would probably be better as
@@ -102,15 +106,13 @@ class testers(entities.entities):
                     continue
                 try:
                     eargs = invoketesteventargs(subcls, meth)
-                    self.oninvoketest(self, eargs)
+                    self.onbeforeinvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
                     if self.breakonexception:
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
                     inst._failures += failure(ex, assert_=meth[0])
-                finally:
-                    inst.eventregistrations.unregister()
         print('')
 
     @property
@@ -217,7 +219,6 @@ class tester(entities.entity):
         import orm
         self._failures = failures()
         self.testers = testers
-        self.eventregistrations = eventregistrations()
 
         orm.security().owner = self.user
         orm.security().proprietor = self.company
@@ -489,9 +490,6 @@ class tester(entities.entity):
     @staticmethod
     def dedent(str, *args):
         return textwrap.dedent(str).strip() % args
-
-    def register(self, event, handler):
-        self.eventregistrations.register(event, handler)
 
     def all(self, actual, msg=None):
         if not all(actual):
@@ -967,29 +965,6 @@ class tester(entities.entity):
             # TODO:ed602720
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
-class eventregistrations(entities.entities):
-    def register(self, event, handler):
-        er = eventregistration(event, handler)
-        er.register()
-        self += er
-
-    def unregister(self):
-        for er in self:
-            er.unregister()
-        self.clear()
-
-class eventregistration(entities.entity):
-    def __init__(self, event, handler):
-        self.event = event
-        self.handler = handler
-        super().__init__()
-
-    def register(self):
-        self.event += self.handler
-
-    def unregister(self):
-        self.event -= self.handler
-
 class httpresponse(entities.entity):
     # TODO:ed602720 Is this dead code. Shouldn't we be using
     # www.response for this.
@@ -1091,12 +1066,12 @@ class failure(entities.entity):
         
 class cli:
     def __init__(self):
-        # If we are instantiating, convert the @classmethod cli.run to the
-        # instance method cli._run. This makes it possible to call the run()
-        # method either as cli.run() or cli().run(). This also works with
-        # subclasses of cli. This makes it convenient for unit test developers
-        # who may or may not want to customize or override the default
-        # implementation.
+        # If we are instantiating, convert the @classmethod cli.run to
+        # the instance method cli._run. This makes it possible to call
+        # the run() method either as cli.run() or cli().run(). This also
+        # works with subclasses of cli. This makes it convenient for
+        # unit test developers who may or may not want to customize or
+        # override the default implementation.
         #
         # See M. I. Wright's comment at:
         # https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod
@@ -1106,12 +1081,11 @@ class cli:
 
         self.parseargs()
 
-        self.registertraceevents()
-
     @property
     def testers(self):
         if self._testers is None:
             self._testers = testers()
+            self._testers.onbeforeinvoketest += self._testers_onbeforeinvoketest
         return self._testers
 
     @classmethod
@@ -1193,14 +1167,28 @@ class cli:
         self.testers.breakonexception = self.args.breakonexception
         self.testers.rebuildtables = self.args.rebuildtables
 
-    def registertraceevents(self):
-        ts = self.testers
-        ts.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+    def _testers_onbeforeinvoketest(self, src, eargs):
+        ''' Get tracked objects count '''
+        cnts = list()
 
-        def f(src, eargs):
-            print(eargs.class_.__name__ + '.' + eargs.method[0], flush=True)
+        # Collect garbage
+        gc.collect()
 
-        ts.oninvoketest += f
+        # Get the counts for each generation of objects tracked by the
+        # cyclical garbage collector
+        for i in range(3):
+            cnts.append(f'{len(gc.get_objects(generation=i)):,}')
+
+        cnts = f"[{' '.join(cnts)}]"
+
+        ''' Get memory usage '''
+        mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        mbs = int(mbs / 1000)
+        cls = eargs.class_.__name__
+        meth = eargs.method[0]
+
+        # Print stats with current test method being tested
+        print(f'# {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
     pass
