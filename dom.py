@@ -29,6 +29,75 @@ import uuid
 
 """
 An implementation of the HTML5 DOM.
+
+This implementation is similar to the DOM implementation used in
+browsers to read and manipulate DOM objects with JavaScript.
+
+Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
+that inherits from the ``element`` base class. Each of these subclasses
+has a corresposting collection class when there is a need to present
+elements bundled by type. For example, the ``form`` class has a
+``forms`` collection class.
+
+Each element subclass has a @property getter and setter for each of the
+HTML5 attributes of the element. Only standard HTML5 attributes are
+available as properties, although the ``attributes`` collection of any
+element can be used to get around this in case there is a legitamate
+need.
+
+The following is an example of how to create a basic HTML5 document::
+
+    import dom
+
+    # Create the root tag (<html>)
+    html = dom.html()
+
+    # Create the <head> and <body>
+    head = dom.head()
+    body = dom.body()
+
+    # Append head and body to html
+    html += head
+    html += body
+
+    # Add a <title> to head
+    head += dom.title('My Home Page')
+    
+    # Let's give the body an id attribute, i.e., <body id="my-id">
+    body.id = 'my-id'
+
+    # Above, body has an id property, because the id attribute is a
+    # standard HTML5 attribute of all elements. However, bgcolor is a
+    # depricated attribute, so we have to use the ``attributes``
+    # collection. Of course we shouldn't use depricated properties, but
+    # if we have to for some reason, this is how.
+    body.attributes['bgcolor'] = 'black'
+
+    # The HTML string for this can be captured using the ``html``
+    # proprety.
+    print(html.html)
+
+    # The above wouldn't have linefeeds or tabs and would be suitable
+    # for consumption by a program like a browser or some other parser.
+    # To get a nice output for human consumption, use the ``pretty``
+    # proprety::
+    >>> print(html.pretty)
+    <html>
+        <head>
+            <title>
+        </head>
+        <body id="my-id" bgcolor="black">
+        <=body>
+    </html>
+
+    # In addition to building HTML document, we can use the ``html``
+    # class to build a DOM from an HTML string:
+
+    # Parse the html.html string to build html1
+    html1 = dom.html(html.html)
+
+    # Both DOMs will produces the same HTML.
+    assert html.html == html1.html
 """
 
 """
@@ -1551,6 +1620,7 @@ class element(entities.entity):
         :param: includeself bool: If True, this element will be the
         first entry in the collection returned.
         """
+        # TODO s/includeself/accompany/
         els = elements()
         rent = self.parent
 
@@ -1563,10 +1633,15 @@ class element(entities.entity):
 
     @property
     def siblings(self):
+        """ Returns an ``elements`` collection containing all the sibling
+        of this element.
+        """
         return self.getsiblings()
 
     @property
     def previous(self):
+        """ Return the immediately preceding sibling.
+        """
         sibs = self.getsiblings(includeself=True)
 
         # If it only has self
@@ -1582,6 +1657,9 @@ class element(entities.entity):
 
     @property
     def preceding(self):
+        """ Return an elements collection containing all the siblings
+        that precede this element.
+        """
         els = elements()
         for el in self.getsiblings(includeself=True):
             if el is self:
@@ -1591,6 +1669,8 @@ class element(entities.entity):
 
     @property
     def next(self):
+        """ Return the immediately following sibling.
+        """
         raise NotImplementedError()
 
         # NOTE The below may work but has not been tested
@@ -1600,12 +1680,27 @@ class element(entities.entity):
                 
     @property
     def children(self):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are not included. To get comment and text nodes as well, use
+        ``elements``.
+
+        """
         initial = (
             x for x in self.elements if type(x) not in (comment, text)
         )
         return elements(initial=initial)
 
     def getchildren(self, recursive=False):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are not included. To get comment and text nodes as well, use
+        ``getelements``.
+
+        :param: recursive bool: If True, the collection will contain all
+        child elements beneath this element; not just the the immediate
+        child elements.
+        """
         els = elements()
         for el in self.children:
             els += el
@@ -1616,9 +1711,21 @@ class element(entities.entity):
 
     @property
     def all(self):
+        """ Returns a new ``elements`` collection containing all the
+        elements under this element including text and comment nodes.
+        """
         return self.getelements(recursive=True)
 
     def getelements(self, recursive=False):
+        """ Returns a new ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are included as well. To exclude comment and text nodes as well,
+        use ``getchildren``.
+
+        :param: recursive bool: If True, the collection will contain all
+        child elements beneath this element; not just the the immediate
+        child elements.
+        """
         els = elements()
         for el in self.elements:
             els += el
@@ -1630,6 +1737,11 @@ class element(entities.entity):
 
     @property
     def elements(self):
+        """ Returns the ``elements`` collection containing all the
+        child elements of this element. Note that comment and text nodes
+        are included as well. To exclude comment and text nodes as well,
+        use ``children``.
+        """
         if not hasattr(self, '_elements'):
             self._elements = elements()
             self._elements.onadd += self._elements_onadd
@@ -1642,6 +1754,8 @@ class element(entities.entity):
 
     @property
     def classes(self):
+        """ Returns the class attribute.
+        """
         return self.attributes['class']
 
     @classes.setter
@@ -1650,6 +1764,8 @@ class element(entities.entity):
 
     @property
     def attributes(self):
+        """ Returns the class attribute.
+        """
         if not hasattr(self, '_attributes'):
             self._attributes = attributes(self)
         return self._attributes
@@ -1659,6 +1775,22 @@ class element(entities.entity):
         self._attributes = v
 
     def __lshift__(self, el):
+        """ Inserts ``el` at the begining of the elements collection.
+
+        :param: el str|element:
+            if el is str:
+                A new text node will be created with el as the text
+                node's text property. The text node will be unshfted
+                into the child elements collection.
+
+            if el is element:
+                The el will simply be unshifted onto the child elements
+                collection.
+        """
+
+        # TODO We could probably override unshift instead. That way the
+        # ``unshift()`` method and the << operate would work. As it
+        # stands, ``unshift()`` would not use the overridden behavior.
         if type(el) is str:
             el = text(el)
 
@@ -1669,6 +1801,18 @@ class element(entities.entity):
         return self
 
     def __iadd__(self, el):
+        """ Push ``el` at the top of the elements collection.
+
+        :param: el str|element:
+            if el is str:
+                A new text node will be created with el as the text
+                node's text property. The text node will be unshfted
+                into the child elements collection.
+
+            if el is element:
+                The el will simply be pushed onto the child elements
+                collection.
+        """
         # TODO There is some redunancy between this and __lshift__.
         # Also, shouldn't this redundent logic be put in the overrides
         # element.append and element.insertbefore (which don't actually
@@ -1684,6 +1828,22 @@ class element(entities.entity):
 
     @classproperty
     def tag(cls):
+        """ Returns the name of the element.
+
+            # Invoked as a classproperty
+            assert 'head' == dom.head.tag
+
+            # Invoked as an regular (instance) @property
+            assert 'head' == dom.head().tag
+
+        Note that subclasses of elements will always return the HTML5
+        tag name:
+
+            class lead(dom.p):
+                pass
+
+            assert 'p' == lead.tag
+        """
         if type(cls) is not type:
             cls = type(cls)
 
@@ -1846,9 +2006,9 @@ class p(element):
     such as images or form fields.
     """
 
-# TODO Remove this line. Since we will likely ``import dom`` instead of
-# `from dom import p`, we don't need to create a user-friendly alias for
-# p. Instantiating like this should work fine::
+# TODO:dea3866d Remove this line. Since we will likely ``import dom``
+# instead of `from dom import p`, we don't need to create a
+# user-friendly alias for p. Instantiating like this should work fine::
 #
 #    ### from dom import p, a, div
 #    import dom
@@ -2151,14 +2311,33 @@ class form(element):
 
     @property
     def novalidate(self):
+        """ This boolean attribute indicates that the form shouldn't be
+        validated when submitted. If this attribute is not set (and
+        therefore the form is validated), it can be overridden by a
+        formnovalidate attribute on a <button>, <input type="submit">,
+        or <input type="image"> element belonging to the form.
+        """
+        # TODO:369795a1 @property's for boolean attribute should return
+        # True or False and their setters should accept only True and
+        # False. If a user really wants to violate the boolean nature of
+        # an attribute (e.g., <form novalidate="novalidate">) then they
+        # can use the attributes collection directly
+        # (frm.attributes['novalidate'] = 'novalidate').
         return self.attributes['novalidate'].value
 
     @novalidate.setter
     def novalidate(self, v):
+        # TODO:369795a1 
         self.attributes['novalidate'].value = v
 
     @property
     def accept_charset(self):
+        """ Space-separated character encodings the server accepts. The
+        browser uses them in the order in which they are listed. The
+        default value means the same encoding as the page. (In previous
+        versions of HTML, character encodings could also be delimited by
+        commas.)
+        """
         return self.attributes['accept-charset'].value
 
     @accept_charset.setter
@@ -2167,6 +2346,10 @@ class form(element):
 
     @property
     def action(self):
+        """The URL that processes the form submission. This value can be
+        overridden by a formaction attribute on a <button>, <input
+        type="submit">, or <input type="image"> element.
+        """
         return self.attributes['action'].value
 
     @action.setter
@@ -2175,6 +2358,28 @@ class form(element):
 
     @property
     def target(self):
+        """ Indicates where to display the response after submitting the
+        form. In HTML 4, this is the name/keyword for a frame. In HTML5,
+        it is a name/keyword for a browsing context (for example, tab,
+        window, or iframe). The following keywords have special
+        meanings:
+
+            _self (default): Load into the same browsing context as the
+            current one.
+
+            _blank: Load into a new unnamed browsing context.
+
+            _parent: Load into the parent browsing context of the
+            current one. If no parent, behaves the same as _self.
+
+            _top: Load into the top-level browsing context (i.e., the
+            browsing context that is an ancestor of the current one and
+            has no parent). If no parent, behaves the same as _self.
+
+            This value can be overridden by a formtarget attribute on a
+            <button>, <input type="submit">, or <input type="image">
+            element.
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -2182,15 +2387,21 @@ class form(element):
         self.attributes['target'].value = v
 
     @property
-    def accept(self):
-        return self.attributes['accept'].value
-
-    @accept.setter
-    def accept(self, v):
-        self.attributes['accept'].value = v
-
-    @property
     def enctype(self):
+        """ If the value of the method attribute is post, enctype is the
+        MIME type of the form submission. Possible values:
+
+            - application/x-www-form-urlencoded: The default value.
+
+            - multipart/form-data: Use this if the form contains <input>
+              elements with type=file.  
+
+            - text/plain: Introduced by HTML5 for debugging purposes.
+
+        This value can be overridden by formenctype attributes on
+        <button>, <input type="submit">, or <input type="image">
+        elements.
+        """
         return self.attributes['enctype'].value
 
     @enctype.setter
@@ -2199,6 +2410,10 @@ class form(element):
 
     @property
     def name(self):
+        """ The name of the form. The value must not be the empty
+        string, and must be unique among the form elements in the forms
+        collection that it is in, if any.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2207,6 +2422,16 @@ class form(element):
 
     @property
     def autocomplete(self):
+        """ Indicates whether input elements can by default have their
+        values automatically completed by the browser. autocomplete
+        attributes on form elements override it on <form>. Possible
+        values:
+
+            off: The browser may not automatically complete entries.
+            (Browsers tend to ignore this for suspected login forms)
+
+            on: The browser may automatically complete entries.
+        """
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
@@ -2214,12 +2439,49 @@ class form(element):
         self.attributes['autocomplete'].value = v
 
 class links(elements):
-    pass
+    """ A class used to contain a collection of ``link`` elements.
+    """
 
 class link(element):
+    """ The <link> HTML element specifies relationships between the
+    current document and an external resource. This element is most
+    commonly used to link to stylesheets, but is also used to establish
+    site icons (both "favicon" style icons and icons for the home screen
+    and apps on mobile devices) among other things.
+    """
     isvoid = True
     @property
     def crossorigin(self):
+        """ This enumerated attribute indicates whether CORS must be
+        used when fetching the resource. CORS-enabled images can be
+        reused in the <canvas> element without being tainted. The
+        allowed values are: 
+
+            anonymous
+
+                A cross-origin request (i.e. with an Origin HTTP header)
+                is performed, but no credential is sent (i.e. no cookie,
+                X.509 certificate, or HTTP Basic authentication). If the
+                server does not give credentials to the origin site (by
+                not setting the Access-Control-Allow-Origin HTTP header)
+                the resource will be tainted and its usage restricted.  
+
+            use-credentials
+
+                A cross-origin request (i.e. with an Origin HTTP header)
+                is performed along with a credential sent (i.e. a
+                cookie, certificate, and/or HTTP Basic authentication is
+                performed). If the server does not give credentials to
+                the origin site (through
+                Access-Control-Allow-Credentials HTTP header), the
+                resource will be tainted and its usage restricted.
+
+        If the attribute is not present, the resource is fetched without
+        a CORS request (i.e. without sending the Origin HTTP header),
+        preventing its non-tainted usage. If invalid, it is handled as
+        if the enumerated keyword anonymous was used. See CORS settings
+        attributes for additional information.
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -2228,6 +2490,9 @@ class link(element):
 
     @property
     def referrerpolicy(self):
+        """ A string indicating which referrer to use when fetching the
+        resource:
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -2236,6 +2501,11 @@ class link(element):
 
     @property
     def integrity(self):
+        """ Contains inline metadata — a base64-encoded cryptographic
+        hash of the resource (file) you’re telling the browser to fetch.
+        The browser can use this to verify that the fetched resource has
+        been delivered free of unexpected manipulation. 
+        """
         return self.attributes['integrity'].value
 
     @integrity.setter
@@ -2244,6 +2514,11 @@ class link(element):
 
     @property
     def hreflang(self):
+        """ This attribute indicates the language of the linked
+        resource. It is purely advisory. Allowed values are specified by
+        RFC 5646: Tags for Identifying Languages (also known as BCP 47).
+        Use this attribute only if the href attribute is present.
+        """
         return self.attributes['hreflang'].value
 
     @hreflang.setter
@@ -2252,6 +2527,10 @@ class link(element):
 
     @property
     def importance(self):
+        """ Indicates the relative fetch priority for the resource.
+
+        See: https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -2260,6 +2539,12 @@ class link(element):
 
     @property
     def media(self):
+        """ This attribute specifies the media that the linked resource
+        applies to. Its value must be a media type / media query. This
+        attribute is mainly useful when linking to external stylesheets
+        — it allows the user agent to pick the best adapted one for the
+        device it runs on.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -2268,6 +2553,9 @@ class link(element):
 
     @property
     def href(self):
+        """ This attribute specifies the URL of the linked resource. A
+        URL can be absolute or relative.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -2276,6 +2564,11 @@ class link(element):
 
     @property
     def sizes(self):
+        """ This attribute defines the sizes of the icons for visual
+        media contained in the resource. It must be present only if the
+        rel contains a value of icon or a non-standard type such as
+        Apple's apple-touch-icon.
+        """
         return self.attributes['sizes'].value
 
     @sizes.setter
@@ -2284,6 +2577,10 @@ class link(element):
 
     @property
     def rel(self):
+        """ This attribute names a relationship of the linked document
+        to the current document. The attribute must be a space-separated
+        list of link type values.
+        """
         return self.attributes['rel'].value
 
     @rel.setter
@@ -2291,11 +2588,19 @@ class link(element):
         self.attributes['rel'].value = v
 
 class buttons(elements):
-    pass
+    """ A class used to contain a collection of ``button`` elements.
+    """
 
 class button(element):
     @property
     def formtarget(self):
+        """ If the button is a submit button, this attribute is an
+        author-defined name or standardized, underscore-prefixed keyword
+        indicating where to display the response from submitting the
+        form. This is the name of, or keyword for, a browsing context (a
+        tab, window, or <iframe>). If this attribute is specified, it
+        overrides the target attribute of the button's form owner.
+        """
         return self.attributes['formtarget'].value
 
     @formtarget.setter
@@ -2304,6 +2609,10 @@ class button(element):
 
     @property
     def formaction(self):
+        """ The URL that processes the information submitted by the
+        button. Overrides the action attribute of the button's form
+        owner. Does nothing if there is no form owner.
+        """
         return self.attributes['formaction'].value
 
     @formaction.setter
@@ -2312,6 +2621,11 @@ class button(element):
 
     @property
     def autofocus(self):
+        """ This Boolean attribute specifies that the button should have
+        input focus when the page loads. Only one element in a document
+        can have this attribute.
+        """
+        # TODO:369795a1 @
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -2320,6 +2634,9 @@ class button(element):
 
     @property
     def type(self):
+        """ The default behavior of the button. Possible values are:
+        submit, reset and button.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -2328,6 +2645,12 @@ class button(element):
 
     @property
     def formnovalidate(self):
+        """ If the button is a submit button, this Boolean attribute
+        specifies that the form is not to be validated when it is
+        submitted. If this attribute is True, it overrides the
+        novalidate attribute of the button's form owner.
+        """
+        # TODO:369795a1 @
         return self.attributes['formnovalidate'].value
 
     @formnovalidate.setter
@@ -2336,6 +2659,12 @@ class button(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the button with (its form
+        owner). The value of this attribute must be the id of a <form>
+        in the same document. (If this attribute is not set, the
+        <button> is associated with its ancestor <form> element, if
+        any.)
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2344,6 +2673,10 @@ class button(element):
 
     @property
     def name(self):
+        """ The name of the button, submitted as a pair with the
+        button’s value as part of the form data, when that button is
+        used to submit the form.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2352,6 +2685,10 @@ class button(element):
 
     @property
     def formenctype(self):
+        """ If the button is a submit button (it's inside/associated
+        with a <form> and doesn't have type="button"), specifies how to
+        encode the form data that is submitted. 
+        """
         return self.attributes['formenctype'].value
 
     @formenctype.setter
@@ -2360,6 +2697,10 @@ class button(element):
 
     @property
     def disabled(self):
+        """ This Boolean attribute prevents the user from interacting
+        with the button: it cannot be pressed or focused.
+        """
+        # TODO:369795a1 @
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -2368,6 +2709,10 @@ class button(element):
 
     @property
     def value(self):
+        """ Defines the value associated with the button’s name when
+        it’s submitted with the form data. This value is passed to the
+        server in params when the form is submitted using this button.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -2376,6 +2721,11 @@ class button(element):
 
     @property
     def formmethod(self):
+        """ If the button is a submit button (it's inside/associated
+        with a <form> and doesn't have type="button"), this attribute
+        specifies the HTTP method used to submit the form. Possible
+        values: POST and GET.
+        """
         return self.attributes['formmethod'].value
 
     @formmethod.setter
@@ -2383,32 +2733,63 @@ class button(element):
         self.attributes['formmethod'].value = v
 
 class navs(elements):
-    pass
+    """ A class used to contain a collection of ``nav`` elements.
+    """
 
 class nav(element):
-    pass
+    """ The <nav> HTML element represents a section of a page whose
+    purpose is to provide navigation links, either within the current
+    document or to other documents. Common examples of navigation
+    sections are menus, tables of contents, and indexes.
+    """
 
 class lis(elements):
-    pass
+    """ A class used to contain a collection of ``li`` elements.
+    """
 
 class li(element):
+    """ The <li> HTML element is used to represent an item in a list. It
+    must be contained in a parent element: an ordered list (<ol>), an
+    unordered list (<ul>), or a menu (<menu>). In menus and unordered
+    lists, list items are usually displayed using bullet points. In
+    ordered lists, they are usually displayed with an ascending counter
+    on the left, such as a number or letter.
+    """
     @property
     def value(self):
+        """ This integer attribute indicates the current ordinal value
+        of the list item as defined by the <ol> element. The only
+        allowed value for this attribute is a number, even if the list
+        is displayed with Roman numerals or letters. List items that
+        follow this one continue numbering from the value set. The value
+        attribute has no meaning for unordered lists (<ul>) or for menus
+        (<menu>).
+        """
         return self.attributes['value'].value
 
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
 
+# TODO:dea3866d Remove
 listitems = lis
 listitem = li
 
 class outputs(elements):
-    pass
+    """ A class used to contain a collection of ``output`` elements.
+    """
 
 class output(element):
+    """ The <output> HTML element is a container element into which a
+    site or app can inject the results of a calculation or the outcome
+    of a user action.
+    """
     @property
     def for_(self):
+        """ A space-separated list of other elements’ ids, indicating
+        that those elements contributed input values to (or otherwise
+        affected) the calculation.
+        """
         return self.attributes['for'].value
 
     @for_.setter
@@ -2417,6 +2798,12 @@ class output(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the output with (its form
+        owner). The value of this attribute must be the id of a <form>
+        in the same document. (If this attribute is not set, the
+        <output> is associated with its ancestor <form> element, if
+        any.)
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2425,6 +2812,8 @@ class output(element):
 
     @property
     def name(self):
+        """ The element's name. Used in the form.elements API.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2432,11 +2821,22 @@ class output(element):
         self.attributes['name'].value = v
 
 class fieldsets(elements):
-    pass
+    """ A class used to contain a collection of ``fieldset`` elements.
+    """
 
 class fieldset(element):
+    """ The <fieldset> HTML element is used to group several controls as
+    well as labels (<label>) within a web form.
+    """
     @property
     def form(self):
+        """ This attribute takes the value of the id attribute of a
+        <form> element you want the <fieldset> to be part of, even if it
+        is not inside the form. Please note that usage of this is
+        confusing — if you want the <input> elements inside the
+        <fieldset> to be associated with the form, you need to use the
+        form attribute directly on those elements.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2445,6 +2845,8 @@ class fieldset(element):
 
     @property
     def name(self):
+        """ The name associated with the group.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2453,6 +2855,15 @@ class fieldset(element):
 
     @property
     def disabled(self):
+        """ If this boolean attribute is set, all form controls that are
+        descendants of the <fieldset>, are disabled, meaning they are
+        not editable and won't be submitted along with the <form>. They
+        won't receive any browsing events, like mouse clicks or
+        focus-related events. By default browsers display such controls
+        grayed out. Note that form elements inside the <legend> element
+        won't be disabled.
+        """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -2460,31 +2871,26 @@ class fieldset(element):
         self.attributes['disabled'].value = v
 
 class tfoots(elements):
-    pass
+    """ A class used to contain a collection of ``tfoot`` elements.
+    """
 
 class tfoot(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <tfoot> HTML element defines a set of rows summarizing the
+    columns of the table.
+    """
 
 class params(elements):
-    pass
+    """ A class used to contain a collection of ``param`` elements.
+    """
 
 class param(element):
+    """ The <param> HTML element defines parameters for an <object>
+    element.
+    """
     @property
     def name(self):
+        """ Name of the parameter.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2493,6 +2899,8 @@ class param(element):
 
     @property
     def value(self):
+        """ Specifies the value of the parameter.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -2500,10 +2908,37 @@ class param(element):
         self.attributes['value'].value = v
 
 class as_(elements):
-    pass
+    """ A class used to contain a collection of ``a`` elements.
+    """
 
 class a(element):
+    """ The <a> HTML element (or anchor element), with its href
+    attribute, creates a hyperlink to web pages, files, email addresses,
+    locations in the same page, or anything else a URL can address.
+
+    Content within each <a> should indicate the link's destination. If
+    the href attribute is present, pressing the enter key while focused
+    on the <a> element will activate it.
+    """
     def __init__(self, body=None, *args, **kwargs):
+        """ Create an anchor element.
+
+        :param: body file.file|str|element|elements: This override deals
+        with body as a file.file type. For the other types, consult the
+        docstring at element.__init__.
+
+        When the body is a file.file type, the path of the file can be
+        used as the href. The basename of the file.file becomes the text
+        of of the node.
+        """
+        # NOTE The body as file.file version of the constructor could
+        # use a lot more work. The file.basename doesn't seem to exist,
+        # and it's not clear at the moment if file.path would amount to
+        # a correct (relative) url. As a side note, we should also
+        # except body as ecommerce.url for obvious reason. We should
+        # also test if body is file.resource because, in that case, we
+        # do have a url proprety that would be appropriate for self.href
+        # assuming body.local is False.
         if isinstance(body, file.file):
             self.href = body.path
             body = body.basename
@@ -2512,6 +2947,8 @@ class a(element):
 
     @property
     def referrerpolicy(self):
+        """ How much of the referrer to send when following the link.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -2520,6 +2957,9 @@ class a(element):
 
     @property
     def target(self):
+        """ Where to display the linked URL, as the name for a browsing
+        context (a tab, window, or <iframe>).
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -2528,6 +2968,10 @@ class a(element):
 
     @property
     def hreflang(self):
+        """ Hints at the human language of the linked URL. No built-in
+        functionality. Allowed values are the same as the global
+        ``lang`` attribute (``element.lang``).
+        """
         return self.attributes['hreflang'].value
 
     @hreflang.setter
@@ -2536,6 +2980,10 @@ class a(element):
 
     @property
     def ping(self):
+        """ A space-separated list of URLs. When the link is followed,
+        the browser will send POST requests with the body PING to the
+        URLs. Typically for tracking.
+        """
         return self.attributes['ping'].value
 
     @ping.setter
@@ -2544,6 +2992,13 @@ class a(element):
 
     @property
     def media(self):
+        """ The media attribute specifies what media or device the
+        linked document is optimized for.  This attribute is used to
+        specify that the target URL is designed for special devices
+        (like iPhone), speech or print media.  This attribute can accept
+        several values.  Only used if the href attribute is present.
+        Note: This attribute is purely advisory.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -2552,6 +3007,10 @@ class a(element):
 
     @property
     def href(self):
+        """ The URL that the hyperlink points to. Links are not
+        restricted to HTTP-based URLs — they can use any URL scheme
+        supported by browsers.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -2560,6 +3019,9 @@ class a(element):
 
     @property
     def download(self):
+        """ Prompts the user to save the linked URL instead of
+        navigating to it.
+        """
         return self.attributes['download'].value
 
     @download.setter
@@ -2568,6 +3030,9 @@ class a(element):
 
     @property
     def rel(self):
+        """ The relationship of the linked URL as space-separated link
+        types.
+        """
         return self.attributes['rel'].value
 
     @rel.setter
@@ -2575,22 +3040,35 @@ class a(element):
         self.attributes['rel'].value = v
 
     @property
-    def shape(self):
-        return self.attributes['shape'].value
+    def type(self):
+        """ Hints at the linked URL’s format with a MIME type. No
+        built-in functionality.
+        """
+        return self.attributes['type'].value
 
-    @shape.setter
-    def shape(self, v):
-        self.attributes['shape'].value = v
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
 
 anchors = as_
 anchor = a
 
 class audios(elements):
-    pass
+    """ A class used to contain a collection of ``audio`` elements.
+    """
 
 class audio(element):
+    """ The <audio> HTML element is used to embed sound content in
+    documents. It may contain one or more audio sources, represented
+    using the src attribute or the <source> element: the browser will
+    choose the most suitable one. It can also be the destination for
+    streamed media, using a MediaStream.
+    """
     @property
     def crossorigin(self):
+        """ This enumerated attribute indicates whether to use CORS to
+        fetch the related audio file.
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -2599,6 +3077,12 @@ class audio(element):
 
     @property
     def loop(self):
+        """ A Boolean attribute: if specified, the audio player will
+        automatically seek back to the start upon reaching the end of
+        the audio.
+        """
+        # TODO:369795a1
+
         return self.attributes['loop'].value
 
     @loop.setter
@@ -2615,6 +3099,11 @@ class audio(element):
 
     @property
     def src(self):
+        """ The URL of the audio to embed. This is subject to HTTP
+        access controls. This is optional; you may instead use the
+        <source> element within the audio block to specify the audio to
+        embed.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -2623,6 +3112,10 @@ class audio(element):
 
     @property
     def controls(self):
+        """ If this attribute is present, the browser will offer
+        controls to allow the user to control audio playback, including
+        volume, seeking, and pause/resume playback.
+        """
         return self.attributes['controls'].value
 
     @controls.setter
@@ -2631,6 +3124,11 @@ class audio(element):
 
     @property
     def autoplay(self):
+        """ A Boolean attribute: if specified, the audio will
+        automatically begin playback as soon as it can do so, without
+        waiting for the entire audio file to finish downloading.
+        """
+        # TODO:369795a1
         return self.attributes['autoplay'].value
 
     @autoplay.setter
@@ -2639,6 +3137,10 @@ class audio(element):
 
     @property
     def muted(self):
+        """ A Boolean attribute that indicates whether the audio will be
+        initially silenced. Its default value is false.
+        """
+        # TODO:369795a1
         return self.attributes['muted'].value
 
     @muted.setter
@@ -2647,6 +3149,10 @@ class audio(element):
 
     @property
     def preload(self):
+        """ This enumerated attribute is intended to provide a hint to
+        the browser about what the author thinks will lead to the best
+        user experience.
+        """
         return self.attributes['preload'].value
 
     @preload.setter
@@ -2654,7 +3160,8 @@ class audio(element):
         self.attributes['preload'].value = v
 
 class bases(elements):
-    pass
+    """ A class used to contain a collection of ``base`` elements.
+    """
 
 class base(element):
     """ The HTML <base> element specifies the base URL to use for all
@@ -2665,6 +3172,10 @@ class base(element):
 
     @property
     def target(self):
+        """ A keyword or author-defined name of the default browsing
+        context to show the results of navigation from <a>, <area>, or
+        <form> elements without explicit target attributes.
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -2673,6 +3184,9 @@ class base(element):
 
     @property
     def href(self):
+        """ The base URL to be used throughout the document for relative
+        URLs. Absolute and relative URLs are allowed.
+        """
         return self.attributes['href'].value
 
     @href.setter
@@ -2680,12 +3194,20 @@ class base(element):
         self.attributes['href'].value = v
 
 class imgs(elements):
-    pass
+    """ A class used to contain a collection of ``img`` elements.
+    """
 
 class img(element):
+    """ The <img> HTML element embeds an image into the document.
+    """
     isvoid = True
     @property
     def crossorigin(self):
+        """ Indicates if the fetching of the image must be done using a
+        CORS request. Image data from a CORS-enabled image returned from
+        a CORS request can be reused in the <canvas> element without
+        being marked "tainted".
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -2694,6 +3216,9 @@ class img(element):
 
     @property
     def referrerpolicy(self):
+        """ A string indicating which referrer to use when fetching the
+        resource.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -2702,6 +3227,8 @@ class img(element):
 
     @property
     def loading(self):
+        """ Indicates how the browser should load the image.
+        """
         return self.attributes['loading'].value
 
     @loading.setter
@@ -2710,6 +3237,9 @@ class img(element):
 
     @property
     def height(self):
+        """ The intrinsic height of the image, in pixels. Must be an
+        integer without a unit.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -2718,6 +3248,12 @@ class img(element):
 
     @property
     def intrinsicsize(self):
+        """ This attribute tells the browser to ignore the actual
+        intrinsic size of the image and pretend it’s the size specified
+        in the attribute. Specifically, the image would raster at these
+        dimensions and naturalWidth/naturalHeight on images would return
+        the values specified in this attribute.
+        """
         return self.attributes['intrinsicsize'].value
 
     @intrinsicsize.setter
@@ -2726,6 +3262,12 @@ class img(element):
 
     @property
     def src(self):
+        """ The image URL. Mandatory for the <img> element. On browsers
+        supporting srcset, src is treated like a candidate image with a
+        pixel density descriptor 1x, unless an image with this pixel
+        density descriptor is already defined in srcset, or unless
+        srcset contains w descriptors.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -2734,6 +3276,11 @@ class img(element):
 
     @property
     def ismap(self):
+        """ This boolean attribute indicates that the image is part of a
+        server-side map. If so, the coordinates where the user clicked
+        on the image are sent to the server.
+        """
+        # TODO:369795a1
         return self.attributes['ismap'].value
 
     @ismap.setter
@@ -2742,6 +3289,13 @@ class img(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -2750,6 +3304,9 @@ class img(element):
 
     @property
     def usemap(self):
+        """ The partial URL (starting with #) of an image map associated
+        with the element.
+        """
         return self.attributes['usemap'].value
 
     @usemap.setter
@@ -2757,15 +3314,9 @@ class img(element):
         self.attributes['usemap'].value = v
 
     @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
     def alt(self):
+        """ Defines an alternative text description of the image.
+        """
         return self.attributes['alt'].value
 
     @alt.setter
@@ -2774,6 +3325,9 @@ class img(element):
 
     @property
     def sizes(self):
+        """ One or more strings separated by commas, indicating a set of
+        source sizes.
+        """
         return self.attributes['sizes'].value
 
     @sizes.setter
@@ -2782,6 +3336,9 @@ class img(element):
 
     @property
     def width(self):
+        """ The intrinsic width of the image in pixels. Must be an
+        integer without a unit.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -2789,15 +3346,10 @@ class img(element):
         self.attributes['width'].value = v
 
     @property
-    def border(self):
-        return self.attributes['border'].value
-
-    @border.setter
-    def border(self, v):
-        self.attributes['border'].value = v
-
-    @property
     def srcset(self):
+        """ One or more strings separated by commas, indicating possible
+        image sources for the user agent to use.
+        """
         return self.attributes['srcset'].value
 
     @srcset.setter
@@ -2806,77 +3358,43 @@ class img(element):
 
     @property
     def decoding(self):
+        """ Provides an image decoding hint to the browser.
+        """
         return self.attributes['decoding'].value
 
     @decoding.setter
     def decoding(self, v):
         self.attributes['decoding'].value = v
 
+# TODO:dea3866d
 images = imgs
 image = img
 
+# TODO;dea3866d Rename to trs and tr
 class tablerows(elements):
-    pass
+    """ A class used to contain a collection of ``trs`` elements.
+    """
 
 class tablerow(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-class applets(elements):
-    pass
-
-class applet(element):
-    @property
-    def code(self):
-        return self.attributes['code'].value
-
-    @code.setter
-    def code(self, v):
-        self.attributes['code'].value = v
-
-    @property
-    def codebase(self):
-        return self.attributes['codebase'].value
-
-    @codebase.setter
-    def codebase(self, v):
-        self.attributes['codebase'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
-    def alt(self):
-        return self.attributes['alt'].value
-
-    @alt.setter
-    def alt(self, v):
-        self.attributes['alt'].value = v
+    """ The <tr> HTML element defines a row of cells in a table. The
+    row's cells can then be established using a mix of <td> (data cell)
+    and <th> (header cell) elements.
+    """
 
 class objects(elements):
-    pass
+    """ A class used to contain a collection of ``trs`` elements.
+    """
 
 class object(element):
+    """ The <object> HTML element represents an external resource, which
+    can be treated as an image, a nested browsing context, or a resource
+    to be handled by a plugin.
+    """
     @property
     def data(self):
+        """ The address of the resource as a valid URL. At least one of
+        data and type must be defined.
+        """
         return self.attributes['data'].value
 
     @data.setter
@@ -2885,6 +3403,9 @@ class object(element):
 
     @property
     def type(self):
+        """ The content type of the resource specified by data. At least
+        one of data and type must be defined.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -2893,6 +3414,9 @@ class object(element):
 
     @property
     def height(self):
+        """ The height of the displayed resource, in CSS pixels.
+        (Absolute values only. NO percentages)
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -2901,6 +3425,10 @@ class object(element):
 
     @property
     def form(self):
+        """ The form element, if any, that the object element is
+        associated with (its form owner). The value of the attribute
+        must be an ID of a <form> element in the same document.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -2909,6 +3437,8 @@ class object(element):
 
     @property
     def name(self):
+        """ The name of valid browsing context.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2917,6 +3447,9 @@ class object(element):
 
     @property
     def usemap(self):
+        """ A hash-name reference to a <map> element; that is a '#'
+        followed by the value of a name of a map element.
+        """
         return self.attributes['usemap'].value
 
     @usemap.setter
@@ -2925,54 +3458,55 @@ class object(element):
 
     @property
     def width(self):
+        """ The width of the display resource, in CSS pixels.  (Absolute
+        values only. NO percentages)
+        """
         return self.attributes['width'].value
 
     @width.setter
     def width(self, v):
         self.attributes['width'].value = v
 
-    @property
-    def border(self):
-        return self.attributes['border'].value
-
-    @border.setter
-    def border(self, v):
-        self.attributes['border'].value = v
 
 class cols(elements):
-    pass
+    """ A class used to contain a collection of ``col`` elements.
+    """
 
 class col(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
+    """ The <col> HTML element defines a column within a table and is
+    used for defining common semantics on all common cells. It is
+    generally found within a <colgroup> element.
+    """
     @property
     def span(self):
+        """ This attribute contains a positive integer indicating the
+        number of consecutive columns the <col> element spans. If not
+        present, its default value is 1.
+        """
         return self.attributes['span'].value
 
     @span.setter
     def span(self, v):
         self.attributes['span'].value = v
 
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
 class maps(elements):
-    pass
+    """ A class used to contain a collection of ``map`` elements.
+    """
 
 class map(element):
+    """ The <map> HTML element is used with <area> elements to define an
+    image map (a clickable link area).
+    """
     @property
     def name(self):
+        """ The name attribute gives the map a name so that it can be
+        referenced. The attribute must be present and must have a
+        non-empty value with no space characters. The value of the name
+        attribute must not be equal to the value of the name attribute
+        of another <map> element in the same document. If the id
+        attribute is also specified, both attributes must have the same
+        value.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -2980,11 +3514,19 @@ class map(element):
         self.attributes['name'].value = v
 
 class embeds(elements):
-    pass
+    """ A class used to contain a collection of ``embed`` elements.
+    """
 
 class embed(element):
+    """ The <embed> HTML element embeds external content at the
+    specified point in the document. This content is provided by an
+    external application or other source of interactive content such as
+    a browser plug-in.
+    """
     @property
     def type(self):
+        """ The MIME type to use to select the plug-in to instantiate.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -2993,6 +3535,9 @@ class embed(element):
 
     @property
     def height(self):
+        """ The displayed height of the resource, in CSS pixels. This
+        must be an absolute value; percentages are not allowed.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3001,6 +3546,8 @@ class embed(element):
 
     @property
     def src(self):
+        """ The URL of the resource being embedded.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -3009,6 +3556,9 @@ class embed(element):
 
     @property
     def width(self):
+        """ The displayed width of the resource, in CSS pixels. This
+        must be an absolute value; percentages are not allowed.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -3016,11 +3566,19 @@ class embed(element):
         self.attributes['width'].value = v
 
 class meters(elements):
-    pass
+    """ A class used to contain a collection of ``embed`` elements.
+    """
 
 class meter(element):
+    """ The <meter> HTML element represents either a scalar value within
+    a known range or a fractional value.
+    """
     @property
     def min(self):
+        """ The lower numeric bound of the measured range. This must be
+        less than the maximum value (max attribute), if specified.  If
+        unspecified, the minimum value is 0.
+        """
         return self.attributes['min'].value
 
     @min.setter
@@ -3029,6 +3587,15 @@ class meter(element):
 
     @property
     def optimum(self):
+        """ This attribute indicates the optimal numeric value. It must
+        be within the range (as defined by the min attribute and max
+        attribute). When used with the low attribute and high attribute,
+        it gives an indication where along the range is considered
+        preferable. For example, if it is between the min attribute and
+        the low attribute, then the lower range is considered preferred.
+        The browser may color the meter's bar differently depending on
+        whether the value is less than or equal to the optimum value.
+        """
         return self.attributes['optimum'].value
 
     @optimum.setter
@@ -3037,6 +3604,13 @@ class meter(element):
 
     @property
     def high(self):
+        """ The lower numeric bound of the high end of the measured
+        range. This must be less than the maximum value (max attribute),
+        and it also must be greater than the low value and minimum value
+        (low attribute and min attribute, respectively), if any are
+        specified. If unspecified, or if greater than the maximum value,
+        the high value is equal to the maximum value.
+        """
         return self.attributes['high'].value
 
     @high.setter
@@ -3045,6 +3619,14 @@ class meter(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the <meter> element with
+        (its form owner). The value of this attribute must be the id of
+        a <form> in the same document. If this attribute is not set, the
+        <meter> is associated with its ancestor <form> element, if any.
+        This attribute is only used if the <meter> element is being used
+        as a form-associated element, such as one displaying a range
+        corresponding to an <input type="number">.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -3053,6 +3635,10 @@ class meter(element):
 
     @property
     def max(self):
+        """ The upper numeric bound of the measured range. This must be
+        greater than the minimum value (min attribute), if specified. If
+        unspecified, the maximum value is 1.
+        """
         return self.attributes['max'].value
 
     @max.setter
@@ -3061,6 +3647,13 @@ class meter(element):
 
     @property
     def value(self):
+        """ The current numeric value. This must be between the minimum
+        and maximum values (min attribute and max attribute) if they are
+        specified. If unspecified or malformed, the value is 0. If
+        specified, but not within the range given by the min attribute
+        and max attribute, the value is equal to the nearest end of the
+        range.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -3069,6 +3662,13 @@ class meter(element):
 
     @property
     def low(self):
+        """ The upper numeric bound of the low end of the measured
+        range. This must be greater than the minimum value (min
+        attribute), and it also must be less than the high value and
+        maximum value (high attribute and max attribute, respectively),
+        if any are specified. If unspecified, or if less than the
+        minimum value, the low value is equal to the minimum value.
+        """
         return self.attributes['low'].value
 
     @low.setter
@@ -3076,13 +3676,35 @@ class meter(element):
         self.attributes['low'].value = v
 
 class times(elements):
-    pass
+    """ A class used to contain a collection of ``time`` elements.
+    """
 
 class time(element):
+    """ The <time> HTML element represents a specific period in time. It
+    may include the datetime attribute to translate dates into
+    machine-readable format, allowing for better search engine results
+    or custom features such as reminders.
+
+    It may represent one of the following:
+
+        * A time on a 24-hour clock.
+
+        * A precise date in the Gregorian calendar (with optional time and
+        timezone information).
+
+        * A valid time duration.
+    """
     def __init__(self, dt=None, *args, **kwargs):
+        """ Create a <time> element.
+
+        :param: dt primative.datetime: The datetime object intended to
+        be used for the `datetime` attribute.
+        """
         super().__init__(*args, *kwargs)
+
         if dt is None:
             return
+
         if not isinstance(dt, primative.datetime):
             raise TypeError(
                 'Use primative.datettime to ensure timezone '
@@ -3094,6 +3716,11 @@ class time(element):
 
     @property
     def datetime(self):
+        """ This attribute indicates the time and/or date of the element
+        and must be in one of the formats described below.
+        """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -3101,39 +3728,31 @@ class time(element):
         self.attributes['datetime'].value = v
 
 class bodies(elements):
-    pass
+    """ A class used to contain a collection of ``body`` elements.
+    """
 
 class body(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def background(self):
-        return self.attributes['background'].value
-
-    @background.setter
-    def background(self, v):
-        self.attributes['background'].value = v
+    """ The <body> HTML element represents the content of an HTML
+    document. There can be only one <body> element in a document.
+    """
 
 class progresses(elements):
-    pass
+    """ A class used to contain a collection of ``progress`` elements.
+    """
 
 class progress(element):
-    @property
-    def form(self):
-        return self.attributes['form'].value
-
-    @form.setter
-    def form(self, v):
-        self.attributes['form'].value = v
+    """ The <progress> HTML element displays an indicator showing the
+    completion progress of a task, typically displayed as a progress
+    bar.
+    """
 
     @property
     def max(self):
+        """ This attribute describes how much work the task indicated by
+        the progress element requires. The max attribute, if present,
+        must have a value greater than 0 and be a valid floating point
+        number. The default value is 1.
+        """
         return self.attributes['max'].value
 
     @max.setter
@@ -3142,6 +3761,13 @@ class progress(element):
 
     @property
     def value(self):
+        """ This attribute specifies how much of the task that has been
+        completed. It must be a valid floating point number between 0
+        and max, or between 0 and 1 if max is omitted. If there is no
+        value attribute, the progress bar is indeterminate; this
+        indicates that an activity is ongoing with no indication of how
+        long it is expected to take.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -3149,11 +3775,27 @@ class progress(element):
         self.attributes['value'].value = v
 
 class commands(elements):
-    pass
+    """ A class used to contain a collection of ``command`` elements.
+    """
 
 class command(element):
+    """ The command element represents a command that the user can
+    invoke.  A command can be part of a context menu or toolbar, using
+    the menu element, or can be put anywhere else in the page, to define
+    a keyboard shortcut.
+    """
+
+    # NOTE This is sort of an oddball. It appears to only be supported
+    # by IE, although it is part of the HTML5 standard.
     @property
     def radiogroup(self):
+        """ The radiogroup attribute gives the name of the group of
+        commands that will be toggled when the command itself is
+        toggled, for commands whose type attribute has the value
+        "radio". The scope of the name is the child list of the parent
+        element. The attribute must be omitted unless the type attribute
+        is in the Radio state.
+        """
         return self.attributes['radiogroup'].value
 
     @radiogroup.setter
@@ -3162,6 +3804,11 @@ class command(element):
 
     @property
     def icon(self):
+        """ The icon attribute gives a picture that represents the
+        command. If the attribute is specified, the attribute's value
+        must contain a valid non-empty URL potentially surrounded by
+        spaces.
+        """
         return self.attributes['icon'].value
 
     @icon.setter
@@ -3170,6 +3817,9 @@ class command(element):
 
     @property
     def type(self):
+        """ The type IDL attribute must reflect the content attribute of
+        the same name, limited to only known values.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -3178,6 +3828,12 @@ class command(element):
 
     @property
     def checked(self):
+        """ The checked attribute is a boolean attribute that, if
+        present, indicates that the command is selected. The attribute
+        must be omitted unless the type attribute is in either the
+        Checkbox state or the Radio state.
+        """
+        # TODO:369795a1
         return self.attributes['checked'].value
 
     @checked.setter
@@ -3193,11 +3849,23 @@ class command(element):
         self.attributes['disabled'].value = v
 
 class blockquotes(elements):
-    pass
+    """ A class used to contain a collection of ``blockquote`` elements.
+    """
 
 class blockquote(element):
+    """ The <blockquote> HTML element indicates that the enclosed text
+    is an extended quotation. Usually, this is rendered visually by
+    indentation. A URL for the source of the quotation may be given
+    using the cite attribute, while a text representation of the source
+    can be given using the <cite> element.
+    """
     @property
     def cite(self):
+        """ A URL that designates a source document or message for the
+        information quoted. This attribute is intended to point to
+        information explaining the context or the reference for the
+        quote.
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -3205,11 +3873,21 @@ class blockquote(element):
         self.attributes['cite'].value = v
 
 class options(elements):
-    pass
+    """ A class used to contain a collection of ``option`` elements.
+    """
 
 class option(element):
+    """ The <option> HTML element is used to define an item contained in
+    a <select>, an <optgroup>, or a <datalist> element. As such,
+    <option> can represent menu items in popups and other lists of items
+    in an HTML document.
+    """
     @property
     def label(self):
+        """ This attribute is text for the label indicating the meaning
+        of the option. If the label attribute isn't defined, its value
+        is that of the element text content.
+        """
         return self.attributes['label'].value
 
     @label.setter
@@ -3218,6 +3896,14 @@ class option(element):
 
     @property
     def disabled(self):
+        """ If this Boolean attribute is set, this option is not
+        checkable. Often browsers grey out such control and it won't
+        receive any browsing event, like mouse clicks or focus-related
+        ones. If this attribute is not set, the element can still be
+        disabled if one of its ancestors is a disabled <optgroup>
+        element.
+        """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3226,6 +3912,13 @@ class option(element):
 
     @property
     def selected(self):
+        """ If present, this Boolean attribute indicates that the option
+        is initially selected. If the <option> element is the descendant
+        of a <select> element whose multiple attribute is not set, only
+        one single <option> of this <select> element may have the
+        selected attribute.
+        """
+        # TODO:369795a1
         return self.attributes['selected'].value
 
     @selected.setter
@@ -3237,6 +3930,11 @@ class option(element):
 
     @property
     def value(self):
+        """ The content of this attribute represents the value to be
+        submitted with the form, should this option be selected. If this
+        attribute is omitted, the value is taken from the text content
+        of the option element.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -3244,11 +3942,18 @@ class option(element):
         self.attributes['value'].value = v
 
 class canvass(elements):
-    pass
+    """ A class used to contain a collection of ``canvas`` elements.
+    """
 
 class canvas(element):
+    """ Use the HTML <canvas> element with either the canvas scripting
+    API or the WebGL API to draw graphics and animations.
+    """
     @property
     def height(self):
+        """ The height of the coordinate space in CSS pixels. Defaults
+        to 150.
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -3257,6 +3962,9 @@ class canvas(element):
 
     @property
     def width(self):
+        """ The width of the coordinate space in CSS pixels. Defaults to
+        300.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -3264,20 +3972,32 @@ class canvas(element):
         self.attributes['width'].value = v
 
 class uls(elements):
-    pass
+    """ A class used to contain a collection of ``ul`` elements.
+    """
 
 class ul(element):
-    pass
+    """ The <ul> HTML element represents an unordered list of items,
+    typically rendered as a bulleted list.
+    """
 
+# TODO:dea3866d
 unorderedlists = uls
 unorderedlist = ul
 
 class ols(elements):
-    pass
+    """ A class used to contain a collection of ``ol`` elements.
+    """
 
 class ol(element):
+    """ The <ol> HTML element represents an ordered list of items —
+    typically rendered as a numbered list.
+    """
     @property
     def reversed(self):
+        """ This Boolean attribute specifies that the list’s items are
+        in reverse order. Items will be numbered from high to low.
+        """
+        # TODO:369795a1
         return self.attributes['reversed'].value
 
     @reversed.setter
@@ -3286,70 +4006,59 @@ class ol(element):
 
     @property
     def start(self):
+        """ An integer to start counting from for the list items. Always
+        an Arabic numeral (1, 2, 3, etc.), even when the numbering type
+        is letters or Roman numerals. For example, to start numbering
+        elements from the letter "d" or the Roman numeral "iv," use
+        start="4".
+        """
         return self.attributes['start'].value
 
     @start.setter
     def start(self, v):
         self.attributes['start'].value = v
 
-class keygens(elements):
-    pass
-
-class keygen(element):
     @property
-    def autofocus(self):
-        return self.attributes['autofocus'].value
+    def type(self):
+        """ Sets the numbering type:
 
-    @autofocus.setter
-    def autofocus(self, v):
-        self.attributes['autofocus'].value = v
+              * a for lowercase letters
+              * A for uppercase letters
+              * i for lowercase Roman numerals
+              * I for uppercase Roman numerals
+              * 1 for numbers (default)
 
-    @property
-    def form(self):
-        return self.attributes['form'].value
+           The specified type is used for the entire list unless a
+           different type attribute is used on an enclosed <li> element.
 
-    @form.setter
-    def form(self, v):
-        self.attributes['form'].value = v
+           Note: Unless the type of the list number matters (like legal
+           or technical documents where items are referenced by their
+           number/letter), use the CSS list-style-type property instead.
+        """
+        return self.attributes['type'].value
 
-    @property
-    def name(self):
-        return self.attributes['name'].value
-
-    @name.setter
-    def name(self, v):
-        self.attributes['name'].value = v
-
-    @property
-    def disabled(self):
-        return self.attributes['disabled'].value
-
-    @disabled.setter
-    def disabled(self, v):
-        self.attributes['disabled'].value = v
-
-    @property
-    def keytype(self):
-        return self.attributes['keytype'].value
-
-    @keytype.setter
-    def keytype(self, v):
-        self.attributes['keytype'].value = v
-
-    @property
-    def challenge(self):
-        return self.attributes['challenge'].value
-
-    @challenge.setter
-    def challenge(self, v):
-        self.attributes['challenge'].value = v
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
 
 class tracks(elements):
-    pass
+    """ A class used to contain a collection of ``track`` elements.
+    """
 
 class track(element):
+    """ The <track> HTML element is used as a child of the media
+    elements, <audio> and <video>. It lets you specify timed text tracks
+    (or time-based data), for example to automatically handle subtitles.
+    The tracks are formatted in WebVTT format (.vtt files) — Web Video
+    Text Tracks.
+    """
     @property
     def default(self):
+        """ This attribute indicates that the track should be enabled
+        unless the user's preferences indicate that another track is
+        more appropriate. This may only be used on one track element per
+        media element.
+        """
         return self.attributes['default'].value
 
     @default.setter
@@ -3362,10 +4071,18 @@ class track(element):
 
     @label.setter
     def label(self, v):
+        """ A user-readable title of the text track which is used by the
+        browser when listing available text tracks.
+        """
         self.attributes['label'].value = v
 
     @property
     def src(self):
+        """ Address of the track (.vtt file). Must be a valid URL. This
+        attribute must be specified and its URL value must have the same
+        origin as the document — unless the <audio> or <video> parent
+        element of the track element has a crossorigin attribute.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -3374,6 +4091,10 @@ class track(element):
 
     @property
     def srclang(self):
+        """ Language of the track text data. It must be a valid BCP 47
+        language tag. If the kind attribute is set to subtitles, then
+        srclang must be defined.
+        """
         return self.attributes['srclang'].value
 
     @srclang.setter
@@ -3382,6 +4103,9 @@ class track(element):
 
     @property
     def kind(self):
+        """ How the text track is meant to be used. If omitted the
+        default kind is subtitles. 
+        """
         return self.attributes['kind'].value
 
     @kind.setter
@@ -3389,11 +4113,28 @@ class track(element):
         self.attributes['kind'].value = v
 
 class dels(elements):
-    pass
+    """ A class used to contain a collection of ``del`` elements.
+    """
 
 class del_(element):
+    """ The <del> HTML element represents a range of text that has been
+    deleted from a document. This can be used when rendering "track
+    changes" or source code diff information, for example. The <ins>
+    element can be used for the opposite purpose: to indicate text that
+    has been added to the document.
+    """
     @property
     def datetime(self):
+        """ This attribute indicates the time and date of the change and
+        must be a valid date string with an optional time. If the value
+        cannot be parsed as a date with an optional time string, the
+        element does not have an associated time stamp. For the format
+        of the string without a time, see Date strings. The format of
+        the string if it includes both date and time is covered in Local
+        date and time strings.
+        """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -3402,6 +4143,9 @@ class del_(element):
 
     @property
     def cite(self):
+        """ A URI for a resource that explains the change (for example,
+        meeting minutes).
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -3409,31 +4153,36 @@ class del_(element):
         self.attributes['cite'].value = v
 
 class tbodys(elements):
-    pass
+    """ A class used to contain a collection of ``tbody`` elements.
+    """
 
 class tbody(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <tbody> HTML element encapsulates a set of table rows (<tr>
+    elements), indicating that they comprise the body of the table
+    (<table>).
+    """
 
 class inss(elements):
-    pass
+    """ A class used to contain a collection of ``ins`` elements.
+    """
 
 class ins(element):
+    """ The <ins> HTML element represents a range of text that has been
+    added to a document. You can use the <del> element to similarly
+    represent a range of text that has been deleted from the document.
+    """
     @property
     def datetime(self):
+        """ This attribute indicates the time and date of the change and
+        must be a valid date with an optional time string. If the value
+        cannot be parsed as a date with an optional time string, the
+        element does not have an associated time stamp. For the format
+        of the string without a time, see Format of a valid date string.
+        The format of the string if it includes both date and time is
+        covered in Format of a valid local date and time string.
+        """
+        # TODO;fb7d1e8c Ensure this @property only accepts and returns
+        # primative.datetime values
         return self.attributes['datetime'].value
 
     @datetime.setter
@@ -3442,6 +4191,10 @@ class ins(element):
 
     @property
     def cite(self):
+        """ This attribute defines the URI of a resource that explains
+        the change, such as a link to meeting minutes or a ticket in a
+        troubleshooting system.
+        """
         return self.attributes['cite'].value
 
     @cite.setter
@@ -3449,11 +4202,25 @@ class ins(element):
         self.attributes['cite'].value = v
 
 class textareas(elements):
-    pass
+    """ A class used to contain a collection of ``textarea`` elements.
+    """
 
 class textarea(element):
+    """ The <textarea> HTML element represents a multi-line plain-text
+    editing control, useful when you want to allow users to enter a
+    sizeable amount of free-form text, for example a comment on a review
+    or feedback form.
+    """
+
     @property
     def readonly(self):
+        """ This Boolean attribute indicates that the user cannot modify
+        the value of the control. Unlike the disabled attribute, the
+        readonly attribute does not prevent the user from clicking or
+        selecting in the control. The value of a read-only control is
+        still submitted with the form.
+        """
+        # TODO:369795a1
         return self.attributes['readonly'].value
 
     @readonly.setter
@@ -3470,6 +4237,10 @@ class textarea(element):
 
     @property
     def cols(self):
+        """ The visible width of the text control, in average character
+        widths. If it is specified, it must be a positive integer. If it
+        is not specified, the default value is 20.
+        """
         return self.attributes['cols'].value
 
     @cols.setter
@@ -3478,6 +4249,9 @@ class textarea(element):
 
     @property
     def required(self):
+        """ This attribute specifies that the user must fill in a value
+        before submitting a form.
+        """
         return self.attributes['required'].value
 
     @required.setter
@@ -3485,7 +4259,30 @@ class textarea(element):
         self.attributes['required'].value = v
 
     @property
+    def spellcheck(self):
+        """ Specifies whether the <textarea> is subject to spell
+        checking by the underlying browser/OS. The value can be:
+
+            true: Indicates that the element needs to have its spelling
+            and grammar checked.
+
+            default: Indicates that the element is to act according to
+            a default behavior, possibly based on the parent element's
+            own spellcheck value.
+
+            false: Indicates that the element should not be spell
+            checked.
+        """
+        return self.attributes['spellcheck'].value
+
+    @spellcheck.setter
+    def spellcheck(self, v):
+        self.attributes['spellcheck'].value = v
+
+    @property
     def rows(self):
+        """ The number of visible text lines for the control.
+        """
         return self.attributes['rows'].value
 
     @rows.setter
@@ -3494,6 +4291,12 @@ class textarea(element):
 
     @property
     def autofocus(self):
+        """ This Boolean attribute lets you specify that a form control
+        should have input focus when the page loads. Only one
+        form-associated element in a document can have this attribute
+        specified.
+        """
+        # TODO:369795a1
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -3510,6 +4313,14 @@ class textarea(element):
 
     @property
     def form(self):
+        """ The form element that the <textarea> element is associated
+        with (its "form owner"). The value of the attribute must be the
+        id of a form element in the same document. If this attribute is
+        not specified, the <textarea> element must be a descendant of a
+        form element. This attribute enables you to place <textarea>
+        elements anywhere within a document, not just as descendants of
+        form elements.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -3518,6 +4329,14 @@ class textarea(element):
 
     @property
     def placeholder(self):
+        """ A hint to the user of what can be entered in the control.
+        Carriage returns or line-feeds within the placeholder text must
+        be treated as line breaks when rendering the hint.
+
+        Note: Placeholders should only be used to show an example of the
+        type of data that should be entered into a form; they are not a
+        substitute for a proper <label> element tied to the input.
+        """
         return self.attributes['placeholder'].value
 
     @placeholder.setter
@@ -3534,6 +4353,8 @@ class textarea(element):
 
     @property
     def name(self):
+        """ The name of the control.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -3542,14 +4363,28 @@ class textarea(element):
 
     @property
     def maxlength(self):
+        """ The maximum number of characters (UTF-16 code units) that
+        the user can enter. If this value isn't specified, the user can
+        enter an unlimited number of characters.
+        """
         return self.attributes['maxlength'].value
 
     @maxlength.setter
     def maxlength(self, v):
+        """ The minimum number of characters (UTF-16 code units)
+        required that the user should enter.
+        """
         self.attributes['maxlength'].value = v
 
     @property
     def disabled(self):
+        """ This Boolean attribute indicates that the user cannot
+        interact with the control. If this attribute is not specified,
+        the control inherits its setting from the containing element,
+        for example <fieldset>; if there is no containing element when
+        the disabled attribute is set, the control is enabled.
+        """
+        # TODO:369795a1
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3558,6 +4393,23 @@ class textarea(element):
 
     @property
     def wrap(self):
+		""" Indicates how the control wraps text. Possible values are:
+
+              hard: The browser automatically inserts line breaks
+              (CR+LF) so that each line has no more than the width of
+              the control; the cols attribute must also be specified for
+              this to take effect.
+
+              soft: The browser ensures that all line breaks in the
+              value consist of a CR+LF pair, but does not insert any
+              additional line breaks.
+
+              off: Like soft but changes appearance to white-space: pre
+              so line segments exceeding cols are not wrapped and the
+              <textarea> becomes horizontally scrollable.
+
+           If this attribute is not specified, soft is its default value.
+        """
         return self.attributes['wrap'].value
 
     @wrap.setter
@@ -3566,6 +4418,30 @@ class textarea(element):
 
     @property
     def autocomplete(self):
+        """ This attribute indicates whether the value of the control
+        can be automatically completed by the browser. Possible values
+        are:
+
+              * off: The user must explicitly enter a value into this field for
+              every use, or the document provides its own
+              auto-completion method; the browser does not automatically
+              complete the entry.
+
+              * on: The browser can automatically complete the value based on
+              values that the user has entered during previous uses.
+
+        If the autocomplete attribute is not specified on a
+        <textarea> element, then the browser uses the autocomplete
+        attribute value of the <textarea> element's form owner. The
+        form owner is either the <form> element that this <textarea>
+        element is a descendant of or the form element whose id is
+        specified by the form attribute of the input element. For
+        more information, see the autocomplete attribute in <form>.
+        """
+
+        # TODO Convert this property to a boolean one, such that it only
+        # accepts and returns only True or False. The actual value for
+        # the attribute would still be 'off' and 'on'.
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
@@ -3580,22 +4456,56 @@ class textarea(element):
     def inputmode(self, v):
         self.attributes['inputmode'].value = v
 
+    @property
+    def autocorrect(self):
+        """ This attribute indicates whether the value of the control
+        can be automatically completed by the browser. Possible values
+        are:
+
+            * off: The user must explicitly enter a value into this field for
+            every use, or the document provides its own auto-completion
+            method; the browser does not automatically complete the
+            entry.
+
+            * on: The browser can automatically complete the value based on
+            values that the user has entered during previous uses.
+
+        If the autocomplete attribute is not specified on a <textarea>
+        element, then the browser uses the autocomplete attribute value
+        of the <textarea> element's form owner. The form owner is either
+        the <form> element that this <textarea> element is a descendant
+        of or the form element whose id is specified by the form
+        attribute of the input element. For more information, see the
+        autocomplete attribute in <form>.
+		"""
+        # TODO:369795a1
+        return self.attributes['autocorrect'].value
+
+    @autocorrect.setter
+    def autocorrect(self, v):
+        self.attributes['autocorrect'].value = v
+
 class captions(elements):
-    pass
+    """ A class used to contain a collection of ``caption`` elements.
+    """
 
 class caption(element):
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <caption> HTML element specifies the caption (or title) of a
+    table.
+    """
 
 class inputs(elements):
-    pass
+    """ A class used to contain a collection of ``caption`` elements.
+    """
 
 class input(element):
+    """ The <input> HTML element is used to create interactive controls
+    for web-based forms in order to accept data from the user; a wide
+    variety of types of input data and control widgets are available,
+    depending on the device and user agent. The <input> element is one
+    of the most powerful and complex in all of HTML due to the sheer
+    number of combinations of input types and attributes.
+    """
     isvoid = True
     @property
     def min(self):
@@ -3623,6 +4533,26 @@ class input(element):
 
     @property
     def dirname(self):
+        """ Valid for text and search input types only, the dirname
+        attribute enables the submission of the directionality of the
+        element. When included, the form control will submit with two
+        name/value pairs: the first being the name and value, the second
+        being the value of the dirname as the name with the value of ltr
+        or rtl being set by the browser.
+
+            <form action="page.html" method="post">
+                <label>
+                    Fruit: 
+                    <input type="text" name="fruit" dirname="fruit.dir" value="cherry">
+                </label>
+                <input type="submit"/>
+            </form>
+            <!-- page.html?fruit=cherry&fruit.dir=ltr -->
+
+        When the form above is submitted, the input cause both the
+        name/value pair of fruit=cherry and the dirname / direction pair
+        of fruit.dir=ltr to be sent.
+        """
         return self.attributes['dirname'].value
 
     @dirname.setter
@@ -3654,7 +4584,51 @@ class input(element):
         self.attributes['multiple'].value = v
 
     @property
+    def capture(self):
+        """ Introduced in the HTML Media Capture specification and valid
+        for the file input type only, the capture attribute defines
+        which media—microphone, video, or camera—should be used to
+        capture a new file for upload with file upload control in
+        supporting scenarios. See the file input type.
+        """
+        return self.attributes['capture'].value
+
+    @capture.setter
+    def capture(self, v):
+        self.attributes['capture'].value = v
+
+    @property
     def autofocus(self):
+        """ A Boolean attribute which, if present, indicates that the
+        input should automatically have focus when the page has finished
+        loading (or when the <dialog> containing the element has been
+        displayed).
+
+        Note: An element with the autofocus attribute may gain focus
+        before the DOMContentLoaded event is fired.
+
+        No more than one element in the document may have the autofocus
+        attribute. If put on more than one element, the first one with
+        the attribute receives focus.
+
+        The autofocus attribute cannot be used on inputs of type hidden,
+        since hidden inputs cannot be focused.
+
+        Warning: Automatically focusing a form control can confuse
+        visually-impaired people using screen-reading technology and
+        people with cognitive impairments. When autofocus is assigned,
+        screen-readers "teleport" their user to the form control without
+        warning them beforehand.
+
+        Use careful consideration for accessibility when applying the
+        autofocus attribute. Automatically focusing on a control can
+        cause the page to scroll on load. The focus can also cause
+        dynamic keyboards to display on some touch devices. While a
+        screen reader will announce the label of the form control
+        receiving focus, the screen reader will not announce anything
+        before the label, and the sighted user on a small device will
+        equally miss the context created by the preceding content.
+        """
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -3663,6 +4637,15 @@ class input(element):
 
     @property
     def type(self):
+    """ How an <input> works varies considerably depending on the value
+    of its type attribute, hence the different types are covered in
+    their own separate reference pages. If this attribute is not
+    specified, the default type adopted is text.
+
+    The available types are as follows: button, checkbox, color, date,
+    datetime-local, email, file, hidden, image, month, number, password,
+    radio, range, reset, search, submit, tel, text, time, url, week, 
+    """
         return self.attributes['type'].value
 
     @type.setter
@@ -3695,6 +4678,10 @@ class input(element):
 
     @property
     def accept(self):
+        """ Valid for the file input type only, the accept attribute
+        defines which file types are selectable in a file upload
+        control. See the file input type.
+        """
         return self.attributes['accept'].value
 
     @accept.setter
@@ -3727,6 +4714,18 @@ class input(element):
 
     @property
     def form(self):
+        """ A string specifying the <form> element with which the input
+        is associated (that is, its form owner). This string's value, if
+        present, must match the id of a <form> element in the same
+        document. If this attribute isn't specified, the <input> element
+        is associated with the nearest containing form, if any.
+
+        The form attribute lets you place an input anywhere in the
+        document but have it included with a form elsewhere in the
+        document.
+
+        Note: An input can only be associated with one form.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -3735,6 +4734,27 @@ class input(element):
 
     @property
     def checked(self):
+        """ Valid for both radio and checkbox types, checked is
+        a Boolean attribute. If present on a radio type, it indicates
+        that the radio button is the currently selected one in the group
+        of same-named radio buttons. If present on a checkbox type, it
+        indicates that the checkbox is checked by default (when the page
+        loads). It does not indicate whether this checkbox is currently
+        checked: if the checkbox’s state is changed, this content
+        attribute does not reflect the change. (Only the
+        HTMLInputElement’s checked IDL attribute is updated.)
+
+        Note: Unlike other input controls, a checkboxes and radio
+        buttons value are only included in the submitted data if they
+        are currently checked. If they are, the name and the value(s) of
+        the checked controls are submitted.
+
+        For example, if a checkbox whose name is fruit has a value of
+        cherry, and the checkbox is checked, the form data submitted
+        will include fruit=cherry. If the checkbox isn't active, it
+        isn't listed in the form data at all. The default value for
+        checkboxes and radio buttons is on.
+        """
         return self.attributes['checked'].value
 
     @checked.setter
@@ -3807,6 +4827,20 @@ class input(element):
 
     @property
     def disabled(self):
+        """ A Boolean attribute which, if present, indicates that the
+        user should not be able to interact with the input. Disabled
+        inputs are typically rendered with a dimmer color or using some
+        other form of indication that the field is not available for
+        use.
+
+        Specifically, disabled inputs do not receive the click event,
+        and disabled inputs are not submitted with the form.
+
+        Note: Although not required by the specification, Firefox will
+        by default persist the dynamic disabled state of an <input>
+        across page loads. Use the autocomplete attribute to control
+        this feature.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -3815,6 +4849,11 @@ class input(element):
 
     @property
     def alt(self):
+        """ Valid for the image button only, the alt attribute provides
+        alternative text for the image, displaying the value of the
+        attribute if the image scr is missing or otherwise fails to
+        load.
+        """
         return self.attributes['alt'].value
 
     @alt.setter
@@ -3831,6 +4870,22 @@ class input(element):
 
     @property
     def autocomplete(self):
+        """ (Not a Boolean attribute!) The autocomplete attribute takes
+        as its value a space-separated string that describes what, if
+        any, type of autocomplete functionality the input should
+        provide. A typical implementation of autocomplete recalls
+        previous values entered in the same input field, but more
+        complex forms of autocomplete can exist. For instance, a browser
+        could integrate with a device's contacts list to autocomplete
+        email addresses in an email input field.
+
+        The autocomplete attribute is valid on hidden, text, search,
+        url, tel, email, date, month, week, time, datetime-local,
+        number, range, color, and password. This attribute has no effect
+        on input types that do not return numeric or text data, being
+        valid for all input types except checkbox, radio, file, or any
+        of the button types.
+        """
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
@@ -4388,6 +5443,13 @@ class script(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -4714,6 +5776,7 @@ class h6(element):
     """
     pass
 
+# TODO:dea3866d
 heading1 = h1
 heading2 = h2
 heading3 = h3
@@ -4748,6 +5811,7 @@ class hr(element):
     def color(self, v):
         self.attributes['color'].value = v
 
+# TODO:dea3866d
 hrules = hrs
 hrule = hr
 
@@ -4937,6 +6001,13 @@ class iframe(element):
 
     @property
     def importance(self):
+        """ Priority Hints can be set for resources in HTML by
+        specifying an importance attribute on a <script>, <img>, or
+        <link> element (though other elements such as <iframe> may see
+        support later). 
+        
+        https://developers.google.com/web/updates/2019/02/priority-hints
+        """
         return self.attributes['importance'].value
 
     @importance.setter
@@ -5009,6 +6080,7 @@ class s(element):
     """
     pass
 
+# TODO:dea3866d
 strikethroughs = ss
 strikethrough = s
 
@@ -5026,6 +6098,7 @@ class em(element):
     """
     pass
 
+# TODO:dea3866d
 emphases = ems
 emphasis = em
 
@@ -5042,6 +6115,7 @@ class i(element):
     """
     pass
 
+# TODO:dea3866d
 italics = is_
 italic = i
 
@@ -5061,6 +6135,7 @@ class b(element):
     """
     pass
 
+# TODO:dea3866d
 bolds = bs
 bold = b
 
@@ -5074,6 +6149,7 @@ class div(element):
     """
     pass
 
+# TODO:dea3866d
 divisions = divs
 division = div
 
@@ -5103,6 +6179,7 @@ class dl(element):
     """
     pass
 
+# TODO:dea3866d
 descriptionlists = dls
 descriptionlist = dl
 
@@ -5120,6 +6197,7 @@ class dt(element):
     """
     pass
 
+# TODO:dea3866d
 definitionlists = dts
 definitionlist  = dt
 
@@ -5134,6 +6212,7 @@ class dd(element):
     """
     pass
 
+# TODO:dea3866d
 descriptiondetails = dds
 descriptiondetail  = dd
 
