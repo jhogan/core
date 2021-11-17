@@ -18,18 +18,19 @@ import builtins
 import dom
 import ecommerce
 import entities
+import gc
 import inspect
 import io
 import json
 import pdb
 import pom
 import primative
+import resource
 import sys
 import textwrap
 import urllib
 import uuid
 import www
-import resource
 
 """ This module provides unit testing for the core framework, web pages,
 and any other code in the core repository.
@@ -1167,11 +1168,27 @@ class cli:
         self.testers.rebuildtables = self.args.rebuildtables
 
     def _testers_onbeforeinvoketest(self, src, eargs):
+        ''' Get tracked objects count '''
+        cnts = list()
+
+        # Collect garbage
+        gc.collect()
+
+        # Get the counts for each generation of objects tracked by the
+        # cyclical garbage collector
+        for i in range(3):
+            cnts.append(f'{len(gc.get_objects(generation=i)):,}')
+
+        cnts = f"[{' '.join(cnts)}]"
+
+        ''' Get memory usage '''
         mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         mbs = int(mbs / 1000)
         cls = eargs.class_.__name__
         meth = eargs.method[0]
-        print(f'# {mbs}M {cls}.{meth}', flush=True)
+
+        # Print stats with current test method being tested
+        print(f'# {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
     pass
