@@ -4541,6 +4541,13 @@ class input(element):
 
     @property
     def readonly(self):
+        """ A Boolean attribute which, if present, indicates that the
+        user should not be able to edit the value of the input.  The
+        readonly attribute is supported by the text, search, url, tel,
+        email, date, month, week, time, datetime-local, number, and
+        password input types.
+        """
+
         return self.attributes['readonly'].value
 
     @readonly.setter
@@ -4588,6 +4595,13 @@ class input(element):
 
     @property
     def required(self):
+        """ required is a Boolean attribute which, if present, indicates
+        that the user must specify a value for the input before the
+        owning form can be submitted. The required attribute is
+        supported by text, search, url, tel, email, date, month, week,
+        time, datetime-local, number, password, checkbox, radio, and
+        file inputs.
+        """
         return self.attributes['required'].value
 
     @required.setter
@@ -4689,6 +4703,10 @@ class input(element):
 
     @property
     def step(self):
+        """ Valid for the numeric input types, including number,
+        date/time input types, and range, the step attribute is a number
+        that specifies the granularity that the value must adhere to.
+        """
         return self.attributes['step'].value
 
     @step.setter
@@ -4709,6 +4727,10 @@ class input(element):
 
     @property
     def src(self):
+        """ Valid for the image input button only, the src is string
+        specifying the URL of the image file to display to represent the
+        graphical submit button. See the image input type.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -4729,6 +4751,14 @@ class input(element):
 
     @property
     def size(self):
+        """ Valid for email, password, tel, url and text input types
+        only. Specifies how much of the input is shown. Basically
+        creates same result as setting CSS width property with a few
+        specialities. The actual unit of the value depends on the input
+        type. For password and text, it is a number of characters (or em
+        units) with a default value of 20, and for others, it is pixels.
+        CSS width takes precedence over size attribute.
+        """
         return self.attributes['size'].value
 
     @size.setter
@@ -4996,6 +5026,9 @@ class input(element):
 
     @property
     def usemap(self):
+        """ The usemap attribute specifies an image as a client-side
+        image map (an image map is an image with clickable areas).
+        """
         return self.attributes['usemap'].value
 
     @usemap.setter
@@ -5050,6 +5083,10 @@ class input(element):
 
     @property
     def width(self):
+        """ Valid for the image input button only, the width is the
+        width of the image file to display to represent the graphical
+        submit button.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -5082,6 +5119,13 @@ class input(element):
 
     @property
     def value(self):
+        """ The input control's value. When specified in the HTML, this
+        is the initial value, and from then on it can be altered or
+        retrieved at any time using JavaScript to access the respective
+        HTMLInputElement object's value property. The value attribute is
+        always optional, though should be considered mandatory for
+        checkbox, radio, and hidden.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -5100,11 +5144,39 @@ class input(element):
         self.attributes['formmethod'].value = v
 
 class ths(elements):
-    pass
+    """ A class used to contain a collection of ``th`` elements.
+    """
 
 class th(element):
+    """ The <th> HTML element defines a cell as header of a group of
+    table cells. The exact nature of this group is defined by the scope
+    and headers attributes.
+    """
     @property
     def scope(self):
+        """ This enumerated attribute defines the cells that the header
+        (defined in the <th>) element relates to. It may have the
+        following values:
+
+              * row: The header relates to all cells of the row it belongs
+              to.
+
+              * col: The header relates to all cells of the column it
+              belongs to.
+
+              * rowgroup: The header belongs to a rowgroup and relates to
+              all of its cells. These cells can be placed to the right
+              or the left of the header, depending on the value of the
+              dir attribute in the <table> element.
+
+              * colgroup: The header belongs to a colgroup and relates to
+              all of its cells.
+
+        If the scope attribute is not specified, or its value is not
+        row, col, or rowgroup, or colgroup, then browsers
+        automatically select the set of cells to which the header
+        cell applies.
+        """
         return self.attributes['scope'].value
 
     @scope.setter
@@ -5113,6 +5185,11 @@ class th(element):
 
     @property
     def colspan(self):
+        """ This attribute contains a non-negative integer value that
+        indicates for how many columns the cell extends. Its default
+        value is 1. Values higher than 1000 will be considered as
+        incorrect and will be set to the default value (1).
+        """
         return self.attributes['colspan'].value
 
     @colspan.setter
@@ -5120,23 +5197,11 @@ class th(element):
         self.attributes['colspan'].value = v
 
     @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
     def headers(self):
+        """ This attribute contains a list of space-separated strings,
+        each corresponding to the id attribute of the <th> elements that
+        apply to this element.
+        """
         return self.attributes['headers'].value
 
     @headers.setter
@@ -5145,19 +5210,18 @@ class th(element):
 
     @property
     def rowspan(self):
+        """ This attribute contains a non-negative integer value that
+        indicates for how many rows the cell extends. Its default value
+        is 1; if its value is set to 0, it extends until the end of the
+        table section (<thead>, <tbody>, <tfoot>, even if implicitly
+        defined), that the cell belongs to. Values higher than 65534 are
+        clipped down to 65534.
+        """
         return self.attributes['rowspan'].value
 
     @rowspan.setter
     def rowspan(self, v):
         self.attributes['rowspan'].value = v
-
-    @property
-    def background(self):
-        return self.attributes['background'].value
-
-    @background.setter
-    def background(self, v):
-        self.attributes['background'].value = v
 
 class tabledatas(elements):
     pass
