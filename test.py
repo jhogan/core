@@ -17288,6 +17288,13 @@ class test_orm(tester):
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
+class benchmark_orm_cpu(tester):
+    def it_instantiates_entity(self):
+        def f():
+            art = artist()
+
+        self.timeit(.05, f, 1000)
+
 class orm_migration(tester):
     def it_calls_table(self):
         class cats(orm.entities):

@@ -30,6 +30,7 @@ import urllib
 import uuid
 import www
 import resource
+import timeit
 
 """ This module provides unit testing for the core framework, web pages,
 and any other code in the core repository.
@@ -492,6 +493,11 @@ class tester(entities.entity):
 
     def all(self, actual, msg=None):
         if not all(actual):
+            self._failures += failure()
+
+    def timeit(self, expect, actual, number, msg=None):
+        actual = timeit.timeit(actual, number=number)
+        if actual > expect:
             self._failures += failure()
 
     def assertFull(self, actual, msg=None):
