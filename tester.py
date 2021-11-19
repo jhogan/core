@@ -498,16 +498,54 @@ class tester(entities.entity):
             self._failures += failure()
 
     def profile(self, callable):
+        """ Run callable under Python's builtin deterministic profiler
+        (cProfile), and print the top 10 most time-consuming methods
+        used during the invocation of callable. 
+
+        Calling this method is intended for debugging performance
+        issues. Calls to this method shouldn't be committed to source
+        control.
+
+        As a convenience, the top 10 are printed to stdout. The Stat
+        object is returned to the caller so it can be used for further
+        analysis of the the profile results.
+
+        :param: callable callable: The callable to be profiled.
+        """
+
+        # Profile the callable
         with cProfile.Profile() as p:
             callable()
 
+        # Create a Stats object and sort the results by cumulitive time.
+        # This puts the most time consuming methods at the top of the
+        # list when printing out.
         p = pstats.Stats(p).sort_stats(pstats.SortKey.CUMULATIVE)
         p.print_stats(10)
+
+        # Return to caller so they can further analyse
         return p
 
     def timeit(self, expect, actual, number=None, msg=None):
-        timer = timeit.Timer(stmt=actual)
+        """ Determine the time it takes to call `actual`. The average
+        time to call `actual` in milliseconds is returned as a floating
+        point number.
 
+        :param: expect float|int: The time in milliseconds that `actual`
+        should take to run. If this time is exceeded, a failure is
+        reported.
+
+        :param: actual callable: The function or lambda to time.
+
+        :param: number int: The number of times to repeat the invocation
+        of `actual`. We want to call `actual` a number of times to get
+        an average call time.
+
+        :param: msg str: The message used when reporting failures.
+        """
+
+        # Create the Timer and execute
+        timer = timeit.Timer(stmt=actual)
         actual = timer.timeit(number)
             
         # Convert results to milliseconds
@@ -517,9 +555,11 @@ class tester(entities.entity):
         # to invoke the callable once.
         actual /= number
 
+        # Test
         if actual > expect:
             self._failures += failure()
 
+        # Return the average time to run `actual` in milliseconds
         return actual
 
     def assertFull(self, actual, msg=None):
