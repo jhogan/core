@@ -15,6 +15,7 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import builtins
+import cProfile
 import dom
 import ecommerce
 import entities
@@ -24,13 +25,14 @@ import json
 import pdb
 import pom
 import primative
+import pstats
+import resource
 import sys
 import textwrap
+import timeit
 import urllib
 import uuid
 import www
-import resource
-import timeit
 
 """ This module provides unit testing for the core framework, web pages,
 and any other code in the core repository.
@@ -495,10 +497,30 @@ class tester(entities.entity):
         if not all(actual):
             self._failures += failure()
 
-    def timeit(self, expect, actual, number, msg=None):
-        actual = timeit.timeit(actual, number=number)
+    def profile(self, callable):
+        with cProfile.Profile() as p:
+            callable()
+
+        p = pstats.Stats(p).sort_stats(pstats.SortKey.CUMULATIVE)
+        p.print_stats(10)
+        return p
+
+    def timeit(self, expect, actual, number=None, msg=None):
+        timer = timeit.Timer(stmt=actual)
+
+        actual = timer.timeit(number)
+            
+        # Convert results to milliseconds
+        actual *= 1000
+
+        # Divide by number to get the average number of seconds it takes
+        # to invoke the callable once.
+        actual /= number
+
         if actual > expect:
             self._failures += failure()
+
+        return actual
 
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
