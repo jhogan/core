@@ -3312,23 +3312,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         #
         #     art = artist(name=name, eager('presentations'))
         try:
-            self.orm = self.orm.clone()
+            self_orm = self.orm.clone()
+            self.orm = self_orm
+
             self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
-            # TODO These should be lazy-loaded in getters
-            self.onbeforesave       =  entitiesmod.event()
-            self.onaftersave        =  entitiesmod.event()
-            self.onafterload        =  entitiesmod.event()
-            self.onbeforereconnect  =  entitiesmod.event()
-            self.onafterreconnect   =  entitiesmod.event()
-
-            # TODO self._self_onbeforesave has no implementation. It
-            # exists mearly so subentity objects can inherit from it.
-            # Subentity objects should probably subscribe to this event
-            # handler instead. That way, we can lazy load onbeforesave
-            # above.
-            self.onbeforesave      +=  self._self_onbeforesave
             self.onaftersave       +=  self._self_onaftersave
             self.onafterload       +=  self._self_onafterload
             self.onafterreconnect  +=  self._self_onafterreconnect
@@ -3338,8 +3327,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # If no id was passed to the constructor
             if o is None:
                 # We are working with new orm.entity
-                self.orm.isnew = True
-                self.orm.isdirty = False
+                self_orm.isnew = True
+                self_orm.isdirty = False
 
                 # Assigne an id
                 self.id = uuid4()
@@ -3371,7 +3360,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     o = o.id
 
                 if type(o) is UUID:
-                    res = self.orm.load(o)
+                    res = self_orm.load(o)
                 else:
                     raise TypeError(
                         'Can only load by UUID. '
@@ -3380,7 +3369,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         'the keys as well.'
                     )
 
-                self.orm.populate(res)
+                self_orm.populate(res)
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # Unless override is True...
@@ -3430,7 +3419,57 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Post super().__init__() events
             self.onaftervaluechange += self._self_onaftervaluechange
         finally:
-            self.orm.initing = False
+            self_orm.initing = False
+
+    @property
+    def onbeforesave(self):
+        if not hasattr(self, '_onbeforesave'):
+            self._onbeforesave = entitiesmod.event()
+        return self._onbeforesave
+
+    @onbeforesave.setter
+    def onbeforesave(self, v):
+        self._onbeforesave = v
+
+    @property
+    def onaftersave(self):
+        if not hasattr(self, '_onaftersave'):
+            self._onaftersave = entitiesmod.event()
+        return self._onaftersave
+
+    @onaftersave.setter
+    def onaftersave(self, v):
+        self._onaftersave = v
+
+    @property
+    def onafterload(self):
+        if not hasattr(self, '_onafterload'):
+            self._onafterload = entitiesmod.event()
+        return self._onafterload
+
+    @onafterload.setter
+    def onafterload(self, v):
+        self._onafterload = v
+
+    @property
+    def onbeforereconnect(self):
+        if not hasattr(self, '_onbeforereconnect'):
+            self._onbeforereconnect = entitiesmod.event()
+        return self._onbeforereconnect
+
+    @onbeforereconnect.setter
+    def onbeforereconnect(self, v):
+        self._onbeforereconnect = v
+
+    @property
+    def onafterreconnect(self):
+        if not hasattr(self, '_onafterreconnect'):
+            self._onafterreconnect = entitiesmod.event()
+        return self._onafterreconnect
+
+    @onafterreconnect.setter
+    def onafterreconnect(self, v):
+        self._onafterreconnect = v
 
     @property
     def retrievability(self):
@@ -5598,7 +5637,11 @@ WHERE id = %s;
         r._nameix = dict()
         for map in self:
             map = map.clone()
-            r += map
+
+            # NOTE Bypass the normal '+=' operator and append to the
+            # mappings' internal list. This significantly quickens
+            # cloning which enhances entity instantiation.
+            r._ls.append(map)
             r._nameix[map.name] = map
 
         # NOTE Set _populated after adding to `r` because the
