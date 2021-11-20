@@ -17293,7 +17293,7 @@ class benchmark_orm_cpu(tester):
         def f():
             art = artist()
 
-        self.timeit(.05, f, 1000)
+        self.time(.8, f, 1000)
 
 class orm_migration(tester):
     def it_calls_table(self):
