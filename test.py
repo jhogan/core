@@ -22,7 +22,7 @@ from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 import entities
 from func import enumerate, getattr
-from dbg import B, PM
+from dbg import B, PM, PR
 from pprint import pprint
 from random import randint, uniform, random
 from table import *

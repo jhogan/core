@@ -15,7 +15,6 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import builtins
-import cProfile
 import dom
 import ecommerce
 import entities
@@ -25,7 +24,6 @@ import json
 import pdb
 import pom
 import primative
-import pstats
 import resource
 import sys
 import textwrap
@@ -497,34 +495,6 @@ class tester(entities.entity):
         if not all(actual):
             self._failures += failure()
 
-    def profile(self, callable):
-        """ Run callable under Python's builtin deterministic profiler
-        (cProfile), and print the top 10 most time-consuming methods
-        used during the invocation of callable. 
-
-        Calling this method is intended for debugging performance
-        issues. Calls to this method shouldn't be committed to source
-        control.
-
-        As a convenience, the top 10 are printed to stdout. The Stat
-        object is returned to the caller so it can be used for further
-        analysis of the the profile results.
-
-        :param: callable callable: The callable to be profiled.
-        """
-
-        # Profile the callable
-        with cProfile.Profile() as p:
-            callable()
-
-        # Create a Stats object and sort the results by cumulitive time.
-        # This puts the most time consuming methods at the top of the
-        # list when printing out.
-        p = pstats.Stats(p).sort_stats(pstats.SortKey.CUMULATIVE)
-        p.print_stats(10)
-
-        # Return to caller so they can further analyse
-        return p
 
     def timeit(self, expect, actual, number=None, msg=None):
         """ Determine the time it takes to call `actual`. The average

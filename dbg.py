@@ -12,8 +12,10 @@ framework.
 
 # Set conditional break points
 from IPython.core.debugger import Tracer; 
-import sys
+import cProfile
 import pdb
+import pstats
+import sys
 
 # Set conditional break points
 def B(x=True):
@@ -83,3 +85,33 @@ def PM(ex):
     """
     import pdb
     pdb.post_mortem(ex.__traceback__)
+
+def profile(callable):
+    """ Run callable under Python's builtin deterministic profiler
+    (cProfile), and print the top 10 most time-consuming methods
+    used during the invocation of callable. 
+
+    Calling this method is intended for debugging performance
+    issues. Calls to this method shouldn't be committed to source
+    control.
+
+    As a convenience, the top 10 are printed to stdout. Then the program
+    breaks into the debugger so the user is able to analyse the
+    pstats.Stats object further.
+
+    :param: callable callable: The callable to be profiled.
+    """
+
+    # Profile the callable
+    with cProfile.Profile() as p:
+        callable()
+
+    # Create a Stats object and sort the results by cumulitive time.
+    # This puts the most time consuming methods at the top of the
+    # list when printing out.
+    p = pstats.Stats(p).sort_stats(pstats.SortKey.CUMULATIVE)
+    p.print_stats(10)
+
+    B()
+
+PR = profile
