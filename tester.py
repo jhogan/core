@@ -496,7 +496,7 @@ class tester(entities.entity):
             self._failures += failure()
 
 
-    def timeit(self, expect, actual, number=None, msg=None):
+    def time(self, expect, actual, number=None, msg=None):
         """ Determine the time it takes to call `actual`. The average
         time to call `actual` in milliseconds is returned as a floating
         point number.

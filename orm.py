@@ -8191,10 +8191,10 @@ class orm:
         # Get the **kwargs dict from the calling method unless the
         # ``dict` argument was passed in.
         try:
-            # Use sys._getframe instead of inspect.stack(). The former
-            # is significantly faster. The underscore in _getframe
-            # indicates that this methed is implementation dependent. If
-            # there is ever an issue, we can fall back to:
+            # NOTE Use sys._getframe instead of inspect.stack(). The
+            # former is significantly faster. The underscore in
+            # _getframe indicates that this methed is implementation
+            # dependent. If there is ever an issue, we can fall back to:
             #     st = inspect.stack()
             #     dict = st[1].frame.f_locals['kwargs']
             dict = sys._getframe().f_back.f_locals['kwargs']
