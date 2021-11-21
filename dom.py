@@ -5144,8 +5144,7 @@ class input(element):
         self.attributes['formmethod'].value = v
 
 class ths(elements):
-    """ A class used to contain a collection of ``th`` elements.
-    """
+    """ A class used to contain a collection of ``th`` elements.  """
 
 class th(element):
     """ The <th> HTML element defines a cell as header of a group of
@@ -5223,19 +5222,24 @@ class th(element):
     def rowspan(self, v):
         self.attributes['rowspan'].value = v
 
-class tabledatas(elements):
-    pass
+class tds(elements):
+    """ A class used to contain a collection of ``td`` elements.
+    """
 
-class tabledata(element):
+class td(element):
     """ The HTML <td> element defines a cell of a table that contains
     data. It participates in the table model.
 
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
     """
 
-    tag = 'td'
     @property
     def colspan(self):
+        """ This attribute contains a non-negative integer value that
+        indicates for how many columns the cell extends. Its default
+        value is 1. Values higher than 1000 will be considered as
+        incorrect and will be set to the default value (1).
+        """
         return self.attributes['colspan'].value
 
     @colspan.setter
@@ -5244,6 +5248,10 @@ class tabledata(element):
 
     @property
     def headers(self):
+        """ This attribute contains a list of space-separated strings,
+        each corresponding to the id attribute of the <th> elements that
+        apply to this element.
+        """
         return self.attributes['headers'].value
 
     @headers.setter
@@ -5252,6 +5260,13 @@ class tabledata(element):
 
     @property
     def rowspan(self):
+        """ This attribute contains a non-negative integer value that
+        indicates for how many rows the cell extends. Its default value
+        is 1; if its value is set to 0, it extends until the end of the
+        table section (<thead>, <tbody>, <tfoot>, even if implicitly
+        defined), that the cell belongs to. Values higher than 65534 are
+        clipped down to 65534.
+        """
         return self.attributes['rowspan'].value
 
     @rowspan.setter
@@ -5259,21 +5274,21 @@ class tabledata(element):
         self.attributes['rowspan'].value = v
 
 class theads(elements):
-    pass
+    """ A class used to contain a collection of ``thead`` elements.  """
 
 class thead(element):
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
+    """ The <thead> HTML element defines a set of rows defining the head
+    of the columns of the table.
+    """
 
 class metas(elements):
-    pass
+    """ A class used to contain a collection of ``meta`` elements.  """
 
 class meta(element):
+    """ The <meta> HTML element represents metadata that cannot be
+    represented by other HTML meta-related elements, like <base>,
+    <link>, <script>, <style> or <title>.
+    """
     isvoid = True
     @property
     def charset(self):
