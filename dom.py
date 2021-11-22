@@ -5292,6 +5292,13 @@ class meta(element):
     isvoid = True
     @property
     def charset(self):
+        """ This attribute declares the document's character encoding.
+        If the attribute is present, its value must be an ASCII
+        case-insensitive match for the string "utf-8", because UTF-8 is
+        the only valid encoding for HTML5 documents. <meta> elements
+        which declare a character encoding must be located entirely
+        within the first 1024 bytes of the document.
+        """
         return self.attributes['charset'].value
 
     @charset.setter
@@ -5300,6 +5307,9 @@ class meta(element):
 
     @property
     def content(self):
+        """ This attribute contains the value for the http-equiv or name
+        attribute, depending on which is used.
+        """
         return self.attributes['content'].value
 
     @content.setter
@@ -5308,6 +5318,11 @@ class meta(element):
 
     @property
     def name(self):
+        """ The name and content attributes can be used together to
+        provide document metadata in terms of name-value pairs, with the
+        name attribute giving the metadata name, and the content
+        attribute giving the value.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -5316,6 +5331,8 @@ class meta(element):
 
     @property
     def http_equiv(self):
+        """ Defines a pragma directive.
+        """
         return self.attributes['http-equiv'].value
 
     @http_equiv.setter
@@ -5323,19 +5340,40 @@ class meta(element):
         self.attributes['http-equiv'].value = v
 
 class styles(elements):
-    pass
+    """ A class used to contain a collection of ``style`` elements."""
 
 class style(element):
-    @property
-    def type(self):
-        return self.attributes['type'].value
+    """ The <style> HTML element contains style information for a
+    document, or part of a document. It contains CSS, which is applied
+    to the contents of the document containing the <style> element.
 
-    @type.setter
-    def type(self, v):
-        self.attributes['type'].value = v
+    The <style> element must be included inside the <head> of the
+    document. If you include multiple <style> and <link> elements in
+    your document, they will be applied to the DOM in the order they are
+    included in the document — make sure you include them in the correct
+    order, to avoid unexpected cascade issues.
+
+    In the same manner as <link> elements, <style> elements can include
+    media attributes that contain media queries, allowing you to
+    selectively apply internal stylesheets to your document depending on
+    media features such as viewport width.
+    """
+    @property
+    def title(self):
+        """ This attribute specifies alternative style sheet sets.
+        """
+        return self.attributes['title'].value
+
+    @title.setter
+    def title(self, v):
+        self.attributes['title'].value = v
 
     @property
     def media(self):
+        """ This attribute defines which media the style should be
+        applied to. Its value is a media query, which defaults to all if
+        the attribute is missing.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -5343,19 +5381,32 @@ class style(element):
         self.attributes['media'].value = v
 
     @property
-    def scoped(self):
-        return self.attributes['scoped'].value
+    def nonce(self):
+        """ A cryptographic nonce (number used once) used to allow
+        inline styles in a style-src Content-Security-Policy. The server
+        must generate a unique nonce value each time it transmits a
+        policy. It is critical to provide a nonce that cannot be guessed
+        as bypassing a resource’s policy is otherwise trivial.
+        """
+        return self.attributes['nonce'].value
 
-    @scoped.setter
-    def scoped(self, v):
-        self.attributes['scoped'].value = v
+    @nonce.setter
+    def nonce(self, v):
+        self.attributes['nonce'].value = v
 
 class datas(elements):
-    pass
+    """ A class used to contain a collection of ``data`` elements."""
 
 class data(element):
+    """ The <data> HTML element links a given piece of content with a
+    machine-readable translation. If the content is time- or
+    date-related, the <time> element must be used.
+    """
     @property
     def value(self):
+        """ This attribute specifies the machine-readable translation of
+        the content of the element.
+        """
         return self.attributes['value'].value
 
     @value.setter
@@ -5363,11 +5414,35 @@ class data(element):
         self.attributes['value'].value = v
 
 class labels(elements):
-    pass
+    """ A class used to contain a collection of ``label`` elements."""
 
 class label(element):
+    """ The <label> HTML element represents a caption for an item in a
+    user interface.
+    """
     @property
     def for_(self):
+        """ The value of the for attribute must be a single id for a
+        label form-related element in the same document as the
+        <label> element. So, any given label element can be associated
+        with only one form control.
+
+        The first element in the document with an id attribute matching
+        the value of the for attribute is the labeled control for this
+        label element — if the element with that id is actually a
+        labelable element.  If it is not a labelable element, then the
+        for attribute has no effect. If there are other elements that
+        also match the id value, later in the document, they are not
+        considered.
+
+        Multiple label elements can be given the same value for their
+        for attribute; doing so causes the associated form control (the
+        form control that for value references) to have multiple labels.
+
+        Note: A <label> element can have both a for attribute and a
+        contained control element, as long as the for attribute points
+        to the contained control element.
+        """
         return self.attributes['for'].value
 
     @for_.setter
@@ -5376,6 +5451,11 @@ class label(element):
 
     @property
     def form(self):
+        """ The form attribute specifies the form the label belongs to.
+
+        The value of this attribute must be equal to the id attribute of
+        a <form> element in the same document. 
+        """
         return self.attributes['form'].value
 
     @form.setter
