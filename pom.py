@@ -628,14 +628,14 @@ class pages(entities.entities):
                 
         raise IndexError('Path not found')
 
-    def append(self, obj, uniq=False, r=None):
+    def append(self, obj, uniq=False):
         obj._parentpages = self
         obj.name in [x.name for x in self]
         for pg in self:
             if pg.name == obj.name:
                 del self[pg.path]
                 break
-        r = super().append(obj, uniq, r)
+        super().append(obj, uniq)
 
 class page(dom.html):
     ExceptedBooleansStrings = (

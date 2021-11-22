@@ -2642,8 +2642,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         for e in es:
             e.orm.isdirty = True
 
-    def append(self, obj, uniq=False, r=None):
-        """ Append the `orm.entity` `obj` to this entities collection.
+    def append(self, e, uniq=False):
+        """ Append the `orm.entity` `e` to this entities collection.
         This is analogous to a Python lists `append` method. Typically,
         the += operator is used to achieve the append:
 
@@ -2656,24 +2656,18 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             assert myents.count == 1
 
-        :param: orm.entity obj: The entity being appended. If obj is an
+        :param: orm.entity e: The entity being appended. If e is an
         orm.entities collection, each entity in that collection will be
         appended one-at-a-time.
 
-        :param: bool uniq: Do not append if `obj` is already in the
+        :param: bool uniq: Do not append if `e` is already in the
         collection.
-
-        :param: orm.entities r: The collection of entities that were
-        successfully appended.
         """
 
-        # TODO Rename `obj` to `e` in this method and the base method.
-        if r is None:
-            r = self.orm.entities()
-
-        if isinstance(obj, entities):
-            for e in obj:
-                self.append(e, r=r)
+        if isinstance(e, entities):
+            es = e
+            for e in es:
+                self.append(e)
             return
 
         for clscomp in self.orm.composites:
@@ -2684,7 +2678,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # The self collection won't always have a reference to
                 # its composite.  For example: when the collection is
                 # being lazy-loaded.  The lazy-loading, however, will
-                # ensure the obj being appended will get this reference.
+                # ensure the e being appended will get this reference.
                 continue
             else:
                 # Sometimes, a reference to the composite will be set on
@@ -2692,15 +2686,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # del that so we use the reference set below by
                 # setattr().
                 with suppress(KeyError):
-                    del obj.__dict__[clscomp.__name__]
+                    del e.__dict__[clscomp.__name__]
 
                 # Assign the composite reference of this collection to
-                # the obj being appended, i.e.:
-                #    obj.composite = self.composite
-                setattr(obj, clscomp.__name__, objcomp)
+                # the e being appended, i.e.:
+                #    e.composite = self.composite
+                setattr(e, clscomp.__name__, objcomp)
 
-        super().append(obj, uniq, r)
-        return r
+        super().append(e, uniq)
 
     def _preparepredicate(self, _p1='', _p2=None, *args, **kwargs):
         p1, p2 = _p1, _p2
@@ -7418,20 +7411,19 @@ class primarykeyfieldmapping(fieldmapping):
 class ormclasseswrapper(entitiesmod.entities):
     """ A collection of ormclasswrapper objects.
     """
-    def append(self, obj, uniq=False, r=None):
+    def append(self, e, uniq=False):
         """ Add an wrapped orm class to the collection.
         """
-        if isinstance(obj, type):
-            obj = ormclasswrapper(obj)
-        elif isinstance(obj, ormclasswrapper):
+        if isinstance(e, type):
+            e = ormclasswrapper(e)
+        elif isinstance(e, ormclasswrapper):
             pass
-        elif isinstance(obj, ormclasseswrapper):
+        elif isinstance(e, ormclasseswrapper):
             pass
         else:
-            raise TypeError('obj is of the wrong type')
+            raise TypeError('e is of the wrong type')
 
-        super().append(obj, uniq, r)
-        return r
+        super().append(e, uniq)
 
     def __contains__(self, e):
         """ Returrns True if e is in self or is one of the wrapped
@@ -10738,36 +10730,33 @@ class associations(entities):
         # to always be a `constituents(ormclasseswrapper)` class.
         self.orm._constituents = dict()
 
-    def append(self, obj, uniq=False, r=None):
+    def append(self, e, uniq=False):
         """ Adds an ``orm.association`` entity to the collection.
 
-        :param: obj orm.association: The association object to append.
+        :param: e orm.association: The association object to append.
 
         :param: uniq bool: If True, only adds the object if it does not
         already exist.
-
-        :param: r list: An `entities` collection containing the objects
-        that were added.
         """
 
-        # If `obj` is an `association`, set it's `composite` to the
+        # If `e` is an `association`, set it's `composite` to the
         # `self`'s `composite`, e.g.::
         #
         #     artist_artifact.artist = self.orm.composite
         # 
-        # Otherwise, pass `obj` to the `super()`'s `append()` method. In
+        # Otherwise, pass `e` to the `super()`'s `append()` method. In
         # this case, it will likely be an a collection of `association`
         # objects.
         comp = self.orm.composite
-        if isinstance(obj, association):
-            # Backup obj so we can use it to ascend inheritance tree
-            obj1 = obj 
+        if isinstance(e, association):
+            # Backup e so we can use it to ascend inheritance tree
+            e1 = e 
 
             # We will continue up the inheritance tree until we find a
             # map that corresponds to the composite. We will set the
             # map's value to the composite.
-            while obj:
-                for map in obj.orm.mappings.entitymappings:
+            while e:
+                for map in e.orm.mappings.entitymappings:
                     # TODO We probably should be using the association's
                     # (self) mappings collection to test the composites
                     # names. The name that matters is on the
@@ -10778,7 +10767,7 @@ class associations(entities):
                             # NOTE self.orm.composite can be None when
                             # the association is new. Calling 
                             #
-                            #     settattr(obj, map.name, None)
+                            #     settattr(e, map.name, None)
                             #
                             # results in an error. The alternative block
                             # avoided this because the following will
@@ -10802,21 +10791,20 @@ class associations(entities):
                                 # Unfortately, when this is corrected,
                                 # several issues result when running the
                                 # tests.
-                                setattr(obj, map.name, comp)
+                                setattr(e, map.name, comp)
                                 break
                     elif isinstance(comp, map.entity):
-                        setattr(obj, map.name, comp)
+                        setattr(e, map.name, comp)
                         break
                 else:
-                    obj = obj.orm.super  # Ascend
+                    e = e.orm.super  # Ascend
                     continue
                 break
 
-            # Restore `obj` to its original reference
-            obj = obj1
+            # Restore `e` to its original reference
+            e = e1
 
-        super().append(obj, uniq, r)
-        return r
+        super().append(e, uniq)
 
     def entities_onremove(self, src, eargs):
         for map in self.orm.mappings.entitymappings:

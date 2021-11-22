@@ -630,11 +630,11 @@ class chronicles(entitiesmod.entities):
             r += chron.clone()
         return r
 
-    def append(self, obj, uniq=False, r=None):
+    def append(self, obj, uniq=False):
         if self.chronicler and self.count == self.chronicler.max - 1:
             self.shift()
         
-        super().append(obj, uniq=False, r=None)
+        super().append(obj, uniq=False)
 
     def where(self, p1, p2=None):
         if (type(p1), type(p2)) == (str, type(None)):

@@ -91,7 +91,7 @@ class attributes(entities.entities):
             attrs += attr.clone()
         return attrs
             
-    def append(self, o, v=None, uniq=False, r=None):
+    def append(self, o, v=None, uniq=False):
         """ Append an attribute to the collection. 
 
         :param: o object: The attribute being appended. o can be a
@@ -145,8 +145,6 @@ class attributes(entities.entities):
                 
         :param: uniq bool: If True, an append will only happen if the
         attribute is not already in the collection.
-
-        :param: r entities: For internal use only.
         """
 
         # TODO Some elements like <meta>, <br/>, etc., should not be
@@ -163,14 +161,14 @@ class attributes(entities.entities):
             return
 
         if hasattr(o, '__iter__'):
-            return super().append(o, uniq, r)
+            return super().append(o, uniq)
 
         for attr in self:
             if o.name == attr.name:
                 msg = 'Attribute already exists: ' + o.name
                 raise AttributeExistsError(msg)
 
-        return super().append(o, uniq, r)
+        return super().append(o, uniq)
 
     def __getitem__(self, key):
         """ Returns an `attribute` object based on the given `key`.

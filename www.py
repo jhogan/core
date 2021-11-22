@@ -1814,7 +1814,7 @@ class headers(entities.entities):
                 return hdr.value
         return None
 
-    def append(self, obj, uniq=False, r=None):
+    def append(self, obj, uniq=False):
         """ Allows colon seperate strings to be appended as new
         ``header`` objects::
 
@@ -1830,11 +1830,6 @@ class headers(entities.entities):
         a ``header`` object or a string as described above.
 
         :param: uniq bool: Only append the header if it is unique.
-
-        :param: r entities.entities: An entities.entities collection
-        contaning was was successfully appended. Note, shouldn't be used
-        by client code; it's existence as a parameter is to handle
-        recursive situations.  See ``entities.entities.append``.
         """
         if isinstance(obj, str):
             kvp = [x.strip() for x in obj.partition(':') if x != ':']
@@ -1844,7 +1839,7 @@ class headers(entities.entities):
                 )
             return self.append(header(*kvp))
 
-        super().append(obj=obj, uniq=uniq, r=r)
+        super().append(obj=obj, uniq=uniq)
 
     @property
     def list(self):

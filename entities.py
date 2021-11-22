@@ -1248,13 +1248,13 @@ class entities:
         """
         self.unshift(e)
     
-    def append(self, obj, uniq=False, r=None):
+    def append(self, obj, uniq=False):
         """ Appends ``obj`` to the end of the collection.
 
         The name append is based of Python's list's ``append`` method.
         It is useful when you want an entities collection to behave like
-        a list. However, the canonical way to append to a collection is
-        to use the += operator::
+        a list. However, the canonical way to append to a collection in
+        Core is to use the += operator::
             
             # Behave like a list
             es.append(e)
@@ -1271,17 +1271,7 @@ class entities:
 
         :param: uniq bool: If True, an append will only happen if the
         entity is not already in the collection.
-
-        :param: r entities: For internal use only.
         """
-
-        # Create the return object if it hasn't been passed in
-        # TODO s/==/is/
-        if r == None:
-            # We use a generic entities class here because to use the subclass
-            # (type(self)()) would cause errors in subclasses that demanded
-            # positional arguments be supplied.
-            r = entities()
 
         if isinstance(obj, entity):
             t = obj
@@ -1290,19 +1280,17 @@ class entities:
             for t in obj:
                 if uniq:
                     if t not in self:
-                        self.append(t, r=r)
+                        self.append(t)
                 else:
-                    self.append(t, r=r)
-            return r
+                    self.append(t)
+            return
         else: 
             raise ValueError(
                 'Unsupported object appended: ' + str(type(obj))
             )
 
         if uniq and t in self:
-            return r
-
-        r._ls.append(t)
+            return
 
         self.onbeforeadd(self, entityaddeventargs(t))
 
@@ -1310,7 +1298,6 @@ class entities:
 
         self.onadd(self, entityaddeventargs(t))
 
-        return r
 
     def __iadd__(self, t):
         """ Implement the += operator. See the docstring at
@@ -2711,9 +2698,9 @@ class indexes(entities):
                 return ix
         return None
 
-    def append(self, ix, uniq=None, r=None):
+    def append(self, ix, uniq=None):
         ix.indexes = self
-        return super().append(ix, uniq, r)
+        return super().append(ix, uniq)
         
 class index(entity):
     """ Represents an index.

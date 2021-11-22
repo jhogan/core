@@ -912,13 +912,10 @@ class test_entities(tester):
         ## Test appending one entity ##
         ks = knights.createthe4()
         ni = knight('knight who says ni')
-        ks1 = ks.append(ni)
+        ks.append(ni)
 
         self.assertEq(5, ks.count)
-        self.assertEq(1, ks1.count)
         self.assertIs(ks.last, ni)
-        self.assertIs(ks1.first, ni)
-        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending one unique entity with the uniq flag set. We
         ## should get a successful appending like above since the entity
@@ -926,24 +923,19 @@ class test_entities(tester):
 
         ks = knights.createthe4()
         ni = knight('knight who says ni')
-        ks1 = ks.append(ni, uniq=True)
+        ks.append(ni, uniq=True)
 
         self.assertEq(5, ks.count)
-        self.assertEq(1, ks1.count)
         self.assertIs(ks.last, ni)
-        self.assertIs(ks1.first, ni)
-        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending one non-unique entity with the uniq flag set. We
         ## should get a successful appending like above since the entity
         ## is unique.
 
         ks = knights.createthe4()
-        ks1 = ks.append(ks.first, uniq=True)
+        ks.append(ks.first, uniq=True)
 
         self.assertEq(4, ks.count)
-        self.assertTrue(ks1.isempty)
-        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending an entities collection to an entities collection.
         ks = knights.createthe4()
@@ -951,15 +943,11 @@ class test_entities(tester):
         nis += knight('knight who says ni 1')
         nis += knight('knight who says ni 2')
 
-        ks1 = ks.append(nis)
+        ks.append(nis)
 
         self.assertEq(6,           ks.count)
-        self.assertEq(2,           ks1.count)
         self.assertIs(nis.first,   ks.penultimate)
         self.assertIs(nis.second,  ks.last)
-        self.assertIs(nis.first,   ks1.first)
-        self.assertIs(nis.second,  ks1.second)
-        self.assertEq(entities.entities,    type(ks1))
 
         # Test appending an entities collection to an entities collection
         # where one of the entities being appended is not unique, though 
@@ -970,15 +958,11 @@ class test_entities(tester):
         nis += knight('knight who says ni 1')
         nis += ks.first # The non-unique entity
 
-        ks1 = ks.append(nis)
+        ks.append(nis)
 
         self.assertEq(6,           ks.count)
-        self.assertEq(2,           ks1.count)
         self.assertIs(nis.first,   ks.penultimate)
         self.assertIs(nis.second,  ks.last)
-        self.assertIs(nis.first,   ks1.first)
-        self.assertIs(nis.second,  ks1.second)
-        self.assertEq(entities.entities,    type(ks1))
 
         # Test appending an entities collection to an entities collection
         # where one of the entities being appended is not unique.
@@ -988,14 +972,10 @@ class test_entities(tester):
         nis += knight('knight who says ni 1')
         nis += ks.first # The non-unique entity
 
-        ks1 = ks.append(nis, uniq=True)
+        ks.append(nis, uniq=True)
 
         self.assertEq(5,           ks.count)
-        self.assertEq(1,           ks1.count)
         self.assertIs(nis.first,   ks.last)
-        self.assertIs(nis.first,   ks1.first)
-        self.assertEq(entities.entities,    type(ks1))
-        self.false(nis.second in ks1)
 
         # Test appending an entities collection to an entities collection
         # where both of the entities being appended are not unique.
@@ -1005,13 +985,9 @@ class test_entities(tester):
         nis += ks.first
         nis += ks.second # The non-unique entity
 
-        ks1 = ks.append(nis, uniq=True)
+        ks.append(nis, uniq=True)
 
         self.assertEq(4,           ks.count)
-        self.assertEq(0,           ks1.count)
-        self.assertEq(entities.entities,    type(ks1))
-        self.false(nis.first in ks1)
-        self.false(nis.second in ks1)
 
         ## Ensure we get a ValueError if we append something that isn't
         ## an entity or entities type
@@ -1023,8 +999,7 @@ class test_entities(tester):
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
-    def it_subclasses_append(self):
-
+    def it_overrides_append(self):
         # Append one knight
         sks = sillyknights()
         fk = knight('french knight')
@@ -1060,8 +1035,7 @@ class test_entities(tester):
 
         # Append a non-unique knight insisting in be unique using the append
         # method rather than the |= operator in order to obtain the results
-        res = sks.append(ni, uniq=True)
-        self.assertTrue(res.isempty)
+        sks.append(ni, uniq=True)
         self.assertEq(4, sks.count)
         for i, k in enumerate([fk, bk, fk, ni]):
             self.assertIs(sks[i], k)
@@ -1070,8 +1044,7 @@ class test_entities(tester):
         # using the append method rather than the |= operator in order to
         # obtain the results
         ks = ni + knight('knight who says ni2')
-        res = sks.append(ks, uniq=True)
-        self.assertTrue(res.issingular)
+        sks.append(ks, uniq=True)
         self.assertEq(5, sks.count)
         for i, k in enumerate([fk, bk, fk, ni, ks.second]):
             self.assertIs(sks[i], k)
@@ -17289,11 +17262,28 @@ class test_orm(tester):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
 class benchmark_orm_cpu(tester):
-    def it_instantiates_entity(self):
-        def f():
-            art = artist()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        orm.security().override = True
+        if self.rebuildtables:
+            orm.orm.recreate(
+                artists,
+            )
 
-        self.time(.8, f, 1000)
+    def it_instantiates_entity_without_arguments(self):
+        def f():
+            artist()
+
+        self.time(.8, f, 1_000)
+
+    def it_instantiates_entity_with_id_as_argument(self):
+        art = artist.getvalid()
+        art.save()
+        def f():
+            artist(art.id)
+
+        print(self.time(.82, f, 1_000))
+        #PR(f)
 
 class orm_migration(tester):
     def it_calls_table(self):
