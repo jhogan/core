@@ -3683,10 +3683,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
-        map = self.orm.mappings(attr)
+        self_orm = self.orm
+        self_orm_mappings = self_orm.mappings
+
+        map = self_orm_mappings(attr)
 
         if map is None:
-            maps = self.orm.mappings.supermappings
+            maps = self_orm_mappings.supermappings
 
             if attr not in maps:
                 return object.__setattr__(self, attr, v)
@@ -3707,7 +3710,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if var.fset:
                         return object.__setattr__(self, attr, v)
                 
-            self.orm.super.__setattr__(attr, v, cmp)
+            self_orm.super.__setattr__(attr, v, cmp)
         else:
             if isinstance(map, fieldmapping):
                 if map.issetter and not imp:
@@ -3732,7 +3735,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # of getting the attributes it's getting
                 e = v.orm.entity
                 while True:
-                    for map in self.orm.mappings.foreignkeymappings:
+                    for map in self_orm_mappings.foreignkeymappings:
 
                         # A flag to determine whether or not we set this
                         # map's `value` property.
@@ -3767,7 +3770,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             set = set and (not fkname or attr == fkname)
 
                         if set:
-                            if self.orm.isreflexive:
+                            if self_orm.isreflexive:
                                 if map.name.startswith(attr + '__'):
                                     self._setvalue(
                                         map.name, v.id, map.name, 
@@ -3811,7 +3814,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 #
                 #    pres = btl.orm.super.orm.super
                 #    assert pres.artist is rpr
-                sup = self.orm.super
+                sup = self_orm.super
                 if sup:
                     for map in sup.orm.mappings.entitymappings:
                         if map.entity in v.orm.entity.orm.supers:
