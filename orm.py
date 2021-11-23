@@ -3725,7 +3725,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             def setattr0(_, __, v):
                 map.value = v
 
-            self._setvalue(attr, v, attr, setattr0, cmp=cmp)
+            # Comparisons (cmp) are expensive because they require
+            # getting the old value. If the entity isnew, then we know
+            # there is no reason to check the old value.
+            cmp1 = False if self_orm.isnew else cmp
+                
+            self._setvalue(attr, v, attr, setattr0, cmp=cmp1)
 
             if type(map) is entitymapping:
                 # FIXME:6028ce62 An entitymapping attribute could be set
