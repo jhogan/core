@@ -17282,7 +17282,20 @@ class benchmark_orm_cpu(tester):
         def f():
             artist(art.id)
 
-        print(self.time(.82, f, 1_000))
+        print(self.time(1.35, f, 1_000))
+
+    def it_instantiates_entity_with_kwargs(self):
+        def f():
+            artist(firstname='Pablo')
+
+        print(self.time(.85, f, 1_000))
+
+    def it_sets_attribute(self):
+        art = artist.getvalid()
+        def f():
+            art.firstname = 'Pablo'
+
+        print(self.time(.0155, f, 1_000))
         #PR(f)
 
 class orm_migration(tester):
