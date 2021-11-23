@@ -3718,10 +3718,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # Call entity._setvalue to take advantage of its event
             # raising code. Pass in a custom setattr function for it to
-            # call. Use underscores for the paramenters since we already
+            # call. Use underscores for the parameter since we already
             # have the values it would pass in in this method's scope -
-            # except for the v which, may have been processed (i.e, if
-            # it is a str, it will have been strip()ed. 
+            # except for the v which may have been processed (i.e, if
+            # it is a str, it will have been strip()ed).
             def setattr0(_, __, v):
                 map.value = v
 
