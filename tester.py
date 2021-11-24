@@ -9,6 +9,7 @@ from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM
+from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
@@ -62,6 +63,11 @@ class testers(entities.entities):
         super().__init__(initial=initial)
         self.breakonexception = False
 
+        # If True, only run performance tests
+        self.onlyperformance = False
+
+        # If True (default), don't run performance tests.
+        self.excludeperformance = True
 
     def run(self, tu=None):
         # TODO testclass and testmethod would probably be better as
@@ -70,12 +76,26 @@ class testers(entities.entities):
 
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
+        self.duration = float()
+
         if config().inproduction:
             raise Exception("Won't run in production environment.")
 
-        for subcls in self.testerclasses:
-            if testclass and subcls.__name__ != testclass:
+        for cls in self.testerclasses:
+            
+            if self.onlyperformance and not cls.isperformance:
+                # If self.onlyperformance, skip tests that aren't
+                # performance tests
                 continue
+
+            # If testclass was given, but cls isn't that class, skip
+            if testclass and cls.__name__ != testclass:
+                continue
+            else:
+                if cls.isperformance and self.excludeperformance:
+                    # Don't run performance tests if
+                    # self.excludeperformance
+                    continue
 
             try:
                 inst = subcls(self)
@@ -222,6 +242,10 @@ class tester(entities.entity):
 
         orm.security().owner = self.user
         orm.security().proprietor = self.company
+
+    @classproperty
+    def isperformance(cls):
+        return cls.__name__.startswith('benchmark_')
 
     def recreateprinciples(self):
         principle().recreate()
@@ -1173,6 +1197,7 @@ class cli:
             ),
             nargs='?'
         )
+
         p.add_argument(
             '-b', 
             '--break', 
@@ -1197,12 +1222,31 @@ class cli:
             help="don't rebuild tables"
         )
 
+        grp = p.add_mutually_exclusive_group()
+        grp.add_argument(
+            '-P',                  
+            '--no-performance',
+            action='store_true',  
+            dest='noperformance',
+            help="exclude performance tests from run"
+        )
+
+        grp.add_argument(
+            '-p',                  
+            '--performance',
+            action='store_true',  
+            dest='performance',
+            help="only run performance tests"
+        )
+
         p.set_defaults(rebuildtables=True)
 
         self.args = p.parse_args()
 
         self.testers.breakonexception = self.args.breakonexception
         self.testers.rebuildtables = self.args.rebuildtables
+        self.testers.onlyperformance = self.args.performance
+        self.testers.excludeperformance = self.args.noperformance
 
     def _testers_onbeforeinvoketest(self, src, eargs):
         mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
