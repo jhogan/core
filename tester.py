@@ -98,12 +98,12 @@ class testers(entities.entities):
                     continue
 
             try:
-                inst = subcls(self)
+                inst = cls(self)
             except TypeError as ex:
                 raise TypeError(
                     'Be sure pass *args and **kwargs to '
                     f'super().__init__ from '
-                    f'{subcls.__name__}.__init__: {ex}'
+                    f'{cls.__name__}.__init__: {ex}'
                 )
 
             # TODO Capture exceptions here and collected any tester
@@ -118,14 +118,19 @@ class testers(entities.entities):
             inst.testers = self
             self += inst
 
-            for meth in subcls.__dict__.items():
+            for meth in cls.__dict__.items():
 
-                if type(meth[1]) != FunctionType: continue
-                if meth[0][0] == '_': continue
+                if type(meth[1]) is not FunctionType:
+                    continue
+
+                if meth[0][0] == '_':
+                    continue
+
                 if testmethod and testmethod != meth[0]:
                     continue
+
                 try:
-                    eargs = invoketesteventargs(subcls, meth)
+                    eargs = invoketesteventargs(cls, meth)
                     self.onbeforeinvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
@@ -1188,7 +1193,42 @@ class cli:
         # problems that happen sporadically.
 
         ts = self.testers
-        p = argparse.ArgumentParser()
+        epilog = textwrap.dedent('''
+        Examples:
+
+            # Run all tests
+            ./test.py
+
+            # Run all file tests
+            ./testfile.py
+
+            # Run all tests in the test_orm class inside of test.py
+            ./test.py test_orm
+
+            # Run the 'it_instantiates' test in the test_orm class
+            # inside of test.py
+            ./test.py test_orm.it_instantiates
+
+            # Break into debugger if there is an exception
+            ./test.py -b
+
+            # Only run performance tests. Exclude all the regular logic
+            # tests
+            ./test.py -p
+
+            # Exclude all performance tests. Only run logic tests.
+            ./test.py -P
+
+            # Note that this will run test_orm.it_instantiates even
+            # though it's not a performance test; the -P will be
+            # ignored.
+            ./test.py -P test_orm.it_instantiates
+            '''
+        )
+        p = argparse.ArgumentParser(
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=epilog
+        )
         p.add_argument(
             'testunit',
             help=(
@@ -1236,7 +1276,7 @@ class cli:
             '--performance',
             action='store_true',  
             dest='performance',
-            help="only run performance tests"
+            help="run performance tests"
         )
 
         p.set_defaults(rebuildtables=True)
