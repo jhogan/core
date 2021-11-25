@@ -8,7 +8,7 @@ from configfile import configfile
 from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
-from dbg import B, PM
+from dbg import B, PM, PR
 from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
@@ -525,7 +525,7 @@ class tester(entities.entity):
             self._failures += failure()
 
 
-    def time(self, expect, actual, number=None, msg=None):
+    def time(self, expect, actual, number=None, msg=None, **kwargs):
         """ Determine the time it takes to call `actual`. The average
         time to call `actual` in milliseconds is returned as a floating
         point number.
@@ -541,18 +541,46 @@ class tester(entities.entity):
         an average call time.
 
         :param: msg str: The message used when reporting failures.
+
+        :param: DBG bool: If True, debug information is reported to
+        stdout, `actual` is run through the profiler (cProfile), and the
+        top 20 most time-consuming methods used when calling `actual`
+        will be printed to stdout. The program then enters the debugger.
+        DBG is obviously used for debugging purposes and its use would
+        ideally never be committed to source control.
         """
 
+        dbg = kwargs.pop('DBG', False)
+
+        callable = actual
+
         # Create the Timer and execute
-        timer = timeit.Timer(stmt=actual)
+        timer = timeit.Timer(stmt=callable)
         actual = timer.timeit(number)
-            
+
         # Convert results to milliseconds
         actual *= 1000
 
         # Divide by number to get the average number of seconds it takes
         # to invoke the callable once.
         actual /= number
+
+        # If debug mode
+        if dbg:
+
+            # Print the expected time vs the actual time and whether the
+            # actual time exceeded the expected time
+            if expect > actual:
+                pass_ = True
+            else:
+                pass_ = 'FALSE'
+            print()
+            print(f'Actual time:    {actual}')
+            print(f'Expected Time:  {expect}')
+            print(f'Pass:           {pass_}\n')
+
+            # Profile and break
+            PR(callable)
 
         # Test
         if actual > expect:
