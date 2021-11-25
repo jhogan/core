@@ -109,7 +109,9 @@ def profile(callable):
     # Create a Stats object and sort the results by cumulitive time.
     # This puts the most time consuming methods at the top of the
     # list when printing out.
-    p = pstats.Stats(p).sort_stats(pstats.SortKey.CUMULATIVE)
+    p = pstats.Stats(p)
+    p.strip_dirs()
+    p.sort_stats(pstats.SortKey.CUMULATIVE)
     p.print_stats(10)
 
     B()
