@@ -17274,7 +17274,19 @@ class benchmark_orm_cpu(tester):
         def f():
             artist()
 
-        self.time(.8, f, 1_000)
+        self.time(.6, f, 1_000)
+
+    def it_instantiates_subentity_without_arguments(self):
+        def f():
+            singer()
+
+        self.time(1.5, f, 1_000)
+
+    def it_instantiates_subsubentity_without_arguments(self):
+        def f():
+            rapper()
+
+        self.time(2.5, f, 1_000)
 
     def it_instantiates_entity_with_id_as_argument(self):
         art = artist.getvalid()
