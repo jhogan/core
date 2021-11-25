@@ -3311,10 +3311,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
-            self.onaftersave       +=  self._self_onaftersave
-            self.onafterload       +=  self._self_onafterload
-            self.onafterreconnect  +=  self._self_onafterreconnect
-
             super().__init__()
 
             # If no id was passed to the constructor
@@ -3428,6 +3424,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def onaftersave(self):
         if not hasattr(self, '_onaftersave'):
             self._onaftersave = entitiesmod.event()
+            self._onaftersave += self._self_onaftersave
+
         return self._onaftersave
 
     @onaftersave.setter
@@ -3438,6 +3436,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def onafterload(self):
         if not hasattr(self, '_onafterload'):
             self._onafterload = entitiesmod.event()
+            self._onafterload += self._self_onafterload
         return self._onafterload
 
     @onafterload.setter
@@ -3458,6 +3457,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def onafterreconnect(self):
         if not hasattr(self, '_onafterreconnect'):
             self._onafterreconnect = entitiesmod.event()
+            self._onafterreconnect += self._self_onafterreconnect
+
         return self._onafterreconnect
 
     @onafterreconnect.setter
