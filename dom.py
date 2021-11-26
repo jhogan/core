@@ -5463,11 +5463,27 @@ class label(element):
         self.attributes['form'].value = v
 
 class detailss(elements):
-    pass
+    """ A class used to contain a collection of ``details`` elements."""
 
 class details(element):
+    """ The <details> HTML element creates a disclosure widget in which
+    information is visible only when the widget is toggled into an
+    "open" state. A summary or label must be provided using the
+    <summary> element.
+
+    A disclosure widget is typically presented onscreen using a small
+    triangle which rotates (or twists) to indicate open/closed status,
+    with a label next to the triangle. The contents of the <summary>
+    element are used as the label for the disclosure widget.
+    """
     @property
     def open(self):
+        """ This Boolean attribute indicates whether or not the details
+        — that is, the contents of the <details> element — are currently
+        visible. The details are shown when this attribute exists, or
+        hidden when this attribute is absent. By default this attribute
+        is absent which means the details are not visible.
+        """
         return self.attributes['open'].value
 
     @open.setter
@@ -5475,62 +5491,35 @@ class details(element):
         self.attributes['open'].value = v
 
 class tables(elements):
-    pass
+    """ A class used to contain a collection of ``table`` elements."""
 
 class table(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
+    """ The <table> HTML element represents tabular data — that is,
+    information presented in a two-dimensional table comprised of rows
+    and columns of cells containing data.
+    """
 
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
+class trs(elements):
+    """ A class used to contain a collection of ``tr`` elements."""
 
-    @property
-    def summary(self):
-        return self.attributes['summary'].value
-
-    @summary.setter
-    def summary(self, v):
-        self.attributes['summary'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
-    def border(self):
-        return self.attributes['border'].value
-
-    @border.setter
-    def border(self, v):
-        self.attributes['border'].value = v
-
-    @property
-    def background(self):
-        return self.attributes['background'].value
-
-    @background.setter
-    def background(self, v):
-        self.attributes['background'].value = v
-
-
-class tablerows(elements):
-    pass
-
-class tablerow(element):
-    tag = 'tr'
+class tr(element):
+    """ The <tr> HTML element defines a row of cells in a table. The
+    row's cells can then be established using a mix of <td> (data cell)
+    and <th> (header cell) elements.
+    """
 
 class selects(elements):
-    pass
+    """ A class used to contain a collection of ``tr`` elements."""
 
 class select(element):
+    """ The <select> HTML element represents a control that provides a
+    menu of options:
+    """
     @property
     def selected(self):
+        """ Returns a list of the ``option`` elements that were marked as
+        seleted (<option selected>My Option</option>).
+        """
         r = list()
         for el in self:
             if not isinstance(el, option):
@@ -5543,6 +5532,13 @@ class select(element):
 
     @selected.setter
     def selected(self, v):
+        """ Set the ``option`` elements to selected if their value
+        properties is in the v list.
+
+        :param: v list<str>|tuple<str>: A list or tuple of str values.
+        If an option has a value that is in this list, the option
+        element will be marked as selected.
+        """
         for el in self:
             if not isinstance(el, option):
                 continue
