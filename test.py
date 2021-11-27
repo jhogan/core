@@ -17274,7 +17274,7 @@ class benchmark_orm_cpu(benchmark):
         def f():
             artist()
 
-        self.time(.6, f, 1_000)
+        self.time(.5, .7, f, 1_000)
 
     def it_instantiates_subentity_without_arguments(self):
         def f():
