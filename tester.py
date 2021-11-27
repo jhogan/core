@@ -92,7 +92,8 @@ class testers(entities.entities):
             if testclass and cls.__name__ != testclass:
                 continue
             else:
-                if cls.isperformance and self.excludeperformance:
+                isbenchmark = benchmark in cls.__mro__
+                if isbenchmark and self.excludeperformance:
                     # Don't run performance tests if
                     # self.excludeperformance
                     continue
@@ -137,12 +138,25 @@ class testers(entities.entities):
                     if self.breakonexception:
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
-                    inst._failures += failure(ex, assert_=meth[0])
+
+                    if isbenchmark:
+                        raise
+                    else:
+                        inst._failures += failure(ex, assert_=meth[0])
         print('')
 
     @property
     def testerclasses(self):
-        return tester.__subclasses__()
+        def getsubclasses(cls, ls):
+            for cls in cls.__subclasses__():
+                if cls not in (benchmark, ):
+                    ls.append(cls)
+                getsubclasses(cls, ls)
+
+        r = list()
+        getsubclasses(tester, r)
+        return r
+
 
     @property
     def ok(self):
@@ -243,6 +257,7 @@ class tester(entities.entity):
     def __init__(self, testers):
         import orm
         self._failures = failures()
+        self.assessments = assessments(self)
         self.testers = testers
 
         orm.security().owner = self.user
@@ -523,71 +538,6 @@ class tester(entities.entity):
     def all(self, actual, msg=None):
         if not all(actual):
             self._failures += failure()
-
-
-    def time(self, expect, actual, number=None, msg=None, **kwargs):
-        """ Determine the time it takes to call `actual`. The average
-        time to call `actual` in milliseconds is returned as a floating
-        point number.
-
-        :param: expect float|int: The time in milliseconds that `actual`
-        should take to run. If this time is exceeded, a failure is
-        reported.
-
-        :param: actual callable: The function or lambda to time.
-
-        :param: number int: The number of times to repeat the invocation
-        of `actual`. We want to call `actual` a number of times to get
-        an average call time.
-
-        :param: msg str: The message used when reporting failures.
-
-        :param: DBG bool: If True, debug information is reported to
-        stdout, `actual` is run through the profiler (cProfile), and the
-        top 20 most time-consuming methods used when calling `actual`
-        will be printed to stdout. The program then enters the debugger.
-        DBG is obviously used for debugging purposes and its use would
-        ideally never be committed to source control.
-        """
-
-        dbg = kwargs.pop('DBG', False)
-
-        callable = actual
-
-        # Create the Timer and execute
-        timer = timeit.Timer(stmt=callable)
-        actual = timer.timeit(number)
-
-        # Convert results to milliseconds
-        actual *= 1000
-
-        # Divide by number to get the average number of seconds it takes
-        # to invoke the callable once.
-        actual /= number
-
-        # If debug mode
-        if dbg:
-
-            # Print the expected time vs the actual time and whether the
-            # actual time exceeded the expected time
-            if expect > actual:
-                pass_ = True
-            else:
-                pass_ = 'FALSE'
-            print()
-            print(f'Actual time:    {actual}')
-            print(f'Expected Time:  {expect}')
-            print(f'Pass:           {pass_}\n')
-
-            # Profile and break
-            PR(callable)
-
-        # Test
-        if actual > expect:
-            self._failures += failure()
-
-        # Return the average time to run `actual` in milliseconds
-        return actual
 
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
@@ -1059,6 +1009,70 @@ class tester(entities.entity):
             # TODO:ed602720
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
+class benchmark(tester):
+    def time(self, min, max, callable, number=None, msg=None, **kwargs):
+        """ Determine the time it takes to call `actual`. The average
+        time to call `actual` in milliseconds is returned as a floating
+        point number.
+
+        :param: expect float|int: The time in milliseconds that `actual`
+        should take to run. If this time is exceeded, a failure is
+        reported.
+
+        :param: actual callable: The function or lambda to time.
+
+        :param: number int: The number of times to repeat the invocation
+        of `actual`. We want to call `actual` a number of times to get
+        an average call time.
+
+        :param: msg str: The message used when reporting failures.
+
+        :param: DBG bool: If True, debug information is reported to
+        stdout, `actual` is run through the profiler (cProfile), and the
+        top 20 most time-consuming methods used when calling `actual`
+        will be printed to stdout. The program then enters the debugger.
+        DBG is obviously used for debugging purposes and its use would
+        ideally never be committed to source control.
+        """
+
+        dbg = kwargs.pop('DBG', False)
+
+        # Create the Timer and execute
+        timer = timeit.Timer(stmt=callable)
+        actual = timer.timeit(number)
+
+        # Convert results to milliseconds
+        actual *= 1000
+
+        # Divide by number to get the average number of seconds it takes
+        # to invoke the callable once.
+        actual /= number
+
+        # If debug mode
+        if dbg:
+
+            # Print the expected time vs the actual time and whether the
+            # actual time exceeded the expected time
+            if expect > actual:
+                pass_ = True
+            else:
+                pass_ = 'FALSE'
+            print()
+            print(f'Actual time:    {actual}')
+            print(f'Expected Time:  {expect}')
+            print(f'Pass:           {pass_}\n')
+
+            # Profile and break
+            PR(callable)
+
+        self.assessments += assessment(min, max, actual, number)
+
+        # Return the average time to run `actual` in milliseconds
+        return actual
+
+    def __str__(self):
+        return str(self.assessments)
+
 class httpresponse(entities.entity):
     # TODO:ed602720 Is this dead code. Shouldn't we be using
     # www.response for this.
@@ -1110,6 +1124,50 @@ class httpresponse(entities.entity):
         r += pprint.pformat(self.body)
         return r
             
+class assessments(entities.entities):
+    def __init__(self, tester, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tester = tester
+
+    def __str__(self):
+        r = type(self.tester).__name__
+        r += '\n'
+        for ass in self:
+            r += f'{ass}'
+
+        return r
+
+class assessment(entities.entity):
+    def __init__(self, min, max, actual, number, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.min = min
+        self.max = max
+        self.number = number
+        self.actual = actual
+
+        frm = sys._getframe()
+        while frm := frm.f_back:
+            self.tester = frm.f_locals['self']
+            self.method = frm.f_code.co_name
+            isbenchmark = isinstance(self.tester, benchmark)
+            if isbenchmark and self.method.startswith('it_'):
+                break
+        else:
+            raise Exception('Cannot find benchmark class')
+        
+    def __str__(self):
+        r = str(self.method)
+        r += f' ({self.min}-{self.max}) [{self.actual}] '
+        if self.actual < self.min:
+            r += 'LOW'
+        elif self.actual > self.max:
+            r += 'HIGH'
+        else: 
+            r += 'pass'
+
+        return f'{r}\n'
+    
 class failures(entities.entities):
     pass
 

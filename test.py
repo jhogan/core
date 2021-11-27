@@ -17261,7 +17261,7 @@ class test_orm(tester):
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
-class benchmark_orm_cpu(tester):
+class benchmark_orm_cpu(benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True
