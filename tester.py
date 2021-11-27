@@ -33,8 +33,8 @@ import urllib
 import uuid
 import www
 
-""" This module provides unit testing for the core framework, web pages,
-and any other code in the core repository.
+""" This module provides integration testing and benchmarking for the
+core framework, web pages, and any other code in the core repository.
 
 TODOs:
     TODO Ensure tester.py won't run in non-dev environment
@@ -92,7 +92,9 @@ class testers(entities.entities):
             if testclass and cls.__name__ != testclass:
                 continue
             else:
+                # Is cls a benchmark test
                 isbenchmark = benchmark in cls.__mro__
+
                 if isbenchmark and self.excludeperformance:
                     # Don't run performance tests if
                     # self.excludeperformance
@@ -1010,31 +1012,41 @@ class tester(entities.entity):
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
 class benchmark(tester):
+    """ A type of tester class that represents benchmark/performance
+    tests.
+    """
+
     def time(self, min, max, callable, number=None, msg=None, **kwargs):
         """ Determine the time it takes to call `actual`. The average
         time to call `actual` in milliseconds is returned as a floating
         point number.
 
-        :param: expect float|int: The time in milliseconds that `actual`
-        should take to run. If this time is exceeded, a failure is
-        reported.
+        :param: min float|int: The minimum time the test was expected to
+        take.
 
-        :param: actual callable: The function or lambda to time.
+        :param: max float|int: The maximum time the test was expected to
+        take.
+
+        :param: callable callable: The function or lambda to benchmark.
 
         :param: number int: The number of times to repeat the invocation
-        of `actual`. We want to call `actual` a number of times to get
-        an average call time.
+        of `callable`. We want to call `callable` a number of times to
+        get an average call time.
 
-        :param: msg str: The message used when reporting failures.
+        :param: msg str: The message used when reporting failures
+        (currently unused).
 
         :param: DBG bool: If True, debug information is reported to
-        stdout, `actual` is run through the profiler (cProfile), and the
-        top 20 most time-consuming methods used when calling `actual`
-        will be printed to stdout. The program then enters the debugger.
-        DBG is obviously used for debugging purposes and its use would
-        ideally never be committed to source control.
+        stdout, `callable` is run through the profiler (cProfile), and
+        the top 20 most time-consuming methods used when calling
+        `callable` will be printed to stdout. The program then enters the
+        debugger.  DBG is obviously used for debugging purposes and its
+        use would ideally never be committed to source control.
+
+        :return: float: The time it took, on average, to run callable.
         """
 
+        # Get the dbg variable; default False
         dbg = kwargs.pop('DBG', False)
 
         # Create the Timer and execute
@@ -1050,7 +1062,6 @@ class benchmark(tester):
 
         # If debug mode
         if dbg:
-
             # Print the expected time vs the actual time and whether the
             # actual time exceeded the expected time
             if expect > actual:
@@ -1065,12 +1076,15 @@ class benchmark(tester):
             # Profile and break
             PR(callable)
 
+        # Record the assesment for future reporting
         self.assessments += assessment(min, max, actual, number)
 
         # Return the average time to run `actual` in milliseconds
         return actual
 
     def __str__(self):
+        """ Return a report of the benchmarks assessments.
+        """
         return str(self.assessments)
 
 class httpresponse(entities.entity):
@@ -1125,6 +1139,8 @@ class httpresponse(entities.entity):
         return r
             
 class assessments(entities.entities):
+    """ Contains a collections of benchmark assessments.
+    """
     def __init__(self, tester, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tester = tester
@@ -1138,18 +1154,46 @@ class assessments(entities.entities):
         return r
 
 class assessment(entities.entity):
+    """ Represents an assessment of a benchmark.
+
+    An assesment records the unit (method or function) that was
+    assessed, the duration that it was expected to run in, and the
+    actual time it took to complete.
+    """
+
     def __init__(self, min, max, actual, number, *args, **kwargs):
+        """ Create an assessment.
+
+        :param: min float|int: Along with max, represents the range of
+        milliseconds that was expected for the test to run.
+
+        :param: max float|int: Along with min, represents the range of
+        milliseconds that was expected for the test to run.
+
+        :param: actual float: The duration, in milliseconds, the unit took.
+        """
+        # XXX Remove number. We aren't using it.
         super().__init__(*args, **kwargs)
 
+        # Record object state
         self.min = min
         self.max = max
         self.number = number
         self.actual = actual
 
+        # Use instrospection to get the class (tester) and method that
+        # created the assessment. This should represent the unit that
+        # was assessed.
         frm = sys._getframe()
         while frm := frm.f_back:
+            # Get the class
             self.tester = frm.f_locals['self']
+
+            # Get the method being assessed
             self.method = frm.f_code.co_name
+
+            # Make sure the class and method was an actual benchmark
+            # test.
             isbenchmark = isinstance(self.tester, benchmark)
             if isbenchmark and self.method.startswith('it_'):
                 break
@@ -1157,6 +1201,8 @@ class assessment(entities.entity):
             raise Exception('Cannot find benchmark class')
         
     def __str__(self):
+        """ Reports the details of the assessment.
+        """
         r = str(self.method)
         r += f' ({self.min}-{self.max}) [{self.actual}] '
         if self.actual < self.min:
