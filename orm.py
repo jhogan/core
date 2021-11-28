@@ -4811,7 +4811,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # rapper object by scanning this classes entitymappings and
             # seeing if the attr is in one of the entitymapping's
             # entity's base classes.
-            for map1 in self.orm.mappings.entitymappings:
+            for map1 in self_orm.mappings.entitymappings:
 
                 if map1.isowner or map1.isproprietor:
                     continue
@@ -4887,7 +4887,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 name = sup1.orm.entity.__name__
 
                                 # Get most specialized version of self
-                                spec = self.orm.specialist
+                                spec = self_orm.specialist
 
                                 # if e is an entity; not an entities
                                 if isinstance(e, entity):
