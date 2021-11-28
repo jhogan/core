@@ -17349,8 +17349,14 @@ class benchmark_orm_cpu(benchmark):
         def f():
             rpr.firstname = 'Pablo'
 
-        self.time(.005, .0155, f, 1_000, DBG=True)
+        self.time(.005, .0155, f, 1_000)
 
+    def it_saves_entity(self):
+        def f():
+            art = artist.getvalid()
+            art.save()
+
+        self.time(3.7, 5.0, f, 100)
 class orm_migration(tester):
     def it_calls_table(self):
         class cats(orm.entities):
