@@ -5550,6 +5550,9 @@ class select(element):
             
     @property
     def required(self):
+        """ A Boolean attribute indicating that an option with a
+        non-empty string value must be selected.
+        """
         return self.attributes['required'].value
 
     @required.setter
@@ -5558,6 +5561,12 @@ class select(element):
 
     @property
     def multiple(self):
+        """ This Boolean attribute indicates that multiple options can
+        be selected in the list. If it is not specified, then only one
+        option can be selected at a time. When multiple is specified,
+        most browsers will show a scrolling list box instead of a single
+        line dropdown.
+        """
         return self.attributes['multiple'].value
 
     @multiple.setter
@@ -5566,6 +5575,10 @@ class select(element):
 
     @property
     def autofocus(self):
+        """ This Boolean attribute lets you specify that a form control
+        should have input focus when the page loads. Only one form
+        element in a document can have the autofocus attribute.
+        """
         return self.attributes['autofocus'].value
 
     @autofocus.setter
@@ -5574,6 +5587,12 @@ class select(element):
 
     @property
     def size(self):
+        """ If the control is presented as a scrolling list box (e.g.
+        when multiple is specified), this attribute represents the
+        number of rows in the list that should be visible at one time.
+        Browsers are not required to present a select element as a
+        scrolled list box.  The default value is 0.
+        """
         return self.attributes['size'].value
 
     @size.setter
@@ -5582,6 +5601,16 @@ class select(element):
 
     @property
     def form(self):
+        """ The <form> element to associate the <select> with (its form
+        owner). The value of this attribute must be the id of a <form>
+        in the same document. (If this attribute is not set, the
+        <select> is associated with its ancestor <form> element, if
+        any.)
+
+        This attribute lets you associate <select> elements to <form>s
+        anywhere in the document, not just inside a <form>. It can also
+        override an ancestor <form> element.
+        """
         return self.attributes['form'].value
 
     @form.setter
@@ -5590,6 +5619,8 @@ class select(element):
 
     @property
     def name(self):
+        """ This attribute is used to specify the name of the control.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -5598,6 +5629,12 @@ class select(element):
 
     @property
     def disabled(self):
+        """ This Boolean attribute indicates that the user cannot
+        interact with the control. If this attribute is not specified,
+        the control inherits its setting from the containing element,
+        for example <fieldset>; if there is no containing element with
+        the disabled attribute set, then the control is enabled.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
@@ -5606,6 +5643,10 @@ class select(element):
 
     @property
     def autocomplete(self):
+        """ A DOMString providing a hint for a user agent's autocomplete
+        feature. See The HTML autocomplete attribute for a complete list
+        of values and details on how to use autocomplete.
+        """
         return self.attributes['autocomplete'].value
 
     @autocomplete.setter
@@ -5613,11 +5654,18 @@ class select(element):
         self.attributes['autocomplete'].value = v
 
 class optgroups(elements):
-    pass
+    """ A class used to contain a collection of ``optgroup`` elements."""
 
 class optgroup(element):
+    """ The <optgroup> HTML element creates a grouping of options within
+    a <select> element.
+    """
     @property
     def label(self):
+        """ The name of the group of options, which the browser can use
+        when labeling the options in the user interface. This attribute
+        is mandatory if this element is used.
+        """
         return self.attributes['label'].value
 
     @label.setter
@@ -5626,42 +5674,34 @@ class optgroup(element):
 
     @property
     def disabled(self):
+        """ If this Boolean attribute is set, none of the items in this
+        option group is selectable. Often browsers grey out such control
+        and it won't receive any browsing events, like mouse clicks or
+        focus-related ones.
+        """
         return self.attributes['disabled'].value
 
     @disabled.setter
     def disabled(self, v):
         self.attributes['disabled'].value = v
 
-class bgsounds(elements):
-    pass
-
-class bgsound(element):
-    @property
-    def loop(self):
-        return self.attributes['loop'].value
-
-    @loop.setter
-    def loop(self, v):
-        self.attributes['loop'].value = v
-
-class basefonts(elements):
-    pass
-
-class basefont(element):
-    @property
-    def color(self):
-        return self.attributes['color'].value
-
-    @color.setter
-    def color(self, v):
-        self.attributes['color'].value = v
-
 class qs(elements):
-    pass
+    """ A class used to contain a collection of ``q`` elements."""
 
 class q(element):
+    """ The <q> HTML element indicates that the enclosed text is a short
+    inline quotation. Most modern browsers implement this by surrounding
+    the text in quotation marks. This element is intended for short
+    quotations that don't require paragraph breaks; for long quotations
+    use the <blockquote> element.
+    """
     @property
     def cite(self):
+        """ The value of this attribute is a URL that designates a
+        source document or message for the information quoted. This
+        attribute is intended to point to information explaining the
+        context or the reference for the quote.
+        """
         return self.attributes['cite'].value
 
     @cite.setter
