@@ -17280,13 +17280,13 @@ class benchmark_orm_cpu(benchmark):
         def f():
             singer()
 
-        self.time(1.5, f, 1_000)
+        self.time(1.3, 1.5, f, 1_000)
 
     def it_instantiates_subsubentity_without_arguments(self):
         def f():
             rapper()
 
-        self.time(2.5, f, 1_000)
+        self.time(2.2, 2.55, f, 1_000)
 
     def it_instantiates_entity_with_id_as_argument(self):
         art = artist.getvalid()
@@ -17294,20 +17294,62 @@ class benchmark_orm_cpu(benchmark):
         def f():
             artist(art.id)
 
-        self.time(1.35, f, 1_000)
+        self.time(0.9, 1.35, f, 1_000)
+
+    def it_instantiates_subentity_with_id_as_argument(self):
+        sng = singer.getvalid()
+        sng.save()
+        def f():
+            singer(sng.id)
+
+        self.time(0.9, 1.35, f, 1_000)
+
+    def it_instantiates_subsubentity_with_id_as_argument(self):
+        rpr = rapper.getvalid()
+        rpr.save()
+        def f():
+            rapper(rpr.id)
+
+        self.time(0.9, 1.35, f, 1_000)
 
     def it_instantiates_entity_with_kwargs(self):
         def f():
             artist(firstname='Pablo')
 
-        self.time(.85, f, 1_000)
+        self.time(.6, .85, f, 1_000)
 
-    def it_sets_attribute(self):
+    def it_instantiates_subentity_with_kwargs(self):
+        def f():
+            singer(firstname='Pablo')
+
+        self.time(.6, 1.5, f, 1_000)
+
+    def it_instantiates_subsubentity_with_kwargs(self):
+        def f():
+            rapper(firstname='Pablo')
+
+        self.time(.6, 2.5, f, 1_000)
+
+    def it_sets_attribute_on_entity(self):
         art = artist.getvalid()
         def f():
             art.firstname = 'Pablo'
 
-        self.time(.0155, f, 1_000)
+        self.time(.005, .0155, f, 1_000)
+
+    def it_sets_attribute_on_subentity(self):
+        sng = singer.getvalid()
+        def f():
+            sng.firstname = 'Pablo'
+
+        self.time(.005, .0155, f, 1_000)
+
+    def it_sets_attribute_on_subsubentity(self):
+        rpr = rapper.getvalid()
+        def f():
+            rpr.firstname = 'Pablo'
+
+        self.time(.005, .0155, f, 1_000, DBG=True)
 
 class orm_migration(tester):
     def it_calls_table(self):
