@@ -1197,8 +1197,9 @@ class assessment(entities.entity):
     def __str__(self):
         """ Reports the details of the assessment.
         """
-        r = str(self.method)
-        r += f' ({self.min}-{self.max}) [{self.actual}] '
+        r = f'\t{self.method:50}'
+        range = f'({self.min:.2f}-{self.max:.2f})'
+        r += f' {range:14} [{self.actual:.2f}]  '
         if self.actual < self.min:
             r += 'LOW'
         elif self.actual > self.max:
