@@ -1046,9 +1046,6 @@ class benchmark(tester):
         :return: float: The time it took, on average, to run callable.
         """
 
-        # Get the dbg variable; default False
-        dbg = kwargs.pop('DBG', False)
-
         # Create the Timer and execute
         timer = timeit.Timer(stmt=callable)
         actual = timer.timeit(number)
@@ -1060,24 +1057,21 @@ class benchmark(tester):
         # to invoke the callable once.
         actual /= number
 
+        # Record the assesment for future reporting
+        self.assessments += assessment(min, max, actual, number)
+
         # If debug mode
-        if dbg:
-            # Print the expected time vs the actual time and whether the
-            # actual time exceeded the expected time
-            if expect > actual:
-                pass_ = True
-            else:
-                pass_ = 'FALSE'
-            print()
-            print(f'Actual time:    {actual}')
-            print(f'Expected Time:  {expect}')
-            print(f'Pass:           {pass_}\n')
+        if kwargs.get('DBG', False):
+            
+            # Get the stringified assesment we added above and remove
+            # extraneous whitespace
+            ass = ' '.join(str(self.assessments.last).split())
+
+            # Print assement
+            print(f'\n* {ass}\n')
 
             # Profile and break
             PR(callable)
-
-        # Record the assesment for future reporting
-        self.assessments += assessment(min, max, actual, number)
 
         # Return the average time to run `actual` in milliseconds
         return actual
