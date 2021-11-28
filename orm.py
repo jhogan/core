@@ -3963,7 +3963,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Create an executioner object with the above save() callable
         exec = db.executioner(save)
 
-        # Register reconnect events of then executioner so they can be
+        # Register reconnect events of the executioner so they can be
         # issued
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
