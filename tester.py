@@ -1016,7 +1016,11 @@ class benchmark(tester):
     tests.
     """
 
-    def time(self, min, max, callable, number=None, msg=None, **kwargs):
+    def time(self, 
+        min, max, callable, 
+        number=None, msg=None, setup='pass',
+        **kwargs
+    ):
         """ Determine the time it takes to call `actual`. The average
         time to call `actual` in milliseconds is returned as a floating
         point number.
@@ -1047,7 +1051,7 @@ class benchmark(tester):
         """
 
         # Create the Timer and execute
-        timer = timeit.Timer(stmt=callable)
+        timer = timeit.Timer(stmt=callable, setup=setup)
         actual = timer.timeit(number)
 
         # Convert results to milliseconds
