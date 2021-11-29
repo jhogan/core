@@ -17270,6 +17270,8 @@ class benchmark_orm_cpu(benchmark):
                 artists,
             )
 
+    ''' Instantiation '''
+    # it_instantiates_*entity_without_arguments #
     def it_instantiates_entity_without_arguments(self):
         def f():
             artist()
@@ -17288,6 +17290,7 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(2.2, 2.55, f, 1_000)
 
+    # it_instantiates_*entity_with_id_as_argument #
     def it_instantiates_entity_with_id_as_argument(self):
         art = artist.getvalid()
         art.save()
@@ -17312,6 +17315,7 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(0.9, 1.35, f, 1_000)
 
+    # it_instantiates_*entity_with_kwargs #
     def it_instantiates_entity_with_kwargs(self):
         def f():
             artist(firstname='Pablo')
@@ -17330,33 +17334,78 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(.6, 2.5, f, 1_000)
 
+    ''' Attribute assignment '''
+
+    # it_sets_attribute_on_*entity #
     def it_sets_attribute_on_entity(self):
         art = artist.getvalid()
         def f():
             art.firstname = 'Pablo'
 
-        self.time(.005, .0155, f, 1_000)
+        self.time(.005, .03, f, 1_000)
 
     def it_sets_attribute_on_subentity(self):
         sng = singer.getvalid()
         def f():
             sng.firstname = 'Pablo'
 
-        self.time(.005, .0155, f, 1_000)
+        self.time(.005, .03, f, 1_000)
 
     def it_sets_attribute_on_subsubentity(self):
         rpr = rapper.getvalid()
         def f():
             rpr.firstname = 'Pablo'
 
-        self.time(.005, .0155, f, 1_000)
+        self.time(.005, .03, f, 1_000)
 
+    ''' INSERT '''
+
+    # it_saves_*entity #
     def it_saves_entity(self):
         def f():
             art = artist.getvalid()
             art.save()
 
         self.time(3.7, 5.0, f, 100)
+
+    def it_saves_subentity(self):
+        def f():
+            sng = singer.getvalid()
+            sng.save()
+
+        self.time(5.0, 7.5, f, 100)
+
+    def it_saves_subsubentity(self):
+        def f():
+            rpr = rapper.getvalid()
+            rpr.save()
+
+        self.time(10.0, 13.0, f, 100)
+
+    ''' INSERT atomic '''
+
+    # it_saves_*entity_objects_atomically #
+    def it_saves_entity_objects_atomically(self):
+        def f():
+            art = artist.getvalid()
+            art.save(artist.getvalid())
+
+        self.time(4.7, 7.0, f, 100)
+
+    def it_saves_subentity_objects_atomically(self):
+        def f():
+            sng = singer.getvalid()
+            sng.save(singer.getvalid())
+
+        self.time(12.0, 14.0, f, 100)
+
+    def it_saves_subsubentity_objects_atomically(self):
+        def f():
+            rpr = rapper.getvalid()
+            rpr.save(singer.getvalid())
+
+        self.time(18.0, 19.0, f, 100)
+
 class orm_migration(tester):
     def it_calls_table(self):
         class cats(orm.entities):
