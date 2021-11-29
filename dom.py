@@ -5709,11 +5709,22 @@ class q(element):
         self.attributes['cite'].value = v
 
 class sources(elements):
-    pass
+    """ A class used to contain a collection of ``source`` elements."""
 
 class source(element):
+    """ The <source> HTML element specifies multiple media resources for
+    the <picture>, the <audio> element, or the <video> element. It is an
+    empty element, meaning that it has no content and does not have a
+    closing tag. It is commonly used to offer the same media content in
+    multiple file formats in order to provide compatibility with a broad
+    range of browsers given their differing support for image file
+    formats and media file formats.
+    """
     @property
     def type(self):
+        """ The MIME media type of the resource, optionally with a
+        codecs parameter.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -5722,6 +5733,10 @@ class source(element):
 
     @property
     def src(self):
+        """ Required for <audio> and <video>, address of the media
+        resource. The value of this attribute is ignored when the
+        <source> element is placed inside a <picture> element.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -5730,6 +5745,8 @@ class source(element):
 
     @property
     def media(self):
+        """ Media query of the resource's intended media.
+        """
         return self.attributes['media'].value
 
     @media.setter
@@ -5746,6 +5763,10 @@ class source(element):
 
     @property
     def srcset(self):
+        """ A list of one or more strings separated by commas indicating
+        a set of possible images represented by the source for the
+        browser to use.
+        """
         return self.attributes['srcset'].value
 
     @srcset.setter
@@ -5753,10 +5774,20 @@ class source(element):
         self.attributes['srcset'].value = v
 
 class scripts(elements):
-    pass
+    """ A class used to contain a collection of ``script`` elements."""
 
 class script(element):
+    """ The <script> HTML element is used to embed executable code or
+    data; this is typically used to embed or refer to JavaScript code.
+    The <script> element can also be used with other languages, such as
+    WebGL's GLSL shader programming language and JSON.
+    """
     def __init__(self, res=None, *args, **kwargs):
+        """ Create a script element.
+
+        :param: res file.resource: An optional file resource object used
+        to set the script's src attribute to.
+        """
         # If a file.resource was given
         if res:
             self.site.resources &= res
@@ -5773,6 +5804,14 @@ class script(element):
 
     @property
     def crossorigin(self):
+        """ Normal script elements pass minimal information to the
+        window.onerror for scripts which do not pass the standard CORS
+        checks. To allow error logging for sites which use a separate
+        domain for static media, use this attribute. See CORS settings
+        attributes for a more descriptive explanation of its valid
+        arguments.
+        """
+
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -5781,6 +5820,9 @@ class script(element):
 
     @property
     def referrerpolicy(self):
+        """ Indicates which referrer to send when fetching the script,
+        or resources fetched by the script.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -5789,6 +5831,10 @@ class script(element):
 
     @property
     def integrity(self):
+        """ This attribute contains inline metadata that a user agent
+        can use to verify that a fetched resource has been delivered
+        free of unexpected manipulation. See Subresource Integrity.
+        """
         return self.attributes['integrity'].value
 
     @integrity.setter
@@ -5797,6 +5843,29 @@ class script(element):
 
     @property
     def defer(self):
+        """  This Boolean attribute is set to indicate to a browser that
+        the script is meant to be executed after the document has been
+        parsed, but before firing DOMContentLoaded.
+
+        Scripts with the defer attribute will prevent the
+        DOMContentLoaded event from firing until the script has loaded
+        and finished evaluating.
+
+        Warning: This attribute must not be used if the src attribute is
+        absent (i.e. for inline scripts), in this case it would have no
+        effect.
+
+        The defer attribute has no effect on module scripts — they defer
+        by default.
+
+        Scripts with the defer attribute will execute in the order in
+        which they appear in the document.
+
+        This attribute allows the elimination of parser-blocking
+        JavaScript where the browser would have to load and evaluate
+        scripts before continuing to parse.  async has a similar effect
+        in this case.
+        """
         return self.attributes['defer'].value
 
     @defer.setter
@@ -5805,6 +5874,8 @@ class script(element):
 
     @property
     def type(self):
+        """ This attribute indicates the type of script represented.
+        """
         return self.attributes['type'].value
 
     @type.setter
@@ -5812,15 +5883,11 @@ class script(element):
         self.attributes['type'].value = v
 
     @property
-    def charset(self):
-        return self.attributes['charset'].value
-
-    @charset.setter
-    def charset(self, v):
-        self.attributes['charset'].value = v
-
-    @property
     def src(self):
+        """ This attribute specifies the URI of an external script; this
+        can be used as an alternative to embedding a script directly
+        within a document.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -5843,15 +5910,52 @@ class script(element):
         self.attributes['importance'].value = v
 
     @property
-    def language(self):
-        return self.attributes['language'].value
+    def nonce(self):
+        """ A cryptographic nonce (number used once) to allow scripts in
+        a script-src Content-Security-Policy. The server must generate a
+        unique nonce value each time it transmits a policy. It is
+        critical to provide a nonce that cannot be guessed as bypassing
+        a resource's policy is otherwise trivial.
+        """
+        return self.attributes['nonce'].value
 
-    @language.setter
-    def language(self, v):
-        self.attributes['language'].value = v
+    @nonce.setter
+    def nonce(self, v):
+        self.attributes['nonce'].value = v
+
+    @property
+    def nomodule(self):
+        """ This Boolean attribute is set to indicate that the script
+        should not be executed in browsers that support ES2015 modules —
+        in effect, this can be used to serve fallback scripts to older
+        browsers that do not support modular JavaScript code.
+        """
+        return self.attributes['nomodule'].value
+
+    @nomodule.setter
+    def nomodule(self, v):
+        self.attributes['nomodule'].value = v
 
     @property
     def async_(self):
+        """ For classic scripts, if the async attribute is present, then
+        the classic script will be fetched in parallel to parsing and
+        evaluated as soon as it is available.
+
+        For module scripts, if the async attribute is present then the
+        scripts and all their dependencies will be executed in the defer
+        queue, therefore they will get fetched in parallel to parsing
+        and evaluated as soon as they are available.
+
+        This attribute allows the elimination of parser-blocking
+        JavaScript where the browser would have to load and evaluate
+        scripts before continuing to parse. defer has a similar effect
+        in this case.
+
+        This is a boolean attribute: the presence of a boolean attribute
+        on an element represents the true value, and the absence of the
+        attribute represents the false value.
+        """
         return self.attributes['async'].value
 
     @async_.setter
