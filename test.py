@@ -17358,6 +17358,34 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(.005, .03, f, 1_000)
 
+    ''' Attribute accessing '''
+
+    # it_sets_attribute_on_*entity #
+    def it_gets_attribute_on_entity(self):
+        art = artist.getvalid()
+        art.firstname = 'Pablo'
+
+        def f():
+            art.firstname
+
+        self.time(.005, .03, f, 1_000, DBG=True)
+
+    def it_gets_attribute_on_subentity(self):
+        sng = singer.getvalid()
+        sng.firstname = 'Pablo'
+        def f():
+            sng.firstname
+
+        self.time(.005, .03, f, 1_000)
+
+    def it_gets_attribute_on_subsubentity(self):
+        rpr = rapper.getvalid()
+        rpr.firstname = 'Pablo'
+        def f():
+            rpr.firstname
+
+        self.time(.005, .03, f, 1_000)
+
     ''' INSERT '''
 
     # it_saves_*entity #
