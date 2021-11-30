@@ -1298,6 +1298,11 @@ class directory(inode):
                 except db.RecordNotFoundError:
                     cls._flts = cls(id=cls.FloatersId, name='.floaters')
                     cls._flts.save()
+
+                # Enuser the the super (inode) is loaded). We don't want
+                # to lazy-load later on when we may not be sudo or
+                # carapacian. That would result in an exception.
+                cls._flts.orm.super
         return cls._flts
 
     def __iter__(self):
