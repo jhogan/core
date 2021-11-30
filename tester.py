@@ -9,6 +9,7 @@ from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM, PR
+import dbg
 from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
@@ -69,38 +70,45 @@ class testers(entities.entities):
         # If True (default), don't run performance tests.
         self.excludeperformance = True
 
-    def run(self, tu=None):
-        # TODO testclass and testmethod would probably be better as
-        # global variables. That would allow us to have a `testmethods`
-        # property (see the TODO below).
+        # The tester class to run. If not set, all tester classes will
+        # be run
+        self.class_ = None
 
-        testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
+        # The method/test to run. If not set, all tests in self.class_
+        # will be run if set.
+        self.method = None
 
-        self.duration = float()
+        # Method/test specific flags.
+        self.flags = str()
 
+    def run(self):
+        """ Run the tester class
+        """
+
+        # Don't run in production
         if config().inproduction:
             raise Exception("Won't run in production environment.")
 
-        for cls in self.testerclasses:
-            
+        # For each of the tester subclasses
+        for cls in self.subclasses:
+            # If self.onlyperformance, skip tests that aren't
+            # performance tests
             if self.onlyperformance and not cls.isperformance:
-                # If self.onlyperformance, skip tests that aren't
-                # performance tests
                 continue
 
-            # If testclass was given, but cls isn't that class, skip
-            if testclass and cls.__name__ != testclass:
+            # If class was given, but cls isn't that class, skip
+            if self.class_ and cls.__name__ != self.class_:
                 continue
             else:
                 # Is cls a benchmark test
                 isbenchmark = benchmark in cls.__mro__
 
+                # Don't run performance tests if self.excludeperformance
                 if isbenchmark and self.excludeperformance:
-                    # Don't run performance tests if
-                    # self.excludeperformance
                     continue
 
             try:
+                # Instantiate the current tester class
                 inst = cls(self)
             except TypeError as ex:
                 raise TypeError(
@@ -118,47 +126,86 @@ class testers(entities.entities):
             # block to deal with this; they just bubble up, uncaught,
             # and terminate the process.
 
+            # Set the tester classes `testers` method to self so it
+            # knows what its collection is
             inst.testers = self
+
+            # Add the tester class to this testers object
             self += inst
 
+            # Iterate over each method in the tester class
             for meth in cls.__dict__.items():
-
+                # Skip items that are not methods
                 if type(meth[1]) is not FunctionType:
                     continue
 
+                # Skip methods that begin with a _
                 if meth[0][0] == '_':
                     continue
 
-                if testmethod and testmethod != meth[0]:
+                # If self.method was set, filter based on that
+                if self.method and self.method != meth[0]:
                     continue
 
                 try:
+                    # Raise event
                     eargs = invoketesteventargs(cls, meth)
                     self.onbeforeinvoketest(self, eargs)
-                    getattr(inst, meth[0])()
+
+                    # Get the thes method (note that we will invoke it
+                    # later)
+                    f = getattr(inst, meth[0])
+
+                    # If the 'p' flag was set, run the test under the
+                    # profiler
+                    if 'p' in self.flags:
+                        dbg.profile(f)
+                    else:
+                        # Just run test
+                        f()
+
                 except Exception as ex:
+                    # breakonexception will usually be True because the
+                    # -b flag was given
                     if self.breakonexception:
+                        # Print exception and put the user in the
+                        # debugger at the point where the exception
+                        # occured.
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
 
+                    # For benchmark tests, just raise exception.
+                    # Otherwise, record the exception as a failure the
+                    # same way failed assertions are recorded.
                     if isbenchmark:
                         raise
                     else:
                         inst._failures += failure(ex, assert_=meth[0])
+
+        # TODO print statements should be in the cli classes
         print('')
 
     @property
-    def testerclasses(self):
+    def subclasses(self):
+        """ Return a list of all subclasses of tester.
+        """
+
+        # Create a recursive function so we can go n-levels deep in the
+        # inheritance tree
         def getsubclasses(cls, ls):
             for cls in cls.__subclasses__():
                 if cls not in (benchmark, ):
                     ls.append(cls)
                 getsubclasses(cls, ls)
 
+        # Create a list to capture the subclasses
         r = list()
-        getsubclasses(tester, r)
-        return r
 
+        # Call recursive function
+        getsubclasses(tester, r)
+
+        # Return list
+        return r
 
     @property
     def ok(self):
@@ -1293,7 +1340,7 @@ class cli:
         ts = self.testers
 
         # Run tests
-        ts.run(self.args.testunit)
+        ts.run()
 
         # Show results
         print(ts)
@@ -1356,12 +1403,14 @@ class cli:
             ./test.py -P test_orm.it_instantiates
             '''
         )
+
         p = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=epilog
         )
+
         p.add_argument(
-            'testunit',
+            'test',
             help=(
                 'The test class and/or method to run. For example: '
                 "'my_tester_class' or 'my_tester_class.my_test_method'"
@@ -1399,7 +1448,7 @@ class cli:
             '--no-performance',
             action='store_true',  
             dest='noperformance',
-            help="exclude performance tests from run"
+            help="exclude performance tests from run (default)",
         )
 
         grp.add_argument(
@@ -1418,6 +1467,16 @@ class cli:
         self.testers.rebuildtables = self.args.rebuildtables
         self.testers.onlyperformance = self.args.performance
         self.testers.excludeperformance = self.args.noperformance
+
+        if test := self.args.test:
+            test = test.split('.')
+            self.testers.class_ = test.pop(0)
+            if test:
+                test = test.pop().split(':')
+                self.testers.method = test.pop(0)
+                if test:
+                    self.testers.flags = test.pop()
+                    
 
     def _testers_onbeforeinvoketest(self, src, eargs):
         mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss

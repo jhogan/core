@@ -17334,7 +17334,7 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(.6, 2.5, f, 1_000)
 
-    ''' Attribute assignment '''
+    ''' Attribute setting '''
 
     # it_sets_attribute_on_*entity #
     def it_sets_attribute_on_entity(self):
