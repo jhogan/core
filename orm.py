@@ -1850,6 +1850,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     'correct base class.' % type(self).__name__
                 )
             try:
+                # NOTE Use self_orm for the rest of this method to take
+                # the burden off __getattribute__. This helps with
+                # performance.
                 self_orm = self.orm = self.orm.clone()
             except builtins.AttributeError:
                 msg = (
@@ -1858,7 +1861,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     "collection class."
                 )
                 raise NotImplementedError(msg)
-
 
             self_orm.instance = self
 

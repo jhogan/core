@@ -1234,6 +1234,8 @@ class directory(inode):
             # varient.
 
             # TODO Write test to ensure radix is always owned by root.
+            # TODO This looks a lot life _floaters. We can consolidate
+            # with a private method
             import party
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
