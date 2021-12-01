@@ -63,6 +63,8 @@ class site(asset.asset):
     users = ecommerce.users
     directory = file.directory
 
+    _resources = None
+
     @orm.attr(file.directory)
     def directory(self):
         """ Returns the site's main directory.
@@ -88,19 +90,20 @@ class site(asset.asset):
 
     @property
     def resources(self):
-        """ Returns the collection of inodes in the sites's resources
-        directory. If the 'resources' directory doesn't exist, it is
-        created.
+        """ Returns the sites's resources directory. If the 'resources'
+        directory doesn't exist, it is created.
         """
         # We may not need the try:except logic here if we decide to
-        # implement the suggestion at XXX:bda97447 
-        try:
-            self.directory['resources']
-        except IndexError:
-            resx = file.directory('resources')
-            self.directory += resx
-        finally:
-            return self.directory['resources'].inodes
+        # implement the suggestion at bda97447 (seach git-log)
+        if not self._resources:
+            try:
+                self._resources = self.directory['resources']
+            except IndexError:
+                resx = file.directory('resources')
+                self.directory += resx
+                resx.save()
+                self._resources = resx
+        return self._resources
 
     @resources.setter
     def resources(self, v):

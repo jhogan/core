@@ -116,8 +116,8 @@ class dom_file(tester.tester):
 
         self.eq(ws.id, ws1.id)
 
-        ress = ws.resources.sorted()
-        ress1 = ws1.resources.sorted()
+        ress = ws.resources.inodes.sorted()
+        ress1 = ws1.resources.inodes.sorted()
 
         self.three(ress)
         self.three(ress1)
