@@ -1850,7 +1850,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     'correct base class.' % type(self).__name__
                 )
             try:
-                self.orm = self.orm.clone()
+                self_orm = self.orm = self.orm.clone()
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -1859,16 +1859,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 )
                 raise NotImplementedError(msg)
 
-            self.orm.instance = self
 
-            self.orm.initing = True # change to isiniting
+            self_orm.instance = self
 
-            self.orm.isloaded   =  False
-            self.orm.isloading  =  False
-            self.orm.stream     =  None
-            self.orm.where      =  None
-            self.orm.ischunk    =  False
-            self.orm.joins      =  joins(es=self)
+            self_orm.initing = True # change to isiniting
+
+            self_orm.isloaded   =  False
+            self_orm.isloading  =  False
+            self_orm.stream     =  None
+            self_orm.where      =  None
+            self_orm.ischunk    =  False
+            self_orm.joins      =  joins(es=self)
             self.join           =  self._join
 
             self.onbeforereconnect  =  entitiesmod.event()
@@ -1901,18 +1902,18 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             for i, e in enumerate(args):
                 if e is stream:
-                    self.orm.stream = stream()
-                    self.orm.stream.entities = self
+                    self_orm.stream = stream()
+                    self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, stream):
-                    self.orm.stream = e
-                    self.orm.stream.entities = self
+                    self_orm.stream = e
+                    self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, eager):
                     e.join(to=self)
                     del args[i]
                 elif e is stream.chunk:
-                    self.orm.ischunk = True
+                    self_orm.ischunk = True
                     del args[i]
 
             # The parameters express a conditional (predicate) if the
@@ -1925,7 +1926,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 initial is None and (_p2 or bool(args) or bool(kwargs))
             )
 
-            if self.orm.stream or iscond:
+            if self_orm.stream or iscond:
                 super().__init__()
 
                 # `initial` would be None when doing kwarg based
@@ -1941,17 +1942,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # conditional. Unconditional entities objects imply
                 # nothing needs to be loaded from the database, so don't
                 # add joins.
-                if not self.orm.isstreaming:
+                if not self_orm.isstreaming:
                     # Create joins between `self` and the superentity
                     # that the predicate requires be joined based on
                     # predicate columns being used. 
-                    self.orm.joinsupers()
+                    self_orm.joinsupers()
 
                     # Create OUTER JOINs so the SELECT statement can
                     # collect subentity data. This allows orm.populate
                     # to capture the most specialized version of the
                     # entity objects we are fetching.
-                    self.orm.joinsubs()
+                    self_orm.joinsubs()
 
                 return
 
@@ -1960,7 +1961,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         finally:
             if hasattr(type(self), 'orm'):
                 if hasattr(self, 'orm'):
-                    self.orm.initing = False
+                    self_orm.initing = False
 
     def clone(self, to=None):
         """ Clone the entities collection.
