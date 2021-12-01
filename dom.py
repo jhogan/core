@@ -5963,11 +5963,44 @@ class script(element):
         self.attributes['async'].value = v
 
 class videos(elements):
-    pass
+    """ A class used to contain a collection of ``video`` elements."""
 
 class video(element):
+    """ The <video> HTML element embeds a media player which supports
+    video playback into the document. You can use <video> for audio
+    content as well, but the <audio> element may provide a more
+    appropriate user experience.
+    """
+    @property
+    def disableremoteplayback(self):
+        """ A Boolean attribute used to disable the capability of remote
+        playback in devices that are attached using wired (HDMI, DVI,
+        etc.) and wireless technologies (Miracast, Chromecast, DLNA,
+        AirPlay, etc).
+        """
+        return self.attributes['disableremoteplayback'].value
+
+    @disableremoteplayback.setter
+    def disableremoteplayback(self, v):
+        self.attributes['disableremoteplayback'].value = v
+
+    @property
+    def disablepictureinpicture(self):
+        """ Prevents the browser from suggesting a Picture-in-Picture
+        context menu or to request Picture-in-Picture automatically in
+        some cases.
+        """
+        return self.attributes['disablepictureinpicture'].value
+
+    @disablepictureinpicture.setter
+    def disablepictureinpicture(self, v):
+        self.attributes['disablepictureinpicture'].value = v
+
     @property
     def crossorigin(self):
+        """ This enumerated attribute indicates whether to use CORS to
+        fetch the related video.
+        """
         return self.attributes['crossorigin'].value
 
     @crossorigin.setter
@@ -5976,6 +6009,10 @@ class video(element):
 
     @property
     def loop(self):
+        """ A Boolean attribute; if specified, the browser will
+        automatically seek back to the start upon reaching the end of
+        the video.
+        """
         return self.attributes['loop'].value
 
     @loop.setter
@@ -5992,6 +6029,9 @@ class video(element):
 
     @property
     def height(self):
+        """ The height of the video's display area, in CSS pixels
+        (absolute values only; no percentages.)
+        """
         return self.attributes['height'].value
 
     @height.setter
@@ -6000,6 +6040,10 @@ class video(element):
 
     @property
     def src(self):
+        """ The URL of the video to embed. This is optional; you may
+        instead use the <source> element within the video block to
+        specify the video to embed.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -6007,7 +6051,24 @@ class video(element):
         self.attributes['src'].value = v
 
     @property
+    def controlslist(self):
+        """ The controlslist attribute, when specified, helps the
+        browser select what controls to show on the media element
+        whenever the browser shows its own set of controls (e.g. when
+        the controls attribute is specified).
+        """
+        return self.attributes['controlslist'].value
+
+    @controlslist.setter
+    def controlslist(self, v):
+        self.attributes['controlslist'].value = v
+
+    @property
     def controls(self):
+        """ If this attribute is present, the browser will offer
+        controls to allow the user to control video playback, including
+        volume, seeking, and pause/resume playback.
+        """
         return self.attributes['controls'].value
 
     @controls.setter
@@ -6016,6 +6077,11 @@ class video(element):
 
     @property
     def poster(self):
+        """ A URL for an image to be shown while the video is
+        downloading. If this attribute isn't specified, nothing is
+        displayed until the first frame is available, then the first
+        frame is shown as the poster frame.
+        """
         return self.attributes['poster'].value
 
     @poster.setter
@@ -6024,6 +6090,9 @@ class video(element):
 
     @property
     def width(self):
+        """ The width of the video's display area, in CSS pixels
+        (absolute values only; no percentages).
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -6031,7 +6100,37 @@ class video(element):
         self.attributes['width'].value = v
 
     @property
+    def playsinline(self):
+        """ A Boolean attribute indicating that the video is to be
+        played "inline", that is within the element's playback area.
+        Note that the absence of this attribute does not imply that the
+        video will always be played in fullscreen.
+        """
+        return self.attributes['playsinline'].value
+
+    @playsinline.setter
+    def playsinline(self, v):
+        self.attributes['playsinline'].value = v
+
+    @property
+    def autopictureinpicture(self):
+        """ A Boolean attribute which if true indicates that the element
+        should automatically toggle picture-in-picture mode when the
+        user switches back and forth between this document and another
+        document or application.
+        """
+        return self.attributes['autopictureinpicture'].value
+
+    @autopictureinpicture.setter
+    def autopictureinpicture(self, v):
+        self.attributes['autopictureinpicture'].value = v
+
+    @property
     def autoplay(self):
+        """ A Boolean attribute; if specified, the video
+        automatically begins to play back as soon as it can do so
+        without stopping to finish loading the data.
+        """
         return self.attributes['autoplay'].value
 
     @autoplay.setter
@@ -6040,6 +6139,11 @@ class video(element):
 
     @property
     def muted(self):
+        """ A Boolean attribute that indicates the default setting of
+        the audio contained in the video. If set, the audio will be
+        initially silenced. Its default value is false, meaning that the
+        audio will be played when the video is played.
+        """
         return self.attributes['muted'].value
 
     @muted.setter
@@ -6048,6 +6152,11 @@ class video(element):
 
     @property
     def preload(self):
+        """ This enumerated attribute is intended to provide a hint to
+        the browser about what the author thinks will lead to the best
+        user experience with regards to what content is loaded before
+        the video is played.
+        """
         return self.attributes['preload'].value
 
     @preload.setter
