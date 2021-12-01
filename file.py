@@ -1235,10 +1235,17 @@ class directory(inode):
 
             # TODO Write test to ensure radix is always owned by root.
             import party
-            with orm.sudo():
-                with orm.proprietor(party.company.carapacian):
+            with orm.sudo(), orm.proprietor(party.company.carapacian):
+                try:
+                    cls._radix = cls(cls.RadixId)
+                except db.RecordNotFoundError:
                     cls._radix = cls(id=cls.RadixId, name='radix')
                     cls._radix.save()
+
+                # Enuser the the super (inode) is loaded). We don't want
+                # to lazy-load later on when we may not be sudo or
+                # carapacian. That would result in an exception.
+                cls._radix.orm.super
 
         return cls._radix
     
