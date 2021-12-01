@@ -1400,6 +1400,9 @@ class cli:
             # though it's not a performance test; the -P will be
             # ignored.
             ./test.py -P test_orm.it_instantiates
+
+            # Run test_orm.it_instantiates under profile
+            ./test.py test_orm.it_instantiates:p
             '''
         )
 
