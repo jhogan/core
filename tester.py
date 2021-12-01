@@ -78,8 +78,8 @@ class testers(entities.entities):
         # will be run if set.
         self.method = None
 
-        # Method/test specific flags.
-        self.flags = str()
+        # Profile self.method
+        self.profile = False
 
     def run(self):
         """ Run the tester class
@@ -156,9 +156,8 @@ class testers(entities.entities):
                     # later)
                     f = getattr(inst, meth[0])
 
-                    # If the 'p' flag was set, run the test under the
-                    # profiler
-                    if 'p' in self.flags:
+                    if self.profile:
+                        # Run test under profiler
                         dbg.profile(f)
                     else:
                         # Just run test
@@ -1475,7 +1474,7 @@ class cli:
                 test = test.pop().split(':')
                 self.testers.method = test.pop(0)
                 if test:
-                    self.testers.flags = test.pop()
+                    self.testers.profile = 'p' in test.pop()
                     
 
     def _testers_onbeforeinvoketest(self, src, eargs):
