@@ -65,10 +65,7 @@ class testers(entities.entities):
         self.breakonexception = False
 
         # If True, only run performance tests
-        self.onlyperformance = False
-
-        # If True (default), don't run performance tests.
-        self.excludeperformance = True
+        self.performance = False
 
         # The tester class to run. If not set, all tester classes will
         # be run
@@ -91,20 +88,15 @@ class testers(entities.entities):
 
         # For each of the tester subclasses
         for cls in self.subclasses:
-            # If self.onlyperformance, skip tests that aren't
-            # performance tests
-            if self.onlyperformance and not cls.isperformance:
-                continue
-
             # If class was given, but cls isn't that class, skip
             if self.class_ and cls.__name__ != self.class_:
                 continue
-            else:
-                # Is cls a benchmark test
-                isbenchmark = benchmark in cls.__mro__
 
-                # Don't run performance tests if self.excludeperformance
-                if isbenchmark and self.excludeperformance:
+            # Is cls a benchmark test
+            if isbenchmark := benchmark in cls.__mro__:
+                if self.performance:
+                    pass
+                else:
                     continue
 
             try:
@@ -1440,21 +1432,12 @@ class cli:
             help="don't rebuild tables"
         )
 
-        grp = p.add_mutually_exclusive_group()
-        grp.add_argument(
-            '-P',                  
-            '--no-performance',
-            action='store_true',  
-            dest='noperformance',
-            help="exclude performance tests from run (default)",
-        )
-
-        grp.add_argument(
+        p.add_argument(
             '-p',                  
             '--performance',
             action='store_true',  
             dest='performance',
-            help="run performance tests"
+            help="run performance tests only"
         )
 
         p.set_defaults(rebuildtables=True)
@@ -1463,8 +1446,7 @@ class cli:
 
         self.testers.breakonexception = self.args.breakonexception
         self.testers.rebuildtables = self.args.rebuildtables
-        self.testers.onlyperformance = self.args.performance
-        self.testers.excludeperformance = self.args.noperformance
+        self.testers.performance = self.args.performance
 
         # Get the test subject. It will be in the following format:
         # 
