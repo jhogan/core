@@ -1871,14 +1871,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             self_orm.stream     =  None
             self_orm.where      =  None
             self_orm.ischunk    =  False
-            self_orm.joins      =  joins(es=self)
             self.join           =  self._join
-
-            self.onbeforereconnect  =  entitiesmod.event()
-            self.onafterreconnect   =  entitiesmod.event()
-            self.onafterload        =  entitiesmod.event()
-
-            self.onafterload       +=  self._self_onafterload
 
             # If a stream or eager is found in the first or second
             # argument, move it to args
@@ -1964,6 +1957,37 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if hasattr(type(self), 'orm'):
                 if hasattr(self, 'orm'):
                     self_orm.initing = False
+
+    @property
+    def onbeforereconnect(self):
+        if not hasattr(self, '_onbeforereconnect'):
+            self._onbeforereconnect  =  entitiesmod.event()
+        return self._onbeforereconnect
+
+    @onbeforereconnect.setter
+    def onbeforereconnect(self, v):
+        self._onbeforereconnect = v
+
+    @property
+    def onafterreconnect(self):
+        if not hasattr(self, '_onafterreconnect'):
+            self._onafterreconnect = entitiesmod.event()
+        return self._onafterreconnect
+
+    @onafterreconnect.setter
+    def onafterreconnect(self, v):
+        self._onafterreconnect = v
+
+    @property
+    def onafterload(self):
+        if not hasattr(self, '_onafterload'):
+            self._onafterload = entitiesmod.event()
+            self._onafterload += self._self_onafterload
+        return self._onafterload
+
+    @onafterload.setter
+    def onafterload(self, v):
+        self._onafterload = v
 
     def clone(self, to=None):
         """ Clone the entities collection.
@@ -2438,7 +2462,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             # Don't load unless self has joins or self has a where
             # clause/predicate
-            load &= self.orm.joins.ispopulated or bool(self.orm.where)
+            js = self.orm.joins
+            load &= (js and js.ispopulated) or bool(self.orm.where)
 
             # TODO:d6f1df1f Test if attr is a callable attribute. We
             # don't want to load if we are only accessing the callable.
@@ -7903,7 +7928,7 @@ class orm:
         self.isloading             =  False
         self.isremoving            =  False
         self.dotrash               =  True
-        self.joins                 =  None
+        self._joins                =  None
         self._abbreviation         =  str()
         self.initing               =  False
         self._sub                  =  undef
@@ -8633,6 +8658,17 @@ class orm:
 
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
+
+    @property
+    def joins(self):
+        if not self._joins:
+            self._joins = joins(es=self.instance)
+
+        return self._joins
+
+    @joins.setter
+    def joins(self, v):
+        self._joins = v
 
     def joinsupers(self):
         ''' Create joins between `self` and the superentity that the
