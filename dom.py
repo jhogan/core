@@ -6163,56 +6163,113 @@ class video(element):
     def preload(self, v):
         self.attributes['preload'].value = v
 
-class marquees(elements):
-    pass
-
-class marquee(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def loop(self):
-        return self.attributes['loop'].value
-
-    @loop.setter
-    def loop(self, v):
-        self.attributes['loop'].value = v
-
 class htmls(elements):
-    pass
+    """ A class used to contain a collection of ``html`` elements."""
 
 class html(element):
+    """ This is two different classes depending on how it is
+    instantiated. If no ``html`` argument is passed to the constructor,
+    the class is simply a representation of the <html> tag. 
+    The <html> HTML element represents the root (top-level element) of
+    an HTML document, so it is also referred to as the root element. All
+    other elements must be descendants of this element.
+
+    However, if a str is given as the ``html`` argument to the
+    constructor, the argument is assumed to be a string of HTML.
+    ``self`` morphs into a ``elements`` collection. The collection
+    will contain the results of the parsed HTML.
+
+        # When no ``html`` argument is used, we can build an HTML
+        # document from scratch:
+        import dom
+        html = dom.html()                  # Create <html>
+        assert isinstance(html, dom.html)  # It's an html object
+        html += head = dom.head()          # Create and append <head>
+        head += dom.title('My Title')      # Create and append <title>
+        html += dom.body()                 # Append a <body> to <html>
+
+    However, using the ``html`` parameter, we can use dom.html as a
+    parser:
+
+        html = '''
+        <html>
+            <head>
+                <title>My Title</title>
+            </head>
+        </html>
+        '''
+
+        # Parse html str into an elements collection
+        html1 = dom.html(html=html)
+
+        # Type is morphed to dom.elements
+        assert isinstance(html1, dom.elements)  
+
+        # html1 is now a DOM object so we can use CSS3 selectors,
+        # iterate over it, etc.
+        html1['html head title'].text == 'My Title'
+    """
     def __init__(self, html=None, ids=True, *args, **kwargs):
+        """ Create HTML element, pares HTML string depending on whether
+        or not `html` is provided (see docstring in for class)
+
+        :param: html str: If provided, the html is parsed. See docstring
+        for class.
+        """
         if isinstance(html, str):
             # Morph the object into an `elements` object
             self.__class__ = elements
             super(elements, self).__init__(*args, **kwargs)
 
-            # Assume the input st is HTML and convert the elements in
+            # Assume the input str is HTML and convert the elements in
             # the HTML sting into a collection of `elements` objects.
             prs = _htmlparser(convert_charrefs=False, ids=ids)
             prs.feed(html)
             if prs.stack:
                 raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
                 
-            # The parse HTML elements tree becomes this `elements`
-            # collection's constituents.
+            # The parsed HTML elements tree becomes this `elements`'s
+            # (self) collection's constituents.
             self += prs.elements
         else:
             super().__init__(*args, **kwargs)
 
     @property
     def manifest(self):
+        """ Specifies the URI of a resource manifest indicating
+        resources that should be cached locally.
+        """
         return self.attributes['manifest'].value
 
     @manifest.setter
     def manifest(self, v):
         self.attributes['manifest'].value = v
+
+    @property
+    def version(self):
+        """ Specifies the version of the HTML Document Type Definition
+        that governs the current document. This attribute is not needed,
+        because it is redundant with the version information in the
+        document type declaration.
+        """
+        return self.attributes['version'].value
+
+    @version.setter
+    def version(self, v):
+        self.attributes['version'].value = v
+
+    @property
+    def xmlns(self):
+        """ Specifies the XML Namespace of the document. Default value
+        is "http://www.w3.org/1999/xhtml". This is required in documents
+        parsed with XML parsers, and optional in text/html
+        documents.
+        """
+        return self.attributes['xmlns'].value
+
+    @xmlns.setter
+    def xmlns(self, v):
+        self.attributes['xmlns'].value = v
 
 class _htmlparser(HTMLParser):
     def __init__(self, ids=True, *args, **kwargs):
