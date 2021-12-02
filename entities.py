@@ -184,15 +184,16 @@ class entities:
 
         An entities class will always return True. Unlike a list, you
         should not test if an entities collection has elements by seeing
-        if its truthy. Rather, you should call it `isplurality`
+        if it's truthy. Rather, you should call its `isplurality`
         property:
 
-            # Dont do this
+            # Don't do this. It won't work.
             if myents:
                 # We must have elements in myents
 
             # Rather, do this
-            if myents.isplurality
+            if myents.isplurality:
+                ...
         """
         # An entities collection will always pass a truth test
         return True

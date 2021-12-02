@@ -11227,7 +11227,7 @@ class violations(entitiesmod.entities):
         """ Add `o` to the violations collection. `o` can be a str or a
         violation instance::
 
-            @proprety
+            @property
             def retrievability(self):
                 vs = violations(entity=self)
                 if hr not in usr.departments:

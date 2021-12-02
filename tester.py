@@ -311,10 +311,6 @@ class tester(entities.entity):
         orm.security().owner = self.user
         orm.security().proprietor = self.company
 
-    @classproperty
-    def isperformance(cls):
-        return cls.__name__.startswith('benchmark_')
-
     def recreateprinciples(self):
         principle().recreate()
 
@@ -1470,13 +1466,19 @@ class cli:
         self.testers.onlyperformance = self.args.performance
         self.testers.excludeperformance = self.args.noperformance
 
+        # Get the test subject. It will be in the following format:
+        # 
+        #    class[.method[:flags]] 
         if test := self.args.test:
+            # Get the class
             test = test.split('.')
             self.testers.class_ = test.pop(0)
             if test:
+                # Get the method
                 test = test.pop().split(':')
                 self.testers.method = test.pop(0)
                 if test:
+                    # Set properties based on flags (i.e., 'p')
                     self.testers.profile = 'p' in test.pop()
                     
 
