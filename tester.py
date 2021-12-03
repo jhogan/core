@@ -1061,8 +1061,7 @@ class benchmark(tester):
 
     def time(self, 
         min, max, callable, 
-        number=None, msg=None, setup='pass',
-        **kwargs
+        number=None, msg=None, setup='pass'
     ):
         """ Determine the time it takes to call `actual`. The average
         time to call `actual` in milliseconds is returned as a floating
@@ -1083,13 +1082,6 @@ class benchmark(tester):
         :param: msg str: The message used when reporting failures
         (currently unused).
 
-        :param: DBG bool: If True, debug information is reported to
-        stdout, `callable` is run through the profiler (cProfile), and
-        the top 20 most time-consuming methods used when calling
-        `callable` will be printed to stdout. The program then enters the
-        debugger.  DBG is obviously used for debugging purposes and its
-        use would ideally never be committed to source control.
-
         :return: float: The time it took, on average, to run callable.
         """
 
@@ -1108,7 +1100,7 @@ class benchmark(tester):
         self.assessments += assessment(min, max, actual, number)
 
         # If debug mode
-        if kwargs.get('DBG', False):
+        if self.testers.profile:
             
             # Get the stringified assesment we added above and remove
             # extraneous whitespace
@@ -1470,7 +1462,16 @@ class cli:
                 self.testers.method = test.pop(0)
                 if test:
                     # Set properties based on flags (i.e., 'p')
-                    self.testers.profile = 'p' in test.pop()
+                    flags = test.pop()
+
+                    # Validate flags
+                    for flag in flags:
+                        if flag not in ('p',):
+                            raise ValueError(
+                                f'Invalid flag: "{flag}"'
+                            )
+
+                    self.testers.profile = 'p' in flags
                     
 
     def _testers_onbeforeinvoketest(self, src, eargs):
