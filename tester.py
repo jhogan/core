@@ -95,9 +95,18 @@ class testers(entities.entities):
             # Is cls a benchmark test
             if isbenchmark := benchmark in cls.__mro__:
                 if self.performance:
+                    # If cls is benchmark and self.performance is True, then
+                    # run test
                     pass
                 else:
-                    continue
+                    if self.class_:
+                        # If cls is benchmark and we have a specific
+                        # test to run, run test
+                        pass
+                    else:
+                        # If cls is benchmark but we don't want to run
+                        # performance tests, skip cls
+                        continue
 
             try:
                 # Instantiate the current tester class
