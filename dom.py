@@ -28,10 +28,14 @@ import urllib.parse
 import uuid
 
 """
-An implementation of the HTML5 DOM.
+Contains classes that implement an object-oriented interface to HTML
+document.
 
-This implementation is similar to the DOM implementation used in
-browsers to read and manipulate DOM objects with JavaScript.
+This implementation is similar to the WHATWG DOM standarded implemented
+in web browsers to read and manipulate DOM objects with JavaScript,
+although no effort is made to conform to that standard. The API is
+similar to other object models in the Core, making use of @proprety
+methods, indexers (__getitem__), operator overloading (+=), etc.
 
 Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
 that inherits from the ``element`` base class. Each of these subclasses
@@ -6272,6 +6276,14 @@ class html(element):
         self.attributes['xmlns'].value = v
 
 class _htmlparser(HTMLParser):
+    """ A private HTML parsing class. This is used by the dom.html class
+    to parse HTML into a DOM object. 
+
+    The actual parsing is done by the HTMLParser class that's built into
+    Python (from which this object inherits). Once the document has been
+    parsed (initiated by the ``feed`` method), the ``elements`` property
+    will contain the a DOM structure of the HTML document.
+    """
     def __init__(self, ids=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ids = ids
