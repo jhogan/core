@@ -6285,23 +6285,40 @@ class _htmlparser(HTMLParser):
     will contain the a DOM structure of the HTML document.
     """
     def __init__(self, ids=True, *args, **kwargs):
+        """ Create the parser.
+
+        :param: ids bool: If True, each element element created is given
+        a UUID encoded as a base64 string. If False, no id is given.
+        """
+
         super().__init__(*args, **kwargs)
         self.ids = ids
         self.elements = elements()
         self.stack = list()
 
     def handle_starttag(self, tag, attrs):
+        """ This is called by HTMLParser each time it encounters a start
+        tag. We take that tag and add it to the DOM.
+        """
+
+        # Get an element class based on the tag
         el = elements.getby(tag=tag)
+
+        # NOTE This seems a little strict. If we were scraping a page we
+        # would probably want it to be forgiving of non-standard tags.
         if not el:
             raise NotImplementedError(
                 'The <%s> tag has no DOM implementation' % tag
             )
 
+        # Instantiate
         el = el(id=self.ids)
 
+        # Assign HTML attributes
         for attr in attrs:
             el.attributes[attr[0]] = attr[1]
 
+        # Push element on top of stack
         try:
             cur = self.stack[-1]
         except IndexError:
