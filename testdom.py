@@ -558,7 +558,9 @@ class pom_page(tester.tester):
 
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
-            mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+            mods = (
+                'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+            )
 
             for e in es:
                 if e.__module__ in  mods:
@@ -8514,7 +8516,6 @@ Shakespeare = '''
     </div>
   </body>
 </html>
-
 '''
 
 if __name__ == '__main__':

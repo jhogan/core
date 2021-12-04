@@ -122,7 +122,9 @@ class application:
 
             self.demand()
 
+            # If request is GET or HEAD
             if req.isget or req.ishead:
+                # Invoke the request object, i.e., make the request
                 data = req()
                 if req.isget:
                     res.payload = data
@@ -926,6 +928,8 @@ class _request:
         complete or is incorrectly constructed.
         """
 
+        # If the site associated with the reuest doesn't have a page in
+        # its index, raise a 404
         if not request.page:
             raise NotFoundError(self.path)
 
