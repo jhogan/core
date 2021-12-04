@@ -38,6 +38,8 @@ import exc
 import file
 import html as htmlmod
 import json
+import jwt as pyjwt
+import logs
 import os
 import party, ecommerce
 import pdb
@@ -47,8 +49,6 @@ import sys
 import textwrap
 import traceback
 import urllib
-import jwt as pyjwt
-import json
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -699,26 +699,6 @@ class _request:
         except Exception as ex:
             # Failing to log a hit shouldn't stop page invocation. We
             # should log the failure to the syslog.
-            from config import config
-
-            # TODO:4d723428 Fix the logging interface. We shouldn't have
-            # to go through config to get a logging object. Also, it
-            # doesn't make sense to select the first log from a
-            # collection of logs. The collections of logs are actually
-            # configurations of logging facilities. The first here is
-            # for /var/log/syslog (there aren't any others). This is all
-            # really wierd. We shoud just be able to say something like:
-            #
-            #     import log from logger
-            #     log.exception(ex)
-            #
-            # The nature of the core framework is such that we would
-            # normally log stuff to a database table. We wouldn't want
-            # to write anything to a log file unless there was a failure
-            # to write to the database. Log entries in syslog should be
-            # indicate the environment that is making the entry.
-            log = config().logs.first
-
             try:
                 ua = str(self.environment['user_agent'])
             except:
@@ -730,7 +710,7 @@ class _request:
                 ua = str()
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
-            log.exception(msg)
+            logs.exception(msg)
 
     # TODO The official word for this data is "message body", so we
     # should probably rename the property to "body".
