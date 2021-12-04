@@ -8,10 +8,10 @@
 
 # TODO Add Tests
 from dbg import B
-import logging
 from logging import handlers, Handler
 import config
 import entities
+import logging
 
 class log(entities.entity):
     def __init__(self, *args, **kwargs):

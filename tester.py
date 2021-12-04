@@ -9,7 +9,6 @@ from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM, PR
-import dbg
 from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
@@ -17,12 +16,14 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import builtins
+import dbg
 import dom
 import ecommerce
 import entities
 import inspect
 import io
 import json
+import logs
 import pdb
 import pom
 import primative
@@ -1311,7 +1312,18 @@ class cli:
         
         self._testers = None
 
+        # Subscribe to the logger so we are given a heads up when a test
+        # causes a log message to be written
+        logs.log().onlog += self._log_onlog
+
         self.parseargs()
+
+    def _log_onlog(self, src, eargs):
+        """ Print log messages that tests cause to stdout. These
+        messages would typically be logged to syslog and would probably
+        go unnoticed if we didn't print them here.
+        """
+        print(eargs.record)
 
     @property
     def testers(self):
