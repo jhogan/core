@@ -6287,8 +6287,8 @@ class _htmlparser(HTMLParser):
     def __init__(self, ids=True, *args, **kwargs):
         """ Create the parser.
 
-        :param: ids bool: If True, each element element created is given
-        a UUID encoded as a base64 string. If False, no id is given.
+        :param: ids bool: If True, each element created is given a UUID
+        encoded as a base64 string. If False, no id is given.
         """
 
         super().__init__(*args, **kwargs)
@@ -6330,6 +6330,10 @@ class _htmlparser(HTMLParser):
                 self.stack.append([el, self.getpos()])
 
     def handle_comment(self, data):
+        """ This method is called when a comment is encountered (e.g.,
+        <!--comment-->).
+        """
+
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -6338,6 +6342,9 @@ class _htmlparser(HTMLParser):
             cur[0] += comment(data)
 
     def handle_endtag(self, tag):
+        """ This method is called to handle the end tag of an element
+        (e.g., </div>).
+        """
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -6347,6 +6354,10 @@ class _htmlparser(HTMLParser):
                 self.stack.pop()
 
     def handle_data(self, data):
+        """ This method is called to process arbitrary data (e.g. text
+        nodes and the content of <script>...</script> and
+        <style>...</style>).
+        """
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -6362,6 +6373,10 @@ class _htmlparser(HTMLParser):
                 cur[0] += data
 
     def handle_entityref(self, name):
+        """ This method is called to process a named character reference
+        of the form &name; (e.g. &gt;), where name is a general entity
+        reference (e.g. 'gt').
+        """
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -6377,6 +6392,13 @@ class _htmlparser(HTMLParser):
                 cur[0] += txt
 
     def handle_charref(self, name):
+        """ This method is called to process decimal and hexadecimal
+        numeric character references of the form &#NNN; and &#xNNN;. For
+        example, the decimal equivalent for &gt; is &#62;, whereas the
+        hexadecimal is &#x3E;; in this case the method will receive '62'
+        or 'x3E'. This method is never called if convert_charrefs is
+        True.
+        """
         # TODO: This was added after the main html tests were written
         # (not sure why it was left behind). We should write tests that
         # target it specifically.
@@ -6399,67 +6421,86 @@ class _htmlparser(HTMLParser):
                 cur[0] += txt
 
     def handle_decl(self, decl):
+        """ This method is called to handle an HTML doctype declaration
+        (e.g. <!DOCTYPE html>).
+
+        The decl parameter will be the entire contents of the
+        declaration inside the <!...> markup (e.g. 'DOCTYPE html').
+        """
         raise NotImplementedError(
             'HTML doctype declaration are not implemented'
         )
 
     def unknown_decl(self, data):
+        """ This method is called when an unrecognized declaration is
+        read by the parser.
+
+        The data parameter will be the entire contents of the
+        declaration inside the <![...]> markup. It is sometimes useful
+        to be overridden by a derived class. The base class
+        implementation does nothing.
+        """
         raise NotImplementedError(
             'HTML doctype declaration are not implemented'
         )
 
     def handle_pi(self, decl):
+        """ Method called when a processing instruction is encountered.
+        The data parameter will contain the entire processing
+        instruction. For example, for the processing instruction <?proc
+        color='red'>, this method would be called as handle_pi("proc
+        color='red'"). It is intended to be overridden by a derived
+        class; the base class implementation does nothing.
+
+        NOTE: The HTMLParser class uses the SGML syntactic rules for
+        processing instructions. An XHTML processing instruction using
+        the trailing '?' will cause the '?' to be included in data.
+        """
         raise NotImplementedError(
             'Processing instructions are not implemented'
         )
 
 class h1s(elements):
-    pass
+    """ A class used to contain a collection of ``h1`` elements."""
 
 class h1(element):
     """ <h1> is the highest section level heading.
     """
-    pass
 
 class h2s(elements):
-    pass
+    """ A class used to contain a collection of ``h2`` elements."""
 
 class h2(element):
     """ <h2> is the second highest section level heading.
     """
-    pass
 
 class h3s(elements):
-    pass
+    """ A class used to contain a collection of ``h3`` elements."""
 
 class h3(element):
     """ <h3> is the third highest section level heading.
     """
-    pass
 
 class h4s(elements):
-    pass
+    """ A class used to contain a collection of ``h4`` elements."""
 
 class h4(element):
     """ <h4> is the fourth highest section level heading.
     """
-    pass
 
 class h5s(elements):
-    pass
+    """ A class used to contain a collection of ``h5`` elements."""
 
 class h5(element):
     """ <h5> is the fifth highest section level heading.
     """
-    pass
 
 class h6s(elements):
-    pass
+    """ A class used to contain a collection of ``h6`` elements."""
 
 class h6(element):
     """ <h6> is the six highest section level heading.
     """
-    pass
 
 # TODO:dea3866d
 heading1 = h1
@@ -6470,18 +6511,28 @@ heading5 = h5
 heading6 = h6
 
 class heads(elements):
-    pass
+    """ A class used to contain a collection of ``head`` elements."""
 
 class head(element):
-    pass
+    """ The <head> HTML element contains machine-readable information
+    (metadata) about the document, like its title, scripts, and style
+    sheets.
+    """
 
 class hrs(elements):
-    pass
+    """ A class used to contain a collection of ``hr`` elements."""
 
 class hr(element):
+    """ The <hr> HTML element represents a thematic break between
+    paragraph-level elements: for example, a change of scene in a story,
+    or a shift of topic within a section.
+    """
     isvoid = True
     @property
     def align(self):
+        """ Sets the alignment of the rule on the page. If no value is
+        specified, the default value is left.
+        """
         return self.attributes['align'].value
 
     @align.setter
@@ -6490,11 +6541,45 @@ class hr(element):
 
     @property
     def color(self):
+        """ Sets the color of the rule through color name or hexadecimal
+        value.
+        """
         return self.attributes['color'].value
 
     @color.setter
     def color(self, v):
         self.attributes['color'].value = v
+
+    @property
+    def noshade(self):
+        """ Sets the rule to have no shading.
+        """
+        return self.attributes['noshade'].value
+
+    @noshade.setter
+    def noshade(self, v):
+        self.attributes['noshade'].value = v
+
+    @property
+    def size(self):
+        """ Sets the height, in pixels, of the rule.
+        """
+        return self.attributes['size'].value
+
+    @size.setter
+    def size(self, v):
+        self.attributes['size'].value = v
+
+    @property
+    def width(self):
+        """ Sets the length of the rule on the page through a pixel or
+        percentage value.
+        """
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
 
 # TODO:dea3866d
 hrules = hrs
