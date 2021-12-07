@@ -5068,7 +5068,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             f'{type(self).__module__}.'
             f'{type(self).__name__}('
                 f'id={id}'
-                f'{name}'
+                f'name={name}'
             ')'
         )
         return r
@@ -9329,7 +9329,7 @@ class orm:
         keyword.  Used only in streaming mode.
         """
 
-        # Don't attemt to load if already loaded.
+        # Don't attempt to load if already loaded
         if self.isloaded:
             return
 
@@ -10651,7 +10651,7 @@ class orm:
 
             return orm._abbrdict[abbr]
 
-    # TODO s/getentitys/getentityclasses/
+    # XXX TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys(includeassociations=False):
         """ A static method to collect and return all the classes that
