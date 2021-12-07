@@ -628,10 +628,6 @@ class gem_party(tester.tester):
             self.eq(rl.begin, rl1.begin)
             self.eq(rl.end, rl1.end)
 
-            rl1.partyroletype
-
-            self.eq(rl.partyroletype.id, rl1.partyroletype.id)
-
     def it_creates_role_role(self):
         # Create parties
         rent = party.company(name='ACME Corporation')

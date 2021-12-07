@@ -1256,9 +1256,6 @@ class role(orm.entity):
         # `partyroletype`. TODO Write validation rule for this.
         name = builtins.type(self).__name__
 
-        # TODO:9f3a86e4 Remove this
-        self.partyroletype = partyroletype(name=name)
-
     # The datespan through which this role is valid. This timespan may
     # be optional because many of the timeframes for the roles will be
     # dependent on (and can be derived from) the (party) relationship. 
@@ -1502,7 +1499,7 @@ class partyroletype(roletype):
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
     
-    # TODO:9f3a86e4 Add collection of roles (``roles = roles``)
+    roles = roles
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
