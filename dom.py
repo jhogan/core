@@ -6581,28 +6581,19 @@ class hr(element):
     def width(self, v):
         self.attributes['width'].value = v
 
-# TODO:dea3866d
-hrules = hrs
-hrule = hr
-
-class fonts(elements):
-    pass
-
-class font(element):
-    @property
-    def color(self):
-        return self.attributes['color'].value
-
-    @color.setter
-    def color(self, v):
-        self.attributes['color'].value = v
-
 class areas(elements):
-    pass
+    """ A class used to contain a collection of ``area`` elements."""
 
 class area(element):
+    """ The <area> HTML element defines an area inside an image map that
+    has predefined clickable areas. An image map allows geometric areas
+    on an image to be associated with hypertext link.
+    """
     @property
     def referrerpolicy(self):
+        """ A string indicating which referrer to use when fetching the
+        resource.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -6611,6 +6602,9 @@ class area(element):
 
     @property
     def target(self):
+        """ A keyword or author-defined name of the browsing context to
+        display the linked resource.
+        """
         return self.attributes['target'].value
 
     @target.setter
@@ -6619,6 +6613,10 @@ class area(element):
 
     @property
     def coords(self):
+        """ The coords attribute details the coordinates of the shape
+        attribute in size, shape, and placement of an <area>. This
+        attribute must not be used if shape is set to default.
+        """
         return self.attributes['coords'].value
 
     @coords.setter
@@ -6627,6 +6625,11 @@ class area(element):
 
     @property
     def hreflang(self):
+        """ Indicates the language of the linked resource. Allowed
+        values are defined by RFC 5646: Tags for Identifying Languages
+        (also known as BCP 47). Use this attribute only if the href
+        attribute is present.
+        """
         return self.attributes['hreflang'].value
 
     @hreflang.setter
@@ -6635,6 +6638,11 @@ class area(element):
 
     @property
     def ping(self):
+        """ Contains a space-separated list of URLs to which, when the
+        hyperlink is followed, POST requests with the body PING will be
+        sent by the browser (in the background). Typically used for
+        tracking.
+        """
         return self.attributes['ping'].value
 
     @ping.setter
@@ -6642,23 +6650,25 @@ class area(element):
         self.attributes['ping'].value = v
 
     @property
-    def media(self):
-        return self.attributes['media'].value
-
-    @media.setter
-    def media(self, v):
-        self.attributes['media'].value = v
-
-    @property
     def href(self):
         return self.attributes['href'].value
 
     @href.setter
     def href(self, v):
+        """ The hyperlink target for the area. Its value is a valid URL.
+        This attribute may be omitted; if so, the <area> element does
+        not represent a hyperlink.
+        """
         self.attributes['href'].value = v
 
     @property
     def alt(self):
+        """ A text string alternative to display on browsers that do not
+        display images. The text should be phrased so that it presents
+        the user with the same kind of choice as the image would offer
+        when displayed without the alternative text. This attribute is
+        required only if the href attribute is used.
+        """
         return self.attributes['alt'].value
 
     @alt.setter
@@ -6667,6 +6677,10 @@ class area(element):
 
     @property
     def download(self):
+        """ This attribute, if present, indicates that the author
+        intends the hyperlink to be used for downloading a resource. See
+        <a> for a full description of the download attribute.
+        """
         return self.attributes['download'].value
 
     @download.setter
@@ -6675,6 +6689,15 @@ class area(element):
 
     @property
     def rel(self):
+        """ For anchors containing the href attribute, this attribute
+        specifies the relationship of the target object to the link
+        object. The value is a space-separated list of link types
+        values. The values and their semantics will be registered by
+        some authority that might have meaning to the document author.
+
+        The default relationship, if no other is given, is void.  Use
+        this attribute only if the href attribute is present.
+        """
         return self.attributes['rel'].value
 
     @rel.setter
@@ -6683,6 +6706,12 @@ class area(element):
 
     @property
     def shape(self):
+        """ The shape of the associated hot spot. The specifications for
+        HTML defines the values rect, which defines a rectangular
+        region; circle, which defines a circular region; poly, which
+        defines a polygon; and default, which indicates the entire
+        region beyond any defined shapes.
+        """
         return self.attributes['shape'].value
 
     @shape.setter
@@ -6690,47 +6719,47 @@ class area(element):
         self.attributes['shape'].value = v
 
 class colgroups(elements):
-    pass
+    """ A class used to contain a collection of ``colgroup`` elements."""
 
 class colgroup(element):
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
+    """ The <colgroup> HTML element defines a group of columns within a
+    table.
+    """
     @property
     def span(self):
+        """ This attribute contains a positive integer indicating the
+        number of consecutive columns the <colgroup> element spans. If
+        not present, its default value is 1.
+        """
         return self.attributes['span'].value
 
     @span.setter
     def span(self, v):
         self.attributes['span'].value = v
 
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
 class iframes(elements):
-    pass
+    """ A class used to contain a collection of ``iframe`` elements."""
 
 class iframe(element):
+    """ The <iframe> HTML element represents a nested browsing context,
+    embedding another HTML page into the current one.
+    """
     @property
     def csp(self):
         return self.attributes['csp'].value
 
     @csp.setter
     def csp(self, v):
+        """ A Content Security Policy enforced for the embedded
+        resource. See HTMLIFrameElement.csp for details.
+        """
         self.attributes['csp'].value = v
 
     @property
     def referrerpolicy(self):
+        """ Indicates which referrer to send when fetching the frame's
+        resource.
+        """
         return self.attributes['referrerpolicy'].value
 
     @referrerpolicy.setter
@@ -6739,6 +6768,9 @@ class iframe(element):
 
     @property
     def loading(self):
+        """ Indicates how the browser should load the iframe, eagor or
+        lazy.
+        """
         return self.attributes['loading'].value
 
     @loading.setter
@@ -6747,6 +6779,10 @@ class iframe(element):
 
     @property
     def srcdoc(self):
+        """ Inline HTML to embed, overriding the src attribute. If a
+        browser does not support the srcdoc attribute, it will fall back
+        to the URL in the src attribute.
+        """
         return self.attributes['srcdoc'].value
 
     @srcdoc.setter
@@ -6755,6 +6791,7 @@ class iframe(element):
 
     @property
     def height(self):
+        """ The height of the frame in CSS pixels. Default is 150."""
         return self.attributes['height'].value
 
     @height.setter
@@ -6763,6 +6800,13 @@ class iframe(element):
 
     @property
     def src(self):
+        """ The URL of the page to embed. Use a value of about:blank to
+        embed an empty page that conforms to the same-origin policy.
+        Also note that programmatically removing an <iframe>'s src
+        attribute (e.g. via Element.removeAttribute()) causes
+        about:blank to be loaded in the frame in Firefox (from version
+        65), Chromium-based browsers, and Safari/iOS.
+        """
         return self.attributes['src'].value
 
     @src.setter
@@ -6786,6 +6830,11 @@ class iframe(element):
 
     @property
     def allow(self):
+        """ Specifies a feature policy for the <iframe>. The policy
+        defines what features are available to the <iframe> based on the
+        origin of the request (e.g. access to the microphone, camera,
+        battery, web-share API, etc.).
+        """
         return self.attributes['allow'].value
 
     @allow.setter
@@ -6794,6 +6843,12 @@ class iframe(element):
 
     @property
     def name(self):
+        """ A targetable name for the embedded browsing context. This
+        can be used in the target attribute of the <a>, <form>, or
+        <base> elements; the formtarget attribute of the <input> or
+        <button> elements; or the windowName parameter in the
+        window.open() method.
+        """
         return self.attributes['name'].value
 
     @name.setter
@@ -6801,15 +6856,9 @@ class iframe(element):
         self.attributes['name'].value = v
 
     @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
-
-    @property
     def width(self):
+        """ The width of the frame in CSS pixels. Default is 300.
+        """
         return self.attributes['width'].value
 
     @width.setter
@@ -6818,6 +6867,11 @@ class iframe(element):
 
     @property
     def sandbox(self):
+        """ Applies extra restrictions to the content in the frame. The
+        value of the attribute can either be empty to apply all
+        restrictions, or space-separated tokens to lift particular
+        restrictions.
+        """
         return self.attributes['sandbox'].value
 
     @sandbox.setter
