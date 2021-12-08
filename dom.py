@@ -6879,19 +6879,63 @@ class iframe(element):
         self.attributes['sandbox'].value = v
 
 class pres(elements):
-    pass
+    """ A class used to contain a collection of ``pre`` elements."""
 
 class pre(element):
-    pass
+    """ The <pre> HTML element represents preformatted text which is to
+    be presented exactly as written in the HTML file. The text is
+    typically rendered using a non-proportional, or "monospaced, font.
+    Whitespace inside this element is displayed as written.
+    """
+    @property
+    def col(self):
+        """ Contains the preferred count of characters that a line
+        should have. It was a non-standard synonym of width. To achieve
+        such an effect, use CSS width instead.
+        """
+        return self.attributes['col'].value
+
+    @col.setter
+    def col(self, v):
+        self.attributes['col'].value = v
+
+    @property
+    def width(self):
+        """ Contains the preferred count of characters that a line
+        should have. Though technically still implemented, this
+        attribute has no visual effect; to achieve such an effect, use
+        CSS width instead.
+        """
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def wrap(self):
+        """ Is a hint indicating how the overflow must happen. In modern
+        browser this hint is ignored and no visual effect results in its
+        present; to achieve such an effect, use CSS white-space instead.
+        """
+        return self.attributes['wrap'].value
+
+    @wrap.setter
+    def wrap(self, v):
+        self.attributes['wrap'].value = v
+
 
 class strongs(elements):
-    pass
+    """ A class used to contain a collection of ``strong`` elements."""
 
 class strong(element):
-    pass
+    """ The <strong> HTML element indicates that its contents have
+    strong importance, seriousness, or urgency. Browsers typically
+    render the contents in bold type.
+    """
 
 class ss(elements):
-    pass
+    """ A class used to contain a collection of ``s`` elements."""
 
 class s(element):
     """ The HTML <s> element renders text with a strikethrough, or a
@@ -6902,16 +6946,9 @@ class s(element):
 
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
     """
-    pass
-
-# TODO:dea3866d
-strikethroughs = ss
-strikethrough = s
 
 class ems(elements):
-    """ A collection of ``emphasis`` elements.
-    """
-    pass
+    """ A class used to contain a collection of ``em`` elements."""
 
 class em(element):
     """ The HTML <em> element which marks text that has stress emphasis.
@@ -6920,14 +6957,9 @@ class em(element):
 
     See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     """
-    pass
-
-# TODO:dea3866d
-emphases = ems
-emphasis = em
 
 class is_(elements):
-    pass
+    """ A class used to contain a collection of ``i`` elements."""
 
 class i(element):
     """ The HTML <i> element represents a range of text that is set off
@@ -6937,14 +6969,9 @@ class i(element):
 
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
     """
-    pass
-
-# TODO:dea3866d
-italics = is_
-italic = i
 
 class bs(elements):
-    pass
+    """ A class used to contain a collection of ``i`` elements."""
 
 class b(element):
     """ The HTML Bring Attention To element (<b>) is used to draw the
@@ -6957,40 +6984,41 @@ class b(element):
 
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
     """
-    pass
-
-# TODO:dea3866d
-bolds = bs
-bold = b
 
 class divs(elements):
-    pass
+    """ A class used to contain a collection of ``div`` elements."""
 
 class div(element):
     """ The HTML Content Division element (<div>) is the generic
     container for flow content. It has no effect on the content or
     layout until styled using CSS.
     """
-    pass
-
-# TODO:dea3866d
-divisions = divs
-division = div
 
 class spans(elements):
-    pass
+    """ A class used to contain a collection of ``span`` elements."""
 
 class span(element):
-    pass
+    """ The <span> HTML element is a generic inline container for
+    phrasing content, which does not inherently represent anything. It
+    can be used to group elements for styling purposes (using the class
+    or id attributes), or because they share attribute values, such as
+    lang. It should be used only when no other semantic element is
+    appropriate. <span> is very much like a <div> element, but <div> is
+    a block-level element whereas a <span> is an inline element.
+    """
 
 class mains(elements):
-    pass
+    """ A class used to contain a collection of ``main`` elements."""
 
 class main(element):
-    pass
+    """ The <main> HTML element represents the dominant content of the
+    <body> of a document. The main content area consists of content that
+    is directly related to or expands upon the central topic of a
+    document, or the central functionality of an application.
+    """
 
 class dls(elements):
-    pass
+    """ A class used to contain a collection of ``dl`` elements."""
 
 class dl(element):
     """ The HTML <dl> element represents a description list. The element
@@ -6998,17 +7026,10 @@ class dl(element):
     element) and descriptions (provided by <dd> elements). Common uses
     for this element are to implement a glossary or to display metadata
     (a list of key-value pairs).
-
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
     """
-    pass
-
-# TODO:dea3866d
-descriptionlists = dls
-descriptionlist = dl
 
 class dts(elements):
-    pass
+    """ A class used to contain a collection of ``dt`` elements."""
 
 class dt(element):
     """ The HTML <dt> element specifies a term in a description or
@@ -7016,30 +7037,26 @@ class dt(element):
     is usually followed by a <dd> element; however, multiple <dt>
     elements in a row indicate several terms that are all defined by the
     immediate next <dd> element.
-
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
     """
-    pass
-
-# TODO:dea3866d
-definitionlists = dts
-definitionlist  = dt
 
 class dds(elements):
-    pass
+    """ A class used to contain a collection of ``dd`` elements."""
 
 class dd(element):
     """ The HTML <dd> element provides the description, definition, or
     value for the preceding term (<dt>) in a description list (<dl>).
-
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
     """
-    pass
 
-# TODO:dea3866d
-descriptiondetails = dds
-descriptiondetail  = dd
+    @property
+    def nowrap(self):
+        """ If the value of this attribute is set to yes, the definition
+        text will not wrap. The default value is no.
+        """
+        return self.attributes['nowrap'].value
 
+    @nowrap.setter
+    def nowrap(self, v):
+        self.attributes['nowrap'].value = v
 
 class codes(elements):
     pass
