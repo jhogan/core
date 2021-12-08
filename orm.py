@@ -7899,6 +7899,8 @@ class orm:
 
     # A dict to store abbreviation (see orm.getentity())
     _abbrdict    =  dict()
+    _ent2abbr   =  dict()
+    _abbr2ent   =  dict()
 
     # A dict to store entity names (see orm.getentity())
     _namedict    =  dict()
@@ -9403,20 +9405,24 @@ class orm:
         aliases are used to keep track of the way data is related to
         each other.)
         """
-        if not self._abbreviation:
-            suffix = str()
+        orm._cacheabbrs()
+        try:
+            return orm._ent2abbr[self.entity]
+        except KeyError:
+            raise KeyError(
+                'Uncached entity abbreviation'
+            ) from ex
 
-            # Get all entity classes sorted by name
-            es = self.getentitys() + self.getassociations()
-            es.sort(key=lambda x: x.__name__)
-
+    @staticmethod
+    def _cacheabbrs():
+        if not orm._ent2abbr:
             def generator():
-                tblelements = self.table.split('_')
+                tblelements = e.orm.table.split('_')
                 if len(tblelements) > 1:
                     # Use underscores to abbreviate, e.g.:
                     # artist_artifacts => a_a 
                     m = min(len(x) for x in tblelements)
-                    for i in range(m - 1):
+                    for i in range(m):
                         r = str()
                         for j, tblelement in func.enumerate(tblelements):
                             r += tblelement[:i + 1]
@@ -9424,36 +9430,35 @@ class orm:
                         yield r
                                 
                 else:
-                    # If no underscores were found, just yield each character.
-                    for c in self.table:
+                    # If no underscores were found, just yield each
+                    # character.
+                    for c in e.orm.table:
                         yield c
 
-            found = False
-            while True:
-                for c in generator():
-                    self._abbreviation += c + suffix
-                    for e in es:
-                        if e.orm.table == self.table:
-                            continue
+            # Get all entity classes sorted by name
+            es = orm.getentitys() + orm.getassociations()
+            es.sort(key=lambda x: x.__name__)
 
-                        abbr = e.orm.abbreviation
-                        if abbr == self._abbreviation:
+            for e in es:
+                suffix = str()
+                # Use underscores to abbreviate, 
+                #     
+                #     e.g.: artist_artifacts => a_a 
+                abbr = str()
+                while True:
+                    for c in generator():
+                        abbr = c + suffix
+                        try:
+                            orm._abbr2ent[abbr]
+                        except KeyError:
+                            orm._abbr2ent[abbr] = e
+                            orm._ent2abbr[e]    = abbr
                             break
                     else:
-                        found = True
-                        break
-                else:
-                    # Couldn't abbreviate so increment suffix
-                    self._abbreviation = str()
-                    if suffix:
-                        suffix = str(int(suffix) + 1)
-                    else:
-                        suffix = '0'
-
-                    continue
-                break
-
-        return self._abbreviation
+                        # Couldn't abbreviate so increment suffix
+                        suffix = str(int(suffix) + 1) if suffix else '0'
+                        continue
+                    break
 
     @staticmethod 
     def dequote(s):
