@@ -242,7 +242,7 @@ class authorization(tester.tester):
         super().__init__(*args, **kwargs)
 
         mods = ('party', 'apriori', 'ecommerce', 'file')
-        for e in orm.orm.getentitys(includeassociations=True):
+        for e in orm.orm.getentityclasses(includeassociations=True):
             if e.__module__ in mods:
                 e.orm.recreate()
 
@@ -771,7 +771,7 @@ class owner(tester.tester):
             engineer,  
         )
 
-        for e in orm.orm.getentitys(includeassociations=True):
+        for e in orm.orm.getentityclasses(includeassociations=True):
             if e.__module__ in ('party', 'apriori', 'ecommerce'):
                 e.orm.recreate()
 
@@ -872,7 +872,7 @@ class proprietor(tester.tester):
             system,    project,  engineer_project
         )
 
-        for e in orm.orm.getentitys(includeassociations=True):
+        for e in orm.orm.getentityclasses(includeassociations=True):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
 

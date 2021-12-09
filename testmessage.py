@@ -30,7 +30,7 @@ class test_message(tester.tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             for e in es:
                 if e.__module__ in ('message', 'apriori', 'party'):
                     e.orm.recreate()
@@ -318,7 +318,7 @@ class test_contactmechanism_message(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'message', 'apriori', 'party', 'ecommerce',
             for e in es:
                 if e.__module__ in mods:

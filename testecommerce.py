@@ -26,7 +26,7 @@ class test_ecommerce(tester.tester):
 
         orm.security().override = True
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'ecommerce', 'apriori', 'party', 'product'
             for e in es:
                 if e.__module__ in mods:
@@ -379,7 +379,7 @@ class test_url(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'ecommerce',
             for e in es:
                 if e.__module__ in mods:

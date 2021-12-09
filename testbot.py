@@ -33,7 +33,7 @@ class test_bot(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'bot', 'message', 'apriori', 'party', 'ecommerce',
             for e in es:
                 if e.__module__ in mods:
@@ -200,7 +200,7 @@ class test_sendbot(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'bot', 'message', 'party', 'ecommerce'
             for e in es:
                 if e.__module__ in mods:

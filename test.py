@@ -3812,7 +3812,7 @@ class test_orm(tester):
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             # Since orm entities now depends on `party` (someone
             # circularly), we need to ensure the party classes have updated
             # tables definitions in the database. `party` is dependent on
@@ -5542,13 +5542,14 @@ class test_orm(tester):
         self.true(comments().orm.isrecursive)
 
     def it_computes_abbreviation(self):
+        # XXX Try this now
         # FIXME Suddenly, running the test script resulted in a mess of
         # MySQL Too Many Connection errors. It seems to be related to
         # the GEM entities instatiated by this unit test. When
         # completed, remove the `return` below.
         return
 
-        es = orm.orm.getentitys() + orm.orm.getassociations()
+        es = orm.orm.getentityclasses() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
         # because in the list comprehension that instatiates `e`,
@@ -17455,7 +17456,7 @@ class crust_migration(tester):
         db.tables().drop()
 
         # Recreate all tables
-        es = orm.orm.getentitys(includeassociations=True)
+        es = orm.orm.getentityclasses(includeassociations=True)
 
         # NOTE Because the cat entity is currently involved in migration
         # testing, it causes issue when determining whether or not it
@@ -17505,7 +17506,7 @@ class crust_migration(tester):
         """ Ensure that the database is out-of-sync with model,
         necessitating a migration.
         """
-        es = orm.orm.getentitys()
+        es = orm.orm.getentityclasses()
 
         try:
             e = es[0]
@@ -17556,7 +17557,7 @@ class crust_migration(tester):
         # Drop something if it exist. crust.migration will exits before
         # it invokes onask if there is nothing to migrate, so we need to
         # make sure the database is unmigrated.
-        es = orm.orm.getentitys()
+        es = orm.orm.getentityclasses()
 
         self._alter()
 
@@ -17613,7 +17614,7 @@ class gem_product(tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in ('product', ):
                     e.orm.recreate()
 
@@ -19323,7 +19324,7 @@ class gem_case(tester):
         super().__init__(*args, **kwargs)
 
         orm.security().override = True
-        es = orm.orm.getentitys(includeassociations=True)
+        es = orm.orm.getentityclasses(includeassociations=True)
 
         if self.rebuildtables:
             for e in es:
@@ -19492,7 +19493,7 @@ class gem_order(tester):
 
         orm.security().override = True
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in ('order', 'party', 'product',):
                     e.orm.recreate()
 
@@ -20274,7 +20275,7 @@ class gem_shipment(tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in ('shipment', 'order'):
                     e.orm.recreate()
 
@@ -20702,7 +20703,7 @@ class gem_effort(tester):
 
         orm.security().override = True
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in (
                     'effort', 'apriori', 'party', 'asset', 'order'
                 ):
@@ -21491,7 +21492,7 @@ class gem_invoice(tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in ('invoice', 'party', 'apriori'):
                     e.orm.recreate()
 
@@ -22131,7 +22132,7 @@ class gem_budget(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
-            for e in orm.orm.getentitys(includeassociations=True):
+            for e in orm.orm.getentityclasses(includeassociations=True):
                 if e.__module__ in ('apriori', 'budget', 'party'):
                     e.orm.recreate()
 
@@ -22505,7 +22506,7 @@ class gem_hr(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             for e in es:
                 if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                     e.orm.recreate()

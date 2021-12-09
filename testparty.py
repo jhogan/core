@@ -31,7 +31,7 @@ class gem_party(tester.tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             for e in es:
                 if e.__module__ in ('party', 'apriori'):
                     e.orm.recreate()
@@ -1879,7 +1879,7 @@ class test_contactmechanism(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = 'party',
             for e in es:
                 if e.__module__ in mods:

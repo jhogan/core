@@ -557,7 +557,7 @@ class pom_page(tester.tester):
         super().__init__(*args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentitys(includeassociations=True)
+            es = orm.orm.getentityclasses(includeassociations=True)
             mods = (
                 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
             )

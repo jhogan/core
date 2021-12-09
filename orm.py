@@ -3267,7 +3267,7 @@ class entitymeta(type):
         # cache of each entity's mappings collection's object.  They
         # must be recomputed since they are based on the existing entity
         # object available.
-        for e in orm.getentitys():
+        for e in orm.getentityclasses():
             e.orm.mappings._populated = False
 
         # Return newly defined class
@@ -5262,7 +5262,7 @@ class mappings(entitiesmod.entities):
 
             # Set the recursion limit to a value a higher than the
             # default (1000). This method is highly recursive because of
-            # the calls to ``orm.getentitys`` and
+            # the calls to ``orm.getentityclasses`` and
             # ''orm.getassociations``. This recursion is necessary for
             # the algorithm. 
             #
@@ -5284,7 +5284,7 @@ class mappings(entitiesmod.entities):
 
             ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
-            for e in orm.getentitys():
+            for e in orm.getentityclasses():
                 # If the entity is `self`, ignore unless this is a
                 # recursive entity.
                 if e is self.orm.entity and not self.orm.isrecursive:
@@ -5321,7 +5321,7 @@ class mappings(entitiesmod.entities):
                 # object. The following block ensures that a FK to the
                 # association is created along with a composite mapping
                 # to the same association. This is similar to the above
-                # `for e in orm.getentitys()` block.
+                # `for e in orm.getentityclasses()` block.
 
                 # TODO One-to-many relationships between association
                 # objects have not received their own place in the
@@ -9436,7 +9436,7 @@ class orm:
                         yield c
 
             # Get all entity classes sorted by name
-            es = orm.getentitys() + orm.getassociations()
+            es = orm.getentityclasses() + orm.getassociations()
             es.sort(key=lambda x: x.__name__)
 
             for e in es:
@@ -10656,9 +10656,8 @@ class orm:
 
             return orm._abbrdict[abbr]
 
-    # XXX TODO s/getentitys/getentityclasses/
     @staticmethod
-    def getentitys(includeassociations=False):
+    def getentityclasses(includeassociations=False):
         """ A static method to collect and return all the classes that
         inherit directly or indirectly from orm.entity.
 
@@ -10968,7 +10967,7 @@ class migration:
     @property
     def entities(self):
         r = entitiesmod.entities()
-        es = orm.getentitys(includeassociations=True)
+        es = orm.getentityclasses(includeassociations=True)
         tbls = db.catelog().tables
 
         for e in es:
