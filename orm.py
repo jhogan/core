@@ -9405,7 +9405,7 @@ class orm:
         aliases are used to keep track of the way data is related to
         each other.)
         """
-        orm._cacheabbrs()
+        orm._cache()
         try:
             return orm._ent2abbr[self.entity]
         except KeyError:
@@ -9414,7 +9414,7 @@ class orm:
             ) from ex
 
     @staticmethod
-    def _cacheabbrs():
+    def _cache():
         if not orm._ent2abbr:
             def generator():
                 tblelements = e.orm.table.split('_')
@@ -9440,6 +9440,8 @@ class orm:
             es.sort(key=lambda x: x.__name__)
 
             for e in es:
+                orm._namedict[e.__name__] = e
+
                 suffix = str()
                 # Use underscores to abbreviate, 
                 #     
@@ -10636,25 +10638,13 @@ class orm:
         (See the ``orm.abbreviation`` getter for more).
         """
 
-        # Cat the entity classes and the association classes into a
-        # collection.
-        es = orm.getentitys() + orm.getassociations()
-
+        orm._cache()
         if name:
             # Lookup entity/association class by name.
-            if not orm._namedict:
-                for e in es:
-                    orm._namedict[e.__name__] = e
-
             return orm._namedict[name]
             
         elif abbr:
-            # Lookup entity/association class by abbreviation.
-            if not orm._abbrdict:
-                for e in es:
-                    orm._abbrdict[e.orm.abbreviation] = e
-
-            return orm._abbrdict[abbr]
+            return orm._abbr2ent[abbr]
 
     @staticmethod
     def getentityclasses(includeassociations=False):
