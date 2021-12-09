@@ -3431,7 +3431,7 @@ class dom_markdown(tester.tester):
         self.type(dom.tablerow, md.second.children.first)
         self.one(md.second.children.first.children)
         self.type(
-            dom.tabledata, 
+            dom.td, 
             md.second.children.first.children.first
         )
         self.one(md.second.children.first.children.first.elements)

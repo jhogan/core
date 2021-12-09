@@ -1114,7 +1114,8 @@ class element(entities.entity):
     element's ``attributes`` collection, standard HTML5 attributes will
     be (or should be) defined as @property's on the element::
 
-        td = tabledata()
+        import dom
+        td = dom.td()
 
         # Standard, non-depricated attributes work like this
         td.colspan = 1
@@ -7059,13 +7060,17 @@ class dd(element):
         self.attributes['nowrap'].value = v
 
 class codes(elements):
-    pass
+    """ A class used to contain a collection of ``code`` elements."""
 
 class code(element):
-    pass
+    """ The <code> HTML element displays its contents styled in a
+    fashion intended to indicate that the text is a short fragment of
+    computer code. By default, the content text is displayed using the
+    user agent's default monospace font.
+    """
 
 class codeblocks(codes):
-    pass
+    """ A class used to contain a collection of ``codeblock`` elements."""
 
 class codeblock(code):
     """ A subtype of `code` which represents a block of code instead of
@@ -7093,8 +7098,36 @@ class codeblock(code):
         self.classes += 'block'
 
 class markdown(elements):
+    """ Converts Markdown text into a DOM object::
+
+        import dom
+
+        # Parse markdown; md will contain the resulting DOM
+        md = dom.markdown('''
+            This is an H1
+            ============
+
+            This is an H2
+            -------------
+        ''')
+        
+        # Use DOM to get the <h1> and the <h2>
+        assert md.first.elements.first.html == 'This is an H1'
+        assert md.first.elements.second.html == 'This is an H2'
+
+        # Note that the elements are the correct type
+        assert type(md.first.elements.first) is dom.h1
+        assert type(md.first.elements.second) is dom.h2
+    """
     def __init__(self, text):
+        """ Parse Markdown.
+
+        :param: text str: The string of Markdown to parse.
+        """
         super().__init__(self)
+
+        # Use mistune.Markdown to convert to HTML. Then use dom.html to
+        # convert to DOM. Append that DOM to self.
         self += html(Markdown()(dedent(text).strip()))
 
 class selectors(entities.entities):
