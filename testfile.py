@@ -1051,6 +1051,8 @@ class file_directory(tester.tester):
                 file.directory, file.inodes,
             )
 
+        self.recreateprinciples()
+
         if hasattr(file.directory, '_radix'):
             with orm.sudo():
                 file.directory.radix.delete()
