@@ -139,6 +139,9 @@ class party(orm.entity):
     or a person as a contracted party. The customer for a sales order
     may be either an organization or a person.
     """
+    _anon = None
+    AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
+
     def __init__(self, *args, **kwargs):
         self._updateperson = True
         super().__init__(*args, **kwargs)
@@ -214,25 +217,24 @@ class party(orm.entity):
 
     @classproperty
     def anonymous(cls):
-        # TODO Ensure that only one party record can have a name of
-        # None.  UPDATE Actually A better way to identify the anonymous
-        # user would actually be to just use a hard coded UUID.
-
         # TODO Write test to ensure this returns the same party each
         # time.
-
-        # TODO We should probably memoize this
 
         # TODO We should probbaly ensure that root is the owner here,
         # i.e., `with orm.sudo(): ent = cls(id=myuuid); ent.save()`
 
-        ents = cls.orm.entities('name is %s', (None,))
-        if ents.isempty:
-            ent = cls(name=None)
-            ent.save()
-            return ent
-
-        return ents.first
+        if not cls._anon:
+            with orm.sudo(), orm.proprietor(company.carapacian):
+                try:
+                    cls._anon = party(cls.AnonymousId)
+                except db.RecordNotFoundError:
+                    id = cls.AnonymousId
+                    cls._anon = party(
+                        id = id,
+                        name = 'Anonymous'
+                    )
+                    cls._anon.save()
+        return cls._anon
 
     @property
     def creatability(self):
