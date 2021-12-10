@@ -7897,13 +7897,11 @@ class orm:
     attributes without worry of name collision.
     """
 
-    # A dict to store abbreviation (see orm.getentity())
-    _abbrdict    =  dict()
+    # dicts to store mappings between entity classes and their
+    # corresponding names and abbreviations. (see orm.getentity())
     _ent2abbr   =  dict()
     _abbr2ent   =  dict()
-
-    # A dict to store entity names (see orm.getentity())
-    _namedict    =  dict()
+    _namedict   =  dict()
 
     _proprietor  =  None
     owner = None
@@ -9415,6 +9413,14 @@ class orm:
 
     @staticmethod
     def _cache():
+        """ Cache ORM data.
+
+        Abbreviations (aliases) for entities are cached here in dict's
+        so fast lookups can be made form  abbreviation-to-entity and
+        entity-to-abbbreviation (see orm.getentity and
+        orm.abbreviation). A name-to-entity dict is created as well (see
+        orm.getentity).
+        """
         if not orm._ent2abbr:
             def generator():
                 tblelements = e.orm.table.split('_')

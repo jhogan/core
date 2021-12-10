@@ -139,7 +139,13 @@ class party(orm.entity):
     or a person as a contracted party. The customer for a sales order
     may be either an organization or a person.
     """
+
     _anon = None
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The hard-coded id of the anonymous user. This should not be
+    # changed.
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
 
     def __init__(self, *args, **kwargs):
@@ -217,14 +223,28 @@ class party(orm.entity):
 
     @classproperty
     def anonymous(cls):
+        """ Return a party object that represents an unknown user. 
+
+        This is commonly used to represent an actor who accesses a web
+        page but is not logged in to the system. Anonymous users can be
+        people or user agents such as web crawlers, so the generic
+        ``party`` object is used.
+        """
         # TODO Write test to ensure this returns the same party each
         # time.
 
         # TODO We should probbaly ensure that root is the owner here,
         # i.e., `with orm.sudo(): ent = cls(id=myuuid); ent.save()`
 
+        # Memoize. NOTE that memoizing this property has a significant
+        # influence on the performance of web hits.
         if not cls._anon:
+
+            # Carapacian will be the proprietor and root will be the
+            # owner.
             with orm.sudo(), orm.proprietor(company.carapacian):
+                
+                # Get from DB or create using hard-coded ID
                 try:
                     cls._anon = party(cls.AnonymousId)
                 except db.RecordNotFoundError:
