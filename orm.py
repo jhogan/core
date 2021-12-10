@@ -5068,7 +5068,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             f'{type(self).__module__}.'
             f'{type(self).__name__}('
                 f'id={id}'
-                f'name={name}'
+                f'{name}'
             ')'
         )
         return r
