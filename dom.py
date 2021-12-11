@@ -8162,18 +8162,42 @@ class revision(entities.entity):
         )[self.type]
             
 class AttributeExistsError(Exception):
-    pass
+    """ Raised when the same attribute is added to an ``element``'s
+    collection more than once.
+    """
 
 class ClassExistsError(Exception):
-    pass
+    """ Raised when the same class is added to an ``element``'s
+    class attribute more than once.
+    """
 
 class HtmlParseError(Exception):
+    """ Raised when there is an error during the parsing of an HTML
+    document.
+    """
     def __init__(self, msg=None, frm=None):
+        """ Create the exception:
+
+        :param: msg str: The error message.
+
+        :param: frm list: A list indiating the element and position of
+        the element in the HTML document where parsing failed:
+
+            [p(id="8biJP_qTQYa_Jb3A_1lrgQ"), (2, 2)]
+
+        Here the parsing failed at a p element with an id of
+        8biJP_qTQYa_Jb3A_1lrgQ. The (2, 3) tuple indicates the line (2)
+        and offset (3) where the parsing failed. This tuple comes from
+        HTMLParser.getpos(). See the line, column and element
+        @property's below.
+        """
         self._frame = frm
         self._msg = msg
 
     @property
     def line(self):
+        """ Returns the line number where the parsing failed.
+        """
         frm = self._frame
 
         if not frm:
@@ -8183,6 +8207,8 @@ class HtmlParseError(Exception):
 
     @property
     def column(self):
+        """ Returns the column number where the parsing failed.
+        """
         frm = self._frame
 
         if not frm:
@@ -8192,6 +8218,8 @@ class HtmlParseError(Exception):
 
     @property
     def element(self):
+        """ Returns the element object where the parsing failed.
+        """
         frm = self._frame
 
         if not frm:
@@ -8200,6 +8228,8 @@ class HtmlParseError(Exception):
         return frm[0]
        
     def __str__(self):
+        """ Returns a string representation of the exception.
+        """
         r = self._msg
         if self._frame:
 
