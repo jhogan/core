@@ -61,6 +61,7 @@ import testthird
 import testdom
 import testecommerce
 import testparty
+import testpom
 import testfile
 import testlogs
 import testmessage
@@ -17369,7 +17370,7 @@ class benchmark_orm_cpu(benchmark):
         def f():
             art.firstname
 
-        self.time(.005, .03, f, 1_000, DBG=True)
+        self.time(.005, .03, f, 1_000)
 
     def it_gets_attribute_on_subentity(self):
         sng = singer.getvalid()
