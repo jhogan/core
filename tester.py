@@ -108,6 +108,12 @@ class testers(entities.entities):
                         # If cls is benchmark but we don't want to run
                         # performance tests, skip cls
                         continue
+            else:
+                if self.performance:
+                    # If we are running performance only
+                    # (self.performance), and the class is not a
+                    # benchmark, then skip.
+                    continue
 
             try:
                 # Instantiate the current tester class
