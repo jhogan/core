@@ -1169,19 +1169,30 @@ class error(page):
         self.main += traceback(ex)
 
 class traceback(dom.article):
+    """ A subclass of dom.article that renders an exception as a HTML.
+    """
     def __init__(self, ex, *args, **kwargs):
+        """ Create the trackback article.
+
+        :param: ex Exception: The exception to render as HTML.
+        """
         # TODO When we can determine if we are in production or not, we
         # can return immediately if we are in production since the
-        # end-user will not need the stack trace and it will reveal
+        # end user will not need the stack trace and it will reveal
         # details about the code we don't necessarily want revealed. A
         # bool argument can be used to force the trace back to be
         # created, however.
 
         super().__init__(*args, **kwargs)
+
+        # To identify the traceback article, give the article a
+        # 'traceback' class: <article class="traceback">...
         self.classes += 'traceback'
+
+        # Build the DOM
         for tb in exc.traces(ex):
             div = dom.div()
-            self+= div
+            self += div
             div  +=  dom.text('File ')
             div  +=  dom.span(tb.file,    class_='file')
             div  +=  dom.text(', at ')

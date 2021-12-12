@@ -8240,10 +8240,27 @@ class HtmlParseError(Exception):
         return r
 
 class MoveError(ValueError):
-    pass
+    """ An exception raised when an element is moved incorrecty from one
+    DOM to another.
+    """
 
 class CssSelectorParseError(SyntaxError):
+    """ An error raised during the parsing of a CSS selector string.
+    """
+
     def __init__(self, o, tok=None, pos=None):
+        """ Create a CssSelectorParseError.
+
+        :param: o seectors.token|str: If a selectors.token, o is a reference
+        to the token where the error occured. If o is a str, it is just the
+        error message.
+
+        :param: tok seectors.token: A reference to the token where the error
+        occured.
+
+        :param: pos int: The position in the CSS selector string where the
+        parse error occured.
+        """
         self._pos = pos
         self.token = tok
         if isinstance(o, selectors.token):
@@ -8259,6 +8276,9 @@ class CssSelectorParseError(SyntaxError):
 
     @property
     def pos(self):
+        """ The position in the CSS selector string where the parse
+        error occured.
+        """
         if self._pos is not None:
             return self._pos
 
