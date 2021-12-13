@@ -12,7 +12,31 @@ import pdb
 import builtins
 import sys
 
+""" This module contains a set of hightly reuseable functions.
+"""
+
 def enumerate(iterable, start=0):
+    """ enumerate is a clone of Python's builtin enumerate() function.
+    However, unlike builtins.enumerate(), the first element of the
+    tuple returns a subclass of int with special capabilities;:
+
+        ls = ['red', 'blue', 'green']
+        for i, e in func.enumerate(ls):
+            if i.first:
+                assert e == 'red'
+                assert i == 0
+            elif i.second:
+                assert e == 'blue'
+                assert i == 1
+            elif i.last:
+                assert e == 'green'
+                assert i == 2
+
+    In the above example, even though i is an int, it has properties
+    that make it easy to see where in the loop we are. This function is
+    useful when the first or last element being iterated over needs
+    conditional logic which is often the case.
+    """
     class seqint(int):
         def __new__(cls, *args, **kwargs):
             try:
