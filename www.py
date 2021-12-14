@@ -28,7 +28,7 @@ Exception classes corresponding to HTTP status codes 3xx, 4xx and 5xx
 are also provided in this module.
 """
 
-from dbg import B
+from dbg import B, PM
 from functools import reduce
 from pprint import pprint
 import auth
@@ -828,7 +828,16 @@ class _request:
         HTTP_REFERER of the HTTP request.
         """
         if not self._referer:
-            url = str(self.environment['http_referer'])
+            if not (url := self.environment['http_referer']):
+                # We should return None here. However, because of
+                # 6028ce62, this causes an exception. We need to addres
+                # that first, then we should be able to return None
+                # here.
+                # return None
+                ...
+
+            url = str(url)
+
             self._referer = ecommerce.url(address=url)
         return self._referer
 
