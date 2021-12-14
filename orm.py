@@ -8380,8 +8380,8 @@ class orm:
 
         issensitive = kwargs.pop('issensitive', False)
 
-        # Query using the **kwargs, e.g., {'name': 'active'}
-        rs = self.entities(**kwargs)
+        if not len(kwargs):
+            return
 
         # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
@@ -8393,6 +8393,9 @@ class orm:
             # When loading via the orm.populate() method, the expected
             # properties won't be passed in. Just return.
             return
+
+        # Query using the **kwargs, e.g., {'name': 'active'}
+        rs = self.entities(**kwargs)
 
         # Filter by case-sensitivity. At the moment, we can't use the
         # ORM to send a WHERE clause to the database to do this for us,
@@ -9538,16 +9541,11 @@ class orm:
         then be called to link all the individual objects in ``edict``
         into the graph (see ``orm.link`` for more).
 
-        :param: db.resultset(s) ress: A ``resultset`` or ``resultsets``
-        instance containing the results of the SELECT for this entities
-        collection. See (orm.sql) to see how the SELECT is generated.
+        :param: db.result|db.resultset ress: A ``db.result`` or
+        ``db.resultset`` instance containing the results of the SELECT
+        for this entities collection. See (orm.sql) to see how the
+        SELECT is generated.
         """
-
-        # Create an entities dict
-        edict = dict()
-        skip = False
-
-        es = self.instance
 
         if type(ress) is db.result:
             # If we are given one resultset (simple), we are probably
@@ -9558,6 +9556,10 @@ class orm:
             simple = True
             maps = self.mappings
         elif type(ress) is db.resultset:
+            # Exit early if we can
+            if ress.isempty:
+                return
+
             # Multiple resultsets (`not simple`) imply that we are
             # loading an entities collection, i.e::
             # 
@@ -9565,6 +9567,12 @@ class orm:
             simple = False
         else:
             raise TypeError('Invalid type of `ress`')
+
+        # Create an entities dict
+        edict = dict()
+        skip = False
+
+        es = self.instance
 
         # Iterate records
         for res in ress:
