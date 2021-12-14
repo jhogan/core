@@ -2415,9 +2415,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if attr == 'brokenrules':
             return entities.getbrokenrules(self)
 
+        self_orm = self.orm
+
         # Raise exception if we are streaming and one of these nono
         # attributes is called.
-        if self.orm.isstreaming:
+        if self_orm.isstreaming:
             nonos = (
                 'getrandom',    'getrandomized',  'where',    'clear',
                 'remove',       'shift',          'pop',      'reversed',
@@ -2434,8 +2436,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Determine if we should `load` the entities collection.
             load = True
 
-            if self.orm.composite:
-                if self.orm.composite.orm.isnew:
+            if self_orm.composite:
+                if self_orm.composite.orm.isnew:
                     load = False
 
             # Don't load if joining, clearing, or attr == 'load'
@@ -2447,23 +2449,23 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= attr != '__class__'
 
             # Don't load if the entities collection is __init__'ing
-            load &= not self.orm.initing
+            load &= not self_orm.initing
 
             # Don't load if the entities collection is currently being
             # loading
-            load &= not self.orm.isloading
+            load &= not self_orm.isloading
 
             # Don't load if self has already been loaded
-            load &= not self.orm.isloaded
+            load &= not self_orm.isloaded
 
             # Don't load if an entity object is being removed from an
             # entities collection
-            load &= not self.orm.isremoving
+            load &= not self_orm.isremoving
 
             # Don't load unless self has joins or self has a where
             # clause/predicate
-            js = self.orm.joins
-            load &= (js and js.ispopulated) or bool(self.orm.where)
+            js = self_orm.joins
+            load &= (js and js.ispopulated) or bool(self_orm.where)
 
             # TODO:d6f1df1f Test if attr is a callable attribute. We
             # don't want to load if we are only accessing the callable.
@@ -2473,7 +2475,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if load:
                 # Load the collection based on the parameters defined by
                 # the invocation of the entities's __init__ method.
-                self.orm.collect()
+                self_orm.collect()
 
         return object.__getattribute__(self, attr)
 
