@@ -35,9 +35,19 @@ def enumerate(iterable, start=0):
     In the above example, even though i is an int, it has properties
     that make it easy to see where in the loop we are. This function is
     useful when the first or last element being iterated over needs
-    conditional logic which is often the case.
+    conditional logic - which is often the case.
+
+    :param: iterable sequence|iterator: The iterable to create enumerate
+    object for.
+
+    :param: start int: Where the counter starts.
     """
+
     class seqint(int):
+        """ A subclass of int that helps report on where in the sequence
+        of an iteration we are (see the first, second and last
+        @property's.
+        """
         def __new__(cls, *args, **kwargs):
             try:
                 iterable = kwargs['iterable']
@@ -73,26 +83,44 @@ def enumerate(iterable, start=0):
 
         @property
         def first(self):
+            """ Return True if the integer represents the first
+            iteration, False otherwise.
+            """
             return self == 0
 
         @property
         def second(self):
+            """ Return True if the integer represents the second
+            iteration, False otherwise.
+            """
             return self == 1
             
         @property
         def last(self):
+            """ Return True if the integer represents the last
+            iteration, False otherwise.
+            """
             return len(self.iterable) - 1 == self
 
         @property
         def even(self):
+            """ Return True if the integer is an even number, False
+            otherwise.
+            """
             return self % 2 == 0
 
         @property
         def odd(self):
+            """ Return True if the integer is an odd number, False
+            otherwise.
+            """
             return not self.even
 
-            
+    # Create a seqint using start and iterable
     i = seqint(start, iterable=iterable)
+
+    # Iterate over `iterable` yielding the counter and the element as a
+    # two element cursor.
     for e in iterable:
         yield i, e
         i += 1
