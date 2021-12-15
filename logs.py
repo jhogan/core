@@ -6,26 +6,40 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
+""" This module has classes that handle logging to files - typically
+syslog (technically a service).
+
+Most logging of data in Core uses database tables (see ``apriori.log``).
+However, when there is an issue connecting to the database, or some
+other such abnormality, we can use these logging classes to log straight
+to syslogd.
+"""
+
 # TODO Add Tests
 from dbg import B
-import logging
 from logging import handlers, Handler
 import config
 import entities
+import logging
 
 class log(entities.entity):
     def __init__(self, *args, **kwargs):
+        """ Set up the log class.
+        """
         super().__init__(*args, **kwargs)
 
+        # Get syslog config data
         cfg = config.config().log
 
         # NOTE .getLogger() always returns the same 'logger'
         self._logger = logging.getLogger()
 
+        # Create the onlog event
         self.onlog = entities.event()
 
         # No handlers means we haven't set the logger up
         if len(self._logger.handlers):
+            # Clear the logger handler
             self._logger.handlers.pop()
         else:
             # Set up formatter
@@ -46,7 +60,9 @@ class log(entities.entity):
 
     # TODO These should probably be prefixed by a _ to indicate they are
     # private.
-    class callbackhandler(Handler):
+    class callbackhandler(logging.Handler):
+        """ A subclass of Handler.
+        """
         def __init__(self, callback):
             super().__init__()
             self.callback = callback
@@ -55,6 +71,11 @@ class log(entities.entity):
             self.callback(rec)
 
     def callback(self, rec):
+        """ Ultimately invoked by Python's logging classes to indicate a
+        log has been written. We can use this event to trigger the
+        ``log.onlog`` event so handlers in Core can be subscribed and
+        made aware of logging events.
+        """
         eargs = addlogeventargs(rec)
         self.onlog(self, eargs)
 

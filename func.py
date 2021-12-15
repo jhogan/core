@@ -136,13 +136,28 @@ def enumerate(iterable, start=0):
 # with a precompiled regex
 
 def getattr(obj, attr, *args):
-    # Redefine getattr() to support deep attribututes 
-    # 
-    # For example:
-    #    Instead of this:
-    #        entity.constituents.first.id
-    #    we can do this:
-    #        getattr(entity, 'constituents.first.id')
+    """ A clone of Python's getattr(). In addition to providing the same
+    functionality as builtins.getattr, nested attributes can be
+    accessed. Like the builtins' getattr(), the following two statements
+    are equivalent::
+        
+        x = func.getattr(x, 'foo')
+        x = x.foo
+
+    builtins.getattr does the same thing. However, if foo is an object
+    with an attribute called 'bar', we can do the following:
+
+        x getattr(x, 'foo.bar')
+
+    which is equivalent to::
+
+        x = x.foo.bar
+
+    This can go n-levels deep.
+
+    This functionality is needed often in Core, so func.getattr is often
+    droppend in at the module level to replace builtins.getattr.
+    """
     def rgetattr(obj, attr):
         if obj:
             return builtins.getattr(obj, attr, *args)

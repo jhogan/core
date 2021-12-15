@@ -4,7 +4,6 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
-from configfile import configfile
 from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress

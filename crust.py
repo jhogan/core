@@ -9,7 +9,6 @@
 
 from MySQLdb.constants.CR import COMMANDS_OUT_OF_SYNC
 from config import config
-from configfile import configfile
 from dbg import B
 from func import enumerate
 import db
