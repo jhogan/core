@@ -1057,6 +1057,7 @@ class pom_page(tester.tester):
                     options = [(x, x) for x in tzs],
                     selected = ['US/Arizona']
                 )
+
                 if www.request.ispost:
                     frm.post = www.request.payload
 

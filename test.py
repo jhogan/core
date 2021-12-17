@@ -996,7 +996,7 @@ class test_entities(tester):
         ks = knights.createthe4()
         try:
             ks.append(1)
-            self.assertFail('Append accepted invalid type')
+            self.assertFail('append accepted invalid type')
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
@@ -1092,7 +1092,7 @@ class test_entities(tester):
         ks = knights.createthe4()
         try:
             ks += 1
-            self.assertFail('Append accepted invalid type')
+            self.assertFail('append accepted invalid type')
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
@@ -1147,7 +1147,7 @@ class test_entities(tester):
         ks = knights.createthe4()
         try:
             ks |= 1
-            self.assertFail('Append accepted invalid type')
+            self.assertFail('append accepted invalid type')
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
@@ -2946,14 +2946,15 @@ class test_index(tester):
         ix = ks.indexes['traittype']
 
         # First, all the trait types will be NoneType
-        self.assertEq(4, ix(type(None)).count)
+        self.eq(4, ix(type(None)).count)
 
-        # Set the trait. When the trait property is set, the onvaluechange 
-        # event will be raised which will cause the knight to be 
-        # removed from the index at key NoneType to the key 'str'
+        # Set the trait. When the trait property is set, the
+        # onvaluechange event will be raised which will cause the knight
+        # to be removed from the index at key NoneType to the key 'str'
         ks['Lancelot'].trait = 'bravery'
 
-        # Now, 3 trait types will be NoneTypes and 1 will be a str ('bravery')
+        # Now, 3 trait types will be NoneTypes and 1 will be a str
+        # ('bravery')
         self.assertEq(3, ix(type(None)).count)
         self.assertEq(1, ix(str).count)
 

@@ -2544,24 +2544,23 @@ class event(entities):
         for callable in self:
             callable(src, e)
 
-    def append(self, fn):
+    def append(self, f):
         """ Subscribe an event handler to the event. The event handler
         will be appended to the event object's internal collection of
         subscribers which will be invoked when the event is fired.
 
-        :param: fn callable: The event handler being subscribed to the
+        :param: f callable: The event handler being subscribed to the
         event. This can be any callable with the signature::
 
-            def fn(src: object, eargs: eventargs)
+            def f(src: object, eargs: eventargs)
         """
-        # TODO Rename fn to f to conform to conventions
-        if not callable(fn):
+        if not callable(f):
             raise ValueError('Event must be callable')
 
-        if isinstance(fn, event):
+        if isinstance(f, event):
             raise ValueError('Attempted to append event to event collection.')
             
-        self._ls.append(fn)
+        self._ls.append(f)
 
     def remove(self, fn):
         """ Unsubscribe an event handler from this event. Once the

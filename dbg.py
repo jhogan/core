@@ -88,14 +88,14 @@ def PM(ex):
 
 def profile(callable):
     """ Run callable under Python's builtin deterministic profiler
-    (cProfile), and print the top 10 most time-consuming methods
+    (cProfile), and print the top 20 most time-consuming methods
     used during the invocation of callable. 
 
     Calling this method is intended for debugging performance
     issues. Calls to this method shouldn't be committed to source
     control.
 
-    As a convenience, the top 10 are printed to stdout. Then the program
+    As a convenience, the top 20 are printed to stdout. Then the program
     breaks into the debugger so the user is able to analyse the
     pstats.Stats object further.
 
