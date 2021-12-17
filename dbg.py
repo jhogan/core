@@ -112,7 +112,7 @@ def profile(callable):
     p = pstats.Stats(p)
     p.strip_dirs()
     p.sort_stats(pstats.SortKey.CUMULATIVE)
-    p.print_stats(10)
+    p.print_stats(20)
 
     B()
 
