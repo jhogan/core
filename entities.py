@@ -209,13 +209,13 @@ class entities:
         for ix in self.indexes:
             ix += eargs.entity
 
+        e = eargs.entity
+
         if hasattr(eargs.entity, 'onbeforevaluechange'):
-            eargs.entity.onbeforevaluechange += \
-                self._entity_onbeforevaluechange 
+           e.onbeforevaluechange += self._entity_onbeforevaluechange
 
         if hasattr(eargs.entity, 'onaftervaluechange'):
-            eargs.entity.onaftervaluechange += \
-                self._entity_onaftervaluechange 
+            e.onaftervaluechange += self._entity_onaftervaluechange
 
         self.oncountchange(self, eventargs())
             
@@ -1293,11 +1293,11 @@ class entities:
         if uniq and t in self:
             return
 
-        self.onbeforeadd(self, entityaddeventargs(t))
+        self.onbeforeadd(self, eargs := entityaddeventargs(t))
 
         self._ls.append(t)
 
-        self.onadd(self, entityaddeventargs(t))
+        self.onadd(self, eargs)
 
 
     def __iadd__(self, t):

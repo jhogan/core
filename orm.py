@@ -3336,10 +3336,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         #     art = artist(name=name, eager('presentations'))
         try:
             self_orm = self.orm.clone()
-            self.orm = self_orm
 
-            self.orm.initing = True # TODO change to `isiniting`
-            self.orm.instance = self
+            # NOTE Set self.orm directly for performance. Equivalent to:
+            #
+            #     self.orm = self_orm
+            object.__setattr__(self, 'orm', self_orm)
+
+            self_orm.initing = True # TODO change to `isiniting`
+            self_orm.instance = self
 
             super().__init__()
 
@@ -3357,15 +3361,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # entity's `proprietor` attribute. This ensure the
                 # proprietor gets saved to the database.
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                if security().proprietor:
-                    self.proprietor = security().proprietor
+                if propr := security().proprietor:
+                    self.proprietor = propr
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
                 # entity so we know which user created the entity.
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                if security().owner:
-                    self.owner = security().owner
+                if own := security().owner:
+                    self.owner = own
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
