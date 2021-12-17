@@ -84,32 +84,51 @@ class log(entities.entity):
     # where the method was actually invoked.
     @property
     def debug(self):
+        """ Return the `debug` method. """
         return self._logger.debug
 
     @property
     def info(self):
+        """ Return the `info` method. """
         return self._logger.info
 
     @property
     def warning(self):
+        """ Return the `warning` method. """
         return self._logger.warning
 
     @property
     def error(self):
+        """ Return the `error` method. """
         return self._logger.error
 
     @property
     def critical(self):
+        """ Return the `critical` method. """
         return self._logger.critical
 
     @property
     def exception(self):
+        """ Return the `exception` method. """
         return self._logger.exception
 
 class addlogeventargs(entities.eventargs):
+    """ An eventsarg class used to pass the log record to handlers that
+    are subscribed to the onlog event.
+    """
     def __init__(self, rec):
+        """ Create the eventarg.
+        """
         self.record = rec
 
+# When the ``logs`` module is imported, we instatiate the ``log`` class,
+# then set its ``logger`` object at the module level. With that, we set
+# the logging methods at the module level, as well. That way, we can
+# call the logging function directly off the module:
+#
+#     import log
+#     log.debug('derp')
+#
 _logger = log()._logger
 
 debug      =  _logger.debug
