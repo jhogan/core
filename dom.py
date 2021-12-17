@@ -756,89 +756,6 @@ class elements(entities.entities):
     # TODO All html should pass the W3C validation service at:
     # https://validator.w3.org/#validate_by_input
 
-    def _self_onadd(self, src, eargs):
-        """ Overrides entities._self_onadd event handler. 
-
-        This override manages revisions to the ``elements`` collection.
-        
-        NOTE that this functionality is currently under development.
-        """
-        super()._self_onadd(src, eargs)
-
-        # If `self` has no root then `self` is likely being used to
-        # collect elements for non-tree purposes such as collecting the
-        # ancestors of an element or the matches of a CSS selector
-        # selection. In this case, there is no need to note the
-        # revision.
-        if not self.root:
-            return 
-
-        # If the element being appended has a parent, then we don't want
-        # to create a revision entry for it. If this is the case, the
-        # element is being collected for non-tree purposes, such as when
-        # an `element.elements` method creates a collection of elements
-        # to return to its caller
-        if not eargs.entity.isroot:
-            return
-
-        # Add an `Append` revision entry to the root's revision
-        # collection.
-        revs = self.root._revisions
-        sub = self.parent
-        obj = eargs.entity
-        if isinstance(sub, text):
-            # If we are appending an element to a text node, we need to
-            # replace (Remove then Append) the text node's parent. This
-            # is because text nodes don't have id attributes that can be
-            # expressed in HTML.
-            rent = sub.parent
-            grent = sub.grandparent
-
-            if rent:
-                revs.revision(revision.Remove, sub=grent, obj=rent)
-
-                rent = rent.clone()
-                rent.reidentify()
-
-                revs.revision(revision.Append, sub=grent, obj=rent)
-                revs += rent._revisions
-
-            else:
-                # Sometimes self.parent won't have a parent. Because the
-                # DOM is small.
-                pass
-
-        else:
-            # If we are appending an element to a non-text element,
-            # simply log the append.
-            revs.revision(revision.Append, sub=sub, obj=obj)
-
-        # Nullify the revision collection of the element being appended.
-        # But before doing that, add it to the self's root's
-        # revisions collection.
-        revs = eargs.entity._revisions
-        eargs.entity._revisions = None
-        self.root._revisions += revs
-
-    def _self_onremove(self, src, eargs):
-        """ Overrides the _self_onremove event handler in ``entities``
-
-        This override manages revisions to the ``elements`` collection.
-        
-        NOTE that this functionality is currently under development.
-        """
-        # FIXME This can't be right. We should be calling
-        # super()._self_onremove
-        super()._self_onadd(src, eargs)
-
-        # This code is also in _self_add. See the comment there for why
-        # we exculde logging on this condition.
-        if not self.root:
-            return
-
-        revs = self.root._revisions
-        revs.revision(revision.Remove, self.parent, eargs.entity)
-
     @property
     def root(self):
         """ Returns the root ``element`` that this collection is under.
@@ -1187,42 +1104,6 @@ class element(entities.entity):
         for el in self.all:
             self.id = primative.uuid().base64
         
-    def apply(self, revs):
-        for rev in revs:
-
-            # Get the subject element of the revision from the DOM
-            id = rev.subject.id
-            els = self['[id="%s"]' % id]
-            if els.isempty:
-                raise ValueError("Can't find [id=\"%s\"]" % id) 
-            elif els.isplurality:
-                raise ValueError(
-                    "Multiple elements for [id=\"%s\"]" % id
-                ) 
-
-            sub = els.first
-
-            if rev.type == revision.Append:
-                # NOTE We can't use # as a selector. The ids are base64
-                # encoding so sometimes they will start with a number.
-                # This is fine in HTML5 but the # selector token won't
-                # permit id selections that start with a number. (See
-                # https://benfrain.com/when-and-where-you-can-use-numbers-in-id-and-class-names/)
-                # The proper way to do this is to just use attribute
-                # selection
-                # 
-                # Bad: #3QuaWRdCg
-                # Good: [id="3QuaWRdCg"]
-
-                obj = rev.object.clone()
-                obj.elements.clear()
-
-                sub += obj
-            elif rev.type == revision.Remove:
-                sels = '[id="%s"]' % rev.object.id
-                obj = self[sels]
-                sub.remove(obj)
-
     @property
     def isblocklevel(self):
         """ Returns True if this element is a block-level element; False
@@ -1419,20 +1300,6 @@ class element(entities.entity):
         """
         return self is self.root
 
-    @property
-    def _revisions(self):
-        if not self.isroot:
-            raise ValueError(
-                'Only root elements have revisions. '
-                'Use element.root.revisions instead'
-            )
-        if self._revs is None:
-            self._revs = revisions(self)
-        return self._revs
-
-    @_revisions.setter
-    def _revisions(self, v):
-        self._revs = v
 
     @property
     def parent(self):
@@ -6171,41 +6038,6 @@ class selector(entities.entity):
         def hasvalidname(self):
             return self.value.lower() in self.validnames
 
-class revisions(entities.entities):
-    def __init__(self, el=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.element = el
-
-    def revision(self, type, sub, obj):
-        self += revision(type, sub, obj)
-
-class revision(entities.entity):
-    Append = 0
-    Remove = 1
-    def __init__(self, type, sub, obj):
-        self.id = uuid.uuid4()
-        self.type = type
-        self.subject = sub
-        self.object = obj
-
-    def __repr__(self):
-        r = '%s(type=%s, subject=<%s id="%s">, object=<%s id="%s">)' 
-        return r % (
-            type(self).__name__,
-            self.str_type,
-            type(self.subject).__name__,
-            self.subject.id,
-            type(self.object).__name__,
-            self.object.id,
-        )
-
-    @property
-    def str_type(self):
-        return (
-            'Append',
-            'Remove',
-        )[self.type]
-            
 class AttributeExistsError(Exception):
     pass
 
