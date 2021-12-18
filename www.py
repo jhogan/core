@@ -1115,6 +1115,7 @@ class _response():
         ``status`` property.
         """
         self._body = None
+        self._html = None
         self._status = 200
         self._page = None
         self.request = req
@@ -1234,7 +1235,11 @@ class _response():
         # TODO If the body is not HTML (perhaps it's JSON or the
         # content-type isn't HTML), we should probably raise a
         # ValueError.
-        return dom.html(self.payload)
+        if self._html is None:
+            self._html = dom.html(self.body)
+
+        return self._html
+
 
     def __getitem__(self, sels):
         """ Returns the portion of the response body corresponding to
