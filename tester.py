@@ -524,7 +524,7 @@ class tester(entities.entity):
                 res = www._response(req) 
                 res._status = st
                 res._headers = www.headers(hdrs)
-                res.payload = next(iter)
+                res.body = next(iter)
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')

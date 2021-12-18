@@ -127,7 +127,7 @@ class application:
                 # Invoke the request object, i.e., make the request
                 data = req()
                 if req.isget:
-                    res.payload = data
+                    res.body = data
 
             elif req.ispost:
                 if req.isxhr:
@@ -141,7 +141,7 @@ class application:
 
                     data = [] if data == None else data
                 else:
-                    res.payload = req()
+                    res.body = req()
 
             else:
                 raise MethodNotAllowedError(
@@ -180,7 +180,7 @@ class application:
                             pg.clear()
                             pg(ex=ex)
 
-                        res.payload = pg.html
+                        res.body = pg.html
                         res.status = ex.status
                     elif isinstance(ex, HttpException):
                         # HttpException are HTTP 300s. Allow the
@@ -195,21 +195,21 @@ class application:
                         p += dom.text(' ')
                         p += dom.span(str(ex), class_='message')
                         req.page.flash(p)
-                        res.payload = req.page.html
+                        res.body = req.page.html
 
             except Exception as ex:
                 # In case there is an exception processing the
                 # exception, ensure the response is 500 with a simple
                 # error message.
                 res.status = 500
-                res.payload = dom.dedent('''
+                res.body = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
 
         finally:
             if not break_:
                 start_response(res.status, dict(res.headers.list))
-                return iter([res.payload])
+                return iter([res.body])
 
             request = None
 
@@ -241,7 +241,7 @@ class _request:
         if app:
             self.app._request  =  self
 
-        self._payload    =  None
+        self._body    =  None
         self._user       =  None
         self._files      =  None
         self._useragent  =  None
@@ -281,7 +281,7 @@ class _request:
         if ua:
             r += f'\n{ua}'
 
-        body = self.payload
+        body = self.body
         if body:
             try:
                 body = json.dumps(json.loads(body), indent=2)
@@ -714,23 +714,21 @@ class _request:
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
             logs.exception(msg)
 
-    # TODO The official word for this data is "message body", so we
-    # should probably rename the property to "body".
     @property
-    def payload(self):
+    def body(self):
         """ Returns the HTTP message body of the request.
 
         https://en.wikipedia.org/wiki/HTTP_message_body
         """
 
-        if self._payload is None:
-            # If the payload hasn't been set, we can get it from the
+        if self._body is None:
+            # If the body hasn't been set, we can get it from the
             # WSGI environment.
             if self.iswsgi:
                 sz = self.size
                 inp = self.environment['wsgi.input']
                 if self.mime == 'multipart/form-data':
-                    # Normally, the client won't need to get the payload
+                    # Normally, the client won't need to get the body
                     # for multipart data; it will usually just use
                     # `request.files`. Either way, return whan we have.
                     # We probably shouldn't memoize it since it could be
@@ -745,12 +743,12 @@ class _request:
                     # TODO What would the mime type (content-type) be
                     # here?  (text/html?) Let's turn this else into an
                     # elif with that information.
-                    self._payload = inp.read(sz).decode('utf-8')
-        return self._payload
+                    self._body = inp.read(sz).decode('utf-8')
+        return self._body
 
-    @payload.setter
-    def payload(self, v):
-        self._payload = v
+    @body.setter
+    def body(self, v):
+        self._body = v
 
     @property
     def path(self):
@@ -770,7 +768,7 @@ class _request:
     def size(self):
         """ The contents of any Content-Length fields in the HTTP
         request. If empty, return 0. In non-WSGI requests, returns the
-        length of the payload.
+        length of the body.
         """
         if self.iswsgi:
             try:
@@ -779,9 +777,9 @@ class _request:
                 return 0
 
         # NOTE This appears to be ambigous. In the WSGI version,
-        # shouldn't we also be returning the size of the payload.
+        # shouldn't we also be returning the size of the body.
 
-        return len(self.payload)
+        return len(self.body)
 
     @property
     def class_(self):
@@ -947,7 +945,7 @@ class _request:
                 raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
-            if self.mime == 'text/html' and len(self.payload) == 0:
+            if self.mime == 'text/html' and len(self.body) == 0:
                 raise BadRequestError('No data in body of request message.')
 
             if self.mime == 'multipart/form-data':
@@ -1116,7 +1114,7 @@ class _response():
         code, that status code will be used for the respones's
         ``status`` property.
         """
-        self._payload = None
+        self._body = None
         self._status = 200
         self._page = None
         self.request = req
@@ -1125,7 +1123,7 @@ class _response():
 
         if res:
             self.status = res.status
-            self.payload = res.read()
+            self.body = res.read()
             self.headers = res.headers
 
         if ex:
@@ -1136,13 +1134,13 @@ class _response():
             else:
                 self.status = st
 
-            payload = None
+            body = None
             try:
-                payload = ex.read()
+                body = ex.read()
             except AttributeError:
                 pass
             else:
-                self.payload = payload
+                self.body = body
 
             try:
                 hdrs = ex.headers
@@ -1206,32 +1204,34 @@ class _response():
         return None
 
     @property
-    def payload(self):
+    def body(self):
         """ Returns the body of the response.
         """
         # These lines are for XHR responses
-        # payload = json.dumps(payload)
-        # payload = bytes(payload, 'utf-8')
-        return self._payload
+        # body = json.dumps(body)
+        # body = bytes(body, 'utf-8')
+        return self._body
 
-    @payload.setter
-    def payload(self, v):
-        self._payload = v
+    @body.setter
+    def body(self, v):
+        if self._body != v:
+            self._body = v
+            self._html = None
 
     @property
     def json(self):
-        """ If the payload is a JSON string, returns a Python list
+        """ If the body is a JSON string, returns a Python list
         representing the JSON document. An exception will be raised if
-        the payload cannot be deserialized as a JSON document.
+        the body cannot be deserialized as a JSON document.
         """
-        return json.loads(self.payload)
+        return json.loads(self.body)
 
     @property
     def html(self):
         """ Returns a dom.html object representing the HTML in the
-        payload.
+        body.
         """
-        # TODO If the payload is not HTML (perhaps it's JSON or the
+        # TODO If the body is not HTML (perhaps it's JSON or the
         # content-type isn't HTML), we should probably raise a
         # ValueError.
         return dom.html(self.payload)
@@ -1246,9 +1246,9 @@ class _response():
         same::
             
             self['MySelector']
-            json.loads(self.payload)['MySelector']
+            json.loads(self.body)['MySelector']
 
-        When the payload contains HTML, the select should be a CSS3
+        When the body contains HTML, the select should be a CSS3
         selector::
 
             # Select all <p> tags
@@ -1278,7 +1278,7 @@ class _response():
         if not isinstance(self._headers, headers):
             self._headers = headers(self._headers)
 
-        clen = len(self.payload) if self.payload else 0
+        clen = len(self.body) if self.body else 0
         self._headers['Content-Length'] = clen
         
         # if XHR
@@ -1299,8 +1299,8 @@ class _response():
         """ Returns a string representation of this HTTP response
         object.
 
-        :param: pretty bool: If True, prettifies the payload if the
-        payload is JSON or HTML.
+        :param: pretty bool: If True, prettifies the body if the
+        body is JSON or HTML.
         """
 
         # TODO Shouldn't ``pretty`` default to True?
@@ -1313,18 +1313,18 @@ class _response():
         %s
         ''')
 
-        payload = self.payload
+        body = self.body
         if pretty:
             if self.mime == 'application/json':
-                payload = json.dumps(json.loads(payload), indent=4)
+                body = json.dumps(json.loads(body), indent=4)
             elif self.mime == 'text/html':
-                payload = dom.html(self.payload).pretty 
+                body = dom.html(self.body).pretty 
 
         return r % (
             self.request.path,
             self.request.method,
             self.message,
-            payload,
+            body,
         )
 
     def __str__(self):
@@ -1994,7 +1994,7 @@ class browser(entities.entity):
             containing data the HTTP server returned.
 
             :param: req www.request: The request object. This object
-            contains the data, such as the HTTP method, payload (body),
+            contains the data, such as the HTTP method, body (body),
             and headers used to make the HTTP request.
             """
             # TODO ``req`` should be able to be a str containing a url
@@ -2002,7 +2002,7 @@ class browser(entities.entity):
             # converted to ``request`` objects with a ``method`` of GET.
             url = req.url
 
-            body = req.payload
+            body = req.body
 
             if body:
                 body = body.encode('utf-8')

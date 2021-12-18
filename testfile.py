@@ -215,7 +215,7 @@ class dom_file(tester.tester):
                 if req.isget:
                     return
 
-                # Populate the form with data from the request's payload
+                # Populate the form with data from the request's body
                 if req.files.isempty:
                     raise BadRequestError(
                         'No avatar image file provided'

@@ -277,9 +277,9 @@ class postmark(emailer):
         
         req.headers += f'X-Postmark-Server-Token: {self.key}'
 
-        # Set the request object's payload to a json represenation of
+        # Set the request object's body to a json represenation of
         # the body dict. 
-        req.payload = json.dumps(body)
+        req.body = json.dumps(body)
 
         try:
             # Make the HTTP request
@@ -287,9 +287,9 @@ class postmark(emailer):
         except Exception as ex:
             # Convert Exception to api.Error exception
             ex1 = api.Error(ex)
-            payload = json.loads(ex.response.payload)
-            ex1.code = payload['ErrorCode']
-            ex1.message = payload['Message']
+            body = json.loads(ex.response.body)
+            ex1.code = body['ErrorCode']
+            ex1.message = body['Message']
 
             # TODO Some work needs to be done here. If the API responds
             # in a way that implies a hard bounce then we should just

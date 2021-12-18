@@ -924,7 +924,7 @@ class pom_page(tester.tester):
         ws.pages += pg
         tab = self.browser().tab()
         res = tab.head('/en/time', ws)
-        self.none(res.payload)
+        self.none(res.body)
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):
@@ -1059,7 +1059,7 @@ class pom_page(tester.tester):
                 )
 
                 if www.request.ispost:
-                    frm.post = www.request.payload
+                    frm.post = www.request.body
 
         ws = foonet()
         pg = time()
@@ -1218,8 +1218,8 @@ class pom_page(tester.tester):
                 if req.isget:
                     return
 
-                # Populate the form with data from the request's payload
-                frm.post = req.payload
+                # Populate the form with data from the request's body
+                frm.post = req.body
 
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
@@ -1361,7 +1361,7 @@ class pom_page(tester.tester):
                 if req.isget:
                     return
 
-                frm.post = req.payload
+                frm.post = req.body
 
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value

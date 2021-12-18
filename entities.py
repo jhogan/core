@@ -155,7 +155,7 @@ class entities:
                     # Do this otherwise the entities class will break
                     super().__init__(*args, **kwargs)
                     
-                    # Custome stuff
+                    # Custom stuff
                     ...
 
         :param: initial iterable: An interable, such as a list, tuple,
@@ -1298,7 +1298,6 @@ class entities:
         self._ls.append(t)
 
         self.onadd(self, eargs)
-
 
     def __iadd__(self, t):
         """ Implement the += operator. See the docstring at
