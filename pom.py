@@ -29,10 +29,24 @@ import www
 # https://www.w3.org/TR/wai-aria-practices/
 
 class sites(asset.assets): 
-    pass
+    """ A collection of web ``site`` objects.
+    """
 
 class site(asset.asset):
+    """ A ``site`` object represents a web site.
+
+    ``site`` object consiste of a hierarchy of web ``page`` objects to
+    store the pages in the web ``site``, as well as other constituent
+    entities such as a ``directory`` object to store file the web site
+    uses, a ``hits`` collection to record the hits to the web ``site``,
+    a ``users`` collection to track the web ``site``'s user, and so on.
+
+    Note that site objects ultimately inherit from orm.entity so they
+    are persisted to the database along with their constituents.
+    """
     def __init__(self, *args, **kwargs):
+        """
+        """
         super().__init__(*args, **kwargs)
         self.index = None
         self._pages = None
@@ -45,11 +59,12 @@ class site(asset.asset):
 
         self.sidebars = sidebars()
 
+        # Give the site a default titel of the class's name. 
         self._title = type(self).__name__.replace('_', '-')
 
-        # TODO Replace with `file` object when it is created. NOTE that
-        # the file object will need to have an integrity property to
-        # suppor the <link>'s `integrity attribute:
+        # TODO Use the site.directory inodes model to reference
+        # resources (file.resources) now that it is has been
+        # implemented. 
         #
         #     <link rel="stylesheet" 
         #           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
@@ -58,9 +73,16 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+    # Host name of the site
     host = str
+
+    # Collection of web hits to the site
     hits = ecommerce.hits
+
+    # Collection of users who may log in to the site
     users = ecommerce.users
+
+    # Directory to store the site's files
     directory = file.directory
 
     @orm.attr(file.directory)
@@ -70,14 +92,14 @@ class site(asset.asset):
         This directory is a good place to put the site's main resource
         artifacts like CSS and JavaScript libraries. It's also a good
         place to store other files belonging to the site such as the
-        site's logo are the site's user avatars - although the
+        site's logo and the site's user avatars (although the
         ecommerce.user.directory entity would be a better place to store
-        user specific files.
+        user specific files).
 
         Note that this returns a ``directory`` from the file module so
         it behaves like a file-sytem directory and an ORM entity. It is
         a constituent of the ``site`` class so calling the site`s save()
-        method will cascade the persistance operations into the
+        method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
         dir = attr()
@@ -116,6 +138,10 @@ class site(asset.asset):
         """ Find a user in the site with the user name of ``name``. Test
         that the user's password hashes to the same value as `pwd`. If
         so, return the user. Otherwise we raise an AuthenticationError.
+
+        :param: name str: The user name.
+
+        :param: pwd str: The password.
         """
 
         # Get the foreign key column name in users that maps to the
@@ -141,7 +167,7 @@ class site(asset.asset):
             raise ValueError('Multiple users found')
 
         # Good; we found one. Let's test the password and return the
-        # usr.  Otherwise, we will return raise an exception to signify
+        # usr.  Otherwise, we will raise an exception to signify
         # authentication failed.
         if usrs.issingular:
             usr = usrs.first
@@ -154,6 +180,8 @@ class site(asset.asset):
 
     @property
     def pages(self):
+        """ Return the collection of pages.
+        """
         if not self._pages:
             self._pages = pages(rent=self)
             self._pages += error()
@@ -172,15 +200,36 @@ class site(asset.asset):
         return cls('foo.net')
 
     def __repr__(self):
+        """ Return a string representation of the site object.
+        """
         return '%s()' % type(self).__name__
 
     def __str__(self):
+        """ Return a string representation of the site object.
+        """
         return repr(self)
 
     def __getitem__(self, path):
+        """ An indexer to get a page in the site::
+
+            ws = mysite()
+            about_page = ws['/en/about']
+
+        :param: path str: The path to the web ``page``.
+        """
         return self.pages[path]
 
     def __call__(self, path):
+        """ Similar to __getitem__ except that, if the page can not be
+        found, None is returned.
+        """
+
+        # NOTE We may not need the try:except here because the pages
+        # collection will do the same thing if we use its __call__
+        # method::
+        #
+        #     return self.pages(path)
+
         try:
             return self.pages[path]
         except IndexError:
@@ -201,15 +250,17 @@ class site(asset.asset):
             ['en', 'es', 'fr', 'de']
 
             Sites that wish to accept a different set of languages can
-            override this property. The default is to always execpt
+            override this property. The default is to always accept
             English.
         '''
 
-        # Always except English
+        # Always accept English
         return ['en']
 
     @property
     def charset(self):
+        """ Specifies the default character set of the web site.
+        """
         return self._charset
 
     @charset.setter
@@ -218,6 +269,8 @@ class site(asset.asset):
 
     @property
     def viewport(self):
+        """ Specifies the default viewport of the web site.
+        """
         return self._viewport
 
     @viewport.setter
@@ -226,6 +279,8 @@ class site(asset.asset):
 
     @property
     def title(self):
+        """ Specifies the default title of the web site.
+        """
         return self._title
 
     @title.setter
@@ -234,10 +289,16 @@ class site(asset.asset):
 
     @property
     def html(self):
+        """ Specifies the default <html> element of the web site's
+        pages.
+        """
         return dom.html(lang=self.lang)
 
     @property
     def head(self):
+        """ Specifies the default <head> element of the web site's
+        pages.
+        """
         self._head = dom.head()
 
         # NOTE Keep the charset meta at the top because: "The <meta>
@@ -275,6 +336,9 @@ class site(asset.asset):
 
     @property
     def header(self):
+        """ Specifies the default <header> element of the web site's
+        pages.
+        """
         if not self._header:
             self._header = header(site=self)
         return self._header
