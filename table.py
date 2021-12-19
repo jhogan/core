@@ -9,7 +9,9 @@
 from entities import *
 
 class table(entity):
-    def __init__(self, x=None, y=None, initval=None, border=('-', '|', '+') ):
+    def __init__(
+        self, x=None, y=None, initval=None, border=('-', '|', '+') 
+    ):
         # TODO Write test for different border values
         self.rows = rows(tbl=self)
         self._fields = fields()
@@ -17,7 +19,8 @@ class table(entity):
         self.rows.onfieldadd += self._fields_onadd
         self.rows.onfieldremove += self._fields_onremove
 
-        # If we have y, we can initialize the table using y, x and initval
+        # If we have y, we can initialize the table using y, x and
+        # initval
         if y != None:
             x = y if x == None else x
             for _ in range(y):
@@ -31,8 +34,9 @@ class table(entity):
         f = eargs.entity
         self._fields += f
 
-        # We are capturing the field being added to the table so use this
-        # opportunity to subscribe to the field's on*valuechange events
+        # We are capturing the field being added to the table so use
+        # this opportunity to subscribe to the field's on*valuechange
+        # events
         f.onbeforevaluechange += self._field_onbeforevaluechange
 
         f.onaftervaluechange += self._field_onaftervaluechange
@@ -98,8 +102,8 @@ class table(entity):
         return self.where(o).count
 
     def where(self, v, limit=None):
-        """
-        Return a fields collection where each field in the table matches v.
+        """ Return a fields collection where each field in the table
+        matches v.
         """
         if type(v) == type:
             return self.fields.indexes['type'](v, limit=limit)
@@ -317,19 +321,27 @@ class row(entity):
 
 class fields(entities):
     def __init__(self, initial=None, row=None):
+        self.index = True
+        
 
         # Create index on the type of value
-        self.indexes += index(name='type', keyfn=lambda f: type(f.value))
+        self.indexes += index(
+            name = 'type', keyfn = lambda f: type(f.value)
+        )
+
 
         # Create index on the value
-        self.indexes += index(name='value', keyfn=lambda f: f.value)
+        self.indexes += index(
+            name = 'value', keyfn = lambda f: f.value
+        )
 
         if row:
             self.row = row
 
-        # Ensure that each element in 'initial' is a field object. If not,
-        # append a new field object using the element as the field's value.
-        if initial != None:
+        # Ensure that each element in 'initial' is a field object. If
+        # not, append a new field object using the element as the
+        # field's value.
+        if initial is not None:
             fs = fields()
             for v in initial:
                 if isinstance(v, field):

@@ -399,9 +399,20 @@ class entities:
 
     @property
     def index(self):
+        """ Returns True if indexing is turned on, False (default)
+        otherwise.
+
+        Maintaining certain index can improve lookup speeds for certain
+        types of searches. However, most entities classes should not
+        using indexing because it adds a performance penalty to appends.
+        """
+
+        # NOTE Use hasattr here because we don't want subclasses to
+        # necessaily call entities.__init__
         if hasattr(self, '_index'):
             return self._index
 
+        # Default to False if it hasn't been set.
         return False
 
     @index.setter
