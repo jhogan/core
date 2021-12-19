@@ -344,7 +344,12 @@ class site(asset.asset):
         return self._header
 
 class forms:
+    """ ``forms`` acts as a namespace to get to standard forms that a
+    developer can access and reuse, such as the login form.
+    """
     class login(dom.form):
+        """ A standard log in form.
+        """
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             # TODO:GETTEXT
@@ -374,6 +379,8 @@ class forms:
             self += dom.button('Sign in', class_='btn', type="Submit")
 
 class sidebars(dom.sections):
+    """ Represents a collection of webpage ``sidebar`` objects.
+    """
     def __getitem__(self, ix):
         if isinstance(ix, str):
             for sb in self:
@@ -383,16 +390,31 @@ class sidebars(dom.sections):
             return super().__getitem__(ix)
     
 class sidebar(dom.section):
+    """ Represents a sidebare on a web page.
+
+    A sidebar is a column placed to the right or left of a
+    webpage's primary content area. Sidebars are commonly used to display
+    various types of supplementary information for users, such as
+    nav links, ads, email sign-up forms, social media links, etc.
+    """
     def __init__(self, name, *args, **kwargs):
+        """ Create a sidebar.
+
+        :param: name str: The name of the sidebar
+        """
         super().__init__(*args, **kwargs)
         self._name = name
         self.classes += name + '-sidebar'
 
     @property
     def name(self):
+        """ Return the name of the sidebar.
+        """
         return self._name
 
     def clone(self):
+        """ Create and return a clone of self
+        """
         r = type(self)(self.name)
         r += self.elements.clone()
         return r
