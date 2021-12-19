@@ -106,6 +106,7 @@ def la2gr(chars):
         
 class knights(entities.entities):
     def __init__(self, initial=None):
+        self.index = True
         self.indexes += index(name='name', 
                         keyfn=lambda k: k.name, 
                         prop='name')

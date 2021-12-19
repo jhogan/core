@@ -206,6 +206,11 @@ class entities:
         oncountchange event. Also subscribes the entity being added to
         the onbeforevaluechange and onaftervaluechange events.
         """
+        self.oncountchange(self, eventargs())
+
+        if not self.index:
+            return
+
         for ix in self.indexes:
             ix += eargs.entity
 
@@ -217,7 +222,6 @@ class entities:
         if hasattr(eargs.entity, 'onaftervaluechange'):
             e.onaftervaluechange += self._entity_onaftervaluechange
 
-        self.oncountchange(self, eventargs())
             
     def _self_onremove(self, src, eargs):
         """ An event handler that runs every time an entity is removed
@@ -227,6 +231,12 @@ class entities:
         event. Also unsubscribes the entity from the onbeforevaluechange
         and onaftervaluechange events.
         """
+
+        self.oncountchange(self, eventargs())
+
+        if not self.index:
+            return
+
         for ix in self.indexes:
             ix -= eargs.entity
 
@@ -238,7 +248,6 @@ class entities:
             eargs.entity.onaftervaluechange -= \
                 self._entity_onaftervaluechange 
 
-        self.oncountchange(self, eventargs())
 
     def _entity_onbeforevaluechange(self, src, eargs):
         """ An event handler invoked before a change is made to a value
@@ -364,6 +373,10 @@ class entities:
         """ Lazy-loads and returns the collection of indexes objects for
         this entities collection.
         """
+
+        if not self.index:
+            raise ValueError('Indexing not supported')
+
         if not hasattr(self, '_indexes'):
             self._indexes = indexes(type(self))
 
@@ -383,6 +396,17 @@ class entities:
         for this entities collection.
         """
         self._indexes = v
+
+    @property
+    def index(self):
+        if hasattr(self, '_index'):
+            return self._index
+
+        return False
+
+    @index.setter
+    def index(self, v):
+        self._index = v
 
     def __call__(self, ix):
         """ Provides an indexer using the () operator. Similar to the
@@ -1239,7 +1263,10 @@ class entities:
         if type(e) in (int, str):
             e = self(e)
 
-        return self.indexes['identity'](e).ispopulated
+        if self.index:
+            return self.indexes['identity'](e).ispopulated
+
+        return e in self._ls
 
     def __lshift__(self, e):
         """ Implements the << operator. See the docstring at
