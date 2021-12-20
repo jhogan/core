@@ -420,7 +420,14 @@ class sidebar(dom.section):
         return r
 
 class logo(dom.section):
+    """ Represents the organization's logo presented on a web page,
+    typically in the page's header.
+    """
     def __init__(self, o):
+        """ Create a logo page object.
+
+        :param: o str: The text to display in the logo
+        """
         super().__init__()
 
         if isinstance(o, str):
@@ -434,6 +441,8 @@ class logo(dom.section):
             raise TypeError('Invalid logo type')
 
     def clone(self):
+        """ Create a new logo object based on self and return.
+        """
         el = type(self)(self.text)
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
@@ -441,8 +450,12 @@ class logo(dom.section):
 
     @property
     def elements(self):
+        """ Return the logo section's elements collection.
+        """
         els = super().elements
         els = dom.elements()
+
+        # Add the text span here. See constructor.
         els += dom.span(self._text)
         return els
 
@@ -451,11 +464,18 @@ class logo(dom.section):
         dom.element.elements.fset(self, v)
 
 class menus(entities.entities, dom.section):
+    """ Represents a collection of ``menu`` objects
+    """
+
     def __init__(self, *args, **kwargs):
+        """ Create the menus collection.
+        """
         entities.entities.__init__(self, *args, **kwargs)
         dom.section.__init__(self)
 
     def clone(self):
+        """ Create and return a ``menus`` collection based on this one.
+        """
         mnus = type(self)()
         for mnu in self:
             mnus += mnu.clone()
@@ -463,6 +483,8 @@ class menus(entities.entities, dom.section):
         return mnus
 
     def __repr__(self):
+        """ A string representation of this ``menus`` collection.
+        """
         r = str()
         for mnu in self:
             r += '[%s]\n' % mnu.name
@@ -470,6 +492,14 @@ class menus(entities.entities, dom.section):
         return r
 
     def __getitem__(self, ix):
+        """ Implement an indexer so the menus can be accessed by name::
+
+            # Get the desert menu
+            mnu = mymenus['desert']
+        """
+
+        # TODO I'm pretty sure this is how entities.__getitem__ works
+        # already.
         if isinstance(ix, str):
             for mnu in self:
                 if mnu.name == ix:
@@ -479,6 +509,8 @@ class menus(entities.entities, dom.section):
 
     @property
     def elements(self):
+        """ Return the menu's child elements.
+        """
         els = super().elements
         els.clear()
 

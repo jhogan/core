@@ -6,7 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
-"Entities must not be multiplied beyond necessity"
+"Entities must not be multiplied beyond necessity."
 # John Punch
 
 """ This module contains the ``entities`` class - an important class
@@ -1701,9 +1701,11 @@ class entities:
             # TODO Write test
             for i, e1 in enumerate(self._ls):
                 if hasattr(e1, 'id'):
-                    if e1.id == e:   return i
+                    if e1.id == e:   
+                        return i
                 elif hasattr(e1, 'name'):
-                    if e1.name == e: return i
+                    if e1.name == e: 
+                        return i
 
         # Raise ValueError in imitation of list.index()'s behavior
         raise ValueError("'{}' is not in the collection".format(e))
