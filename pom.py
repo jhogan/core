@@ -936,8 +936,6 @@ class page(dom.html):
     def elements(self):
         els = super().elements
         els.clear()
-        # TODO ``ws`` is never used
-        ws = self.site
 
         if self.head:
             els += self.head

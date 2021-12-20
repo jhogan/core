@@ -1638,6 +1638,7 @@ class pom_page(tester.tester):
             'exp': primative.datetime.utcnow(hours=24),
             'sub': ecommerce.user().id.hex,
         }
+
         jwt = pyjwt.encode(d, 'badsecret').decode('utf-8')
 
         tab.browser.cookies['jwt'].value = str(jwt)

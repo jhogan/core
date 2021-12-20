@@ -14,21 +14,19 @@
 
 import apriori; apriori.model()
 
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from config import config
 from contextlib import contextmanager, redirect_stdout
 from datetime import timezone, datetime, date
-from entities import BrokenRulesError
-import entities
-from func import enumerate, getattr
 from dbg import B, PM, PR
+from entities import BrokenRulesError
+from func import enumerate, getattr
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
-import MySQLdb
 import account
 import asset
 import auth
@@ -39,6 +37,7 @@ import dateutil
 import db
 import decimal; dec=decimal.Decimal
 import effort
+import entities
 import exc
 import functools
 import hr
@@ -46,6 +45,7 @@ import invoice
 import io
 import jwt as pyjwt
 import math
+import MySQLdb
 import order
 import orm
 import os
@@ -57,19 +57,22 @@ import re
 import shipment
 import tempfile
 import testbot
-import testthird
 import testdom
 import testecommerce
-import testparty
-import testpom
+import testentities
 import testfile
 import testlogs
 import testmessage
+import testparty
+import testpom
 import testsec
+import testthird
 import textwrap
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
+# TODO We could probably fix this by using the 
+# `if __name__ == '__main__': idiom
 with redirect_stdout(None):
     import crust
 
