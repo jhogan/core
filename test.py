@@ -3714,21 +3714,21 @@ class test_orm(tester):
         self.zero(artist(art1.id).presentations.first.locations)
         self.one(artist(art.id).presentations.first.locations)
 
-    def it_calls_count_on_streamed_entities_after_calling_sql(self):
+    def it_calls_count_on_streamed_entities_after_calling_select(self):
         # An issue occured which cause counts on streamed entities to
-        # fail if the ``sql`` property was called first. This was
-        # because the ``sql`` property did not clone it entities
+        # fail if the ``select`` property was called first. This was
+        # because the ``select`` property did not clone it entities
         # collection's ``where`` object which meant the where object
-        # would be permenately mutated; meeting the needs of the `sql`
-        # property, but not the needs of other clients.
+        # would be permenately mutated; meeting the needs of the
+        # `select` property, but not the needs of other clients.
         #
         # The issue has been fixed, but this test will remain to ensure
         # the problem dosen't arise again.
 
         arts = artists(orm.stream, firstname=uuid4().hex)
 
-        # Call `sql` to mutate `arts`'s ``where` object
-        arts.orm.sql
+        # Call `select` to mutate `arts`'s ``where` object
+        arts.orm.select
 
         # We exect no exception when calling `count`
         self.expect(None, lambda: arts.count)

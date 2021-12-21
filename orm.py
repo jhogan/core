@@ -9957,15 +9957,26 @@ class orm:
 
         
         ''' SELECT '''
+        '''
+        # Put the SELECT clause in a tuple
+        tblselect = table(border=None)
+
         # Build SELECT table for the current instance of recursion
         for map in self.entity.orm.mappings:
             if not isinstance(map, fieldmapping):
                 continue
 
-            r = select.newrow()
+            r = tblselect.newrow()
             abbr = '%s.%s' % (graph, map.name)
 
             r.newfields(abbr, 'AS', abbr, ',')
+        '''
+
+        select = [
+            f'{graph}.{map.name}'
+            for map in self.entity.orm.mappings
+            if isinstance(map, fieldmapping)
+        ]
 
         ''' JOINS '''
         joins = str() # The string that contains the JOIN SQL
@@ -10058,7 +10069,7 @@ class orm:
             wh and whstack.append(wh)
 
             # Recurse into the join to collect its SQL elements
-            select1, joins1, whs1, args1 = j.entities.orm._getsql(
+            select1, joins1, whs1, args1 = j.entities.orm._getselect(
                 graph=graph,
                 whstack=whstack,
                 join=j,
@@ -10069,8 +10080,10 @@ class orm:
 
             # Collect the return values form the recursion and
             # concatenate them to the variables that will be returned by
-            # the current stack frame.
-            select += select1         # cat select
+            # the current stackframe.
+            #tblselect += tblselect1   # cat select
+
+            select.extend(select1)    # cat select
 
             joins += joins1           # cat joins
 
@@ -10085,18 +10098,27 @@ class orm:
         # not recursing...
         if not recursing:
 
+            '''
             # Put ticks around aliases in select table
-            for r in select:
+            for r in tblselect:
                 graph, col = r.fields[0].value.rsplit('.', 1)
                 r.fields[0].value = '`%s`.%s' % (graph, col)
                 r.fields[2].value = '`%s`' % r.fields[2].value
 
             # Pop the trailing comma of select field
-            select.rows.last.fields.pop()
+            tblselect.rows.last.fields.pop()
+            '''
+
+            strselect = str()
+            for i, r in enumerate(select):
+                graph, col = r.rsplit('.', 1)
+                strselect += f'`{graph}`.{col} AS `{r}`'
+                if not i.last:
+                    strselect += ',\n'
 
             # Concatenate the select, join, and where elements
             sql = 'SELECT\n%s\nFROM %s AS `%s` \n%s' 
-            sql %= (textwrap.indent(str(select), ' ' * 4), 
+            sql %= (textwrap.indent(str(strselect), ' ' * 4), 
                     self.table, 
                     self.abbreviation, 
                     joins)
