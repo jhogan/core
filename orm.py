@@ -9346,8 +9346,8 @@ class orm:
             # Declare that we are currently loading
             self.isloading = True
                     
-            # Get SQL and SQL parameters/args
-            sql, args = self.sql
+            # Get SELECT sql and its parameters/args
+            sql, args = self.select
 
             # Concatenate the orderby
             if orderby:
@@ -9887,16 +9887,14 @@ class orm:
             with suppress(KeyError):
                 e.orm.super = edict[e.id.bytes, e.orm.entity.orm.super]
 
-    # TODO Rename this to `select'
     @property
-    def sql(self):
+    def select(self):
         """ Return a tuple containing the SELECT statement as the first
         element and the args list as the second.
         """
-        return self._getsql()
+        return self._getselect()
 
-    # TODO Rename this to `getselect'
-    def _getsql(self, graph=str(), whstack=None, joiner=None, join=None):
+    def _getselect(self, graph=str(), whstack=None, joiner=None, join=None):
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
         object.
@@ -9923,7 +9921,7 @@ class orm:
         def alias(whs):
             """ Takes a ``where`` object or collection of ``where``
             objects and replaces their predicate's column's names with a
-            fully-qualified verision that contain the table alias. 
+            fully-qualified verision that contains the table alias. 
             """
             # Convert to a collection if needed
             whs = whs if hasattr(whs, '__iter__') else [whs]
@@ -9957,9 +9955,7 @@ class orm:
         else:
             graph = self.abbreviation
 
-        # Put the SELECT in a table so it is formatted nicely
-        select = table(border=None)
-
+        
         ''' SELECT '''
         # Build SELECT table for the current instance of recursion
         for map in self.entity.orm.mappings:
