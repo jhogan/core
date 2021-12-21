@@ -9415,7 +9415,7 @@ class orm:
         orm._cache()
         try:
             return orm._ent2abbr[self.entity]
-        except KeyError:
+        except KeyError as ex:
             raise KeyError(
                 'Uncached entity abbreviation'
             ) from ex
