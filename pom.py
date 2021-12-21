@@ -542,15 +542,26 @@ class menu(dom.nav):
     #
     #     del main_menus.id # Currently dosen't work
 
+    # TODO This should inherit from dom.menu, not dom.nav
+
     class items(dom.lis):
+        """ A collection of ``item`` objects (<li>) which contain the
+        menu items.
+        """
         def __init__(self, *args, **kwargs):
+            """ Create the menu item.
+            """
             super().__init__(*args, **kwargs)
 
             self._els = dom.elements()
+
+            # Start the menu off with an unorded list
             self._ul = dom.ul()
             self._els += self._ul
 
         def clone(self):
+            """ Create and return an ``items`` based on self.
+            """
             itms = type(self)()
 
             # Preserve ID's
@@ -564,10 +575,15 @@ class menu(dom.nav):
             return itms
 
         def seperate(self):
+            """ Add a seperator to the list of menu items.
+            """
             self += menu.separator()
 
         @property
         def elements(self):
+            """ Return the elements under the first element of this
+            collection.
+            """
             ul = self._els.first
             ul.elements.clear()
             for itm in self:
@@ -577,19 +593,29 @@ class menu(dom.nav):
 
         @property
         def html(self):
+            """ Return an HTML representation of this element formatted
+            for a computer (no unnecssary whitespace).
+            """
             return ''.join(x.html for x in self.elements)
 
         @property
         def pretty(self):
+            """ Return an HTML representation of this element formatted
+            for human consumption.
+            """
             return '\n'.join(x.pretty for x in self.elements)
 
         def __str__(self):
+            """ A string representation of the collection.
+            """
             # The default is to call entities.entities.__str__, but we
             # want to call dom.ul.__str__ since it contains logic for
             # specifically formatting prettified HTML.
             return dom.ul.__str__(self)
 
         def __repr__(self):
+            """ A string representation of the collection.
+            """
             return dom.ul.__repr__(self)
 
     class item(dom.li):
