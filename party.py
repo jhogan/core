@@ -1588,13 +1588,6 @@ class shiptobuyer(customer):
     "The Data Model Resource Book".
     """
 
-class placingbuyer(customer):
-    """ 
-
-    Note that this entity was originally called PLACING BUYER in "The
-    Data Model Resource Book".
-    """
-
 class shipto(customer):
     """ A role indicating a party that should recieve the order.
 

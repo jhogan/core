@@ -940,6 +940,7 @@ class elements(entities.entities):
             raise NotImplementedError(
                 "Can't append to a text node"
             )
+
         super().append(*args, **kwargs)
         
 class element(entities.entity):
@@ -1138,7 +1139,6 @@ class element(entities.entity):
         els = elements()
         els += self
         return els[ix]
-        return self.elements[ix]
 
     @property
     def text(self):
