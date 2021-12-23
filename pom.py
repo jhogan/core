@@ -619,7 +619,19 @@ class menu(dom.nav):
             return dom.ul.__repr__(self)
 
     class item(dom.li):
+        """ Represents an item in a menu such as a hyperlink or a
+        ``seperator``.
+        """
         def __init__(self, o, href=None, *args, **kwargs):
+            """ Create the menu item.
+
+            :param: o str|page: 
+                If str, o is the text used for the menu item.
+                If page, the menu item links to that page.
+
+            :param: o str: The optional hyperlink to use. Used in
+            conjunction with o to create a link when it is a str.
+            """
             super().__init__(*args, **kwargs)
 
             self.href = href
@@ -639,6 +651,8 @@ class menu(dom.nav):
             self.items = menu.items()
 
         def clone(self):
+            """ Create and return a new menu item based on this one.
+            """
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
@@ -655,16 +669,22 @@ class menu(dom.nav):
             return itm
 
         def seperate(self):
+            """ Create a seperator in this menu item's ``items`` collection.
+            """
             self.items.seperate()
 
         @property
         def text(self):
+            """ Return the text of the item.
+            """
             if self._text:
                 return self._text
             return self.page.name
 
         @property
         def elements(self):
+            """ Returns the child elements of this colletion.
+            """
             els = super().elements
             els.clear()
             pg = self.page
@@ -677,6 +697,8 @@ class menu(dom.nav):
             return els
 
         def __repr__(self):
+            """ Returns a string represention of the menu item.
+            """
             pg = self.page
             if pg:
                 return '%s (%s)' % (pg.name, pg.path)
@@ -684,27 +706,57 @@ class menu(dom.nav):
                 return self.text
 
     class separator(item):
+        """ An entry in a collection of menu item that seperates one set
+        from anonther.
+
+            [O]pen
+            [S]ave
+            Save [A]s
+            --------
+            [Q]uit
+
+        In the above text version of a menu, the line of dashes
+        seperates one set of file operations (Open, Save and Save As)
+        from the Quit operation.
+
+        Though the above menu resembles that of a desktop applicanion's
+        file menu, web page menus have a need for a seperator as well.
+        The HTML element used to represent a seperator is an HTML menu
+        is a <br>.
+        """
+
         def __init__(self, *args, **kwargs):
+            """ Create the seperator object.
+            """
             # Using the super()'s __init__ won't work because
             # item.__init__ requires a page or str object. We call
             # item's super's (li) constructor instead.
             dom.li.__init__(self, *args, **kwargs)
-            pass
 
         def clone(self):
+            """ Create a new seperator and return it.
+            """
             return type(self)()
 
         @property
         def items(self):
+            """ Raise a NotImplementedError.
+
+            A seperators would not have a nested set of menu items.
+            """
             raise NotImplementedError(
                 "Seperator items don't have `items` collection"
             )
 
         def __repr__(self):
+            """ Return a textual representation of a menu seperator.
+            """
             return '---'
 
         @property
         def elements(self):
+            """ Return the elements of the seperator
+            """
             els = dom.elements()
             els += dom.li()
             els += dom.hr()
