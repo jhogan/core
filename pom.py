@@ -763,12 +763,18 @@ class menu(dom.nav):
             return els
 
     def __init__(self, name, *args, **kwargs):
+        """ Create a new menu.
+
+        :param: name str: The name of the menu.
+        """
         super().__init__(*args, **kwargs)
         self.name = name
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
     def clone(self):
+        """ Create and return a new menu based on this menu.
+        """
         mnu = type(self)(self.name)
         mnu.items = self.items.clone()
         mnu.attributes = self.attributes.clone()
@@ -776,6 +782,8 @@ class menu(dom.nav):
 
     @property
     def elements(self):
+        """ Returns the child elements of this menu.
+        """
         els = super().elements
         els.clear()
 
@@ -783,19 +791,30 @@ class menu(dom.nav):
         return els
 
     def __repr__(self):
+        """ A string representation of this menu.
+        """
         itms = '\n'.join(repr(x) for x in self.items)
         itms = textwrap.indent(itms, ' ' * 2)
         return itms
 
 class pages(entities.entities):
+    """ A collection of ``page`` objects.
+    """
     def __init__(self, rent, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        """ Create a new pages collection.
 
-        # The site or parent page
+        :param: rent page|site: The parent page or site of this page
+        colection.
+        """
+        super().__init__(*args, **kwargs)
         self.parent = rent
 
     @property
     def site(self):
+        """ The site that this pages collection belongs to. 
+
+        None is returned if the site doesn't exist or can't be found.
+        """
         rent = self.parent
         while rent:
             if isinstance(rent, site):
@@ -805,6 +824,17 @@ class pages(entities.entities):
         return None
 
     def __getitem__(self, path):
+        """ An indexer to get the page in teh collection given a path.
+
+        :param: path str|list: The path of the page to get. For example, 
+            
+            /en/bio/luser
+
+        or in list form:
+
+            ['en', 'bio', 'luser']
+        """
+        print(path)
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
@@ -825,6 +855,16 @@ class pages(entities.entities):
         raise IndexError('Path not found')
 
     def append(self, obj, uniq=False, r=None):
+        """ Add a page to the pages collection.
+
+        Note that you will normally add a page using the += operator
+        which calls into this method.
+
+            pgs = pages()
+            pgs += page('new-page')
+
+        :param: obj page: The page to add.
+        """
         obj._parentpages = self
         obj.name in [x.name for x in self]
         for pg in self:
