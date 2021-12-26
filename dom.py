@@ -889,6 +889,11 @@ class elements(entities.entities):
             els += el.getchildren(recursive=True)
         return els
 
+    def genchildren(self):
+        for el in self:
+            yield el
+            yield from el.genchildren(recursive=True)
+
     @property
     def all(self):
         """ Return a new ``elements`` collection containing all elements
@@ -899,7 +904,9 @@ class elements(entities.entities):
         els = elements()
         for el in self:
             els += el
-            els += el.getelements(recursive=True)
+
+            gen = el.genelements(recursive=True)
+            els += gen
         return els
 
     @property
@@ -1103,7 +1110,7 @@ class element(entities.entity):
         """
         self.id = primative.uuid().base64
 
-        for el in self.all:
+        for el in self.walk():
             self.id = primative.uuid().base64
         
     @property
@@ -1153,7 +1160,7 @@ class element(entities.entity):
 
         r = ''
         blk = False
-        for el in self.all:
+        for el in self.walk():
             blk = blk or el.isblocklevel
             if isinstance(el, text):
                 if r:
@@ -1409,19 +1416,19 @@ class element(entities.entity):
             raise MoveError('Parent already set')
         self._parent = v
 
-    def getsiblings(self, includeself=False):
+    def getsiblings(self, accompany=False):
         """ Returns an ``elements`` collection containing all the sibling
         of this element.
 
-        :param: includeself bool: If True, this element will be the
+        :param: accompany bool: If True, this element will be the
         first entry in the collection returned.
         """
         els = elements()
         rent = self.parent
 
         if rent:
-            for el in rent.children:
-                if not includeself and el is self:
+            for el in rent.genchildren():
+                if not accompany and el is self:
                     continue
                 els += el
         return els
@@ -1479,9 +1486,25 @@ class element(entities.entity):
                 els += el.getchildren(recursive=True)
         return els
 
+    def genchildren(self, recursive=False):
+        for el in self.elements:
+            if isinstance(el, comment):
+                continue 
+
+            if isinstance(el, text):
+                continue
+
+            yield el
+
+            if recursive:
+                yield from el.genchildren(recursive=True)
+
     @property
     def all(self):
         return self.getelements(recursive=True)
+
+    def walk(self):
+        return self.genelements(recursive=True)
 
     def getelements(self, recursive=False):
         els = elements()
@@ -1492,6 +1515,12 @@ class element(entities.entity):
                 els += el.getelements(recursive=True)
 
         return els
+
+    def genelements(self, recursive=False):
+        for el in self.elements:
+            yield el
+            if recursive:
+                yield from el.genelements(recursive=True)
 
     @property
     def elements(self):
@@ -5591,7 +5620,7 @@ class selector(entities.entity):
 
     def match(self, els, el=None, smps=None):
         last = self.elements.last
-        els1 = last.match(els.getchildren())
+        els1 = last.match(els.genchildren())
         rms = elements()
 
         for el1 in els1:
