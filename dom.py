@@ -890,6 +890,10 @@ class elements(entities.entities):
         return els
 
     def genchildren(self):
+        """ Return a generator that will yield all elements
+        underneath this ``elements`` collection. Note that ``comment``
+        and ``text`` nodes are excluded.
+        """
         for el in self:
             yield el
             yield from el.genchildren(recursive=True)
@@ -899,8 +903,18 @@ class elements(entities.entities):
         """ Return a new ``elements`` collection containing all elements
         underneath this ``elements`` including ``comment`` and ``text``
         nodes.
+
+        Note that for performance reasons, it is preferable to use the
+        genelements() method instead::
+
+            self.genelements(recursive=True)
+
+        It produces a generator and therefore does not require a call to
+        entities.append for each element it generates. Use all() for
+        cases where you want to have an ``elements`` collection to work
+        with and performance isn't an issue.
         """
-        # XXX Create a walk() alternative for
+        # XXX Create a walk() alternative for this.
         els = elements()
         for el in self:
             els += el
@@ -1423,6 +1437,7 @@ class element(entities.entity):
         :param: accompany bool: If True, this element will be the
         first entry in the collection returned.
         """
+        # NOTE we may want a gensiblings method for performance reason.
         els = elements()
         rent = self.parent
 
@@ -1472,6 +1487,11 @@ class element(entities.entity):
                 
     @property
     def children(self):
+        # XXX getchildren should be refactored to filter out comments
+        # and text. Then, this proprety should call getchildren. This
+        # property should have it its docstring a warning about
+        # performance and encouragement to use genchildren for code that
+        # needs to be performant.
         initial = (
             x for x in self.elements if type(x) not in (comment, text)
         )
@@ -1487,6 +1507,14 @@ class element(entities.entity):
         return els
 
     def genchildren(self, recursive=False):
+        """ Return a generator that can be used to iterate over to get
+        all elements except for **comments and text nodes** beneath this
+        element within the DOM.
+
+        :param: recursive bool: When True, descend the DOM tree to the
+        leaf nodes. When False, only yield the direct children of the
+        element.
+        """
         for el in self.elements:
             if isinstance(el, comment):
                 continue 
@@ -1501,9 +1529,21 @@ class element(entities.entity):
 
     @property
     def all(self):
+        """ Return an elements collection that, when iterated over, will
+        produce each of the elements recursively in this element.
+
+        Note that for performance reasons, it is preferable to use the
+        walk() method instead. It produces a generator and therefore
+        does not require a call to entities.append for each element it
+        generates. Use all() for cases where you want to have an
+        elements collection to work with and performance isn't an issue.
+        """
         return self.getelements(recursive=True)
 
     def walk(self):
+        """ Return a generator that, when iterated over, will produce
+        each of the elements recursively in this element.
+        """
         return self.genelements(recursive=True)
 
     def getelements(self, recursive=False):
@@ -1517,6 +1557,13 @@ class element(entities.entity):
         return els
 
     def genelements(self, recursive=False):
+        """ Return a generator that, when iterated over, will produce
+        each this elements's child elements.
+
+        :param: recursive bool: When True, descend the DOM tree to the
+        leaf nodes. When False, only yield the direct children of the
+        element.
+        """
         for el in self.elements:
             yield el
             if recursive:
