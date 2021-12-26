@@ -895,6 +895,7 @@ class elements(entities.entities):
         underneath this ``elements`` including ``comment`` and ``text``
         nodes.
         """
+        # XXX Create a walk() alternative for
         els = elements()
         for el in self:
             els += el
@@ -1339,7 +1340,7 @@ class element(entities.entity):
         """
         return self.getancestors()
 
-    def getancestors(self, includeself=False):
+    def getancestors(self, accompany=False):
         """ Returns an ``elements`` collection with the element's
         lineage. For example, if the DOM is structured like this::
 
@@ -1357,18 +1358,18 @@ class element(entities.entity):
             title.getancestors().first is head
             title.getancestors().second is html
         
-        If includeself is True, the first element is self::
+        If accompany is True, the first element is self::
 
             title.getancestors().second is title
             title.getancestors().second is head
             title.getancestors().third is html
 
-        :param: includeself bool: If True, the first element returned is
+        :param: accompany bool: If True, the first element returned is
         self.
         """
         els = elements()
 
-        if includeself:
+        if accompany:
             rent = self
         else:
             rent = self.parent
@@ -1431,7 +1432,7 @@ class element(entities.entity):
 
     @property
     def previous(self):
-        sibs = self.getsiblings(includeself=True)
+        sibs = self.getsiblings(accompany=True)
 
         # If it only has self
         if sibs.issingular: 
@@ -1447,7 +1448,7 @@ class element(entities.entity):
     @property
     def preceding(self):
         els = elements()
-        for el in self.getsiblings(includeself=True):
+        for el in self.getsiblings(accompany=True):
             if el is self:
                 break
             els += el
@@ -1458,7 +1459,7 @@ class element(entities.entity):
         raise NotImplementedError()
 
         # NOTE The below may work but has not been tested
-        sibs = self.getsiblings(includeself=True)
+        sibs = self.getsiblings(accompany=True)
         ix = sibs.getindex(self)
         return sibs(ix + 1)
                 
@@ -5930,7 +5931,7 @@ class selector(entities.entity):
         def _match_nth_child_starting_at(self, begining, el, oftype):
             a, b = self.arguments.a, self.arguments.b
 
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             sibs.remove(lambda x: type(x) is text)
 
             if not begining:
@@ -5975,17 +5976,17 @@ class selector(entities.entity):
             )
 
         def _match_first_child(self, el):
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             sibs.remove(lambda x: type(x) is text)
             return sibs.first is el
 
         def _match_last_child(self, el):
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             sibs.remove(lambda x: type(x) is text)
             return sibs.last is el
 
         def _match_x_of_type(self, el, last=False):
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             sibs.remove(lambda x: type(x) is text)
 
             if last:
@@ -6004,11 +6005,11 @@ class selector(entities.entity):
             return self._match_x_of_type(el=el, last=True)
 
         def _match_only_child(self, el):
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             return sibs.where(lambda x: type(x) is not text).issingular
 
         def _match_only_of_type(self, el):
-            sibs = el.getsiblings(includeself=True)
+            sibs = el.getsiblings(accompany=True)
             return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):

@@ -23,3 +23,24 @@ Blocks that overflow 72 characters:
     }
      
 Sort imports alphabetically
+
+@property getters and setters should have no prefix:
+    
+    @property
+    def children
+        ...
+
+getter and setter methods should be prefixed with get and set:
+
+    def getchildren(self, recursive)
+        ...
+
+    def setchildren(self, v)
+        ...
+
+generators shoud be prefixed with 'gen'
+
+    def genchildren(self, recursive):
+        ...
+
+
