@@ -874,12 +874,18 @@ class pages(entities.entities):
         r = super().append(obj, uniq, r)
 
 class page(dom.html):
+    """ Represents a web page.
+    """
     ExceptedBooleansStrings = (
         ('false', '0', 'no', 'n'),
         ('true', '1', 'yes', 'y')
     )
 
     def __init__(self, name=None, pgs=None, *args, **kwargs):
+        """ Create a web page.
+
+        :param: name str: The name of the page.
+        """
         super().__init__(*args, **kwargs)
 
         self._pages        =  None
@@ -906,6 +912,8 @@ class page(dom.html):
 
     @property
     def resources(self):
+        """ Return a collection of resource objects the page will use.
+        """
         if self._resources is None:
             self._resources = file.resources()
 
@@ -918,13 +926,20 @@ class page(dom.html):
         self._resources = v
 
     def _resources_onbeforeadd(self, scr, eargs):
+        """ An event handler to capture the moment before a resource is
+        added to the page's resources collection.
+        """
         if eargs.entity.local:
             raise ValueError(
                 'Page-level resources cannot be saved. Use a '
-                'site-level resource instead'
+                'site-level resource instead.'
             )
 
     def flash(self, msg):
+        """ Add a flash message to the top of the page.
+
+        :param: msg str: The text to put in the flash message.
+        """
         if isinstance(msg, str):
             msg = dom.paragraph(msg)
 
@@ -934,22 +949,20 @@ class page(dom.html):
         
     @property
     def title(self):
+        """ The page's title.
+
+        This corresponds to the <title> tag found in the <head> of a
+        typical HTML document.
+
+        If no title for the page is set, a default title is constructed
+        from the site's title and the page's name.
+        """
         if self._title is None:
             if self.site:
                 self.title = '%s | %s' % self.site.title, self.Name
             self.title = self.Name
 
         return self._title
-
-    @property
-    def pages(self):
-        if self._pages is None:
-            self._pages = pages(rent=self)
-        return self._pages
-
-    @pages.setter
-    def pages(self, v):
-        self._pages = v
 
     @title.setter
     def title(self, v):
@@ -958,7 +971,24 @@ class page(dom.html):
         self.head += dom.title(v)
 
     @property
+    def pages(self):
+        """ Returns a collection of child pages of this page.
+        """
+        if self._pages is None:
+            self._pages = pages(rent=self)
+        return self._pages
+
+    @pages.setter
+    def pages(self, v):
+        self._pages = v
+
+    @property
     def header(self):
+        """ The header section of the page.
+
+        If left unset, the sites header will be used. This will likely
+        include the site's main menu, logo and things of that nature.
+        """
         if self._header is None:
             if self.site:
                 self._header = self.site.header.clone()
@@ -968,6 +998,15 @@ class page(dom.html):
 
     @property
     def head(self):
+        """ The <head> section of the page.
+
+        If left unset, the sites <head> section will be used. 
+
+        The page's ``resources`` collection will be scanned for typical
+        files that go in the head, such as URL's to JavaScript and CSS
+        files. These will be added a <script> and <link> elements to the
+        <head> as would be expected.
+        """
         if self._head is None:
             if self.site:
                 self._head = self.site.head
@@ -993,7 +1032,6 @@ class page(dom.html):
 
                 self._head += el
 
-
         return self._head
     
     @head.setter
@@ -1002,6 +1040,8 @@ class page(dom.html):
 
     @property
     def body(self):
+        """ The <body> of the page.
+        """
         if not self._body:
             self._body = dom.body()
         return self._body
@@ -1012,6 +1052,7 @@ class page(dom.html):
 
     @property
     def sidebars(self):
+        """ A collection of sidebars for the page.
         if self._sidebars is None:
             if self.site:
                 self._sidebars = self.site.sidebars.clone()
