@@ -12,8 +12,42 @@ import pdb
 import builtins
 import sys
 
+""" This module contains a set of hightly reuseable functions.
+"""
+
 def enumerate(iterable, start=0):
+    """ enumerate is a clone of Python's builtin enumerate() function.
+    However, unlike builtins.enumerate(), the first element of the
+    tuple returns a subclass of int with special capabilities;:
+
+        ls = ['red', 'blue', 'green']
+        for i, e in func.enumerate(ls):
+            if i.first:
+                assert e == 'red'
+                assert i == 0
+            elif i.second:
+                assert e == 'blue'
+                assert i == 1
+            elif i.last:
+                assert e == 'green'
+                assert i == 2
+
+    In the above example, even though i is an int, it has properties
+    that make it easy to see where in the loop we are. This function is
+    useful when the first or last element being iterated over needs
+    conditional logic - which is often the case.
+
+    :param: iterable sequence|iterator: The iterable to create enumerate
+    object for.
+
+    :param: start int: Where the counter starts.
+    """
+
     class seqint(int):
+        """ A subclass of int that helps report on where in the sequence
+        of an iteration we are (see the first, second and last
+        @property's.
+        """
         def __new__(cls, *args, **kwargs):
             try:
                 iterable = kwargs['iterable']
@@ -49,26 +83,44 @@ def enumerate(iterable, start=0):
 
         @property
         def first(self):
+            """ Return True if the integer represents the first
+            iteration, False otherwise.
+            """
             return self == 0
 
         @property
         def second(self):
+            """ Return True if the integer represents the second
+            iteration, False otherwise.
+            """
             return self == 1
             
         @property
         def last(self):
+            """ Return True if the integer represents the last
+            iteration, False otherwise.
+            """
             return len(self.iterable) - 1 == self
 
         @property
         def even(self):
+            """ Return True if the integer is an even number, False
+            otherwise.
+            """
             return self % 2 == 0
 
         @property
         def odd(self):
+            """ Return True if the integer is an odd number, False
+            otherwise.
+            """
             return not self.even
 
-            
+    # Create a seqint using start and iterable
     i = seqint(start, iterable=iterable)
+
+    # Iterate over `iterable` yielding the counter and the element as a
+    # two element cursor.
     for e in iterable:
         yield i, e
         i += 1
@@ -84,13 +136,28 @@ def enumerate(iterable, start=0):
 # with a precompiled regex
 
 def getattr(obj, attr, *args):
-    # Redefine getattr() to support deep attribututes 
-    # 
-    # For example:
-    #    Instead of this:
-    #        entity.constituents.first.id
-    #    we can do this:
-    #        getattr(entity, 'constituents.first.id')
+    """ A clone of Python's getattr(). In addition to providing the same
+    functionality as builtins.getattr, nested attributes can be
+    accessed. Like the builtins' getattr(), the following two statements
+    are equivalent::
+        
+        x = func.getattr(x, 'foo')
+        x = x.foo
+
+    builtins.getattr does the same thing. However, if foo is an object
+    with an attribute called 'bar', we can do the following:
+
+        x getattr(x, 'foo.bar')
+
+    which is equivalent to::
+
+        x = x.foo.bar
+
+    This can go n-levels deep.
+
+    This functionality is needed often in Core, so func.getattr is often
+    droppend in at the module level to replace builtins.getattr.
+    """
     def rgetattr(obj, attr):
         if obj:
             return builtins.getattr(obj, attr, *args)

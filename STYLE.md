@@ -43,4 +43,6 @@ generators shoud be prefixed with 'gen'
     def genchildren(self, recursive):
         ...
 
+Put consequent block on newline (if cond:\n ...)
+
 

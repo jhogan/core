@@ -2139,7 +2139,7 @@ class dom_element(tester.tester):
         attrs = (
             'referrerpolicy',  'target',  'hreflang',
             'ping',            'media',   'href',
-            'download',        'rel',     'shape',
+            'download',        'rel',     
         )
 
         for i, attr in enumerate(attrs):
@@ -3224,7 +3224,7 @@ class dom_markdown(tester.tester):
         self.type(dom.tablerow, md.second.children.first)
         self.one(md.second.children.first.children)
         self.type(
-            dom.tabledata, 
+            dom.td, 
             md.second.children.first.children.first
         )
         self.one(md.second.children.first.children.first.elements)

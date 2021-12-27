@@ -4,7 +4,6 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
-from configfile import configfile
 from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
@@ -20,6 +19,7 @@ import dbg
 import dom
 import ecommerce
 import entities
+import gc
 import inspect
 import io
 import json
@@ -1493,11 +1493,27 @@ class cli:
                     
 
     def _testers_onbeforeinvoketest(self, src, eargs):
+        ''' Get tracked objects count '''
+        cnts = list()
+
+        # Collect garbage
+        gc.collect()
+
+        # Get the counts for each generation of objects tracked by the
+        # cyclical garbage collector
+        for i in range(3):
+            cnts.append(f'{len(gc.get_objects(generation=i)):,}')
+
+        cnts = f"[{' '.join(cnts)}]"
+
+        ''' Get memory usage '''
         mbs = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         mbs = int(mbs / 1000)
         cls = eargs.class_.__name__
         meth = eargs.method[0]
-        print(f'# {mbs}M {cls}.{meth}', flush=True)
+
+        # Print stats with current test method being tested
+        print(f'# {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
     pass

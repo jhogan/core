@@ -29,10 +29,24 @@ import www
 # https://www.w3.org/TR/wai-aria-practices/
 
 class sites(asset.assets): 
-    pass
+    """ A collection of web ``site`` objects.
+    """
 
 class site(asset.asset):
+    """ A ``site`` object represents a web site.
+
+    ``site`` object consiste of a hierarchy of web ``page`` objects to
+    store the pages in the web ``site``, as well as other constituent
+    entities such as a ``directory`` object to store file the web site
+    uses, a ``hits`` collection to record the hits to the web ``site``,
+    a ``users`` collection to track the web ``site``'s user, and so on.
+
+    Note that site objects ultimately inherit from orm.entity so they
+    are persisted to the database along with their constituents.
+    """
     def __init__(self, *args, **kwargs):
+        """
+        """
         super().__init__(*args, **kwargs)
         self.index = None
         self._pages = None
@@ -45,11 +59,12 @@ class site(asset.asset):
 
         self.sidebars = sidebars()
 
+        # Give the site a default titel of the class's name. 
         self._title = type(self).__name__.replace('_', '-')
 
-        # TODO Replace with `file` object when it is created. NOTE that
-        # the file object will need to have an integrity property to
-        # suppor the <link>'s `integrity attribute:
+        # TODO Use the site.directory inodes model to reference
+        # resources (file.resources) now that it is has been
+        # implemented. 
         #
         #     <link rel="stylesheet" 
         #           href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
@@ -58,9 +73,16 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+    # Host name of the site
     host = str
+
+    # Collection of web hits to the site
     hits = ecommerce.hits
+
+    # Collection of users who may log in to the site
     users = ecommerce.users
+
+    # Directory to store the site's files
     directory = file.directory
 
     _resources = None
@@ -72,14 +94,14 @@ class site(asset.asset):
         This directory is a good place to put the site's main resource
         artifacts like CSS and JavaScript libraries. It's also a good
         place to store other files belonging to the site such as the
-        site's logo are the site's user avatars - although the
+        site's logo and the site's user avatars (although the
         ecommerce.user.directory entity would be a better place to store
-        user specific files.
+        user specific files).
 
         Note that this returns a ``directory`` from the file module so
         it behaves like a file-sytem directory and an ORM entity. It is
         a constituent of the ``site`` class so calling the site`s save()
-        method will cascade the persistance operations into the
+        method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
         dir = attr()
@@ -119,6 +141,10 @@ class site(asset.asset):
         """ Find a user in the site with the user name of ``name``. Test
         that the user's password hashes to the same value as `pwd`. If
         so, return the user. Otherwise we raise an AuthenticationError.
+
+        :param: name str: The user name.
+
+        :param: pwd str: The password.
         """
 
         # Get the foreign key column name in users that maps to the
@@ -144,7 +170,7 @@ class site(asset.asset):
             raise ValueError('Multiple users found')
 
         # Good; we found one. Let's test the password and return the
-        # usr.  Otherwise, we will return raise an exception to signify
+        # usr.  Otherwise, we will raise an exception to signify
         # authentication failed.
         if usrs.issingular:
             usr = usrs.first
@@ -157,6 +183,8 @@ class site(asset.asset):
 
     @property
     def pages(self):
+        """ Return the collection of pages.
+        """
         if not self._pages:
             self._pages = pages(rent=self)
             self._pages += error()
@@ -175,15 +203,36 @@ class site(asset.asset):
         return cls('foo.net')
 
     def __repr__(self):
+        """ Return a string representation of the site object.
+        """
         return '%s()' % type(self).__name__
 
     def __str__(self):
+        """ Return a string representation of the site object.
+        """
         return repr(self)
 
     def __getitem__(self, path):
+        """ An indexer to get a page in the site::
+
+            ws = mysite()
+            about_page = ws['/en/about']
+
+        :param: path str: The path to the web ``page``.
+        """
         return self.pages[path]
 
     def __call__(self, path):
+        """ Similar to __getitem__ except that, if the page can not be
+        found, None is returned.
+        """
+
+        # NOTE We may not need the try:except here because the pages
+        # collection will do the same thing if we use its __call__
+        # method::
+        #
+        #     return self.pages(path)
+
         try:
             return self.pages[path]
         except IndexError:
@@ -204,15 +253,17 @@ class site(asset.asset):
             ['en', 'es', 'fr', 'de']
 
             Sites that wish to accept a different set of languages can
-            override this property. The default is to always execpt
+            override this property. The default is to always accept
             English.
         '''
 
-        # Always except English
+        # Always accept English
         return ['en']
 
     @property
     def charset(self):
+        """ Specifies the default character set of the web site.
+        """
         return self._charset
 
     @charset.setter
@@ -221,6 +272,8 @@ class site(asset.asset):
 
     @property
     def viewport(self):
+        """ Specifies the default viewport of the web site.
+        """
         return self._viewport
 
     @viewport.setter
@@ -229,6 +282,8 @@ class site(asset.asset):
 
     @property
     def title(self):
+        """ Specifies the default title of the web site.
+        """
         return self._title
 
     @title.setter
@@ -237,10 +292,16 @@ class site(asset.asset):
 
     @property
     def html(self):
+        """ Specifies the default <html> element of the web site's
+        pages.
+        """
         return dom.html(lang=self.lang)
 
     @property
     def head(self):
+        """ Specifies the default <head> element of the web site's
+        pages.
+        """
         self._head = dom.head()
 
         # NOTE Keep the charset meta at the top because: "The <meta>
@@ -277,12 +338,20 @@ class site(asset.asset):
 
     @property
     def header(self):
+        """ Specifies the default <header> element of the web site's
+        pages.
+        """
         if not self._header:
             self._header = header(site=self)
         return self._header
 
 class forms:
+    """ ``forms`` acts as a namespace to get to standard forms that a
+    developer can access and reuse, such as the login form.
+    """
     class login(dom.form):
+        """ A standard log in form.
+        """
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             # TODO:GETTEXT
@@ -312,6 +381,8 @@ class forms:
             self += dom.button('Sign in', class_='btn', type="Submit")
 
 class sidebars(dom.sections):
+    """ Represents a collection of webpage ``sidebar`` objects.
+    """
     def __getitem__(self, ix):
         if isinstance(ix, str):
             for sb in self:
@@ -321,22 +392,44 @@ class sidebars(dom.sections):
             return super().__getitem__(ix)
     
 class sidebar(dom.section):
+    """ Represents a sidebare on a web page.
+
+    A sidebar is a column placed to the right or left of a
+    webpage's primary content area. Sidebars are commonly used to display
+    various types of supplementary information for users, such as
+    nav links, ads, email sign-up forms, social media links, etc.
+    """
     def __init__(self, name, *args, **kwargs):
+        """ Create a sidebar.
+
+        :param: name str: The name of the sidebar
+        """
         super().__init__(*args, **kwargs)
         self._name = name
         self.classes += name + '-sidebar'
 
     @property
     def name(self):
+        """ Return the name of the sidebar.
+        """
         return self._name
 
     def clone(self):
+        """ Create and return a clone of self
+        """
         r = type(self)(self.name)
         r += self.elements.clone()
         return r
 
 class logo(dom.section):
+    """ Represents the organization's logo presented on a web page,
+    typically in the page's header.
+    """
     def __init__(self, o):
+        """ Create a logo page object.
+
+        :param: o str: The text to display in the logo
+        """
         super().__init__()
 
         if isinstance(o, str):
@@ -350,6 +443,8 @@ class logo(dom.section):
             raise TypeError('Invalid logo type')
 
     def clone(self):
+        """ Create a new logo object based on self and return.
+        """
         el = type(self)(self.text)
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
@@ -357,8 +452,12 @@ class logo(dom.section):
 
     @property
     def elements(self):
+        """ Return the logo section's elements collection.
+        """
         els = super().elements
         els = dom.elements()
+
+        # Add the text span here. See constructor.
         els += dom.span(self._text)
         return els
 
@@ -367,11 +466,18 @@ class logo(dom.section):
         dom.element.elements.fset(self, v)
 
 class menus(entities.entities, dom.section):
+    """ Represents a collection of ``menu`` objects
+    """
+
     def __init__(self, *args, **kwargs):
+        """ Create the menus collection.
+        """
         entities.entities.__init__(self, *args, **kwargs)
         dom.section.__init__(self)
 
     def clone(self):
+        """ Create and return a ``menus`` collection based on this one.
+        """
         mnus = type(self)()
         for mnu in self:
             mnus += mnu.clone()
@@ -379,6 +485,8 @@ class menus(entities.entities, dom.section):
         return mnus
 
     def __repr__(self):
+        """ A string representation of this ``menus`` collection.
+        """
         r = str()
         for mnu in self:
             r += '[%s]\n' % mnu.name
@@ -386,6 +494,14 @@ class menus(entities.entities, dom.section):
         return r
 
     def __getitem__(self, ix):
+        """ Implement an indexer so the menus can be accessed by name::
+
+            # Get the desert menu
+            mnu = mymenus['desert']
+        """
+
+        # TODO I'm pretty sure this is how entities.__getitem__ works
+        # already.
         if isinstance(ix, str):
             for mnu in self:
                 if mnu.name == ix:
@@ -395,6 +511,8 @@ class menus(entities.entities, dom.section):
 
     @property
     def elements(self):
+        """ Return the menu's child elements.
+        """
         els = super().elements
         els.clear()
 
@@ -426,15 +544,26 @@ class menu(dom.nav):
     #
     #     del main_menus.id # Currently dosen't work
 
+    # TODO This should inherit from dom.menu, not dom.nav
+
     class items(dom.lis):
+        """ A collection of ``item`` objects (<li>) which contain the
+        menu items.
+        """
         def __init__(self, *args, **kwargs):
+            """ Create the menu item.
+            """
             super().__init__(*args, **kwargs)
 
             self._els = dom.elements()
+
+            # Start the menu off with an unorded list
             self._ul = dom.ul()
             self._els += self._ul
 
         def clone(self):
+            """ Create and return an ``items`` based on self.
+            """
             itms = type(self)()
 
             # Preserve ID's
@@ -448,10 +577,15 @@ class menu(dom.nav):
             return itms
 
         def seperate(self):
+            """ Add a seperator to the list of menu items.
+            """
             self += menu.separator()
 
         @property
         def elements(self):
+            """ Return the elements under the first element of this
+            collection.
+            """
             ul = self._els.first
             ul.elements.clear()
             for itm in self:
@@ -461,23 +595,45 @@ class menu(dom.nav):
 
         @property
         def html(self):
+            """ Return an HTML representation of this element formatted
+            for a computer (no unnecssary whitespace).
+            """
             return ''.join(x.html for x in self.elements)
 
         @property
         def pretty(self):
+            """ Return an HTML representation of this element formatted
+            for human consumption.
+            """
             return '\n'.join(x.pretty for x in self.elements)
 
         def __str__(self):
+            """ A string representation of the collection.
+            """
             # The default is to call entities.entities.__str__, but we
             # want to call dom.ul.__str__ since it contains logic for
             # specifically formatting prettified HTML.
             return dom.ul.__str__(self)
 
         def __repr__(self):
+            """ A string representation of the collection.
+            """
             return dom.ul.__repr__(self)
 
     class item(dom.li):
+        """ Represents an item in a menu such as a hyperlink or a
+        ``seperator``.
+        """
         def __init__(self, o, href=None, *args, **kwargs):
+            """ Create the menu item.
+
+            :param: o str|page: 
+                If str, o is the text used for the menu item.
+                If page, the menu item links to that page.
+
+            :param: o str: The optional hyperlink to use. Used in
+            conjunction with o to create a link when it is a str.
+            """
             super().__init__(*args, **kwargs)
 
             self.href = href
@@ -497,6 +653,8 @@ class menu(dom.nav):
             self.items = menu.items()
 
         def clone(self):
+            """ Create and return a new menu item based on this one.
+            """
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
@@ -513,16 +671,22 @@ class menu(dom.nav):
             return itm
 
         def seperate(self):
+            """ Create a seperator in this menu item's ``items`` collection.
+            """
             self.items.seperate()
 
         @property
         def text(self):
+            """ Return the text of the item.
+            """
             if self._text:
                 return self._text
             return self.page.name
 
         @property
         def elements(self):
+            """ Returns the child elements of this colletion.
+            """
             els = super().elements
             els.clear()
             pg = self.page
@@ -535,6 +699,8 @@ class menu(dom.nav):
             return els
 
         def __repr__(self):
+            """ Returns a string represention of the menu item.
+            """
             pg = self.page
             if pg:
                 return '%s (%s)' % (pg.name, pg.path)
@@ -542,39 +708,75 @@ class menu(dom.nav):
                 return self.text
 
     class separator(item):
+        """ An entry in a collection of menu item that seperates one set
+        from anonther.
+
+            [O]pen
+            [S]ave
+            Save [A]s
+            --------
+            [Q]uit
+
+        In the above text version of a menu, the line of dashes
+        seperates one set of file operations (Open, Save and Save As)
+        from the Quit operation.
+
+        Though the above menu resembles that of a desktop applicanion's
+        file menu, web page menus have a need for a seperator as well.
+        The HTML element used to represent a seperator is an HTML menu
+        is a <br>.
+        """
+
         def __init__(self, *args, **kwargs):
+            """ Create the seperator object.
+            """
             # Using the super()'s __init__ won't work because
             # item.__init__ requires a page or str object. We call
             # item's super's (li) constructor instead.
             dom.li.__init__(self, *args, **kwargs)
-            pass
 
         def clone(self):
+            """ Create a new seperator and return it.
+            """
             return type(self)()
 
         @property
         def items(self):
+            """ Raise a NotImplementedError.
+
+            A seperators would not have a nested set of menu items.
+            """
             raise NotImplementedError(
                 "Seperator items don't have `items` collection"
             )
 
         def __repr__(self):
+            """ Return a textual representation of a menu seperator.
+            """
             return '---'
 
         @property
         def elements(self):
+            """ Return the elements of the seperator
+            """
             els = dom.elements()
             els += dom.li()
             els += dom.hr()
             return els
 
     def __init__(self, name, *args, **kwargs):
+        """ Create a new menu.
+
+        :param: name str: The name of the menu.
+        """
         super().__init__(*args, **kwargs)
         self.name = name
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
     def clone(self):
+        """ Create and return a new menu based on this menu.
+        """
         mnu = type(self)(self.name)
         mnu.items = self.items.clone()
         mnu.attributes = self.attributes.clone()
@@ -582,6 +784,8 @@ class menu(dom.nav):
 
     @property
     def elements(self):
+        """ Returns the child elements of this menu.
+        """
         els = super().elements
         els.clear()
 
@@ -589,19 +793,30 @@ class menu(dom.nav):
         return els
 
     def __repr__(self):
+        """ A string representation of this menu.
+        """
         itms = '\n'.join(repr(x) for x in self.items)
         itms = textwrap.indent(itms, ' ' * 2)
         return itms
 
 class pages(entities.entities):
+    """ A collection of ``page`` objects.
+    """
     def __init__(self, rent, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        """ Create a new pages collection.
 
-        # The site or parent page
+        :param: rent page|site: The parent page or site of this page
+        colection.
+        """
+        super().__init__(*args, **kwargs)
         self.parent = rent
 
     @property
     def site(self):
+        """ The site that this pages collection belongs to. 
+
+        None is returned if the site doesn't exist or can't be found.
+        """
         rent = self.parent
         while rent:
             if isinstance(rent, site):
@@ -611,6 +826,16 @@ class pages(entities.entities):
         return None
 
     def __getitem__(self, path):
+        """ An indexer to get the page in teh collection given a path.
+
+        :param: path str|list: The path of the page to get. For example, 
+            
+            /en/bio/luser
+
+        or in list form:
+
+            ['en', 'bio', 'luser']
+        """
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
@@ -630,7 +855,17 @@ class pages(entities.entities):
                 
         raise IndexError('Path not found')
 
-    def append(self, obj, uniq=False):
+    def append(self, obj, uniq=False, r=None):
+        """ Add a page to the pages collection.
+
+        Note that you will normally add a page using the += operator
+        which calls into this method.
+
+            pgs = pages()
+            pgs += page('new-page')
+
+        :param: obj page: The page to add.
+        """
         obj._parentpages = self
         obj.name in [x.name for x in self]
         for pg in self:
@@ -1169,19 +1404,30 @@ class error(page):
         self.main += traceback(ex)
 
 class traceback(dom.article):
+    """ A subclass of dom.article that renders an exception as a HTML.
+    """
     def __init__(self, ex, *args, **kwargs):
+        """ Create the trackback article.
+
+        :param: ex Exception: The exception to render as HTML.
+        """
         # TODO When we can determine if we are in production or not, we
         # can return immediately if we are in production since the
-        # end-user will not need the stack trace and it will reveal
+        # end user will not need the stack trace and it will reveal
         # details about the code we don't necessarily want revealed. A
         # bool argument can be used to force the trace back to be
         # created, however.
 
         super().__init__(*args, **kwargs)
+
+        # To identify the traceback article, give the article a
+        # 'traceback' class: <article class="traceback">...
         self.classes += 'traceback'
+
+        # Build the DOM
         for tb in exc.traces(ex):
             div = dom.div()
-            self+= div
+            self += div
             div  +=  dom.text('File ')
             div  +=  dom.span(tb.file,    class_='file')
             div  +=  dom.text(', at ')
