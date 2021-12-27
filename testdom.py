@@ -2091,7 +2091,7 @@ class dom_element(tester.tester):
         self.is_(b, txt.siblings.first)
         self.zero(b.siblings)
 
-        i = dom.emphasis('some emphasized text')
+        i = dom.em('some emphasized text')
         p += i
         self.two(txt.siblings)
         self.is_(b, txt.siblings.first)
@@ -3221,7 +3221,7 @@ class dom_markdown(tester.tester):
         self.type(dom.paragraph, md.first)
         self.type(dom.table, md.second)
         self.one(md.second.children)
-        self.type(dom.tablerow, md.second.children.first)
+        self.type(dom.tr, md.second.children.first)
         self.one(md.second.children.first.children)
         self.type(
             dom.td, 

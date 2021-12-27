@@ -3313,12 +3313,11 @@ class img(element):
 images = imgs
 image = img
 
-# TODO;dea3866d Rename to trs and tr
-class tablerows(elements):
+class trs(elements):
     """ A class used to contain a collection of ``trs`` elements.
     """
 
-class tablerow(element):
+class tr(element):
     """ The <tr> HTML element defines a row of cells in a table. The
     row's cells can then be established using a mix of <td> (data cell)
     and <th> (header cell) elements.
