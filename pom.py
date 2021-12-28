@@ -834,7 +834,6 @@ class pages(entities.entities):
 
             ['en', 'bio', 'luser']
         """
-        print(path)
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
@@ -1053,6 +1052,7 @@ class page(dom.html):
     @property
     def sidebars(self):
         """ A collection of sidebars for the page.
+        """
         if self._sidebars is None:
             if self.site:
                 self._sidebars = self.site.sidebars.clone()
@@ -1062,7 +1062,38 @@ class page(dom.html):
 
     @property
     def _arguments(self):
-        # If a parameter is required by the page (its in `params`) but
+        """ Return a dict to be pased into the page's __call__ method
+        using the ** notation.
+
+            self._mainfunc(**self._arguments)
+
+        The arguments are a dict version of the query string found in
+        the URL for the page. So for example, a URL with a path and
+        query string such as:
+
+            /en/time?greet=1&tz=America/Phoenix&a=1&b=2
+        
+        would call the /en/time page's __call__ method with something
+        like this::
+
+            {'greet': True, 'a': '1', 'b': '2'}
+
+        This dict would be return by this @property.
+
+        Note that boolean valuse, like the 1 for 'greet' are normalized
+        into Python boolean types. The normalization happens because the
+        parameter list for the /en/time's main() method are examined and
+        their annotations are used.
+
+            class time(pom.page):
+                def main(self, greet: bool, tz='UTC', **kwargs):
+
+        In this example, 'greet' will be True, tz will keep it's default
+        of UTC and **kwargs will contain the values for a and b:
+
+            {'a': '1', 'b': '2'}
+        """
+        # If a parameter is required by the page (it's in `params`) but
         # was not given by the client in the query string, ensure that
         # the parameter is in the args and set to None. If this is not
         # done, a TypeError would be thrown by pages that require
