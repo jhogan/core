@@ -6157,6 +6157,10 @@ class html(element):
 
         :param: html str: If provided, the html is parsed. See docstring
         for class.
+
+        :param: ids bool: If True, each element added to the DOM is
+        given a randomly generated id attribute. If False, no id
+        attribute is set.
         """
         if isinstance(html, str):
             # Morph the object into an `elements` object
