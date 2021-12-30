@@ -472,7 +472,7 @@ class attribute(entities.entity):
     def value(self, v):
         """ Sets the value of the attribute.
         """
-        # TODO We should raise ValueError if v contains an ambigous
+        # TODO We should raise ValueError if v contains an ambiguous
         # ampersand.
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
 
@@ -1182,7 +1182,9 @@ class element(entities.entity):
         #         else:
         #             setattr(self, k, v)
 
+        # Check len here to make things a little faster
         if len(kwargs):
+            # Add kwargs to attributes collection
             self.attributes += kwargs
 
     def remove(self, el):
