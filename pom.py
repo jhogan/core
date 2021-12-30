@@ -569,7 +569,8 @@ class menu(dom.nav):
             # Preserve ID's
             # TODO Should all attributes of the ul be preserved?
             # Probably.
-            itms._ul.id = self._ul.id
+            if self._ul.id is not None:
+                itms._ul.id = self._ul.id
 
             for itm in self:
                 itms += itm.clone()
@@ -659,14 +660,19 @@ class menu(dom.nav):
             # existing page.
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
-            itm.body.id = self.body.id
+
+            if self.body.id is not None:
+                itm.body.id = self.body.id
 
             itm.items += self.items.clone()
 
             # Preserve ID's
             # TODO Should all attributes of the ul be preserved?
             # Probably.
-            itm.items._ul.id = self.items._ul.id
+
+            if self.items._ul.id is not None:
+                itm.items._ul.id = self.items._ul.id
+
             itm.attributes = self.attributes.clone()
             return itm
 

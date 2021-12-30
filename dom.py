@@ -1145,9 +1145,7 @@ class element(entities.entity):
         try:
             id = kwargs['id']
         except KeyError:
-            # TODO If isinstance(self, text) or isinstance(self,
-            # comment), should probably shouldn't be assigning an id.
-            self.id = primative.uuid().base64
+            pass
         else:
             if id is True:
                 self.id = primative.uuid().base64
@@ -6153,7 +6151,7 @@ class html(element):
         # iterate over it, etc.
         html1['html head title'].text == 'My Title'
     """
-    def __init__(self, html=None, ids=True, *args, **kwargs):
+    def __init__(self, html=None, ids=False, *args, **kwargs):
         """ Create HTML element, pares HTML string depending on whether
         or not `html` is provided (see docstring in for class)
 
@@ -6228,7 +6226,7 @@ class _htmlparser(HTMLParser):
     parsed (initiated by the ``feed`` method), the ``elements`` property
     will contain the a DOM structure of the HTML document.
     """
-    def __init__(self, ids=True, *args, **kwargs):
+    def __init__(self, ids=False, *args, **kwargs):
         """ Create the parser.
 
         :param: ids bool: If True, each element created is given a UUID
