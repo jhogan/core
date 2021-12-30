@@ -330,12 +330,11 @@ class attributes(entities.entities):
         if not isinstance(key, str):
             super().__setitem__(key, item)
             
-        try:
-            ix = self.getindex(key)
-        except ValueError as ex:
-            attr = None
+        for attr in self:
+            if attr.name == key:
+                break
         else:
-            attr = self._ls[ix]
+            attr = None
 
         if attr:
             if isinstance(attr, cssclass):
@@ -1183,7 +1182,8 @@ class element(entities.entity):
         #         else:
         #             setattr(self, k, v)
 
-        self.attributes += kwargs
+        if len(kwargs):
+            self.attributes += kwargs
 
     def remove(self, el):
         """ Removes ``el`` from this ``element``'s child elements.
