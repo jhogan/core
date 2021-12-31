@@ -1199,6 +1199,11 @@ class page(dom.html):
         self._args = v
 
     def clear(self):
+        """ Used to initialize the page's <main> element and set it's
+        data-path attribute to the path of the page.
+        """
+        # NOTE "clear" is a bit of a misnomer. Maybe this should be
+        # renamed to 'init' or something.
         self.main = dom.main()
         self.main.attributes['data-path'] = self.path
         self._called = False
@@ -1207,6 +1212,17 @@ class page(dom.html):
     def __call__(self, *args, **qsargs):
         """ This method calls into the page's `main` method that the
         web developer writes.
+
+            class mypage(page):
+                def main(self):
+                    ...
+
+            # Init page
+            pg = mypage()
+
+            # "Calling" the page ends up calling the main() method
+            # defined above.
+            pg() 
         """
 
         self._attemped = True  # A call was attemped
@@ -1231,7 +1247,7 @@ class page(dom.html):
                 globs['req'] = www.request
                 globs['res'] = www.response
 
-                # Call page's main function. It's called `_mainfunc`
+                # Call page's main method. It's called `_mainfunc`
                 # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
                 self._called = True
@@ -1240,10 +1256,11 @@ class page(dom.html):
 
     @property
     def elements(self):
+        """ Return the HTML element underneath the page (i.e.,
+        underneath the <html> element in the DOM).
+        """
         els = super().elements
         els.clear()
-        # TODO ``ws`` is never used
-        ws = self.site
 
         if self.head:
             els += self.head
@@ -1266,6 +1283,8 @@ class page(dom.html):
 
     @property
     def page(self):
+        """ Return the parent page of this page object.
+        """
         rent = self._parentpages
 
         if rent is None:
@@ -1280,6 +1299,8 @@ class page(dom.html):
 
     @property
     def site(self):
+        """ Return the web ``site`` that this page belongs to.
+        """
         rents = self._parentpages
 
         if rents is None:
@@ -1297,16 +1318,27 @@ class page(dom.html):
 
     @property
     def name(self):
+        """ Return the name of the page.
+
+        c.f. page.Name
+
+        """
         if self._name:
             return self._name
         return type(self).__name__.replace('_', '-')
 
     @property
     def Name(self):
+        """ Return a capitalize version of the page's name. 
+
+        c.f. page.name
+        """
         return self.name.capitalize()
 
     @property
     def path(self):
+        """ Return the path of the page, e.g., '/about/team'
+        """ 
         r = str()
         rent = self
 
@@ -1320,6 +1352,8 @@ class page(dom.html):
         return '/' + r
 
     def __repr__(self):
+        """ Return a string representation of the page.
+        """
         r = f'{type(self).__name__}('
         r += f'id={self.id} path={self.path}'
         r += ')'
