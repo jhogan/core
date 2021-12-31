@@ -884,11 +884,11 @@ class entities:
             yield i, e
 
     def clear(self):
-        """ Remove each element in teh collection.
+        """ Remove each element in the collection.
 
-        Note that this method uses ``entities.remove`` is used which
-        means that the onremove event will be called for each of the
-        elements removed.
+        Note that this method uses ``entities.remove`` which means that
+        the onremove event will be called for each of the elements
+        removed.
         """
         self.remove(self)
 
