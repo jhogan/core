@@ -19,6 +19,7 @@ import entities
 import file
 import html as htmlmod
 import operator
+import builtins
 import orm
 import primative
 import re
@@ -1867,7 +1868,7 @@ class element(entities.entity):
         if isinstance(self, text):
             body = self.html
 
-        for i, el in enumerate(self.elements):
+        for i, el in builtins.enumerate(self.elements):
             body += el.html
 
         if isinstance(self, text):

@@ -10726,7 +10726,7 @@ class orm:
 
             for ass in self.getassociations():
                 maps = list(ass.orm.mappings.entitymappings)
-                for i, map in enumerate(maps):
+                for i, map in builtins.enumerate(maps):
                     if map.name == 'proprietor':
                         continue
                     if orm.issub(map.entity, self.entity):
