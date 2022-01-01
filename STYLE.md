@@ -45,4 +45,12 @@ generators shoud be prefixed with 'gen'
 
 Put consequent block on newline (if cond:\n ...)
 
+In general, import modules instead of module objects:
+    
+    import mymod
+
+    # dont do this
+    from mymod import *
+    from mymod import myfunc
+
 
