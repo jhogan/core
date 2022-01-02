@@ -54,3 +54,36 @@ In general, import modules instead of module objects:
     from mymod import myfunc
 
 
+Varible names
+
+    varible names should strive to be easily recognizable abbreviations
+    of the object:
+        
+        cc = creditcard()
+
+    The standard varible name for an object should be documented in the
+    class's docstring. When there are more than one varibale of the same
+    type, the second one should end in 1, the third in 2 and so on.
+
+        cc = creditcard()
+        cc1 = creditcard()
+        cc2 = creditcard()
+
+    The 0 is implicit in the first cc.
+
+Method names
+
+    Method names should strive to be one word. Underscores are
+    prohibited except in conventional circumstances. Method names should
+    be lowercase except in very unusual cases.
+
+Class names
+
+    Class names should strive to be one word. Underscores are
+    prohibited except in conventional circumstances. They should
+    be lowercase except in when they are exception classes in which case
+    they should be StudlyCase.
+
+
+
+

@@ -657,7 +657,7 @@ class _request:
 
             par = None
 
-            # Get the users party. If no user is logged in, use the
+            # Get the user's party. If no user is logged in, use the
             # anonymous user.
             if self.user:
                 par = self.user.party

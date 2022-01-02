@@ -9639,8 +9639,6 @@ class orm:
                             # above any joins from the SELECT.
                             if i.first:
                                 es += e
-                                
-
                             else:
                                 # If we are here, we must be at an 'id'
                                 # field but not the first one, i.e., one
@@ -9674,7 +9672,6 @@ class orm:
                                 # collect subentities of self.instance.
                                 if abbrs == abbrs1:
                                     es += e
-
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The

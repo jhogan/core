@@ -233,9 +233,6 @@ class party(orm.entity):
         # TODO Write test to ensure this returns the same party each
         # time.
 
-        # TODO We should probbaly ensure that root is the owner here,
-        # i.e., `with orm.sudo(): ent = cls(id=myuuid); ent.save()`
-
         # Memoize. NOTE that memoizing this property has a significant
         # influence on the performance of web hits.
         if not cls._anon:
