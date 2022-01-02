@@ -8418,27 +8418,28 @@ class orm:
                 # No case-sensitive match was made
                 r = None
         else:
-            if rs.count:
-                r = rs.first
+            ls = rs._ls
+            if len(ls):
+                r = rs[0]
             else:
                 r = None
 
         # If a record was found
         if r:
             # Use the first record to populate this instance.
-            self.instance.id = r.id
-            for k, v in kwargs.items():
-                setattr(self.instance, k, getattr(rs.first, k))
+            self.mappings['id'].value = r.orm.mappings['id'].value
 
-            # The record isn't new or dirty so set all peristance state
+            for k, v in kwargs.items():
+                setattr(self.instance, k, getattr(r, k))
+
+            # The record isn't new or dirty so set all persistence state
             # variables to false.
             self.persistencestate = (False,) * 3
 
             # Repeat for all the supers that were loaded
-            sup = self.instance.orm._super
-            while sup:
+            sup = self.instance
+            while sup := sup.orm._super:
                 sup.orm.persistencestate = (False,) * 3
-                sup = sup.orm._super
         else:
             # Save immediately.
             self.instance.save()
