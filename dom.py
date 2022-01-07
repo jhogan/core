@@ -7112,14 +7112,37 @@ class selectors(entities.entities):
             return '<%s at %i>' % (self.type, self.pos)
 
 
-    def __init__(self, sel=None, *args, **kwargs):
+    cache = dict()
+    def __init__(self, sel=None, cache=True, *args, **kwargs):
         """ Instantiate and parse the CSS3 selector string (``sel``), i.e., ::
 
             p#pid, div.my-class
         """
         super().__init__(*args, **kwargs)
         self._sel = sel.strip()
-        self._parse()
+
+        # If cache, parse the CSS3 selector then cache self in the cache
+        # dict.
+        if cache:
+            try:
+                # Has it already been cached?
+                sels = selectors.cache[self._sel]
+            except KeyError:
+                # The selector string hasn't been parsed and cached so
+                # do that here.
+                self._parse()
+                selectors.cache[self._sel] = self
+            else:
+                # Add each of the `selector`` objects from the cached
+                # ``selectors`` collection to self.
+                for sel in sels:
+                    self += sel
+        else:
+            # Sometimes we don't want to use a cached object,
+            # particularly when we are mutating the selectors object.
+            # See selector.pseudoclass.arguments.selectors.
+            self._parse()
+
     
     @staticmethod
     def tokenize(s):
@@ -7817,7 +7840,7 @@ class selector(entities.entity):
 
                 # For :not() pseudoclass, parse the arguments to
                 # :not() like any other selector. 
-                sels = selectors(self.string)
+                sels = selectors(self.string, cache=False)
 
                 # The parser will add a universal selector (*) to each
                 # simple selector. 
