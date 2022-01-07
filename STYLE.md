@@ -86,4 +86,10 @@ Class names
 
 
 
+Initialize primatives with objects instead of operators
 
+    s = str()
+    ls = list()
+    d = dict()
+
+Discuss uses of TODO, NOTE and XXX
