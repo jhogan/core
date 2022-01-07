@@ -7073,7 +7073,7 @@ class markdown(elements):
         self += html(Markdown()(dedent(text).strip()))
 
 class selectors(entities.entities):
-    """ Represents a seection group of CSS3 selectors. Selection groups
+    """ Represents a selection group of CSS3 selectors. Selection groups
     are seperated by commas in CSS3 selector strings. For example, in
     the string::
 
@@ -7082,6 +7082,8 @@ class selectors(entities.entities):
     the p would represent one entry of the selector group (represented
     by a ``selector`` object) and div would represent an second entry.
     """
+
+    ''' Inner classes '''
 
     class token(tuple):
         def __new__(cls, type, value, pos):
@@ -7111,6 +7113,7 @@ class selectors(entities.entities):
         def __repr__(self):
             return '<%s at %i>' % (self.type, self.pos)
 
+    ''' Class members '''
 
     cache = dict()
     def __init__(self, sel=None, cache=True, *args, **kwargs):
@@ -7118,6 +7121,14 @@ class selectors(entities.entities):
 
             p#pid, div.my-class
         """
+
+        # NOTE on caching: Adding caching improved performance but not
+        # that much. In the test suite, the "not" pseudoclass
+        # instantiates the `selectors` object the most and it disables
+        # caching because it mutates the `selectors`` object. I tried
+        # cloning so 'not' could have it's own `selectors` object to
+        # work with but cloning the entire selectors tree was just as
+        # costly in terms of performance.
         super().__init__(*args, **kwargs)
         self._sel = sel.strip()
 
@@ -7515,6 +7526,8 @@ class selectors(entities.entities):
         return repr(self)
 
 class selector(entities.entity):
+
+    ''' Inner classes '''
     class _simples(entities.entities):
         def __init__(self, *args, **kwargs):
             self.element = kwargs.pop('el')
@@ -7616,7 +7629,6 @@ class selector(entities.entity):
         def str_combinator(self):
             return self.comb2str(self.combinator)
 
-
         def __repr__(self):
             r = str()
             if self.combinator not in (None, selector.element.Descendant):
@@ -7639,6 +7651,7 @@ class selector(entities.entity):
 
             return r
 
+    ''' Class members '''
     def __init__(self):
         self.elements = selector.elements()
 
@@ -7804,6 +7817,7 @@ class selector(entities.entity):
             'not',          'lang',
         )
 
+        ''' Inner classes '''
         class arguments(element):
             def __init__(self, pcls):
                 self.string       =  str()
@@ -7934,6 +7948,7 @@ class selector(entities.entity):
 
                 return '(%sn%s)' % (a, b)
 
+        ''' Class members '''
         def __init__(self):
             super().__init__()
             self.value = None
@@ -7950,7 +7965,7 @@ class selector(entities.entity):
             elif self.value.lower() == 'not':
                 # If the pseudoclass is 'not', then invoke its
                 # 'arguments.selectors'. That will cause not's arguments
-                # to be parse. If there is a pares error in not's
+                # to be parse. If there is a parse error in not's
                 # arguments (stored as a str in self.arguments.string),
                 # invoking this property will raise the
                 # CssSelectorParseError.
@@ -8066,7 +8081,6 @@ class selector(entities.entity):
             return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):
-
             # `comments` elements don't matter when it comes to
             # emptiness but `text' elements actually do. This includes
             # text with just whitespace. Processing instructions matter
