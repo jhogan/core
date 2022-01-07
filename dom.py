@@ -7154,6 +7154,20 @@ class selectors(entities.entities):
             # See selector.pseudoclass.arguments.selectors.
             self._parse()
 
+    def clone(self):
+        """ Clone the entire selectors tree. 
+
+        Note: currently not being used and probably doesn't work. The
+        'parse' parameter should be changed to cache=False. Other than
+        that, this clone method, and all the clone methods it invokes to
+        clone the selectors tree, should work.
+        """
+
+        raise NotImplementedError('See note in docstring');
+        sels = selectors(self._sel, parse=False)
+        for sel in self:
+            sels += sel.clone()
+        return sels
     
     @staticmethod
     def tokenize(s):
@@ -7533,6 +7547,15 @@ class selector(entities.entity):
             self.element = kwargs.pop('el')
             super().__init__(*args, **kwargs)
 
+        def clone(self, el):
+            """ Create and return an object based on the state of self.
+            """
+            cls = type(self)
+            smps = cls(el=el)
+            for smp in self:
+                smps += smp.clone()
+            return smps
+
         def __str__(self):
             return repr(self)
 
@@ -7550,6 +7573,11 @@ class selector(entities.entity):
 
         def __str__(self):
             return repr(self)
+
+        def clone(self):
+            raise NotImplementedError(
+                'Must be implemented by subclass'
+            )
 
     class elements(entities.entities):
         def demand(self):
@@ -7579,6 +7607,18 @@ class selector(entities.entity):
             self.classes        =  selector.classes(el=self)
             self.pseudoclasses  =  selector.pseudoclasses(el=self)
             self.id             =  None
+
+        def clone(self):
+            """ Create and return an object based on the state of self.
+            """
+            el = selector.element()
+            el.element = self.element
+            el.combinator = self.combinator
+            el.attributes += self.attributes.clone(el=el)
+            el.classes += self.classes.clone(el=el)
+            el.pseudoclasses += self.pseudoclasses.clone(el=el)
+            el.id = self.id
+            return el
 
         @staticmethod
         def comb2str(comb):
@@ -7655,6 +7695,14 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
+    def clone(self):
+        """ Create and return an object based on the state of self.
+        """
+        sel = selector()
+        for el in self.elements:
+            sel.elements += el.clone()
+        return sel
+
     def match(self, els, el=None, smps=None):
         last = self.elements.last
         els1 = last.match(els.genchildren())
@@ -7730,6 +7778,15 @@ class selector(entities.entity):
             self.operator  =  None
             self.value     =  None
 
+        def clone(self):
+            """ Create and return an object based on the state of self.
+            """
+            attr = selector.attribute()
+            attr.key       =  self.key
+            attr.operator  =  self.operator
+            attr.value     =  self.value
+            return attr
+
         def __repr__(self):
             k   =  self.key       or  ''
             op  =  self.operator  or  ''
@@ -7791,6 +7848,13 @@ class selector(entities.entity):
         def __init__(self):
             self.value = None
 
+        def clone(self):
+            """ Create and return an object based on the state of self.
+            """
+            cls = selector.class_()
+            cls.value = self.value
+            return cls
+
         def __repr__(self):
             return '.' + self.value
 
@@ -7824,6 +7888,15 @@ class selector(entities.entity):
                 self._a           =  None
                 self._b           =  None
                 self.pseudoclass  =  pcls
+
+            def clone(self, pcls):
+            """ Create and return an object based on the state of self.
+            """
+                args = selector.pseudoclass.arguments(pcls)
+                args.string = self.string
+                args._a = self._a
+                args._b = self._b
+                return args
 
             def __iadd__(self, str):
                 self.string += str
@@ -7953,6 +8026,14 @@ class selector(entities.entity):
             super().__init__()
             self.value = None
             self.arguments = selector.pseudoclass.arguments(self)
+
+        def clone(self):
+            """ Create and return an object based on the state of self.
+            """
+            pcls = selector.pseudoclass()
+            pcls.value = self.value
+            pcls.arguments = self.arguments.clone(pcls=pcls)
+            return pcls
 
         def demand(self):
             err = CssSelectorParseError
