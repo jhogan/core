@@ -3269,8 +3269,6 @@ class entitymeta(type):
         # cache of each entity's mappings collection's object.  They
         # must be recomputed since they are based on the existing entity
         # object available.
-        for e in orm.getentityclasses():
-            e.orm.mappings._populated = False
 
         # Return newly defined class
         return entity
@@ -5147,6 +5145,13 @@ class mappings(entitiesmod.entities):
         as a formality, at the moment. (NOTE It seems like this argument
         should hold the 'before1 count and perhaps the 'after' count).
         """
+        # NOTE Now that it has been deterimed that scripts must call
+        # apriori.model before using the General Entity Model,
+        # repopulating should not really be necessary any more. That's
+        # to say, now that we are running the `class ` statement for
+        # all ORM entity before using any of the ORM's persistence
+        # features, there is no need to repopulate. This is execellent
+        # for start up performance .
         self._populated = False
 
     def __getitem__(self, key):
