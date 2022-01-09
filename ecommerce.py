@@ -43,7 +43,6 @@ import party
 import primative
 import product
 import urllib
-import user_agents
 import urllib.parse
 import uuid
 
@@ -936,6 +935,10 @@ class useragent(orm.entity):
 
     @property
     def _useragent(self):
+        # Import user_agents here instead of at the top. Importing takes
+        # about 300 ms (perhaps from regex compilations) and slows start
+        # time.
+        import user_agents
         return user_agents.parse(self.string)
 
     @property
