@@ -3251,6 +3251,7 @@ class entitymeta(type):
                 # Delete attribute if it is not an imperitive attribute.
                 if type(prop) is not ormmod.attr.wrap:
                     del body[map.name]
+
             except KeyError:
                 # The orm_.mappings.__iter__ adds new mappings which
                 # won't be in body, so ignore KeyErrors
