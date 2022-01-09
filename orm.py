@@ -5221,7 +5221,6 @@ class mappings(entitiesmod.entities):
         mappings._self._oncountchange).
         """
         # If there is no ._orm, then we are using this class just for
-        # collection purposes, so don't try to populate here.
         if self._orm is None:
             return
 

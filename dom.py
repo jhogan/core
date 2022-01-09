@@ -7890,8 +7890,8 @@ class selector(entities.entity):
                 self.pseudoclass  =  pcls
 
             def clone(self, pcls):
-            """ Create and return an object based on the state of self.
-            """
+                """ Create and return an object based on the state of self.
+                """
                 args = selector.pseudoclass.arguments(pcls)
                 args.string = self.string
                 args._a = self._a
