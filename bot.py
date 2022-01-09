@@ -47,8 +47,7 @@ logging, the bot will print log messages to the screen and record them
 to the database at the same time.
 """
 
-import apriori; apriori.model()
-
+from dbg import B
 from config import config
 from entities import classproperty
 from func import enumerate
@@ -1153,5 +1152,11 @@ class panel:
 if __name__ == '__main__':
     # If bot.py is being executed, instantite and call a panel to read
     # the command line arguments and invoke the appropriate bot.
+
+
+    # Load models
+    import apriori; apriori.model()
+
+    # Instantiate bot's panel and load
     pnl = panel()
     pnl()
