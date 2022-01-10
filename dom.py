@@ -7140,39 +7140,73 @@ class selectors(entities.entities):
     by a ``selector`` object) and div would represent an second entry.
     """
 
+    # NOTE that portions of this object model, namely the parts dealing
+    # with tokenizing CSS strings, were copied from Ian Bicking's
+    # 'cssselect' project (https://github.com/scrapy/cssselect).
+    # Some modifications have been made to the code to better fit the
+    # framework's standards. See LICENCE_cssselect.
+
     class token(tuple):
+        """ A private class to represent the tokens in a CSS selector.
+        """
         def __new__(cls, type, value, pos):
+            """ Create the token instance.
+            
+            :param: type str: The type of token, e.g., 'IDENT', 'HASH',
+            'STRING', 'NUMBER', etc.
+
+            :param: value str: The token itself.
+
+            :param: pos int: The zero-based position in the selectors
+            string where the token occured.
+            """
             obj = tuple.__new__(cls, (type, value))
             obj.pos = pos
             return obj
 
         def __repr__(self):
+            """ Return a string representation of the token,
+            """
             return "<%s '%s' at %i>" % (self.type, self.value, self.pos)
 
-        def is_delim(self, *values):
-            return self.type == 'DELIM' and self.value in values
-
+        # Create property objects for type and value
         type = property(operator.itemgetter(0))
         value = property(operator.itemgetter(1))
 
-        def css(self):
-            if self.type == 'STRING':
-                return repr(self.value)
-            else:
-                return self.value
-
     class eof(token):
+        """ A special type of token used to indicate that parsing has
+        been completed.
+        """
         def __new__(cls, pos):
+            """ Create the token instance.
+            """
             return selectors.token.__new__(cls, 'EOF', None, pos)
 
         def __repr__(self):
+            """ Return a string representation of the token,
+            """
             return '<%s at %i>' % (self.type, self.pos)
 
-
     def __init__(self, sel=None, *args, **kwargs):
-        """ Instantiate and parse the CSS3 selector string (``sel``), i.e., ::
+        """ Instantiate and parse the CSS3 selector string (sel).
+
+        Note that selectors is a collection class. Consider the
+        following CSS selector::
 
             p#pid, div.my-class
+
+        The above represents two seperate selectors delinated by a
+        comma. When parsing the above CSS selector, two `selector`
+        objects wil be added to this collection. The first will be for 
+
+            p#pid
+
+        and the second will be for 
+
+            div.my-class
+
+        Of course, most selector strings will only have one selector
+        object since most CSS selectors don't use a comma.
         """
         super().__init__(*args, **kwargs)
         self._sel = sel.strip()
