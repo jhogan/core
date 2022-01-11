@@ -68,6 +68,10 @@ class asset(orm.entity):
     description = text
 
 class property(asset):
+    # TODO I'm prettry sure that inflect can infer 'properties' from
+    # 'property'.
+
+    # TODO Add comments.
     entities = properties
 
 class vehicle(asset):

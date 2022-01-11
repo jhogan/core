@@ -5675,13 +5675,13 @@ class test_orm(tester):
         self.is_(b.orm.entities, bacteria)
         self.eq('main_bacteria', b.orm.table)
 
-        # Test implicit entities detection based on naive pluralisation
+        # Test implicit entities detection based on pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
         self.eq('main_artists', art.orm.table)
 
-        # Test implicit entities detection of entities subclass based on naive
-        # pluralisation
+        # Test implicit entities detection of entities subclass based on
+        # naive pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
         self.eq('main_singers', s.orm.table)
