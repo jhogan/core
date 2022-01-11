@@ -7334,10 +7334,15 @@ class selectors(entities.entities):
         """ Parse the CSS3 selector string provided by the constructor
         (``sel``)
         """
+
+        ''' Validation '''
+
+        # Assign to err to make lines shorter
         err = CssSelectorParseError
         badtrail = set(string.punctuation) - set(list(')]*'))
         badlead = '>+~'
 
+        # Raise on empty selectors
         if not self._sel or not self._sel.strip():
             raise err('Empty selector')
 
@@ -7345,16 +7350,31 @@ class selectors(entities.entities):
         starts_with_hyphen_then_number = re.compile('^\-[0-9]')
 
         def demand_valid_identifiers(id):
+            """ Raises a CssSelectorParseError if the identifier is
+            invalid.
+
+            :param id str: The identifier to test.
+
+            """
+            # NOTE See the following for official validation rules:
+            # https://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
             def throw():
                 raise err('Invalid identifier', tok)
 
             if not valid_identifier.match(id):
+                # Identifiers must start with a letter, - or _.
                 throw()
 
             if id.startswith('--'):
+                # if the first character is a hyphen, the second
+                # character must2 be a letter or underscore, and the
+                # name must be at least 2 characters long.
                 throw()
                 
             if starts_with_hyphen_then_number.match(id):
+                # if the first character is a hyphen, the second
+                # character must2 be a letter or underscore, and the
+                # name must be at least 2 characters long.
                 throw()
 
         def element(element):
@@ -7372,11 +7392,16 @@ class selectors(entities.entities):
 
         prev = None
         for tok in self.tokenize(self._sel):
+            
+            # If this is the last token (eof) break the loop, but first
+            # check for unclosed tokens, e,g., 'input[name=username'
             if isinstance(tok, selectors.eof):
                 if attr:
+                    # e.g., '[foo=bar'
                     raise err('Attribute not closed', tok)
 
                 if not el:
+                    # e.g., 'a,b,'
                     raise err( 'Attribute not closed', tok)
 
                 if prev.value in badtrail: 
