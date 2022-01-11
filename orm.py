@@ -3064,55 +3064,16 @@ class entitymeta(type):
         # Instantiate a `mappings' collection for the `orm`
         orm_.mappings = mappings(orm=orm_)
 
-        # See if we have an `entities` property, i.e., the `entities`
-        # class that corresponds to this class.
-        try:
-            body['entities']
-        except KeyError:
-            # If we don't have an `entities` property, go through each
-            # subclass of `orm.entities` looking for one whose name is
-            # the plural of this class's name. When found, assign it to
-            # this class's `entities`.
-            flect = inflect.engine(); flect.classical(); 
-            flect.defnoun('status', 'statuses')
-
-            names = flect.plural(name)
-            for sub in orm_.getsubclasses(of=entities):
-                if sub.__name__   == names and \
-                   sub.__module__ == body['__module__']:
-
-                    body['entities'] = sub
-                    break
-            else:
-                raise builtins.AttributeError(
-                    'Entities class for "%s" couldn\'t be found. '
-                    'Either specify one or define one with a '
-                    'predictable name' % name
-                )
-
-        # Make sure the `orm` has a reference to the entities collection
-        # class and that the entities collection class has a reference
-        # to the orm.
-        orm_.entities = body['entities']
-        orm_.entities.orm = orm_
-
-        # Now that the `entities` property has been discovered/created
-        # and assigned to the `orm`, lets keep it there and delete it
-        # from this entity class's namespace.
-        del body['entities']
+        if ents := body.pop('entities', None):
+            # Make sure the `orm` has a reference to the entities
+            # collection class and that the entities collection class
+            # has a reference to the orm.
+            orm_._entities = ents
 
         # If a class wants to define a custom table name, assign it to
         # the `orm` here and remove it from this entity class's
         # namespace. 
-        try:
-            # TODO We can use body.pop here, probably
-            orm_.table = body['table']
-            del body['table']
-        except KeyError:
-            # Normally, classes want define a table name, so we can just
-            # use the entities name (we want table names to be
-            # pluralized) as the table name.
-            orm_.table = orm_.entities.__name__
+        orm_.table = body.pop('table', None)
 
         # Create standard field names in the `body` list. They will
         # later be converted to mapping objects which are added to the
@@ -3333,6 +3294,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO Support eager loading:
         #
         #     art = artist(name=name, eager('presentations'))
+        self._orm = None
         try:
             self_orm = self.orm.clone()
 
@@ -3441,7 +3403,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Post super().__init__() events
             self.onaftervaluechange += self._self_onaftervaluechange
         finally:
-            self_orm.initing = False
+            if self_orm:
+                self_orm.initing = False
 
     @property
     def onbeforesave(self):
@@ -7922,7 +7885,7 @@ class orm:
         self.isnew                 =  False
         self._isdirty              =  False
         self._ismarkedfordeletion  =  False
-        self.entities              =  None
+        self._entities             =  None
         self.entity                =  None
         self._table                =  None
         self.composite             =  None   #  For association
@@ -7947,6 +7910,43 @@ class orm:
         self.recreate = self._recreate
 
     @property
+    def entities(self):
+        if not self._entities:
+            flect = inflect.engine(); 
+            flect.classical(); 
+            flect.defnoun('status', 'statuses')
+
+            if self.isstatic:
+                pass
+            elif self.isinstance:
+                #XXX
+                B()
+
+            ent = self.entity
+            name = ent.__name__
+            mod = ent.__module__
+
+            names = flect.plural(name)
+            for sub in self.getsubclasses(of=entities):
+                if sub.__name__  == names and sub.__module__ == mod:
+                    self._entities = sub
+                    self._entities.orm = self
+
+                    break
+            else:
+                raise IntegrityError(
+                    'Entities class for "%s" couldn\'t be found. '
+                    'Either specify one or define one with a '
+                    'predictable name' % name
+                )
+
+        return self._entities
+
+    @entities.setter
+    def entities(self, v):
+        self._entities = v
+        
+    @property
     def issues(self):
         """ Returns a list of possible issue with an entity, such as
         issues with the way the data and relationships have been
@@ -7961,6 +7961,9 @@ class orm:
         the issue in the future for the issue they are currently working
         on.
         """
+        # XXX Test if an entity class has an entities collection
+        # associated with it.
+
         r = list()
         esup = self.entity.mro()[1]
         essup = self.entities.mro()[1]
@@ -8282,7 +8285,12 @@ class orm:
         else:
             mod = mod.__name__
 
-        return '%s_%s' % (mod, self._table)
+        if self._table:
+            tbl = self._table
+        else:
+            tbl = self.entities.__name__
+
+        return '%s_%s' % (mod, tbl)
 
     @table.setter
     def table(self, v):
@@ -11349,3 +11357,5 @@ class violation(entitiesmod.entity):
         r += ')'
         return r
 
+class IntegrityError(Exception):
+    ...
