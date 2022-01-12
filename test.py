@@ -5655,13 +5655,21 @@ class test_orm(tester):
             self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
-        # Creating a single orm.entity with no collection should produce an
-        # AttributeError
-        def fn():
-            class single(orm.entity):
-                firstname = orm.fieldmapping(str)
+        # Creating a single orm.entity with no collection should produce
+        # an AttributeError
+        class single(orm.entity):
+            firstname = str
 
-        self.expect(AttributeError, fn)
+        self.expect(orm.IntegrityError, lambda: single.orm.entities)
+        self.expect(orm.IntegrityError, lambda: single().orm.entities)
+
+        # Remove the single class. Otherwise, the orm will continue to
+        # raise IntegrityError's. Note that garbage collection must be
+        # run to remove it entirely. See this discussion for why:
+        # https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
+        del single
+        import gc
+        gc.collect()
 
         # Test explicit detection of orm.entities 
         class bacteria(orm.entities):
