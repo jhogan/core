@@ -5230,10 +5230,19 @@ class mappings(entitiesmod.entities):
         if self._orm is None:
             return
 
+        # XXX Calling self.clear calls the __iter__ which recurses back
+        # to here. Once clear is called, self._populated is True. Maybe
+        # the below line should be written:
+        #
+        #    if self._populating:
+        #        return
+        # 
+        # That prevents self._populated from being set to True
+        # prematurely.
         if not self._populated and not self._populating:
             self._populating = True
 
-            # Remove mapping objects for self which are derive, i.e.,
+            # Remove mapping objects from self which are derived, i.e.,
             # added by this method.
             self.clear(derived=True)
 
@@ -5266,8 +5275,8 @@ class mappings(entitiesmod.entities):
                 maps.append(
                     foreignkeyfieldmapping(
                         map.entity, 
-                        fkname = map.name, 
-                        isderived=True
+                        fkname     =  map.name,
+                        isderived  =  True
                     )
                 )
 
@@ -5294,6 +5303,7 @@ class mappings(entitiesmod.entities):
             sys.setrecursionlimit(3000)
 
             ''' Add composite and constituent mappings '''
+
             # For each class that inherits from `orm.entity`
             for e in orm.getentityclasses():
                 # If the entity is `self`, ignore unless this is a

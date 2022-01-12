@@ -93,3 +93,7 @@ Initialize primatives with objects instead of operators
     d = dict()
 
 Discuss uses of TODO, NOTE and XXX
+
+Discuss housekeeping in git logs
+
+Discuss performance metrics in git logs
