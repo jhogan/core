@@ -3068,7 +3068,8 @@ class entitymeta(type):
             # Make sure the `orm` has a reference to the entities
             # collection class and that the entities collection class
             # has a reference to the orm.
-            orm_._entities = ents
+            orm_.entities = ents
+            orm_.entities.orm = orm_
 
         # If a class wants to define a custom table name, assign it to
         # the `orm` here and remove it from this entity class's
