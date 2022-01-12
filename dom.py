@@ -7378,19 +7378,33 @@ class selectors(entities.entities):
                 throw()
 
         def element(element):
+            """ Create and return a new selector.element object given
+            the `element`.
+
+            :param: element str: An HTML element, presumably one found
+            in a CSS selector. For example, 'p' is the first and only
+            element found in the CSS selector 'p:lang(fr)'.
+            """
             if not element.isalnum() and element != '*':
                 raise ValueError('Elements must be alphanumeric')
 
             el = selector.element()
             el.element = element
+
+            # Set the numeric value for the combinator 
+            # (' ', '>', '+', # '~') that precedes the element.
             el.combinator = comb
             return el
 
+        # Create and append the first selector. We will always have one
+        # unless the CSS selector string is invalid.
         sel = selector()
         self += sel
         el = comb = attr = cls = pcls = args = None
 
         prev = None
+
+        # Iterate over each token in the CSS selector string
         for tok in self.tokenize(self._sel):
             
             # If this is the last token (eof) break the loop, but first
@@ -7405,15 +7419,20 @@ class selectors(entities.entities):
                     raise err( 'Attribute not closed', tok)
 
                 if prev.value in badtrail: 
+                    # If the last token in the string is in the badtrail
+                    # list
                     raise err(tok)
 
                 if pcls and not pcls.hasvalidname:
+                    # Raise error if we are using a pseudoclass with a
+                    # bad name, e.g., ':not-a-pseudoclass()'
                     raise err(
                         'Invalid pseudoclass "%s"' % pcls.value, tok
                     )
                 break
 
             if not prev and tok.value in badlead:
+                # A bad leading token was found, e.g., "~div"
                 raise err(tok)
 
             if args:
