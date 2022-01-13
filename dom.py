@@ -13,7 +13,6 @@ from dbg import B
 from entities import classproperty
 from func import enumerate
 from html.parser import HTMLParser
-from mistune import Markdown
 from textwrap import dedent, indent
 import entities
 import file
@@ -7067,6 +7066,11 @@ class markdown(elements):
         :param: text str: The string of Markdown to parse.
         """
         super().__init__(self)
+
+        # NOTE Importing mistune is slow - probably because it's upfront
+        # compiling of regex expressions. Therefore, we import here to
+        # improve startup performance.
+        from mistune import Markdown
 
         # Use mistune.Markdown to convert to HTML. Then use dom.html to
         # convert to DOM. Append that DOM to self.
