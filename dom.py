@@ -7435,13 +7435,19 @@ class selectors(entities.entities):
                 # A bad leading token was found, e.g., "~div"
                 raise err(tok)
 
+            # If we are building pseudoclass selector arguments
             if args:
                 if tok.value == ')':
+                    # We are done with collecting the arguments so set
+                    # args to None to indicate this.
                     args = None
                 elif tok.type == 'HASH':
+                    # If token type is a hash (a id selectors such a
+                    # #my-id), prepend a #
                     args += '#' + tok.value
                     continue
                 elif tok.type != 'S':
+                    # If token type is not whitespace (S), append token.
                     args += tok.value
                     continue
 
@@ -7528,31 +7534,52 @@ class selectors(entities.entities):
                 if tok.value == ',':
                     sel = selector()
                     self += sel
-                    el = comb = attr = cls = pcls = args = None
 
+                    # args stores the arguments for pseudoclasses. See
+                    # selector.pseudoclass.arguments.
+                    args = None
+
+                    # An instance of selector.attribute. Stores
+                    # attributes collected during parsing.
+                    attr = None
+
+                    el = comb = cls = pcls = None
+
+                # If we are in an attribute selector
                 if attr:
+                    # If we are closing the attribute selector
                     if tok.value == ']':
+
+                        # Make sure it's valid
                         if attr.operator and attr.value is None:
                             raise err(tok)
 
                         if attr.key is None:
                             raise err(tok)
 
+                        # Indicating we are no longer in an attribute
+                        # selector
                         attr = None
+
+                    # If we are trying to open an attribute selector
+                    # while we have one open
                     elif tok.value == '[':
                         raise err('Attribute already opened', tok)
+
+                    # Else we are building the attribute selector
                     else:
+                        # Stringify operator
                         if attr.operator is None:
                             attr.operator = ''
 
+                        # Concatentate operater with token
                         attr.operator += tok.value
-
                         op = attr.operator
 
+                        # Demand attribute is valid at this point
                         if len(op) == 1:
                             if attr.key is None:
                                 raise err(tok)
-                                
                             if op not in ''.join('=~|*^$'):
                                 raise err(tok)
                         elif len(op) == 2:
