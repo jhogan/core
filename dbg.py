@@ -11,7 +11,6 @@ framework.
 """
 
 # Set conditional break points
-from IPython.core.debugger import Tracer; 
 import cProfile
 import pdb
 import pstats
@@ -51,14 +50,6 @@ def B(x=True):
     """
     if x: 
         pdb.Pdb().set_trace(sys._getframe().f_back)
-        return
-
-        # NOTE We are probably moving away from IPython. It's not as nice as
-        # it sounded. We could offer the option of using it (perhaps by
-        # way of a configuration setting) instead if there is interest
-        # by developers.
-        from IPython.core.debugger import Tracer; 
-        Tracer().debugger.set_trace(sys._getframe().f_back)
 
 def PM(ex):
     """ This function can be called from within an exception to take
