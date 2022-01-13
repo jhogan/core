@@ -7929,9 +7929,6 @@ class orm:
 
             if self.isstatic:
                 pass
-            elif self.isinstance:
-                #XXX
-                B()
 
             ent = self.entity
             name = ent.__name__
@@ -9449,11 +9446,11 @@ class orm:
     def _cache():
         """ Cache ORM data.
 
-        Abbreviations (aliases) for entities are cached here in dict's
-        so fast lookups can be made form  abbreviation-to-entity and
-        entity-to-abbbreviation (see orm.getentity and
-        orm.abbreviation). A name-to-entity dict is created as well (see
-        orm.getentity).
+        Abbreviations (aliases) for orm entity and entities are cached
+        here in dict's so fast lookups can be made from
+        abbreviation-to-entity and entity-to-abbbreviation (see
+        orm.getentity and orm.abbreviation). A name-to-entity dict is
+        created as well (see orm.getentity).
         """
         if not orm._ent2abbr:
             def generator():
