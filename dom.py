@@ -7451,9 +7451,26 @@ class selectors(entities.entities):
                     args += tok.value
                     continue
 
+            # If the token is a CSS selector identifier (names of
+            # elements, names of pseudoclasses, etc.)
             if tok.type == 'IDENT':
+
+                # If we are in an element (div, p, etc) selector
                 if el:
+                    # If we are in an attribute ([key=value]) selector
                     if attr:
+                        # Set key and value of attribute. Note that some
+                        # attribute selectors only have a key because
+                        # they are selecting for boolean attributes:
+                        #
+                        #     <p hidden lang="en">
+                        #
+                        # would be match by
+                        #
+                        #     p[hidden] or p[lang=en]
+                        #
+                        # The first selector would have 'hidden' as the
+                        # key.
                         for attr1 in ['key', 'value']:
                             if getattr(attr, attr1) is None:
                                 setattr(attr, attr1, tok.value)
@@ -7462,12 +7479,20 @@ class selectors(entities.entities):
                             # NOTE We probably will never get here, but
                             # just in case...
                             CssSelectorParseError(tok)
+                    
+                    # If we are in a class (.my-class) selector
                     elif cls:
                         cls.value = tok.value
+
+                    # If we are in a pseudoclass (:lang()) selector 
                     elif pcls:
                         pcls.value = tok.value
+
+                # Else we are not in an element selector we will want to
+                # create a new one baised on this this IDENT token.
                 else:
                     try:
+                        # Create the element selector
                         el = element(tok.value)
                     except Exception as ex:
                         msg = (
