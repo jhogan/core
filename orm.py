@@ -3225,8 +3225,10 @@ class entitymeta(type):
 
         # Recreate the class
         entity = super().__new__(cls, name, bases, body)
-
         orm_.entity = entity
+
+        orm._entityclasses = None
+        orm._entityclasseswithassociations = None
 
         # Since a new entity has been created, invalidate the derived
         # cache of each entity's mappings collection's object.  They
@@ -5264,6 +5266,8 @@ class mappings(entitiesmod.entities):
             # method is called). This is probably okay, however, since
             # it seems unlikely it will ever get so big it becomes a
             # problem.
+
+            # XXX We probably won't need this any more
             sys.setrecursionlimit(3000)
 
             ''' Add composite and constituent mappings '''
@@ -7887,6 +7891,14 @@ class orm:
     _ent2abbr   =  dict()
     _abbr2ent   =  dict()
     _namedict   =  dict()
+
+    # A cache created by orm.getentityclasses to contain all subclasses
+    # of orm.entity.
+    _entityclasses                  =  None
+
+    # A cache created by orm.getentityclasses to contain all subclasses
+    # of orm.association.
+    _entityclasseswithassociations  =  None
 
     _proprietor  =  None
     owner        =  None
@@ -10681,6 +10693,18 @@ class orm:
         :param: includeassociations bool: If True, include the classes
         that inherit from orm.association as well.
         """
+
+        # Use cache results for includeassociations is True if the cache
+        # exists
+        if includeassociations:
+            if orm._entityclasseswithassociations:
+                return orm._entityclasseswithassociations
+
+        # Use cache results for includeassociations is False if the
+        # cache exists
+        if orm._entityclasses:
+            return orm._entityclasses
+
         r = []
         for e in orm.getsubclasses(of=entity):
             if includeassociations:
@@ -10706,6 +10730,11 @@ class orm:
         for dup in dups:
             r.remove(dup)
 
+        if includeassociations:
+            orm._entityclasseswithassociations = r
+        else:
+            orm._entityclasses = r
+            
         return r
 
     @staticmethod
