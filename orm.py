@@ -5292,7 +5292,7 @@ class mappings(entitiesmod.entities):
                 for map in ass.orm.mappings.entitymappings:
 
                     # If the association`s entity mapping  corresponds
-                    # to the self, add associations mapping.
+                    # to self, add associations mapping.
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
                         map = associationsmapping(
@@ -7889,7 +7889,7 @@ class orm:
     _namedict   =  dict()
 
     _proprietor  =  None
-    owner = None
+    owner        =  None
 
     def __init__(self):
         self.mappings              =  None
@@ -10690,7 +10690,9 @@ class orm:
                     if e is not association:
                         r += [e]
 
-        # Collect duplicates
+        # Collect duplicates and remove them. This is mainly for classes
+        # in test scripts that get created more that once, such as the
+        # `cat` class it test.test_orm.it_migrates
         tbls = set()
         dups = list()
         for e in r:

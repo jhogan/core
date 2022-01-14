@@ -97,3 +97,17 @@ Discuss uses of TODO, NOTE and XXX
 Discuss housekeeping in git logs
 
 Discuss performance metrics in git logs
+
+Discuss prefering non-negated conditional:
+
+    Good:
+        if x:
+            ...
+        else:
+            ...
+
+    Bad 
+        if not X
+            ...
+        else:
+            ...
