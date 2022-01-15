@@ -10694,15 +10694,15 @@ class orm:
         that inherit from orm.association as well.
         """
 
-        # Use cache results for includeassociations is True if the cache
-        # exists
         if includeassociations:
+            # Use cache results for includeassociations is True if the
+            # cache exists
             if orm._entityclasseswithassociations:
                 return orm._entityclasseswithassociations
 
-        # Use cache results for includeassociations is False if the
-        # cache exists
-        if orm._entityclasses:
+        elif orm._entityclasses:
+            # Use cache results for includeassociations is False if the
+            # cache exists
             return orm._entityclasses
 
         r = []
