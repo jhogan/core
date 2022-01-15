@@ -33,7 +33,7 @@ class gem_party(tester.tester):
         if self.rebuildtables:
             es = orm.orm.getentityclasses(includeassociations=True)
             for e in es:
-                if e.__module__ in ('party', 'apriori'):
+                if e.__module__ in ('party', 'apriori', 'hr'):
                     e.orm.recreate()
 
     def it_calls_creatability(self):

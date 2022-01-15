@@ -8288,7 +8288,7 @@ class orm:
             >>> party.person.orm.table
             'party_persons'
 
-        Note that table names consis-t of the module ('party') proceeded
+        Note that table names consist of the module ('party') proceeded
         by the entities' (not the entity's) name ('persons'). Including
         the module is necessary to prevent name collisions.
         """
