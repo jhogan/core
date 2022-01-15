@@ -23,8 +23,7 @@ import bot
 from uuid import uuid4, UUID
 from random import randint
 
-# TODO Rename this to test_party or maybe just party
-class gem_party(tester.tester):
+class test_party(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -527,7 +526,7 @@ class gem_party(tester.tester):
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
-        com = gem_party.getvalidcompany()
+        com = test_party.getvalidcompany()
 
         pp = party.party_party()
         pp.object = com
@@ -1874,7 +1873,7 @@ class gem_party(tester.tester):
             self.eq(ks.rating, ks1.rating)
             self.eq(ks.skilltype.id, ks1.skilltype.id)
 
-class test_contactmechanism(tester.tester):
+class contactmechanism(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -1915,6 +1914,174 @@ class test_contactmechanism(tester.tester):
 
             with orm.su(usr):
                 self.expect(orm.AuthorizationError, em.orm.reloaded)
+
+class case(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        orm.security().override = True
+        es = orm.orm.getentityclasses(includeassociations=True)
+
+        if self.rebuildtables:
+            for e in es:
+                if e.__module__ in ('party', 'apriori'):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
+
+        com = party.company(name='Carapacian')
+        orm.security().proprietor = com
+        com.save(com)
+
+    def it_raises_on_invalid_call_of_casesstatus(self):
+        self.expect(ValueError, lambda: party.casestatus('Active'))
+        self.expect(None, lambda: party.casestatus(name='Active'))
+
+    def it_associates_case_to_party(self):
+        jerry = party.person(first="Jerry", last="Red")
+
+        # Create case
+        cs = party.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = party.casestatus(name='Active')
+        )
+
+        # Associate case with party
+        jerry.case_parties += party.case_party(
+            case = cs,
+        )
+
+        jerry.case_parties.last.caseroletype = party.caseroletype(
+           name = 'Resolution lead'
+        )
+
+        jerry.save()
+
+        jerry1 = jerry.orm.reloaded()
+
+        cps = jerry.case_parties
+        cps1 = jerry1.case_parties
+
+        self.one(cps)
+        self.one(cps1)
+
+        self.eq(cps.first.id,       cps1.first.id)
+        self.eq(jerry.id,           cps1.first.party.id)
+        self.eq(cps.first.case.id,  cps1.first.case.id)
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+
+        self.eq(
+            cps.first.case.casestatus.id,
+            cps1.first.case.casestatus.id
+        )
+
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+        self.eq(
+            cps.first.caseroletype.name,
+            cps1.first.caseroletype.name
+        )
+
+    def it_appends_communications(self):
+        # Create work effort
+        eff = party.effort(
+            name = 'Software patch',
+            description = 'Send software patch out to customer '
+                          'to correct problem'
+        )
+
+        # Create case
+        cs = party.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = party.casestatus(name='Active')
+        )
+
+        # Add `commuication` events to `case` along with communication
+        # objectives, work effort associations, etc.
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 18 2001, 3PM'),
+        )
+
+        comm = cs.communications.last
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Technical support call'
+                    )
+            ) \
+            + party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Technical support call'
+                    )
+            )
+
+        comm.communication_efforts += party.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 20 2001, 2PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Send software patch'
+                    )
+            )
+
+        comm.communication_efforts += party.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 19 2001, 3PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Techinal support follow-up'
+                    )
+            ) \
+            + party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Call resolution'
+                    )
+            )
+
+        cs.save()
+
+        cs1 = cs.orm.reloaded()
+
+        comms = cs.communications.sorted()
+        comms1 = cs1.communications.sorted()
+
+        self.three(comms)
+        self.three(comms1)
+
+        for comm, comm1 in zip(comms, comms1):
+            self.eq(comm.id, comm1.id)
+            self.eq(comm.begin, comm1.begin)
+
+            ces = comm.communication_efforts
+            ces1 = comm1.communication_efforts
+
+            self.eq(ces.count, ces1.count)
+
+            for ce, ce1 in zip(ces, ces1):
+                self.eq(ce.id, ce1.id)
+                self.eq(ce.description, ce1.description)
+                self.eq(ce.effort.id, ce1.effort.id)
+                self.eq(ce.communication.id, ce1.communication.id)
 
 if __name__ == '__main__':
     tester.cli().run()
