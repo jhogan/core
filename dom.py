@@ -7503,60 +7503,118 @@ class selectors(entities.entities):
                         raise err(msg, tok)
                     sel.elements += el
 
+            # If the token type is a string, such a the string value of
+            # of an attribute selector: p[name="string token"]
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
+
+            # If the token is a hash, i.e., an id selector: p#my-hash
             elif tok.type == 'HASH':
+                # If we are in a class or attribute selector, a hash
+                # token would be an error.
                 if cls or attr:
                     raise err(tok)
                     
+                # If we aren't in an element, then the universal
+                # selector is implied - #my-hash is the same as
+                # *#my-hash
                 if not el:
-                    # Universal selector was implied (#myid) so create it.
                     el = element('*')
                     sel.elements += el
 
                 if not el.id:
+                    # Raise exception if the token is not a valid
+                    # identifier
                     demand_valid_identifiers(tok.value)
 
+                # Set the token's value to the element's id attribute
                 el.id = tok.value
 
+            # If the token is whitespace
             elif tok.type == 'S':
+                # If we are in an element
                 if el:
+                    # If we have no args
                     if not args:
+                        # Take us out of the element
                         el = None
+
+                        # Set the combinator to Descendant (the
+                        # default combinator when whitespace is used
+                        # instead of < + or ~)
                         comb = selector.element.Descendant
+
+                # If we are in a class selector, but we have whitespace,
+                # there must be a syntax error with the CSS selector,
+                # e.g., 'p . myclass' (this might have been a typo for
+                # 'p .myclass' or 'p.myclass').
                 if cls and not cls.value:
                     raise err(tok)
                     
             elif tok.type == 'NUMBER':
+                # Interpet numbers as identifiers and raise an exception
+                # if the are invalid (I think numbers are always invalid)
                 demand_valid_identifiers(tok.value)
 
+            # If the token is a delimiter (a special character forming
+            # the CSS selector such as the brackets for an attribute
+            # selector)
             elif tok.type == 'DELIM':    
                 v = tok.value
+
+                # If we are in an element
                 if el:
+                    # If we ar not in an attribute selector and the
+                    # delimiter is a combinator
                     if not attr and v in '>+~':
+                        # The combinator indicates we are no longer in an
+                        # element
                         el = None
+
+                        # Get the numeric value for the combinator
                         comb = selector.element.str2comb(v)
+
+                    # If we aren't in an attribute, pseudoclass or class
+                    # selector
                     elif not (attr or pcls or cls):
+                        # Raise if invalid delimiter
                         if v not in ''.join('*[:.,'):
                             raise err(tok)
 
+                    # If we are in a class selector but there is no
+                    # value for the class selector, raise because it's
+                    # syntax error - consider 'id.--foo'
                     if cls and cls.value is None:
                         raise err(tok)
 
+                    # If we are in a pseudoclasses selector but there is
+                    # no value for the class selector, raise because
+                    # it's syntax error - consider 'a:,b'
                     if pcls and pcls.value is None:
                         raise err(tok)
+
+                # Else we aren't in an element
                 else:
+                    # If the token is a conbinator
                     if v in '>+~':
+                        # Get numeric value of combinator
                         comb = selector.element.str2comb(v)
+
+                    # Else token is not combinator
                     else:
                         if v not in '*[:.':
+                            # Syntax error - consider 'a & b'
                             raise err(tok)
 
+                # We should only see a ] if we are in an attribute
                 if not attr and v == ']':
                     raise err(tok)
 
+                # A comma indicates a new selector - consider
+                # 'p.somclass, div.someclass'
                 if tok.value == ',':
+                    # Create and append the selector to this collection
                     sel = selector()
                     self += sel
 
