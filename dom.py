@@ -7091,7 +7091,7 @@ class codeblock(code):
     # from `pre`, but I don't know if that make much sense; maybe it
     # should just inherit from `element`. Not sure at this point. Also,
     # we don't need to add a CSS class called 'block' since 'pre > code'
-    # would probably be equivelent to '.codeblock'.
+    # would probably be equivalent to '.codeblock'.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes += 'block'
@@ -7670,12 +7670,17 @@ class selectors(entities.entities):
                                 raise err(tok)
                         elif len(op) > 2:
                             raise err(tok)
+
+                # Else we are not in an attirbute
                 else:
+                    # If tok is [, we are starting an attribute
+                    # selector (p[key=val]). If we are not in an element, create a
+                    # univeral selector element to attach the attribute
+                    # selector to because [key=val] implies *[key=val]
                     if tok.value == '[':
                         if not el:
                             # The universal selector was implied
                             # (.[foo=bar]) so create it.
-
                             el = element('*')
                             sel.elements += el
 
@@ -7689,7 +7694,11 @@ class selectors(entities.entities):
                         el.combinator = comb
                         sel.elements += el
 
+                # If token is . we must me starting a class selector
+                # (.my-class)
                 if tok.value == '.':
+                    # If we are not in an element, create a universal
+                    # one (.my-class is equivalent to *.myclass)
                     if not el:
                         # The universal selector was implied (.my-class)
                         # so create it.
@@ -7697,24 +7706,38 @@ class selectors(entities.entities):
                         sel.elements += el
                     cls = selector.class_()
                     el.classes += cls
+
+                # If tok is : we must be starting a pseudoclass
+                # (p:lang(fr))
                 elif tok.value == ':':
+                    # If we are not in an element, the universal
+                    # element is implied, so create it (:lang(fr))
                     if not el:
-                        # The universal selector was implied (.root)
-                        # so create it.
                         el = element('*')
                         sel.elements += el
                     pcls = selector.pseudoclass()
                     el.pseudoclasses += pcls
+                    
+                    # Since we are in a new pseudoclass, we are out of
+                    # any other simple selector so nullify those
+                    # references.
                     comb = attr = cls = args = None
+
+                # If the token is an open paran, we are in a
+                # pseudoclass's arguments. Set args to indicate that so
+                # the next iteration will know to start collecting
+                # arguments.
                 elif tok.value == '(':
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
                     if args:
+                        # NOTE We don't appear to ever get here
                         args += tok.value
-                    
 
             prev = tok
 
+        # Raise error if any of the selectors we added during parsing
+        # are invalid
         self.demand()
 
     def demand(self):
@@ -7754,6 +7777,20 @@ class selector(entities.entity):
             return self
 
     class simple(entities.entity):
+        """ The abstract class for the different types of selectors in a
+        CSS3 selector string such as "type" and "universal" selectors
+        (``selector.element``), attribute selectors
+        (``selector.attribute``), class selectors (``selector.class_``),
+        and pseudoclass selectors (``selector.pseudoclass``).
+
+        See
+        https://www.w3.org/TR/2011/REC-css3-selectors-20110929/#simple-selectors-dfn
+        for terminological explanation. 
+
+        Note that ID selectors don't have their own class. The id
+        attribute of selector.element is used for selecting elements
+        based on id.
+        """
         def __init__(self):
             self.element = None
 
