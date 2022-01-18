@@ -7747,20 +7747,79 @@ class selectors(entities.entities):
             sel.demand()
 
     def match(self, els):
+        """ Given a collection of elements (els), return the subset
+        which is matched by any of the selector objects in this
+        selectors collection.
+
+        This is the main entry point for performing a CSS selection on
+        an DOM object. Here is a demonstration of the match method being
+        called.
+
+            # Build DOM object
+            div = dom.div()
+
+            # Add some <p>s to the <div>
+            div += dom.p()
+            div += dom.p()
+
+            # Create a selectors object that selects just the <p>s
+            sels = dom.selectors('p')
+
+            # Use the selectors object to select just the <p>s
+            els = sel.match(div)
+
+            # Demonstrate that we got just the <p>s
+            assert els.count == 2
+            assert els.first is div.first
+            assert els.second is div.second
+
+        Note that this is the unconventional, longhanded way to perform
+        a selection. It would have been better to pass a selector string
+        to the div indexer like this::
+
+            els = div['p']
+
+        The above creates the selectors object and calls the match
+        method behind the scenes.
+
+        :param: els dom.elements: Any collection of elements. This
+        includes hierarchically constructed collections, i.e., DOM
+        objects.
+        """
         r = elements()
+
+        # For each selector object in this collection
         for sel in self:
+            # Call that selector object's match method
             r += sel.match(els)
 
         return r
 
     def __repr__(self):
+        """ A string representation of the selectors object. 
+        """
         return ', '.join(str(x) for x in self)
 
     def __str__(self):
+        """ A string representation of the selectors object. 
+        """
         return repr(self)
 
 class selector(entities.entity):
+    """ Represents a single selector. In the following example, two
+    ``selector`` objects would be created and appended to the
+    ``selectors`` class::
+
+        p#my-id, p#my-other-id
+
+    Usually, only one selector object needs to be created and appended
+    to the ``selectors`` collection object because, obviously, CSS
+    selectors only occasionally have commas.
+    """
+
     class _simples(entities.entities):
+        """ An inner class representing a collection of ``simples``.
+        """
         def __init__(self, *args, **kwargs):
             self.element = kwargs.pop('el')
             super().__init__(*args, **kwargs)
