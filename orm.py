@@ -7934,6 +7934,8 @@ class orm:
 
     @property
     def entities(self):
+        # XXX Add docstring
+        # TODO Don't allow to run unless apriori.model has been run
         if not self._entities:
             flect = inflect.engine(); 
             flect.classical(); 
@@ -8958,9 +8960,9 @@ class orm:
 
         :param: cur: The MySQLdb cursor to use for the database.
 
-        :param: ignore bool: If True, create the table but don't raise an
-        exception if the table already exists. If False (default), raise
-        an exception.
+        :param: ignore bool: If True, create the table but don't raise
+        an exception if the table already exists. If False (default),
+        raise an exception.
         """
         # TODO Use executioner
         sql = self.createtable

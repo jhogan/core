@@ -960,14 +960,15 @@ class test_orm(tester):
         super().__init__(*args, **kwargs)
         orm.security().override = True
         self.chronicles = db.chronicles()
-        db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
+        db.chronicler.getinstance().chronicles.onadd += \
+            self._chronicler_onadd
 
         if self.rebuildtables:
             es = orm.orm.getentityclasses(includeassociations=True)
             # Since orm entities now depends on `party` (someone
-            # circularly), we need to ensure the party classes have updated
-            # tables definitions in the database. `party` is dependent on
-            # `apriori`.
+            # circularly), we need to ensure the party classes have
+            # updated tables definitions in the database. `party` is
+            # dependent on `apriori`.
             for e in es:
                 if e.__module__ in ('party', 'apriori'):
                     e.orm.recreate()
@@ -14720,7 +14721,6 @@ class crust_migration(tester):
 
         self._alter()
 
-
         def onask(src, eargs):
             tmp = src.tmp
             self.true(tmp.startswith('/tmp/tmp'))
@@ -14773,8 +14773,9 @@ class gem_shipment(tester):
         orm.security().override = True
 
         if self.rebuildtables:
+            mods = ('shipment', 'order', 'party', 'ecommerce')
             for e in orm.orm.getentityclasses(includeassociations=True):
-                if e.__module__ in ('shipment', 'order'):
+                if e.__module__ in mods:
                     e.orm.recreate()
 
         orm.security().owner = ecommerce.users.root
