@@ -7857,6 +7857,8 @@ class selector(entities.entity):
             return repr(self)
 
     class elements(entities.entities):
+        """ A collection of ``selector.element`` objects.
+        """
         def demand(self):
             """ Raise error if self is invalid
             """
@@ -7864,6 +7866,8 @@ class selector(entities.entity):
                 el.demand()
 
         def __repr__(self):
+            """ A string representation of this collection.
+            """
             r = str()
             for i, el in self.enumerate():
                 if i:
@@ -7872,28 +7876,74 @@ class selector(entities.entity):
             return r
 
     class element(entities.entity):
-        Descendant         =  0
-        Child              =  1
-        NextSibling        =  2
-        SubsequentSibling  =  3
+        """ Represents the element/tag portions of a selector string,
+        along with its ``simple`` constiuents such as its attribute,
+        class and pseudoclass selectors. The preceding combinator for
+        the element is captured here as well::
+
+        p.my-class, p[key-value].my-other-class
+
+        The above CSS selector would be parsed down to two different
+        element selectors. The first would be the 'p' element (stored in
+        the `element` property) and it's `classes` collection. The next
+        would be another p element with the attribute selector stored in
+        the `attributes` collection and the class selector stored in the
+        `classes` collection.
+        """
+
+        # Constants representing the various selectors. See
+        # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
+        Descendant         =  0  # Default (represented by whitespace)
+        Child              =  1  # Represented by >
+        NextSibling        =  2  # Represented by +
+        SubsequentSibling  =  3  # Represents by ~
 
         def __init__(self):
+            # A string representing the tag name
             self.element        =  None
+
+            # Representss which combinator preceded the element
             self.combinator     =  None
+
+            # A collection of attribute selectors 
             self.attributes     =  selector.attributes(el=self)
+
+            # A collection of class selectors 
             self.classes        =  selector.classes(el=self)
+
+            # A collection of pseudoclass selectors 
             self.pseudoclasses  =  selector.pseudoclasses(el=self)
+
+            # The id portion of an element selection (p#my-id)
             self.id             =  None
 
         @staticmethod
         def comb2str(comb):
+            """ A static method to return the string representation of
+            the combinator.
+
+            :param: comb int: One of the combinator constance (see
+            above).
+            """
             return [' ', '>', '+', '~'][comb]
 
         @staticmethod
         def str2comb(comb):
+            """ A static method to return the int representation of
+            the combinator.
+
+            :param: comb str: A combinator, e.g., ' ', '>', '+', '~'.
+            """
             return [' ', '>', '+', '~'].index(comb)
 
         def match(self, els):
+            """ Returns that subset ef the dom.element objects in `els`
+            which match this CSS selector.
+
+            :param: els dom.elements|dom.element: A dom.element or a
+            collection of dom.elements (i.e, a DOM object) to be
+            matched.
+            """
             if isinstance(els, element):
                 return bool(self.match([els]).count)
             
@@ -7903,18 +7953,25 @@ class selector(entities.entity):
             r = elements()
 
             for el in els:
+                # Test the element,i.e., tag name
                 if self.element.lower() not in ('*', el.tag):
                     continue
 
+                # Test the classes collection against the given element
                 if not self.classes.match(el):
                     continue
 
+                # Test the attributes collection against the given
+                # element
                 if not self.attributes.match(el):
                     continue
 
+                # Test the pseudoclasses collection against the given
+                # element
                 if not self.pseudoclasses.match(el):
                     continue
 
+                # Test the element's id
                 if self.id and self.id != el.id:
                     continue
 
@@ -7932,26 +7989,36 @@ class selector(entities.entity):
 
         @property
         def str_combinator(self):
+            """ Return the string representation of the combinator.
+            """
             return self.comb2str(self.combinator)
 
-
         def __repr__(self):
+            """ A string representation of this element selector.
+            """
             r = str()
+
+            # Combinator
             if self.combinator not in (None, selector.element.Descendant):
                 r += self.str_combinator + ' '
 
+            # Tag
             if self.element is not None:
                 r += self.element
 
+            # Id
             if self.id is not None:
                 r += '#' + self.id
 
+            # Attributes
             if self.attributes.count:
                 r += str(self.attributes)
 
+            # Classes
             if self.classes.count:
                 r += str(self.classes)
 
+            # Pseudoclasses
             if self.pseudoclasses.count:
                 r += str(self.pseudoclasses)
 
