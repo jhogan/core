@@ -7900,6 +7900,8 @@ class orm:
     # of orm.association.
     _entityclasseswithassociations  =  None
 
+    _mod_name_entitiesclasses = None
+
     _proprietor  =  None
     owner        =  None
 
@@ -7949,11 +7951,40 @@ class orm:
             mod = ent.__module__
 
             names = flect.plural(name)
-            for sub in self.getsubclasses(of=entities):
-                if sub.__name__  == names and sub.__module__ == mod:
+
+            def get_entities_cache(recache=False):
+                es = orm._mod_name_entitiesclasses
+                if not es or recache:
+                    es = dict()
+                    for sub in self.getsubclasses(of=entities):
+                        es[sub.__module__, sub.__name__] = sub
+                    orm._mod_name_entitiesclasses = es
+                return es
+
+            es = get_entities_cache()
+
+            for i in range(2):
+                try:
+                    sub = es[mod, names]
+                except KeyError:
+                    if i == 0:
+                        es = get_entities_cache(recache=True)
+                        continue
+
+                    raise IntegrityError(
+                        'Entities class for "%s" couldn\'t be found. '
+                        'Either specify one or define one with a '
+                        'predictable name' % name
+                    )
+                else:
                     self._entities = sub
                     self._entities.orm = self
 
+            """
+            for sub in self.getentitiesclasses():
+                if sub.__name__  == names and sub.__module__ == mod:
+                    self._entities = sub
+                    self._entities.orm = self
                     break
             else:
                 raise IntegrityError(
@@ -7961,6 +7992,7 @@ class orm:
                     'Either specify one or define one with a '
                     'predictable name' % name
                 )
+            """
 
         return self._entities
 
