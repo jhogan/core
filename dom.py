@@ -7817,6 +7817,8 @@ class selector(entities.entity):
     selectors only occasionally have commas.
     """
 
+    ''' Inner classes '''
+
     class _simples(entities.entities):
         """ An inner class representing a collection of ``simples``.
         """
@@ -8024,18 +8026,47 @@ class selector(entities.entity):
 
             return r
 
+    ''' Members of `selector` '''
+
     def __init__(self):
+        """ Create a new ``selector`` object assigning it an empty
+        ``selector.elements`` collection.
+        """
         self.elements = selector.elements()
 
     def match(self, els, el=None, smps=None):
+        # Get the last element. We match the next element depending on
+        # the combinator. For example, if we have a Descendant
+        # combinator:
+        #
+        #     div p
+        #
+        # We want to first find all the <p> elements - the *last*
+        # element - in `els`. For each of the <p> elements we find, we
+        # can use it's ``ancestors`` property to determine if it is
+        # under a div. Similar logic is used for the other combinators.
         last = self.elements.last
+
+        # Recursively match els' children
         els1 = last.match(els.getchildren())
+
+        # Create a collection of elements to remove later. These will be
+        # the elements that were match by the above match but ended up
+        # being rejected because preceding simple selectors didn't
+        # match. So if we have 'div p', all the <p>s would have been
+        # selected, and the <p>s that weren't under a <div> would be
+        # added to rms to be removed.
         rms = elements()
 
+        # For each of the elements matched above
         for el1 in els1:
             comb = last.combinator
             orig = el1
+
+            # For each element above the last element in reverse order
             for i, smp in enumerate(self.elements[:-1].reversed()):
+
+                # If combinator is Descendant (whitespace)
                 if comb in (selector.element.Descendant, None):
                     for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
@@ -8044,6 +8075,8 @@ class selector(entities.entity):
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is Child (>)
                 elif comb == selector.element.Child:
                     an = el1.parent
                     if smp.match(an):
@@ -8051,12 +8084,16 @@ class selector(entities.entity):
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is NextSibling (+)
                 elif comb == selector.element.NextSibling:
                     if smp.match(el1.previous):
                         el1 = el1.previous
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is SubsequentSibling (~)
                 elif comb == selector.element.SubsequentSibling:
                     els2 = selectors(repr(self.elements[:-1 - i])).match(els)
                     for precs in el1.preceding:
