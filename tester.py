@@ -310,11 +310,17 @@ class principle(entities.entity):
         return self._company
 
 class tester(entities.entity):
-    def __init__(self, testers):
+    def __init__(self, testers, mods=None):
         import orm
         self._failures = failures()
         self.assessments = assessments(self)
         self.testers = testers
+
+        if mods and self.rebuildtables:
+            es = orm.orm.getentityclasses(includeassociations=True)
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
 
         orm.security().owner = self.user
         orm.security().proprietor = self.company

@@ -30,17 +30,11 @@ def clear():
 
 class test_bot(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'bot', 'message', 'apriori', 'party', 'ecommerce',
+        super().__init__(mods=mods, *args, **kwargs)
 
-        if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = 'bot', 'message', 'apriori', 'party', 'ecommerce',
-            for e in es:
-                if e.__module__ in mods:
-                    e.orm.recreate()
-        else:
+        if not self.rebuildtables:
             self._clear()
-            party.company._carapacian = None
 
     @staticmethod
     def _clear():
@@ -197,18 +191,13 @@ class test_bot(tester.tester):
 
 class test_sendbot(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'bot', 'message', 'party', 'ecommerce'
+        super().__init__(mods=mods, *args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = 'bot', 'message', 'party', 'ecommerce'
-            for e in es:
-                if e.__module__ in mods:
-                    e.orm.recreate()
             self.recreateprinciples()
         else:
             self._clear()
-            ecommerce.user.orm.truncate()
 
     @staticmethod
     def _clear():

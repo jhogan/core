@@ -22,15 +22,12 @@ import uuid
 
 class test_ecommerce(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+        mods = (
+            'ecommerce', 'apriori', 'party', 
+            'product', 'shipment', 'effort', 'budget'
+        )
+        super().__init__(mods=mods, *args, **kwargs)
         orm.security().override = True
-        if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = 'ecommerce', 'apriori', 'party', 'product'
-            for e in es:
-                if e.__module__ in mods:
-                    e.orm.recreate()
 
     def it_connects_users_to_urls(self):
         usr = ecommerce.user(name='jsmith')
@@ -376,14 +373,8 @@ class test_user(tester.tester):
 
 class test_url(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = 'ecommerce',
-            for e in es:
-                if e.__module__ in mods:
-                    e.orm.recreate()
+        mods = 'ecommerce',
+        super().__init__(mods=mods, *args, **kwargs)
 
     def it_calls_creatability(self):
         """ Any user can create (produce) a url. Notably, it's the
