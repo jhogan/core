@@ -246,6 +246,7 @@ class principle(entities.entity):
         self.isinitialized = True
 
     def create(self, recreate=False):
+        # XXX Docstring
         iscreated = hasattr(self, 'iscreated')
 
         # Make sure the needed table exist
