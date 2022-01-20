@@ -10719,14 +10719,15 @@ class orm:
         # Collect duplicates and remove them. This is mainly for classes
         # in test scripts that get created more that once, such as the
         # `cat` class it test.test_orm.it_migrates
-        tbls = set()
+        es = set()
         dups = list()
         for e in r:
-            if e.orm.table in tbls:
+            stre = str(e)
+            if stre in es:
                 dups.append(e)
                 continue
 
-            tbls.add(e.orm.table)
+            es.add(stre)
 
         # Remove duplicates
         for dup in dups:
