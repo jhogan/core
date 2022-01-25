@@ -311,12 +311,33 @@ class principle(entities.entity):
         return self._company
 
 class tester(entities.entity):
-    def __init__(self, testers):
+    def __init__(self, testers, mods=None):
+        """ Create the tester abstract object.
+
+        :param: testers testers: A reference to the testers collection
+        that this instance will be a part of.
+
+        :param: mods tuple<str>: A tuple of strings containing module
+        names. Each module will be scanned for entity classes and those
+        entity classes will have their tables rebuilt.
+        """
         import orm
         self._failures = failures()
         self.assessments = assessments(self)
         self.testers = testers
 
+        # Rebuild tables in `mods`
+        if mods and self.rebuildtables:
+            # Get the list of orm.entity classes.
+            es = orm.orm.getentityclasses(includeassociations=True)
+
+            # For each orm.entity class
+            for e in es:
+                # DROP then CREATE the table for that entity
+                if e.__module__ in mods:
+                    e.orm.recreate()
+
+        # Create and set principles at ORM level for testing
         orm.security().owner = self.user
         orm.security().proprietor = self.company
 

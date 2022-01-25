@@ -7900,6 +7900,8 @@ class orm:
     # of orm.association.
     _entityclasseswithassociations  =  None
 
+    _mod_name_entitiesclasses = None
+
     _proprietor  =  None
     owner        =  None
 
@@ -7934,33 +7936,87 @@ class orm:
 
     @property
     def entities(self):
-        # XXX Add docstring
+        """ Return the entities class that corresponds to this
+        orm.entity::
+
+            class myents(orm.entities):
+                pass
+
+            class myent(orm.entity):
+                pass
+
+            assert myent.orm.entities is myents
+            assert myent().orm.entities is myents
+            assert myent.orm.entities.orm.entities is myents
+
+        Note that the inflect module is used to deduce that 'myents' is
+        the entities collection for 'myent'. This can be overridden
+        during class direction using the entities field::
+            
+            class virii(orm.entities):
+                pass
+            
+            pass virus(orm.entity):
+                entities = virii
+        """
         # TODO Don't allow to run unless apriori.model has been run
+
+        # Memoize
         if not self._entities:
+
+            # Create inflect object to pluralize entity class name
             flect = inflect.engine(); 
             flect.classical(); 
             flect.defnoun('status', 'statuses')
 
-            if self.isstatic:
-                pass
-
+            # Get the entity (singular) class 
             ent = self.entity
             name = ent.__name__
             mod = ent.__module__
 
+            # Pluralize the name of the entity
             names = flect.plural(name)
-            for sub in self.getsubclasses(of=entities):
-                if sub.__name__  == names and sub.__module__ == mod:
+
+            def get_entities_cache(recache=False):
+                """ Return a dict of all orm.entities subclasses.
+
+                :param: recache bool: If False, only build cache if it
+                doesn't exist. If True, rebuild cache.
+                """
+                es = orm._mod_name_entitiesclasses
+                if not es or recache:
+                    es = dict()
+                    for sub in self.getsubclasses(of=entities):
+                        es[sub.__module__, sub.__name__] = sub
+                    orm._mod_name_entitiesclasses = es
+                return es
+
+            # Get entities cache
+            es = get_entities_cache()
+
+            # Try twice; see KeyError block
+            for i in range(2):
+                try:
+                    # Get entity by mod and entities class name
+                    sub = es[mod, names]
+                except KeyError:
+                    # If not found first time...
+                    if i == 0:
+                        # recache...
+                        es = get_entities_cache(recache=True)
+                        # and try again
+                        continue
+
+                    # If the second look up didn' find it, raise
+                    raise IntegrityError(
+                        'Entities class for "%s" couldn\'t be found. '
+                        'Either specify one or define one with a '
+                        'predictable name' % name
+                    )
+                else:
+                    # If found in cache
                     self._entities = sub
                     self._entities.orm = self
-
-                    break
-            else:
-                raise IntegrityError(
-                    'Entities class for "%s" couldn\'t be found. '
-                    'Either specify one or define one with a '
-                    'predictable name' % name
-                )
 
         return self._entities
 

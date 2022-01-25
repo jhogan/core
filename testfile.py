@@ -69,18 +69,13 @@ class dom_file(tester.tester):
     entity.
     """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'file', 'ecommerce', 'pom', 'asset', 'party'
+        super().__init__(mods=mods, *args, **kwargs)
         clean()
 
         orm.security().override = True
 
         if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = ('file', 'ecommerce', 'pom', 'asset', 'party')
-            for e in es:
-                if e.__module__ in mods:
-                    e.orm.recreate()
-
             orm.orm.recreate(foonet)
 
         if hasattr(file.directory, '_radix'):
