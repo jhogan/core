@@ -5670,9 +5670,9 @@ class test_orm(tester):
         # raise IntegrityError's. Note that garbage collection must be
         # run to remove it entirely. See this discussion for why:
         # https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
-        del single
-        import gc
-        gc.collect()
+
+
+        orm.orm._forget(single)
 
         # Test explicit detection of orm.entities 
         class bacteria(orm.entities):

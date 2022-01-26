@@ -7934,6 +7934,42 @@ class orm:
 
         self.recreate = self._recreate
 
+    # XXX TODO Make static method
+    def _forget(cls):
+        """ Completely forget about a entity class.
+
+        This is typically used by tests that need to create a temporary
+        class for testing, then completely remove it. This involves
+        calling the `del` operator on the class, performing cyclical
+        garbage collecting, then removing the class from any caches the
+        ORM uses for quick lookups of entity classes. This method would
+        probably never be used in production code.
+        """
+        # Delete the class
+        del cls
+
+        # XXX We can remove this line
+        import gc
+
+        # Garbage collection must be run to remove it entirely. See this
+        # discussion for why: https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
+        gc.collect()
+
+        # Invalidate caches
+        orm._invalidate()
+
+    # XXX This should probably just be a @staticmethod
+    @classmethod
+    def _invalidate(cls):
+        """ Invalidate all the caches the orm keeps.
+
+        Note that currently this involves the various entity lookup
+        caches.
+        """
+
+        # TODO Complete. There a number of other caches.
+        cls._mod_name_entitiesclasses = None
+
     @property
     def entities(self):
         """ Return the entities class that corresponds to this
