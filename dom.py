@@ -8035,6 +8035,13 @@ class selector(entities.entity):
         self.elements = selector.elements()
 
     def match(self, els, el=None, smps=None):
+        """ Of the elements in the `els` collection, return a new
+        elements collection containing those elements that match this
+        selector.
+
+        :param: els dom.elements: A collection of elements, usually a
+        DOM object.
+        """
         # Get the last element. We match the next element depending on
         # the combinator. For example, if we have a Descendant
         # combinator:
@@ -8113,27 +8120,54 @@ class selector(entities.entity):
         return els1
 
     def demand(self):
-        """ Raise error if self is invalid
+        """ Raise error if this selector is invalid.
         """
         self.elements.demand()
 
     def __repr__(self):
+        """ Return a string representation of this selector.
+        """
         return repr(self.elements)
 
     def __str__(self):
+        """ Return a string representation of this selector.
+        """
         return repr(self)
 
     class attributes(_simples):
+        """ Represents a collection of selector.attribute objects.
+        """
         def __repr__(self):
+            """ Return a string representation of this attributes
+            selector collection.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Returns True if el matechs all the attribute selectors
+            in this collection.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
+            """ Raise error if this attribute selector collection is
+            invalid.  Although... currently there is nothing that would
+            indicate that it is invalid.
+            """
             pass
 
     class attribute(simple):
+        """ Represents an attribute selector.
+
+        In CSS selector strings, attribute selectors are denoted by
+        brackets::
+
+            p.[name=myname]
+
+        In the above, the attribute selector would capture the string
+        'name' in self.key, the operator '=' in self.operator, and
+        'myname' in self.value.
+        """
         def __init__(self):
             self.key       =  None
             self.operator  =  None
