@@ -266,6 +266,13 @@ class principle(entities.entity):
         import ecommerce
         ecommerce.user.orm.create(ignore=True)
 
+        # Make sure party.party and all subentities have existing tables
+        import party
+        clss = party.party.orm.getsubentities(accompany=True)
+
+        for cls in clss:
+            cls.orm.create(ignore=True)
+
         if hasattr(self, 'isinitialized'):
             if recreate and iscreated:
                 # del user and company to force a recreation
