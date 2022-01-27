@@ -468,17 +468,11 @@ class pom_site(tester.tester):
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+        super().__init__(mods=mods, *args, **kwargs)
 
         if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            mods = (
-                'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
-            )
-
-            for e in es:
-                if e.__module__ in  mods:
-                    e.orm.recreate()
+            fastnets.orm.recreate()
 
         orm.security().override = True
         foonet.orm.recreate()

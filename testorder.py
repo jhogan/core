@@ -53,14 +53,13 @@ def getvalidperson(first=None, last=None):
 
 class test_order(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'order', 'party', 'product', 'third'
+        super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().override = True
-        if self.rebuildtables:
-            for e in orm.orm.getentityclasses(includeassociations=True):
-                if e.__module__ in ('order', 'party', 'product',):
-                    e.orm.recreate()
 
+        # TODO Principles are create in tester so we probably don't need
+        # the below
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')

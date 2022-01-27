@@ -222,10 +222,14 @@ class testers(entities.entities):
         return self._tostr(str, includeHeader=False)
 
 class principle(entities.entity):
+    """ A singleton to manage the creation of test principles such as
+    test users, test companies, etc.
+    """
     _instance = None
 
     def __new__(cls, *args, **kwargs):
-        # Singleton stuff
+        """ Create the singleton.
+        """
         if not cls._instance:
             cls._instance = super(principle, cls).__new__(
                 cls, *args, **kwargs
@@ -233,7 +237,9 @@ class principle(entities.entity):
 
         return cls._instance
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs)
+        """ Create the singleton along with the principles. 
+        """
         # Since we are a singleton, we only want to run __init__ once,
         # so return if the isinitialized attribute is set.
         if hasattr(self, 'isinitialized'):
@@ -241,12 +247,19 @@ class principle(entities.entity):
         
         super().__init__(*args, **kwargs)
 
+        # Create principles
         self.create()
 
         self.isinitialized = True
 
     def create(self, recreate=False):
-        # XXX Docstring
+        """ Create the principles, i.e., the test user, company and
+        proprietor.
+
+        :param: recreate bool: If True, recerate the test user, test
+        company and the standard Carapacian company
+        (ecommerce.company.carapacian).
+        """
         iscreated = hasattr(self, 'iscreated')
 
         # Make sure the needed table exist
@@ -255,12 +268,16 @@ class principle(entities.entity):
 
         if hasattr(self, 'isinitialized'):
             if recreate and iscreated:
+                # del user and company to force a recreation
                 del self._user
                 del self._company
 
+        # Retrieve the user and company - creating them if necessary
         usr = self.user
         com = self.company
 
+        # Create the proprietor. Make the company created above its
+        # proprietor
         import orm
         with orm.sudo():
             with orm.proprietor(com):
@@ -270,7 +287,6 @@ class principle(entities.entity):
 
         if recreate:
             import party
-
             # Carapacian will recreate itself when called as long as its
             # private field is None
             party.company._carapacian = None
@@ -278,10 +294,16 @@ class principle(entities.entity):
         self.iscreated = True
 
     def recreate(self):
+        """ Rereate the principles, i.e., the test user, company and
+        carapacian company (ecommerce.company.carapacian).
+        """
         self.create(recreate=True)
 
     @property
     def user(self):
+        """ Return a test user object. Ensure its in the database if it
+        is not already.
+        """
         Id = uuid.UUID(hex='574d42d0-9937-4fa7-a008-b885a9a77a9a')
         if not hasattr(self, '_user'):
             import orm, db
@@ -295,6 +317,9 @@ class principle(entities.entity):
 
     @property
     def company(self):
+        """ Return a test company object. Ensure its in the database if
+        it is not already.
+        """
         Id = uuid.UUID(hex='574d42d0-625e-4b2b-a79e-28d981616545')
         if not hasattr(self, '_company'):
             import party, orm, db
@@ -306,7 +331,6 @@ class principle(entities.entity):
                     self._company = party.company(
                         id=Id, name='Standard Company 0'
                     )
-
 
         return self._company
 

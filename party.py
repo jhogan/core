@@ -27,7 +27,12 @@ import apriori, asset, file
 import db,orm, primative
 import uuid, builtins
 
-class parties(orm.entities):                                 pass
+class parties(orm.entities):                                 
+    """ A collection of party objects.
+
+    :abbr: pars
+    """
+
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
 class role_role_types(apriori.types):                        pass
@@ -138,6 +143,8 @@ class party(orm.entity):
     individual members.  Contracts can usually specify an organization
     or a person as a contracted party. The customer for a sales order
     may be either an organization or a person.
+
+    :abbr: par
     """
 
     _anon = None
