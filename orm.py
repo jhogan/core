@@ -7944,9 +7944,23 @@ class orm:
         garbage collecting, then removing the class from any caches the
         ORM uses for quick lookups of entity classes. This method would
         probably never be used in production code.
+
+        :param: cls type: The class reference to forget.
         """
         # Delete the class
-        del cls
+
+        # Get the complment class of cls
+        if entity in cls.__mro__:
+            # If cls is an entity, get it's entities complement
+            complement = cls.orm.entities
+        elif entities in cls.__mro__:
+            # If cls is an entities, get it's entity complement
+            complement = cls.orm.entity
+        else:
+            # Probably won't happen
+            raise TypeError('Cannot find complement')
+
+        del cls, complement
 
         # XXX We can remove this line
         import gc
