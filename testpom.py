@@ -1045,33 +1045,38 @@ class pom_page(tester.tester):
         self.one(res['main[data-path="/error"]'])
 
     def it_raises_404(self):
-        class derpnets(pom.sites): pass
+        class derpnets(pom.sites):
+            pass
+
         class derpnet(pom.site):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
-        ws = derpnet()
-        tab = self.browser().tab()
-        res = tab.get('/en' + '/index', ws)
-        self.eq(404, res.status)
+        try:
+            ws = derpnet()
+            tab = self.browser().tab()
+            res = tab.get('/en' + '/index', ws)
+            self.eq(404, res.status)
 
-        # A site will by defalut use the generic 404 page (at the
-        # pom.site level). It happens to not have an h2.apology element
-        # (unlike foonet; see below).
-        self.zero(res['h2.apology'])
+            # A site will by defalut use the generic 404 page (at the
+            # pom.site level). It happens to not have an h2.apology
+            # element (unlike foonet; see below).
+            self.zero(res['h2.apology'])
 
-        ws = foonet()
+            ws = foonet()
 
-        tab = self.browser().tab()
-        res = tab.get('/en/' + 'intheix.html', ws)
-        self.eq(404, res.status)
-        
-        # foonet has its own 404 page has an h2.apology element
-        # distinguishing it from the generic 404 page at the pom.site
-        # level.
-        self.one(res['h2.apology'])
-        self.one(res['main[data-path="/error/404"]'])
+            tab = self.browser().tab()
+            res = tab.get('/en/' + 'intheix.html', ws)
+            self.eq(404, res.status)
+            
+            # foonet has its own 404 page has an h2.apology element
+            # distinguishing it from the generic 404 page at the
+            # pom.site level.
+            self.one(res['h2.apology'])
+            self.one(res['main[data-path="/error/404"]'])
+        finally:
+            orm.orm._forget(derpnet)
 
     def it_raises_im_a_302(self):
         ws = foonet()
