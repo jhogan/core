@@ -7903,6 +7903,8 @@ class orm:
     # Look up entities classes give a module name and a class name
     _mod_name_entitiesclasses = None
 
+    _forgotten = list()
+
     _proprietor  =  None
     owner        =  None
 
@@ -7961,7 +7963,14 @@ class orm:
             # Probably won't happen
             raise TypeError('Cannot find complement')
 
+        # Add to forget list
+        orm._forgotten.append(cls)
+
+        if complement:
+            orm._forgotten.append(complement)
+
         del cls, complement
+        '''
 
         # XXX We can remove this line
         import gc
@@ -7969,6 +7978,7 @@ class orm:
         # Garbage collection must be run to remove it entirely. See this
         # discussion for why: https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
         gc.collect()
+        '''
 
         # Invalidate caches
         orm._invalidate()
@@ -10763,7 +10773,7 @@ class orm:
             for sub in of.__subclasses__():
                 r.extend(orm.getsubclasses(sub))
 
-        return r
+        return [x for x in r if x not in orm._forgotten]
 
     @staticmethod
     def getassociations():
