@@ -7999,6 +7999,9 @@ class orm:
         # TODO Complete. There a number of other caches.
         cls._mod_name_entitiesclasses = None
 
+        for cls in orm.getsubclasses(of=entity):
+            cls.orm._subclasses = None
+
     @property
     def entities(self):
         """ Return the entities class that corresponds to this
