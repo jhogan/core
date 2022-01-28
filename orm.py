@@ -7900,6 +7900,7 @@ class orm:
     # of orm.association.
     _entityclasseswithassociations  =  None
 
+    # Look up entities classes give a module name and a class name
     _mod_name_entitiesclasses = None
 
     _proprietor  =  None

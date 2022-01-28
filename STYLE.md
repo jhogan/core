@@ -43,6 +43,8 @@ generators shoud be prefixed with 'gen'
     def genchildren(self, recursive):
         ...
 
+@property prefixes such as 'is' for booleans, 'was', and 'do'.
+
 Put consequent block on newline (if cond:\n ...)
 
 In general, import modules instead of module objects:
@@ -111,3 +113,7 @@ Discuss prefering non-negated conditional:
             ...
         else:
             ...
+
+Use x as default list comprension variable
+    
+    [x for x in ls if x.prop = 'value']

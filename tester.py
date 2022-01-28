@@ -237,7 +237,7 @@ class principle(entities.entity):
 
         return cls._instance
 
-    def __init__(self, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
         """ Create the singleton along with the principles. 
         """
         # Since we are a singleton, we only want to run __init__ once,
