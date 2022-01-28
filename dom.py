@@ -1134,6 +1134,8 @@ class element(entities.entity):
         # depricated attribute, you can use the attributes collection::
         tr.attributes['attr'] = 'tla'
         assert tr.attributes['abbr'] == 'tla'
+
+        :abbr: el
     """
     # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
@@ -8162,24 +8164,35 @@ class selector(entities.entity):
         In CSS selector strings, attribute selectors are denoted by
         brackets::
 
-            p.[name=myname]
+            p[name=myname]
 
         In the above, the attribute selector would capture the string
         'name' in self.key, the operator '=' in self.operator, and
         'myname' in self.value.
         """
         def __init__(self):
+            """ Create the attribute selector.
+            """
             self.key       =  None
             self.operator  =  None
             self.value     =  None
 
         def __repr__(self):
+            """ Return a string representation of this attribute
+            selector.
+            """
             k   =  self.key       or  ''
             op  =  self.operator  or  ''
             v   =  self.value     or  ''
             return '[%s%s%s]' % (k, op, v)
 
         def match(self, el):
+            """ Returns true if the dom.element 'el' has an attribute
+            that matches this selector, False otherwise.
+
+            :param: el dom.element: A dom.element to test the selector
+            against.
+            """
             for attr in el.attributes:
                 if attr.name.lower() == self.key.lower():
                     op = self.operator
@@ -8221,23 +8234,56 @@ class selector(entities.entity):
             return False
 
     class classes(_simples):
+        """ A collection of ``class_`` selectors.
+        """
         def __repr__(self):
+            """ Returns a string representation of this class selectors.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Returns True if all the class selectors in this
+            collection match el.
+
+            :param: el dom.element: A DOM element to test.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
-            pass
+            """ Raise an exception if self is invalid.
+            """
+            # NOTE There are no tests for this at the moment. We just
+            # need to implement the method so it conforms to the
+            # interface.
 
     class class_(simple):
+        """ Represents a class selector.
+
+        In the expression:
+
+            p.my-class
+
+        The string 'my-class' would be assigned to self.value.
+        self.match would return true for any element that has that
+        class.
+        """
         def __init__(self):
+            """ Create the class selector.
+            """
             self.value = None
 
         def __repr__(self):
+            """ Returns a string representation of this class selector.
+            """
             return '.' + self.value
 
         def match(self, el):
+            """ Return True if el has a class that matches this class
+            selector, False otherwise.
+
+            :param: el dom.element: The element againt which the class
+            selector is tested.
+            """
             return self.value in el.classes
 
     class pseudoclasses(_simples):
