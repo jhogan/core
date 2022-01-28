@@ -7903,6 +7903,8 @@ class orm:
     # Look up entities classes give a module name and a class name
     _mod_name_entitiesclasses = None
 
+    # A list of orm.entity classes that test scripts would like to
+    # remove from existence because they are intended as temporary.
     _forgotten = list()
 
     _proprietor  =  None
@@ -7961,6 +7963,8 @@ class orm:
 
         elif entities in cls.__mro__:
             # If cls is an entities, get it's entity complement
+            # XXX This won't necessarily raise an IntegrityError,
+            # probably an AttributeError, so change.
             with suppress(IntegrityError):
                 complement = cls.orm.entity
         else:
@@ -7996,10 +8000,13 @@ class orm:
         caches.
         """
 
-        # TODO Complete. There a number of other caches.
+        # XXX Complete. There a number of other caches.
+
         cls._mod_name_entitiesclasses = None
 
         for cls in orm.getsubclasses(of=entity):
+            # Nullify the _subclass instance field for each orm object
+            # of each entity class. See orm.subentities @property
             cls.orm._subclasses = None
 
     @property
