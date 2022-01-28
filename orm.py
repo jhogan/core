@@ -7953,12 +7953,16 @@ class orm:
         # Delete the class
 
         # Get the complment class of cls
+        complement = None
         if entity in cls.__mro__:
             # If cls is an entity, get it's entities complement
-            complement = cls.orm.entities
+            with suppress(IntegrityError):
+                complement = cls.orm.entities
+
         elif entities in cls.__mro__:
             # If cls is an entities, get it's entity complement
-            complement = cls.orm.entity
+            with suppress(IntegrityError):
+                complement = cls.orm.entity
         else:
             # Probably won't happen
             raise TypeError('Cannot find complement')
