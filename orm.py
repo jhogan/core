@@ -5192,6 +5192,10 @@ class mappings(entitiesmod.entities):
         the number of maps in the collection changes (see
         mappings._self._oncountchange).
         """
+
+        # NOTE Iterating over ._ls instead of the generators increases
+        # startup performance by about 50%.
+
         # If there is no ._orm, then we are using this class just for
         if self._orm is None:
             return
@@ -5237,14 +5241,15 @@ class mappings(entitiesmod.entities):
             # For association objects, look for entity mappings and add
             # a foreign key mapping (e.g., For artist_artifact, add an
             # FK called artistid and artifactid).
-            for map in self.entitymappings:
-                maps.append(
-                    foreignkeyfieldmapping(
-                        map.entity, 
-                        fkname     =  map.name,
-                        isderived  =  True
+            for map in self._ls:
+                if type(map) is entitymapping:
+                    maps.append(
+                        foreignkeyfieldmapping(
+                            map.entity, 
+                            fkname     =  map.name,
+                            isderived  =  True
+                        )
                     )
-                )
 
             # Set the recursion limit to a value a higher than the
             # default (1000). This method is highly recursive because of
@@ -5293,7 +5298,9 @@ class mappings(entitiesmod.entities):
             for ass in orm.getassociations():
 
                 # For each of the `association`'s entity mappings
-                for map in ass.orm.mappings.entitymappings:
+                for map in ass.orm.mappings._ls:
+                    if type(map) is not entitymapping:
+                        continue
 
                     # If the association`s entity mapping  corresponds
                     # to self, add associations mapping.
@@ -5317,7 +5324,10 @@ class mappings(entitiesmod.entities):
                 # test.py script. This code was added to correct an
                 # issue with the party module. Full testing for this
                 # relationship type may prove necessary or desirable.
-                for map in ass.orm.mappings.entitiesmappings:
+                for map in ass.orm.mappings._ls:
+                    if type(map) is not entitiesmapping:
+                        continue
+
                     if map.entities is self.orm.entities:
                         add_fk_and_entity_map(ass)
 
