@@ -7971,15 +7971,6 @@ class orm:
             orm._forgotten.append(complement)
 
         del cls, complement
-        '''
-
-        # XXX We can remove this line
-        import gc
-
-        # Garbage collection must be run to remove it entirely. See this
-        # discussion for why: https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
-        gc.collect()
-        '''
 
         # Invalidate caches
         orm._invalidate()
@@ -7990,7 +7981,10 @@ class orm:
         """ Invalidate all the caches the orm keeps.
 
         Note that currently this involves the various entity lookup
-        caches.
+        caches. This method is also used to initialize these fields -
+        that's to say, this function gets called on startup to create
+        these class-level variables so they are available when they are
+        needed for caching.
         """
 
         # dicts to store mappings between entity classes and their
@@ -10783,6 +10777,9 @@ class orm:
         search of subentities. If False, only collect the immediate
         subentity class references.
         """
+        # NOTE Don't be tempted to cache here. Other members which do
+        # chache depend on this method to know what is actually
+        # currently being returned by the  __subclasses__ methods.
         r = []
 
         for sub in of.__subclasses__():
@@ -10793,6 +10790,7 @@ class orm:
             for sub in of.__subclasses__():
                 r.extend(orm.getsubclasses(sub))
 
+        # Return list excluding anything in the _forgotten list
         return [x for x in r if x not in orm._forgotten]
 
     @staticmethod
