@@ -7896,23 +7896,6 @@ class orm:
     attributes without worry of name collision.
     """
 
-    # dicts to store mappings between entity classes and their
-    # corresponding names and abbreviations. (see orm.getentity())
-    _ent2abbr   =  dict()
-    _abbr2ent   =  dict()
-    _namedict   =  dict()
-
-    # A cache created by orm.getentityclasses to contain all subclasses
-    # of orm.entity.
-    _entityclasses                  =  None
-
-    # A cache created by orm.getentityclasses to contain all subclasses
-    # of orm.association.
-    _entityclasseswithassociations  =  None
-
-    # Look up entities classes give a module name and a class name
-    _mod_name_entitiesclasses = None
-
     # A list of orm.entity classes that test scripts would like to
     # remove from existence because they are intended as temporary.
     _forgotten = list()
@@ -8010,8 +7993,21 @@ class orm:
         caches.
         """
 
-        # XXX Complete. There a number of other caches.
+        # dicts to store mappings between entity classes and their
+        # corresponding names and abbreviations. (see orm.getentity())
+        cls._ent2abbr = dict()
+        cls._abbr2ent = dict()
+        cls._namedict = dict()
 
+        # A cache created by orm.getentityclasses to contain all
+        # subclasses of orm.entity.
+        cls._entityclasses = None
+
+        # A cache created by orm.getentityclasses to contain all
+        # subclasses of orm.association.
+        cls._entityclasseswithassociations = None
+
+        # Look up entities classes give a module name and a class name
         cls._mod_name_entitiesclasses = None
 
         for cls in orm.getsubclasses(of=entity):
@@ -10950,6 +10946,9 @@ class orm:
                         e = maps[int(not bool(i))].entity
                         self._constituents += constituent(e)
         return self._constituents
+
+# Call orm._invalidate to initialize the ORM caches.
+orm._invalidate()
 
 class associations(entities):
     """ Holds a collection of ``orm.association`` objects. 
