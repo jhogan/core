@@ -8287,17 +8287,42 @@ class selector(entities.entity):
             return self.value in el.classes
 
     class pseudoclasses(_simples):
+        """ Represents a collection of ``pseudoclass`` selectors.
+            :v
+        """
         def __repr__(self):
+            """ Returns a string representation of this pseudoclasses
+            collection.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Return True if el has a pseudoclass that matches this
+            pseudoclass selector, False otherwise.
+
+            :param: el dom.element: The element againt which the class
+            selector is tested.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
+            """ Raise an exception if self is invalid.
+            """
             for pcls in self:
                 pcls.demand()
 
     class pseudoclass(simple):
+        """ Represents a pseudoclass selector.
+
+        Consider:
+            
+            p:first-child
+
+        In the above CSS selector, the string 'first-child' would
+        be assigned to self.value.
+
+        :abbr: pcls
+        """
         validnames = (
             'root',         'nth-child',         'nth-last-child',
             'nth-of-type',  'nth-last-of-type',  'first-child',
@@ -8306,29 +8331,78 @@ class selector(entities.entity):
             'not',          'lang',
         )
 
+        ''' Inner classes '''
+
         class arguments(element):
+            """ Represents a pseudoclasses arguments.
+
+            Consider:
+                    
+                    li:nth-child(2n+0)
+
+            In the above example, the nth-child pseudclass would have
+            two arguments: 2 and 0. 2 would be assigned to self.a and 0
+            would be assigned to self.b.
+
+            :abbr: args
+            """
             def __init__(self, pcls):
+                """ Create the arguments object.
+
+                :param: pcls selector.pseudoclass: The pseudoclass to
+                which this argument object belongs.
+                """
                 self.string       =  str()
                 self._a           =  None
                 self._b           =  None
                 self.pseudoclass  =  pcls
 
             def __iadd__(self, str):
+                """ Append to the text of the argument string.
+
+                :param: str str: The string to append to self.string.
+                """
                 self.string += str
                 return self
 
             @property
             def a(self):
+                """ Returns the first argument in the arguments object:
+
+                Given: 
+
+                    li:nth-child(2n+0)
+
+                2 is returned.
+                """
+                # Ensure self.string has been parsed.
                 self._parse()
                 return self._a
 
             @property
             def b(self):
+                """ Returns the second argument in the arguments object:
+
+                Given: 
+
+                    li:nth-child(2n+0)
+
+                0 is returned.
+                """
+                # Ensure self.string has been parsed.
                 self._parse()
                 return self._b
 
             @property
             def c(self):
+                """ Return the argument to the lang pseudoclass.
+
+                Given:
+                        
+                    p.lang(fr)
+
+                'fr' is returned
+                """
                 if self.pseudoclass.value != 'lang':
                     raise NotImplementedError(
                         'Only lang pseudoclass has C argument'
@@ -8436,6 +8510,7 @@ class selector(entities.entity):
 
                 return '(%sn%s)' % (a, b)
 
+        ''' Class members '''
         def __init__(self):
             super().__init__()
             self.value = None
