@@ -8411,6 +8411,20 @@ class selector(entities.entity):
 
             @property
             def selectors(self):
+                """ When this ``arguments`` object  represents a :not
+                pseudoclass, this method returns a selector object for
+                the selector being negatively selected for. For
+                example, given the following CSS selector::
+
+                    :not(p)
+
+                The 'p' is the argument to the :not pseudoclass. This
+                property would create a selector based on that argument,
+                and return it.
+
+                `None` is returned if the pseudoclass is not a :not
+                pseudoclass.
+                """
                 if self.pseudoclass.value.lower() != 'not':
                     return None
 
@@ -8429,17 +8443,38 @@ class selector(entities.entity):
                 return sels
 
             def _parse(self):
+                """ Parses the value held in self.string (which contains
+                the pseudoclasses arguments as developed by the author of the CSS
+                selector), into values for a and b @property's.
+                """
+                # Store in err for concision
                 err = CssSelectorParseError
+
+                # The argument to :lang pseudoclasses (the 'fr' in
+                # :lang(fr), for example) is returned by the c property.
+                # No parsing needs to be done for :lang.
                 if self.pseudoclass.value == 'lang':
                     return
 
+                # Init
                 a = b = None
+
+                # Get the str to parse
                 s = self.string
+
+                # If the argument is 'odd', e.g., nth-child(odd), set
+                # a,b=2,1 because nth-child(odd) is equivalent to
+                # nth-child(2n+1)
                 if s.lower() == 'odd':
                     a, b = 2, 1
+
+                # Elif the argument is 'even', e.g., nth-child(even), set
+                # a,b=2,0 because nth-child(even) is equivalent to
+                # nth-child(2n+0)
                 elif s.lower() == 'even':
                     a, b = 2, 0
                 elif len(s) == 1:
+                    # nth-child(n) is equivalent to li:nth-child(1n+0)
                     if s.lower() == 'n':
                         a, b = 1, 0
                     else:
@@ -8448,22 +8483,26 @@ class selector(entities.entity):
                         except ValueError:
                             pass
                         else:
+                            # nth-child(2) is equivalent to nth-child(0n+2)
                             a, b = 0, i
                 elif len(s) == 2:
                     try:
-                        # E:nth-child(2n)
                         if s[0] in ('+', '-'):
                             try:
                                 i = int(s)
                             except ValueError:
                                 pass
                             else:
+                                # e.g., nth-child(+6) is equivalent to
+                                # nth-child(0n+6)
                                 a, b = 0, i
                         elif s[1].lower() != 'n':
                             raise err(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
                         else:
+                            # e.g., nth-last-child(4n) is equivalent to
+                            # nth-last-child(4n+0)
                             a, b = int(s[0]), 0
                     except ValueError:
                         raise err(
