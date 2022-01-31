@@ -39,7 +39,7 @@ methods, indexers (__getitem__), operator overloading (+=), etc.
 
 Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
 that inherits from the ``element`` base class. Each of these subclasses
-has a corresposting collection class when there is a need to present
+has a corresponding collection class when there is a need to present
 elements bundled by type. For example, the ``form`` class has a
 ``forms`` collection class.
 
@@ -8306,7 +8306,8 @@ class selector(entities.entity):
             return all(x.match(el) for x in self)
 
         def demand(self):
-            """ Raise an exception if self is invalid.
+            """ Raise an exception if this pseudoclasses collection
+            contains a pseudoclass that is invalid.
             """
             for pcls in self:
                 pcls.demand()
@@ -8509,29 +8510,53 @@ class selector(entities.entity):
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
+                    # Match pseudoclass arguments like :nth-child(2n+0)
                     m = re.match(
                         '(\+|-)?([0-9]+)?[nN] *(\+|-) *([0-9])+$', s
                     )
+
+                    # If a match was made
                     if m:
                         gs = m.groups()
 
+                        # If all four groups were matched
                         if len(gs) == 4:
+                            
+                            # If no sign was specified in the argemuntes
+                            # (e.g., 2n+0)
                             if gs[0] is None:
                                 gs = list(gs)
+
+                                # Default to a plus sign if no sign was
+                                # found.
                                 gs[0] = '+'
 
+                            # TODO gs[0] can't be None here so no need
+                            # to test it.
+                            
+                            # If the arguments start with a numeric
+                            # value (e.g., nth-child(+1n+0))
                             if gs[0] is not None and gs[1] is not None:
+                                # Set a to the first numeric value
                                 a = int(gs[0] + gs[1])
 
-                            # gs[0] would be None for 'n+0'
+                            # If the arguments don't start off with a
+                            # numeric value (e.g., nth-child(n+0))
                             if a is None:
+                                # Default a to 1
                                 a = int(gs[0] + '1')
 
+                            # Set be to the second and last value (i.e.
+                            # the 2 in :nth-child(1n+2)(
                             b = int(gs[2] + gs[3])
 
+                # Make a and b the corresponding proprety values of this
+                # object.
                 self._a, self._b = a, b
 
             def __repr__(self):
+                """ Return a string representation of the arguments.
+                """
                 pcls = self.pseudoclass.value
                 if pcls == 'lang':
                     return '(%s)' % self.string
@@ -8549,27 +8574,40 @@ class selector(entities.entity):
 
                 return '(%sn%s)' % (a, b)
 
-        ''' Class members '''
+        ''' Class members of ``pseudoclass`` '''
         def __init__(self):
+            """ Create a pseudoclass object.
+            """
+            # Invoke selector._simple.__init__
             super().__init__()
+
+            # Init the value
             self.value = None
+
+            # Set the arguments proprety to an instance of `argument`
             self.arguments = selector.pseudoclass.arguments(self)
 
         def demand(self):
+            """ Raise an exception if pseudoclass is invalid.
+            """
             err = CssSelectorParseError
+
+            # If this represents an nth-* pseudoclass, we should have an
+            # a and b property in the arguments.
             if self.value.lower().startswith('nth-'):
                 if self.arguments.a is None or self.arguments.b is None:
                     raise err(
                         'Error in argument(s) to pseudoclass '
                         '"%s"' % self.value
                     )
+            # If this is a :not pseudoclass...
             elif self.value.lower() == 'not':
                 # If the pseudoclass is 'not', then invoke its
-                # 'arguments.selectors'. That will cause not's arguments
-                # to be parse. If there is a pares error in not's
-                # arguments (stored as a str in self.arguments.string),
-                # invoking this property will raise the
-                # CssSelectorParseError.
+                # 'arguments.selectors'. That will cause :not's
+                # arguments to be parse. If there is a pares error in
+                # not's arguments (stored as a str in
+                # self.arguments.string), invoking this property will
+                # raise the CssSelectorParseError.
                 self.arguments.selectors
 
         def __repr__(self):
