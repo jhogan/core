@@ -8313,7 +8313,7 @@ class selector(entities.entity):
                 pcls.demand()
 
     class pseudoclass(simple):
-        """ Represents a pseudoclass selector.
+        """ Represents a tree-structural pseudoclass selector.
 
         Consider:
             
@@ -8611,11 +8611,19 @@ class selector(entities.entity):
                 self.arguments.selectors
 
         def __repr__(self):
+            """ Return a str representation of this pseudoclass object.
+            """
             r = ':' + self.value
             r += repr(self.arguments)
             return r
 
         def _match_lang(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :lang(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             langs = el.language
             if langs is None:
                 return
@@ -8633,9 +8641,21 @@ class selector(entities.entity):
             return args[0] == langs[0]
 
         def _match_root(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :root(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return el is el.root
 
         def _match_nth_child_starting_at(self, begining, el, oftype):
+            """ Called by the self._match_nth_* methods to determine if
+            el matches this pseudoclass selector. See the
+            self._match_nth* methods for more for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             a, b = self.arguments.a, self.arguments.b
 
             sibs = el.getsiblings(includeself=True)
@@ -8663,31 +8683,67 @@ class selector(entities.entity):
             return False
 
         def _match_nth_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-child(). See self.match
+            for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=True, el=el, oftype=False
             )
 
         def _match_nth_last_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-last-child(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=False, el=el, oftype=False
             )
 
         def _match_nth_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=True, el=el, oftype=True
             )
 
         def _match_nth_last_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :not(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=False, el=el, oftype=True
             )
 
         def _match_first_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :first-child(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(includeself=True)
             sibs.remove(lambda x: type(x) is text)
             return sibs.first is el
 
         def _match_last_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :last-child(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(includeself=True)
             sibs.remove(lambda x: type(x) is text)
             return sibs.last is el
@@ -8706,20 +8762,50 @@ class selector(entities.entity):
             return False
 
         def _match_first_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :first-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_x_of_type(el=el)
 
         def _match_last_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :last-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_x_of_type(el=el, last=True)
 
         def _match_only_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :only-child(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(includeself=True)
             return sibs.where(lambda x: type(x) is not text).issingular
 
         def _match_only_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :only-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(includeself=True)
             return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :not-empty(). See self.match
+            for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
 
             # `comments` elements don't matter when it comes to
             # emptiness but `text' elements actually do. This includes
@@ -8729,16 +8815,29 @@ class selector(entities.entity):
             return els.isempty
 
         def _match_not(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :not(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             m = self.arguments.selectors[0].elements[0].match
             m = m(el)
             return not m
 
         def match(self, el):
+            """ Returns True if el matches this pseudoclass selector
+            object, False otherwise.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             if type(el) in (text, comment):
                 return False
 
+            # Get name of the actual CSS pseudoclass (e.g., 'nth-child')
             pcls = self.value.replace('-', '_').lower()
             
+            # Delegate to a private pseudoclass-specific method
             return getattr(self, '_match_' + pcls)(el)
 
         @property
