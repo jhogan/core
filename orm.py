@@ -5192,6 +5192,8 @@ class mappings(entitiesmod.entities):
         the number of maps in the collection changes (see
         mappings._self._oncountchange).
         """
+        if self._populating:
+            return
 
         # NOTE Iterating over ._ls instead of the generators increases
         # startup performance by about 50%.
@@ -5201,16 +5203,7 @@ class mappings(entitiesmod.entities):
         if self._orm is None:
             return
 
-        # XXX Calling self.clear calls the __iter__ which recurses back
-        # to here. Once clear is called, self._populated is True. Maybe
-        # the below line should be written:
-        #
-        #    if self._populating:
-        #        return
-        # 
-        # That prevents self._populated from being set to True
-        # prematurely.
-        if not self._populated and not self._populating:
+        if not self._populated:
             self._populating = True
 
             # Remove mapping objects from self which are derived, i.e.,
