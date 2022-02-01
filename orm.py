@@ -5238,18 +5238,17 @@ class mappings(entitiesmod.entities):
                 )
 
             ''' Add FK mapings to association objects '''
-            # For association objects, look for entity mappings and add
-            # a foreign key mapping (e.g., For artist_artifact, add an
-            # FK called artistid and artifactid).
-            for map in self._ls:
-                if type(map) is entitymapping:
-                    maps.append(
-                        foreignkeyfieldmapping(
-                            map.entity, 
-                            fkname     =  map.name,
-                            isderived  =  True
-                        )
+
+            # For each of self's entity mappings, add a "derived"
+            # foreignkeyfieldmapping mapping.
+            for map in self.entitymappings:
+                maps.append(
+                    foreignkeyfieldmapping(
+                        map.entity, 
+                        fkname     =  map.name,
+                        isderived  =  True
                     )
+                )
 
             # Set the recursion limit to a value a higher than the
             # default (1000). This method is highly recursive because of
@@ -5324,10 +5323,7 @@ class mappings(entitiesmod.entities):
                 # test.py script. This code was added to correct an
                 # issue with the party module. Full testing for this
                 # relationship type may prove necessary or desirable.
-                for map in ass.orm.mappings._ls:
-                    if type(map) is not entitiesmapping:
-                        continue
-
+                for map in ass.orm.mappings.entitiesmappings:
                     if map.entities is self.orm.entities:
                         add_fk_and_entity_map(ass)
 
