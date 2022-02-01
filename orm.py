@@ -5197,6 +5197,7 @@ class mappings(entitiesmod.entities):
         # startup performance by about 50%.
 
         # If there is no ._orm, then we are using this class just for
+        # collection purposes, so don't try to populate here.
         if self._orm is None:
             return
 
@@ -5227,6 +5228,12 @@ class mappings(entitiesmod.entities):
             self += entitymapping('owner', user, isderived=True)
 
             def add_fk_and_entity_map(e):
+                """ Add a foreign key mapping and an entitymapping to
+                the `maps` list for the given entity.
+
+                :param: e type: An orm.entity class reference that the
+                FK and entitymapping will be made for.
+                """
                 # Add an entity mapping for the composite
                 maps.append(
                     entitymapping(e.__name__, e, isderived=True)
@@ -5293,8 +5300,8 @@ class mappings(entitiesmod.entities):
                         add_fk_and_entity_map(e)
 
             ''' Add associations mappings to self '''
-            # For each class that inherits form `orm.association`
 
+            # For each class that inherits from `orm.association`
             for ass in orm.getassociations():
 
                 # For each of the `association`'s entity mappings
@@ -5302,7 +5309,7 @@ class mappings(entitiesmod.entities):
                     if type(map) is not entitymapping:
                         continue
 
-                    # If the association`s entity mapping  corresponds
+                    # If the association`s entity mapping corresponds
                     # to self, add associations mapping.
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
@@ -5396,7 +5403,7 @@ class mappings(entitiesmod.entities):
         super().sort('_ordinal')
 
         # Ensure builtins attr's come right after id
-        # TODO We should used orm.builtins for this
+        # TODO We should use orm.builtins for this
         for attr in reversed(('id', 'createdat')):
             try:
                 attr = self.pop(attr)
