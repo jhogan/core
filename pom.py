@@ -1360,9 +1360,16 @@ class page(dom.html):
         return r
 
 class header(dom.header):
+    """ Represents the header portion of a web page.
+
+    A page header contains a menus object to contain 0 or more menues in
+    the header, one main menu, and a logo.
+    """
     # TODO Need to add an h2 and subheading parameter to constructor.
     # For semantic help, see http://html5doctor.com/howto-subheadings/
     def __init__(self, site, *args, **kwargs):
+        """ Create the ``header`` page bject
+        """
         super().__init__(*args, **kwargs)
         self.site = site
         self._menus = menus()
@@ -1370,6 +1377,9 @@ class header(dom.header):
         self._logo = None
 
     def clone(self):
+        """ Create and return a ``header`` objecs based on the values in
+        this ``header``.
+        """
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
         hdr.menu = self.menu.clone()
@@ -1378,6 +1388,8 @@ class header(dom.header):
 
     @property
     def elements(self):
+        """ The child elements of this header element.
+        """
         els = super().elements
         els.clear()
         if self.logo:
@@ -1387,6 +1399,8 @@ class header(dom.header):
 
     @property
     def logo(self):
+        """ The headers logo.
+        """
         return self._logo
 
     @logo.setter
@@ -1395,6 +1409,8 @@ class header(dom.header):
 
     @property
     def menus(self):
+        """ The collection of menues for this ``header``.
+        """
         if self.menu not in self._menus:
             self._menus += self.menu
 
@@ -1406,6 +1422,8 @@ class header(dom.header):
 
     @property
     def menu(self):
+        """ Return the main menu for this ``header`` object.
+        """
         if not self._menu:
             self._menu = self._getmenu()
 
@@ -1416,7 +1434,12 @@ class header(dom.header):
         self._menu = v
 
     def _getmenu(self):
+        """ Create and return a menu based on the site's pages.
+        """
         def getitems(pgs):
+            """ Recursively build and return a menu based on the site's
+            pages.
+            """
             r = menu.items()
             for pg in pgs:
 
