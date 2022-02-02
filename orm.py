@@ -5195,8 +5195,18 @@ class mappings(entitiesmod.entities):
         if self._populating:
             return
 
-        # NOTE Iterating over ._ls instead of the generators increases
-        # startup performance by about 50%.
+        # NOTE Iterating over ._ls instead of the `mappings` generator
+        # eliminated the need for the method to recurse into itself.
+        # This recursion caused the _populate method for all entity
+        # classes to be called. Iterating over ._ls instead bypasses the
+        # mappings.__iter__ method, thus the `mapping` objects it yields
+        # are only the native (non-derived) ones. Originally, it was
+        # thought we would want the all mappings objects - including the
+        # derived ones - but this appears to have been a mistake.
+        # Iterating over the ``mappings`` collection cause startup time
+        # to take about 2.3 seconds. Iterating over ._ls reduced that
+        # time to about 50 milliseconds. Since making startup as fast as
+        # possible is important, we will go with this method.
 
         # If there is no ._orm, then we are using this class just for
         # collection purposes, so don't try to populate here.
@@ -5285,7 +5295,9 @@ class mappings(entitiesmod.entities):
                      
                 # Look through each of the entities mappings in the
                 # giving entity (`e`).
-                for map in e.orm.mappings.entitiesmappings:
+                for map in e.orm.mappings._ls:
+                    if type(map) is not entitiesmapping:
+                        continue
 
                     # If `e` is a constituent of `self`
                     if map.entities is self.orm.entities:
@@ -5323,7 +5335,10 @@ class mappings(entitiesmod.entities):
                 # test.py script. This code was added to correct an
                 # issue with the party module. Full testing for this
                 # relationship type may prove necessary or desirable.
-                for map in ass.orm.mappings.entitiesmappings:
+                for map in ass.orm.mappings._ls:
+                    if type(map) is not entitiesmapping:
+                        continue
+
                     if map.entities is self.orm.entities:
                         add_fk_and_entity_map(ass)
 
