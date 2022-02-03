@@ -6184,6 +6184,12 @@ class html(element):
 
     @staticmethod
     def _gethtmlparser():
+        """ Return the htmlparser class. 
+
+        This was put in a static method only so we could lazy-load the
+        HTMLParser in order to shave a few ms off the startup time.
+        """
+
         from html.parser import HTMLParser
 
         class htmlparser(HTMLParser):

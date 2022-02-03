@@ -3196,6 +3196,8 @@ class entitymeta(type):
             # collections.
             map._name = k
             maps.append(map)
+
+            # NOTE Appending to _ls shaves some time off startup
             orm_.mappings._ls.append(map)
 
         # Iterate over the maps list. NOTE that iterating over the
