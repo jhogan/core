@@ -30,7 +30,6 @@ import resource
 import sys
 import textwrap
 import timeit
-import urllib
 import uuid
 import www
 
@@ -502,6 +501,7 @@ class tester(entities.entity):
                     nonlocal hdrs
                     st, hdrs = st0, hdrs0
 
+                import urllib
                 url = urllib.parse.urlparse(pg)
 
                 pg = ws(url.path)

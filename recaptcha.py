@@ -3,8 +3,6 @@
 # prohibited
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
-import urllib
-import urllib.request
 import json
 
 def validate(response, key):
@@ -15,6 +13,8 @@ def validate(response, key):
         'response': response
     }
 
+    import urllib
+    import urllib.request
     data = urllib.parse.urlencode(values).encode()
     req =  urllib.request.Request(url, data=data)
     res = urllib.request.urlopen(req)

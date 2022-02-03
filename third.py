@@ -24,7 +24,6 @@ import json
 import pom
 import primative
 import product
-import urllib
 import www
 
 class internetservices(product.services):

@@ -76,7 +76,6 @@ import os.path
 import pathlib
 import shutil
 import textwrap
-import urllib.request
 import uuid
 
 class inodes(orm.entities):
@@ -945,6 +944,7 @@ class resource(file):
         try:
             os.makedirs(self.head, exist_ok=True)
             try:
+                import urllib.request
                 urlopen = urllib.request.urlopen
 
                 # Create a request that has a spoofed user-agent. Some

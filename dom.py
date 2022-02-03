@@ -24,7 +24,6 @@ import primative
 import re
 import string
 import sys
-import urllib.parse
 import uuid
 
 """
@@ -2211,6 +2210,7 @@ class form(element):
         # Convert the dict to a percent-encoded ASCII text string and
         # return.
         # See https://docs.python.org/3/library/urllib.request.html#urllib-examples
+        import urllib.parse
         return urllib.parse.urlencode(d, doseq=True).encode('ascii')
 
     @post.setter
@@ -2221,6 +2221,7 @@ class form(element):
         :param: v str: A query string given as a string argument (data of
         type application/x-www-form-urlencoded). 
         """
+        import urllib.parse
         d = urllib.parse.parse_qs(v)
 
         for k, v in d.items():

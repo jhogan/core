@@ -47,7 +47,6 @@ import re
 import sys
 import textwrap
 import traceback
-import urllib
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -501,12 +500,14 @@ class _request:
         if self.iswsgi:
             return self.environment['server_name']
 
+        import urllib
         return urllib.parse.urlparse(self._url).hostname
 
     @property
     def arguments(self):
         """ Returns the query string paramter as a dict.
         """
+        import urllib
         return dict(urllib.parse.parse_qsl(self.qs))
 
     @property
@@ -526,6 +527,7 @@ class _request:
 
             return qs
 
+        import urllib
         return urllib.parse.urlparse(self._url).query
 
     @property
@@ -856,6 +858,7 @@ class _request:
         if self.iswsgi:
             return self.environment['wsgi.url_scheme'].lower()
 
+        import urllib
         return urllib.parse.urlparse(self._url).scheme
 
     @property
@@ -865,6 +868,7 @@ class _request:
         if self.iswsgi:
             return int(self.environment['server_port'])
 
+        import urllib
         return urllib.parse.urlparse(self._url).port
 
     @property
@@ -887,6 +891,7 @@ class _request:
         if qs:
             path += "?{qs}"
 
+        import urllib
         return urllib.parse.urlunparse([
             scheme, servername, path, None, None, None
         ])
@@ -2015,6 +2020,7 @@ class browser(entities.entity):
 
             hdrs = req.headers.dict
 
+            import urllib
             req1 = urllib.request.Request(
                 url, body, hdrs, method=meth
             )
@@ -2044,6 +2050,7 @@ class browser(entities.entity):
             and a value of all the browser's (self) cookies safely
             encoded.
             """
+            import urllib
             v = str()
             for cookie in self:
                 v += '%s=%s' % (

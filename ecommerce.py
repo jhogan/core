@@ -42,8 +42,6 @@ import os
 import party
 import primative
 import product
-import urllib
-import urllib.parse
 import uuid
 
 class agents(party.parties):                                  pass
@@ -526,6 +524,7 @@ class url(orm.entity):
         Given the URL "scheme://netloc/path;parameters?query#fragment",
         "scheme" would be returned.
         """
+        import urllib.parse
         return urllib.parse.urlparse(self.address).scheme
 
     @property
@@ -535,6 +534,7 @@ class url(orm.entity):
         Given the URL "scheme://netloc/path;parameters?query#fragment",
         "netloc" would be returned.
         """
+        import urllib.parse
         return urllib.parse.urlsplit(self.address).hostname
 
     @property
@@ -544,6 +544,7 @@ class url(orm.entity):
         Given the URL "scheme://netloc:1234/path;parameters?query#fragment",
         1234 would be returned.
         """
+        import urllib.parse
         return urllib.parse.urlparse(self.address).port
 
     @property
@@ -570,6 +571,7 @@ class url(orm.entity):
 
         returns: '/path/to/resource;parameters'
         """
+        import urllib.parse
         return urllib.parse.urlparse(self.address).path
 
     @property
