@@ -13,7 +13,6 @@ from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
 from types import FunctionType
-import argparse
 import builtins
 import dbg
 import dom
@@ -1466,6 +1465,7 @@ class cli:
             '''
         )
 
+        import argparse
         p = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog=epilog

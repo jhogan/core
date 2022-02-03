@@ -53,7 +53,6 @@ from entities import classproperty
 from func import enumerate
 from dbg import B
 import apriori
-import argparse
 import db
 import ecommerce
 import entities
@@ -833,27 +832,31 @@ class TerminateError(Exception):
         super().__init__(msg)
         self.status = st
 
-class argumentparser(argparse.ArgumentParser):
-    """ A subclassed ArgumentParser used to cause the program to exit on
-    bad input.
-    """
-    def exit(self, *args, **kwargs):
-        # TODO Comment
-        if __name__ == '__main__':
-            super().exit(*args, **kwargs)
-        else:
-            st, msg = args
-            raise TerminateError(msg=msg, st=st)
+def argumentparser(*args, **kwargs):
+    import argparse
+    class argumentparser(argparse.ArgumentParser):
+        """ A subclassed ArgumentParser used to cause the program to exit on
+        bad input.
+        """
+        def exit(self, *args, **kwargs):
+            # TODO Comment
+            if __name__ == '__main__':
+                super().exit(*args, **kwargs)
+            else:
+                st, msg = args
+                raise TerminateError(msg=msg, st=st)
 
-    def error(self, *args, **kwargs):
-        # TODO Comment
-        if __name__ == '__main__':
-            super().error(*args, **kwargs)
-        else:
-            message, = args
-            args = {'prog': self.prog, 'message': message}
-            msg = ('%(prog)s: error: %(message)s\n') % args
-            raise self.exit(2, msg)
+        def error(self, *args, **kwargs):
+            # TODO Comment
+            if __name__ == '__main__':
+                super().error(*args, **kwargs)
+            else:
+                message, = args
+                args = {'prog': self.prog, 'message': message}
+                msg = ('%(prog)s: error: %(message)s\n') % args
+                raise self.exit(2, msg)
+
+    return argumentparser(*args, **kwargs)
 
 class panel:
     """ A bot's control panel. Used to configure a bots behaviour and
