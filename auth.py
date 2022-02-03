@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from dbg import B
 from entities import entities, entity, brokenrules, brokenrule
 import json
-import jwt as pyjwt
 import primative
 import www
 
@@ -75,6 +74,7 @@ class jwt(entity):
                     d[prop] = v
 
             secret = config().jwtsecret
+            import jwt as pyjwt
             enc = pyjwt.encode(d, secret)
             self._token = enc.decode('utf-8')
         return self._token
@@ -111,6 +111,7 @@ class jwt(entity):
         if v is None:
             if self.token:
                 secret = config().jwtsecret
+                import jwt as pyjwt
                 d = pyjwt.decode(self.token, secret)
                 try:
                     return d[k]
@@ -122,8 +123,8 @@ class jwt(entity):
 
     @property
     def brokenrules(self):
+        import jwt as pyjwt
         brs = brokenrules()
-
         try:
             secret = config().jwtsecret
             pyjwt.decode(self.token, secret)

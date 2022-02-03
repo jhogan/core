@@ -38,7 +38,6 @@ import exc
 import file
 import html as htmlmod
 import json
-import jwt as pyjwt
 import logs
 import os
 import party, ecommerce

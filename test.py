@@ -42,7 +42,6 @@ import functools
 import hr
 import invoice
 import io
-import jwt as pyjwt
 import math
 import MySQLdb
 import order
@@ -128,6 +127,7 @@ class test_jwt(tester):
         token = t.token
         secret = config().jwtsecret
 
+        import jwt as pyjwt
         d = pyjwt.decode(token, secret)
 
         exp = datetime.fromtimestamp(d['exp'])
@@ -154,6 +154,7 @@ class test_jwt(tester):
     def it_fails_decoding_with_wrong_secret(self):
         t = auth.jwt()
 
+        import jwt as pyjwt
         try:
             d = pyjwt.decode(t.token, 'wrong-secret')
         except pyjwt.exceptions.DecodeError:

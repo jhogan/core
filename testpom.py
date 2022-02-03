@@ -4,7 +4,6 @@ from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
-import jwt as pyjwt
 import www
 import pytz
 import auth
@@ -1560,6 +1559,7 @@ class pom_page(tester.tester):
             'sub': ecommerce.user().id.hex,
         }
 
+        import jwt as pyjwt
         jwt = pyjwt.encode(d, 'badsecret').decode('utf-8')
 
         tab.browser.cookies['jwt'].value = str(jwt)
