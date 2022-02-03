@@ -3196,7 +3196,7 @@ class entitymeta(type):
             # collections.
             map._name = k
             maps.append(map)
-            orm_.mappings += map
+            orm_.mappings._ls.append(map)
 
         # Iterate over the maps list. NOTE that iterating over the
         # `orm_.mappings` collection would invokes it's _populating
