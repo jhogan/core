@@ -12,11 +12,9 @@ from contextlib import suppress
 from dbg import B
 from entities import classproperty
 from func import enumerate
-from html.parser import HTMLParser
 from textwrap import dedent, indent
 import entities
 import file
-import html as htmlmod
 import operator
 import builtins
 import orm
@@ -2071,6 +2069,7 @@ class text(element):
         # We may want to do this in the html accessor
         self._html = v
         if esc:
+            import html as htmlmod
             self._html = htmlmod.escape(self._value)
 
     def clone(self):
@@ -6165,12 +6164,13 @@ class html(element):
         """
         if isinstance(html, str):
             # Morph the object into an `elements` object
+            htmlparser = self._gethtmlparser()
             self.__class__ = elements
             super(elements, self).__init__(*args, **kwargs)
 
             # Assume the input str is HTML and convert the elements in
             # the HTML sting into a collection of `elements` objects.
-            prs = _htmlparser(convert_charrefs=False, ids=ids)
+            prs = htmlparser(convert_charrefs=False, ids=ids)
             prs.feed(html)
             if prs.stack:
                 raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
@@ -6181,227 +6181,232 @@ class html(element):
         else:
             super().__init__(*args, **kwargs)
 
-    @property
-    def manifest(self):
-        """ Specifies the URI of a resource manifest indicating
-        resources that should be cached locally.
-        """
-        return self.attributes['manifest'].value
+    @staticmethod
+    def _gethtmlparser():
+        from html.parser import HTMLParser
 
-    @manifest.setter
-    def manifest(self, v):
-        self.attributes['manifest'].value = v
+        class htmlparser(HTMLParser):
+            """ A private HTML parsing class. This is used by the dom.html class
+            to parse HTML into a DOM object. 
 
-    @property
-    def version(self):
-        """ Specifies the version of the HTML Document Type Definition
-        that governs the current document. This attribute is not needed,
-        because it is redundant with the version information in the
-        document type declaration.
-        """
-        return self.attributes['version'].value
+            The actual parsing is done by the HTMLParser class that's built into
+            Python (from which this object inherits). Once the document has been
+            parsed (initiated by the ``feed`` method), the ``elements`` property
+            will contain the a DOM structure of the HTML document.
+            """
+            def __init__(self, ids=False, *args, **kwargs):
+                """ Create the parser.
 
-    @version.setter
-    def version(self, v):
-        self.attributes['version'].value = v
+                :param: ids bool: If True, each element created is given a UUID
+                encoded as a base64 string. If False, no id is given.
+                """
+                super().__init__(*args, **kwargs)
+                self.ids = ids
+                self.elements = elements()
+                self.stack = list()
 
-    @property
-    def xmlns(self):
-        """ Specifies the XML Namespace of the document. Default value
-        is "http://www.w3.org/1999/xhtml". This is required in documents
-        parsed with XML parsers, and optional in text/html
-        documents.
-        """
-        return self.attributes['xmlns'].value
+            def handle_starttag(self, tag, attrs):
+                """ This is called by HTMLParser each time it encounters a start
+                tag. We take that tag and add it to the DOM.
+                """
 
-    @xmlns.setter
-    def xmlns(self, v):
-        self.attributes['xmlns'].value = v
+                # Get an element class based on the tag
+                el = elements.getby(tag=tag)
 
-class _htmlparser(HTMLParser):
-    """ A private HTML parsing class. This is used by the dom.html class
-    to parse HTML into a DOM object. 
+                # NOTE This seems a little strict. If we were scraping a page we
+                # would probably want it to be forgiving of non-standard tags.
+                if not el:
+                    raise NotImplementedError(
+                        'The <%s> tag has no DOM implementation' % tag
+                    )
 
-    The actual parsing is done by the HTMLParser class that's built into
-    Python (from which this object inherits). Once the document has been
-    parsed (initiated by the ``feed`` method), the ``elements`` property
-    will contain the a DOM structure of the HTML document.
-    """
-    def __init__(self, ids=False, *args, **kwargs):
-        """ Create the parser.
+                # Instantiate
+                el = el(id=self.ids)
 
-        :param: ids bool: If True, each element created is given a UUID
-        encoded as a base64 string. If False, no id is given.
-        """
+                # Assign HTML attributes
+                for attr in attrs:
+                    el.attributes[attr[0]] = attr[1]
 
-        super().__init__(*args, **kwargs)
-        self.ids = ids
-        self.elements = elements()
-        self.stack = list()
+                # Push element on top of stack
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    self.elements += el
+                else:
+                    cur[0] += el
+                finally:
+                    if not el.isvoid:
+                        self.stack.append([el, self.getpos()])
 
-    def handle_starttag(self, tag, attrs):
-        """ This is called by HTMLParser each time it encounters a start
-        tag. We take that tag and add it to the DOM.
-        """
+            def handle_comment(self, data):
+                """ This method is called when a comment is encountered (e.g.,
+                <!--comment-->).
+                """
 
-        # Get an element class based on the tag
-        el = elements.getby(tag=tag)
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    self.elements += comment(data)
+                else:
+                    cur[0] += comment(data)
 
-        # NOTE This seems a little strict. If we were scraping a page we
-        # would probably want it to be forgiving of non-standard tags.
-        if not el:
-            raise NotImplementedError(
-                'The <%s> tag has no DOM implementation' % tag
-            )
+            def handle_endtag(self, tag):
+                """ This method is called to handle the end tag of an element
+                (e.g., </div>).
+                """
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    pass
+                else:
+                    if cur[0].tag == tag:
+                        self.stack.pop()
 
-        # Instantiate
-        el = el(id=self.ids)
+            def handle_data(self, data):
+                """ This method is called to process arbitrary data (e.g. text
+                nodes and the content of <script>...</script> and
+                <style>...</style>).
+                """
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    if not data.isspace():
+                        raise HtmlParseError(
+                            'No element to add text to', [None, self.getpos()]
+                        )
+                else:
+                    last = cur[0].elements.last
+                    if type(last) is text:
+                        last.html += data
+                    else:
+                        cur[0] += data
 
-        # Assign HTML attributes
-        for attr in attrs:
-            el.attributes[attr[0]] = attr[1]
+            def handle_entityref(self, name):
+                """ This method is called to process a named character reference
+                of the form &name; (e.g. &gt;), where name is a general entity
+                reference (e.g. 'gt').
+                """
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    raise HtmlParseError(
+                        'No element to add text to', [None, self.getpos()]
+                    )
+                else:
+                    txt = text('&%s;' % name, esc=False)
+                    last = cur[0].elements.last
+                    if type(last) is text:
+                        last.html += txt.value
+                    else:
+                        cur[0] += txt
 
-        # Push element on top of stack
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            self.elements += el
-        else:
-            cur[0] += el
-        finally:
-            if not el.isvoid:
-                self.stack.append([el, self.getpos()])
+            def handle_charref(self, name):
+                """ This method is called to process decimal and hexadecimal
+                numeric character references of the form &#NNN; and &#xNNN;. For
+                example, the decimal equivalent for &gt; is &#62;, whereas the
+                hexadecimal is &#x3E;; in this case the method will receive '62'
+                or 'x3E'. This method is never called if convert_charrefs is
+                True.
+                """
+                # TODO: This was added after the main html tests were written
+                # (not sure why it was left behind). We should write tests that
+                # target it specifically.
 
-    def handle_comment(self, data):
-        """ This method is called when a comment is encountered (e.g.,
-        <!--comment-->).
-        """
+                # TODO: There is a lot of shared logic between this handler and
+                # handle_entityref, handle_data, etc. We can start thinking
+                # about consolidating this logic.
+                try:
+                    cur = self.stack[-1]
+                except IndexError:
+                    raise HtmlParseError(
+                        'No element to add text to', [None, self.getpos()]
+                    )
+                else:
+                    txt = text('&#%s;' % name, esc=False)
+                    last = cur[0].elements.last
+                    if type(last) is text:
+                        last.html += txt.value
+                    else:
+                        cur[0] += txt
 
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            self.elements += comment(data)
-        else:
-            cur[0] += comment(data)
+            def handle_decl(self, decl):
+                """ This method is called to handle an HTML doctype declaration
+                (e.g. <!DOCTYPE html>).
 
-    def handle_endtag(self, tag):
-        """ This method is called to handle the end tag of an element
-        (e.g., </div>).
-        """
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            pass
-        else:
-            if cur[0].tag == tag:
-                self.stack.pop()
-
-    def handle_data(self, data):
-        """ This method is called to process arbitrary data (e.g. text
-        nodes and the content of <script>...</script> and
-        <style>...</style>).
-        """
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            if not data.isspace():
-                raise HtmlParseError(
-                    'No element to add text to', [None, self.getpos()]
+                The decl parameter will be the entire contents of the
+                declaration inside the <!...> markup (e.g. 'DOCTYPE html').
+                """
+                raise NotImplementedError(
+                    'HTML doctype declaration are not implemented'
                 )
-        else:
-            last = cur[0].elements.last
-            if type(last) is text:
-                last.html += data
-            else:
-                cur[0] += data
 
-    def handle_entityref(self, name):
-        """ This method is called to process a named character reference
-        of the form &name; (e.g. &gt;), where name is a general entity
-        reference (e.g. 'gt').
-        """
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            raise HtmlParseError(
-                'No element to add text to', [None, self.getpos()]
-            )
-        else:
-            txt = text('&%s;' % name, esc=False)
-            last = cur[0].elements.last
-            if type(last) is text:
-                last.html += txt.value
-            else:
-                cur[0] += txt
+            def unknown_decl(self, data):
+                """ This method is called when an unrecognized declaration is
+                read by the parser.
 
-    def handle_charref(self, name):
-        """ This method is called to process decimal and hexadecimal
-        numeric character references of the form &#NNN; and &#xNNN;. For
-        example, the decimal equivalent for &gt; is &#62;, whereas the
-        hexadecimal is &#x3E;; in this case the method will receive '62'
-        or 'x3E'. This method is never called if convert_charrefs is
-        True.
-        """
-        # TODO: This was added after the main html tests were written
-        # (not sure why it was left behind). We should write tests that
-        # target it specifically.
+                The data parameter will be the entire contents of the
+                declaration inside the <![...]> markup. It is sometimes useful
+                to be overridden by a derived class. The base class
+                implementation does nothing.
+                """
+                raise NotImplementedError(
+                    'HTML doctype declaration are not implemented'
+                )
 
-        # TODO: There is a lot of shared logic between this handler and
-        # handle_entityref, handle_data, etc. We can start thinking
-        # about consolidating this logic.
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            raise HtmlParseError(
-                'No element to add text to', [None, self.getpos()]
-            )
-        else:
-            txt = text('&#%s;' % name, esc=False)
-            last = cur[0].elements.last
-            if type(last) is text:
-                last.html += txt.value
-            else:
-                cur[0] += txt
+            def handle_pi(self, decl):
+                """ Method called when a processing instruction is encountered.
+                The data parameter will contain the entire processing
+                instruction. For example, for the processing instruction <?proc
+                color='red'>, this method would be called as handle_pi("proc
+                color='red'"). It is intended to be overridden by a derived
+                class; the base class implementation does nothing.
 
-    def handle_decl(self, decl):
-        """ This method is called to handle an HTML doctype declaration
-        (e.g. <!DOCTYPE html>).
+                NOTE: The HTMLParser class uses the SGML syntactic rules for
+                processing instructions. An XHTML processing instruction using
+                the trailing '?' will cause the '?' to be included in data.
+                """
+                raise NotImplementedError(
+                    'Processing instructions are not implemented'
+                )
 
-        The decl parameter will be the entire contents of the
-        declaration inside the <!...> markup (e.g. 'DOCTYPE html').
-        """
-        raise NotImplementedError(
-            'HTML doctype declaration are not implemented'
-        )
+        return htmlparser
 
-    def unknown_decl(self, data):
-        """ This method is called when an unrecognized declaration is
-        read by the parser.
+        @property
+        def manifest(self):
+            """ Specifies the URI of a resource manifest indicating
+            resources that should be cached locally.
+            """
+            return self.attributes['manifest'].value
 
-        The data parameter will be the entire contents of the
-        declaration inside the <![...]> markup. It is sometimes useful
-        to be overridden by a derived class. The base class
-        implementation does nothing.
-        """
-        raise NotImplementedError(
-            'HTML doctype declaration are not implemented'
-        )
+        @manifest.setter
+        def manifest(self, v):
+            self.attributes['manifest'].value = v
 
-    def handle_pi(self, decl):
-        """ Method called when a processing instruction is encountered.
-        The data parameter will contain the entire processing
-        instruction. For example, for the processing instruction <?proc
-        color='red'>, this method would be called as handle_pi("proc
-        color='red'"). It is intended to be overridden by a derived
-        class; the base class implementation does nothing.
+        @property
+        def version(self):
+            """ Specifies the version of the HTML Document Type Definition
+            that governs the current document. This attribute is not needed,
+            because it is redundant with the version information in the
+            document type declaration.
+            """
+            return self.attributes['version'].value
 
-        NOTE: The HTMLParser class uses the SGML syntactic rules for
-        processing instructions. An XHTML processing instruction using
-        the trailing '?' will cause the '?' to be included in data.
-        """
-        raise NotImplementedError(
-            'Processing instructions are not implemented'
-        )
+        @version.setter
+        def version(self, v):
+            self.attributes['version'].value = v
+
+        @property
+        def xmlns(self):
+            """ Specifies the XML Namespace of the document. Default value
+            is "http://www.w3.org/1999/xhtml". This is required in documents
+            parsed with XML parsers, and optional in text/html
+            documents.
+            """
+            return self.attributes['xmlns'].value
+
+        @xmlns.setter
+        def xmlns(self, v):
+            self.attributes['xmlns'].value = v
 
 class h1s(elements):
     """ A class used to contain a collection of ``h1`` elements."""

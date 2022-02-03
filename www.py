@@ -36,7 +36,6 @@ import dom
 import entities
 import exc
 import file
-import html as htmlmod
 import json
 import logs
 import os
