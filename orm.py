@@ -318,7 +318,7 @@ class char():
         the book class::
 
             class book(orm.entity):
-                isbn = chr(1)
+                isbn = chr(10)
 
         will be translated into a str map with a minimum length and
         maximum length of 10. 
@@ -5091,7 +5091,6 @@ class mappings(entitiesmod.entities):
             
             id = self.orm.entity.id
         """
-
         super().__init__(initial)
         self._orm = orm
         self._populated = False

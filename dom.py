@@ -6151,6 +6151,7 @@ class html(element):
         # iterate over it, etc.
         html1['html head title'].text == 'My Title'
     """
+
     def __init__(self, html=None, ids=False, *args, **kwargs):
         """ Create HTML element, pares HTML string depending on whether
         or not `html` is provided (see docstring in for class)
