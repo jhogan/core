@@ -881,12 +881,18 @@ class pages(entities.entities):
         super().append(obj, uniq)
 
 class page(dom.html):
+    """ Represents a web page.
+    """
     ExceptedBooleansStrings = (
         ('false', '0', 'no', 'n'),
         ('true', '1', 'yes', 'y')
     )
 
     def __init__(self, name=None, pgs=None, *args, **kwargs):
+        """ Create a web page.
+
+        :param: name str: The name of the page.
+        """
         super().__init__(*args, **kwargs)
 
         self._pages        =  None
@@ -913,6 +919,8 @@ class page(dom.html):
 
     @property
     def resources(self):
+        """ Return a collection of resource objects the page will use.
+        """
         if self._resources is None:
             self._resources = file.resources()
 
@@ -925,13 +933,20 @@ class page(dom.html):
         self._resources = v
 
     def _resources_onbeforeadd(self, scr, eargs):
+        """ An event handler to capture the moment before a resource is
+        added to the page's resources collection.
+        """
         if eargs.entity.local:
             raise ValueError(
                 'Page-level resources cannot be saved. Use a '
-                'site-level resource instead'
+                'site-level resource instead.'
             )
 
     def flash(self, msg):
+        """ Add a flash message to the top of the page.
+
+        :param: msg str: The text to put in the flash message.
+        """
         if isinstance(msg, str):
             msg = dom.paragraph(msg)
 
@@ -941,22 +956,20 @@ class page(dom.html):
         
     @property
     def title(self):
+        """ The page's title.
+
+        This corresponds to the <title> tag found in the <head> of a
+        typical HTML document.
+
+        If no title for the page is set, a default title is constructed
+        from the site's title and the page's name.
+        """
         if self._title is None:
             if self.site:
                 self.title = '%s | %s' % self.site.title, self.Name
             self.title = self.Name
 
         return self._title
-
-    @property
-    def pages(self):
-        if self._pages is None:
-            self._pages = pages(rent=self)
-        return self._pages
-
-    @pages.setter
-    def pages(self, v):
-        self._pages = v
 
     @title.setter
     def title(self, v):
@@ -965,7 +978,24 @@ class page(dom.html):
         self.head += dom.title(v)
 
     @property
+    def pages(self):
+        """ Returns a collection of child pages of this page.
+        """
+        if self._pages is None:
+            self._pages = pages(rent=self)
+        return self._pages
+
+    @pages.setter
+    def pages(self, v):
+        self._pages = v
+
+    @property
     def header(self):
+        """ The header section of the page.
+
+        If left unset, the sites header will be used. This will likely
+        include the site's main menu, logo and things of that nature.
+        """
         if self._header is None:
             if self.site:
                 self._header = self.site.header.clone()
@@ -975,6 +1005,15 @@ class page(dom.html):
 
     @property
     def head(self):
+        """ The <head> section of the page.
+
+        If left unset, the sites <head> section will be used. 
+
+        The page's ``resources`` collection will be scanned for typical
+        files that go in the head, such as URL's to JavaScript and CSS
+        files. These will be added a <script> and <link> elements to the
+        <head> as would be expected.
+        """
         if self._head is None:
             if self.site:
                 self._head = self.site.head
@@ -1000,7 +1039,6 @@ class page(dom.html):
 
                 self._head += el
 
-
         return self._head
     
     @head.setter
@@ -1009,6 +1047,8 @@ class page(dom.html):
 
     @property
     def body(self):
+        """ The <body> of the page.
+        """
         if not self._body:
             self._body = dom.body()
         return self._body
@@ -1019,6 +1059,8 @@ class page(dom.html):
 
     @property
     def sidebars(self):
+        """ A collection of sidebars for the page.
+        """
         if self._sidebars is None:
             if self.site:
                 self._sidebars = self.site.sidebars.clone()
@@ -1028,7 +1070,38 @@ class page(dom.html):
 
     @property
     def _arguments(self):
-        # If a parameter is required by the page (its in `params`) but
+        """ Return a dict to be pased into the page's __call__ method
+        using the ** notation.
+
+            self._mainfunc(**self._arguments)
+
+        The arguments are a dict version of the query string found in
+        the URL for the page. So for example, a URL with a path and
+        query string such as:
+
+            /en/time?greet=1&tz=America/Phoenix&a=1&b=2
+        
+        would call the /en/time page's __call__ method with something
+        like this::
+
+            {'greet': True, 'a': '1', 'b': '2'}
+
+        This dict would be return by this @property.
+
+        Note that boolean valuse, like the 1 for 'greet' are normalized
+        into Python boolean types. The normalization happens because the
+        parameter list for the /en/time's main() method are examined and
+        their annotations are used.
+
+            class time(pom.page):
+                def main(self, greet: bool, tz='UTC', **kwargs):
+
+        In this example, 'greet' will be True, tz will keep it's default
+        of UTC and **kwargs will contain the values for a and b:
+
+            {'a': '1', 'b': '2'}
+        """
+        # If a parameter is required by the page (it's in `params`) but
         # was not given by the client in the query string, ensure that
         # the parameter is in the args and set to None. If this is not
         # done, a TypeError would be thrown by pages that require
@@ -1134,6 +1207,11 @@ class page(dom.html):
         self._args = v
 
     def clear(self):
+        """ Used to initialize the page's <main> element and set it's
+        data-path attribute to the path of the page.
+        """
+        # NOTE "clear" is a bit of a misnomer. Maybe this should be
+        # renamed to 'init' or something.
         self.main = dom.main()
         self.main.attributes['data-path'] = self.path
         self._called = False
@@ -1142,6 +1220,17 @@ class page(dom.html):
     def __call__(self, *args, **qsargs):
         """ This method calls into the page's `main` method that the
         web developer writes.
+
+            class mypage(page):
+                def main(self):
+                    ...
+
+            # Init page
+            pg = mypage()
+
+            # "Calling" the page ends up calling the main() method
+            # defined above.
+            pg() 
         """
 
         self._attemped = True  # A call was attemped
@@ -1166,7 +1255,7 @@ class page(dom.html):
                 globs['req'] = www.request
                 globs['res'] = www.response
 
-                # Call page's main function. It's called `_mainfunc`
+                # Call page's main method. It's called `_mainfunc`
                 # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
                 self._called = True
@@ -1175,6 +1264,9 @@ class page(dom.html):
 
     @property
     def elements(self):
+        """ Return the HTML element underneath the page (i.e.,
+        underneath the <html> element in the DOM).
+        """
         els = super().elements
         els.clear()
 
@@ -1199,6 +1291,8 @@ class page(dom.html):
 
     @property
     def page(self):
+        """ Return the parent page of this page object.
+        """
         rent = self._parentpages
 
         if rent is None:
@@ -1213,6 +1307,8 @@ class page(dom.html):
 
     @property
     def site(self):
+        """ Return the web ``site`` that this page belongs to.
+        """
         rents = self._parentpages
 
         if rents is None:
@@ -1230,16 +1326,27 @@ class page(dom.html):
 
     @property
     def name(self):
+        """ Return the name of the page.
+
+        c.f. page.Name
+
+        """
         if self._name:
             return self._name
         return type(self).__name__.replace('_', '-')
 
     @property
     def Name(self):
+        """ Return a capitalize version of the page's name. 
+
+        c.f. page.name
+        """
         return self.name.capitalize()
 
     @property
     def path(self):
+        """ Return the path of the page, e.g., '/about/team'
+        """ 
         r = str()
         rent = self
 
@@ -1253,15 +1360,24 @@ class page(dom.html):
         return '/' + r
 
     def __repr__(self):
+        """ Return a string representation of the page.
+        """
         r = f'{type(self).__name__}('
         r += f'id={self.id} path={self.path}'
         r += ')'
         return r
 
 class header(dom.header):
+    """ Represents the header portion of a web page.
+
+    A page header contains a menus object to contain 0 or more menues in
+    the header, one main menu, and a logo.
+    """
     # TODO Need to add an h2 and subheading parameter to constructor.
     # For semantic help, see http://html5doctor.com/howto-subheadings/
     def __init__(self, site, *args, **kwargs):
+        """ Create the ``header`` page bject
+        """
         super().__init__(*args, **kwargs)
         self.site = site
         self._menus = menus()
@@ -1269,6 +1385,9 @@ class header(dom.header):
         self._logo = None
 
     def clone(self):
+        """ Create and return a ``header`` objecs based on the values in
+        this ``header``.
+        """
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
         hdr.menu = self.menu.clone()
@@ -1277,6 +1396,8 @@ class header(dom.header):
 
     @property
     def elements(self):
+        """ The child elements of this header element.
+        """
         els = super().elements
         els.clear()
         if self.logo:
@@ -1286,6 +1407,8 @@ class header(dom.header):
 
     @property
     def logo(self):
+        """ The headers logo.
+        """
         return self._logo
 
     @logo.setter
@@ -1294,6 +1417,8 @@ class header(dom.header):
 
     @property
     def menus(self):
+        """ The collection of menues for this ``header``.
+        """
         if self.menu not in self._menus:
             self._menus += self.menu
 
@@ -1305,6 +1430,8 @@ class header(dom.header):
 
     @property
     def menu(self):
+        """ Return the main menu for this ``header`` object.
+        """
         if not self._menu:
             self._menu = self._getmenu()
 
@@ -1315,7 +1442,12 @@ class header(dom.header):
         self._menu = v
 
     def _getmenu(self):
+        """ Create and return a menu based on the site's pages.
+        """
         def getitems(pgs):
+            """ Recursively build and return a menu based on the site's
+            pages.
+            """
             r = menu.items()
             for pg in pgs:
 

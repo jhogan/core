@@ -1,4 +1,4 @@
-Core
+Carapacian Core
 ====
 A web framework.
 

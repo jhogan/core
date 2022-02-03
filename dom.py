@@ -36,7 +36,7 @@ methods, indexers (__getitem__), operator overloading (+=), etc.
 
 Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
 that inherits from the ``element`` base class. Each of these subclasses
-has a corresposting collection class when there is a need to present
+has a corresponding collection class when there is a need to present
 elements bundled by type. For example, the ``form`` class has a
 ``forms`` collection class.
 
@@ -1068,6 +1068,8 @@ class element(entities.entity):
         # depricated attribute, you can use the attributes collection::
         tr.attributes['attr'] = 'tla'
         assert tr.attributes['abbr'] == 'tla'
+
+        :abbr: el
     """
     # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
@@ -7046,7 +7048,7 @@ class codeblock(code):
     # from `pre`, but I don't know if that make much sense; maybe it
     # should just inherit from `element`. Not sure at this point. Also,
     # we don't need to add a CSS class called 'block' since 'pre > code'
-    # would probably be equivelent to '.codeblock'.
+    # would probably be equivalent to '.codeblock'.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes += 'block'
@@ -7100,43 +7102,78 @@ class selectors(entities.entities):
     by a ``selector`` object) and div would represent an second entry.
     """
 
+    # NOTE that portions of this object model, namely the parts dealing
+    # with tokenizing CSS strings, were copied from Ian Bicking's
+    # 'cssselect' project (https://github.com/scrapy/cssselect).
+    # Some modifications have been made to the code to better fit the
+    # framework's standards. See LICENCE_cssselect.
+
     ''' Inner classes '''
 
     class token(tuple):
+        """ A private class to represent the tokens in a CSS selector.
+        """
         def __new__(cls, type, value, pos):
+            """ Create the token instance.
+            
+            :param: type str: The type of token, e.g., 'IDENT', 'HASH',
+            'STRING', 'NUMBER', etc.
+
+            :param: value str: The token itself.
+
+            :param: pos int: The zero-based position in the selectors
+            string where the token occured.
+            """
             obj = tuple.__new__(cls, (type, value))
             obj.pos = pos
             return obj
 
         def __repr__(self):
+            """ Return a string representation of the token,
+            """
             return "<%s '%s' at %i>" % (self.type, self.value, self.pos)
 
-        def is_delim(self, *values):
-            return self.type == 'DELIM' and self.value in values
-
+        # Create property objects for type and value
         type = property(operator.itemgetter(0))
         value = property(operator.itemgetter(1))
 
-        def css(self):
-            if self.type == 'STRING':
-                return repr(self.value)
-            else:
-                return self.value
-
     class eof(token):
+        """ A special type of token used to indicate that parsing has
+        been completed.
+        """
         def __new__(cls, pos):
+            """ Create the token instance.
+            """
             return selectors.token.__new__(cls, 'EOF', None, pos)
 
         def __repr__(self):
+            """ Return a string representation of the token,
+            """
             return '<%s at %i>' % (self.type, self.pos)
 
     ''' Class members '''
 
     cache = dict()
     def __init__(self, sel=None, cache=True, *args, **kwargs):
-        """ Instantiate and parse the CSS3 selector string (``sel``), i.e., ::
+        """ Instantiate and parse the CSS3 selector string (sel).
+
+        Note that selectors is a collection class. Consider the
+        following CSS selector::
 
             p#pid, div.my-class
+
+        The above represents two seperate selectors delinated by a
+        comma. When parsing the above CSS selector, two `selector`
+        objects wil be added to this collection. The first will be for 
+
+            p#pid
+
+        and the second will be for 
+
+            div.my-class
+
+        Of course, most selector strings will only have one selector
+        object since most CSS selectors don't use a comma.
         """
 
         # NOTE on caching: Adding caching improved performance but not
@@ -7308,10 +7345,15 @@ class selectors(entities.entities):
         """ Parse the CSS3 selector string provided by the constructor
         (``sel``)
         """
+
+        ''' Validation '''
+
+        # Assign to err to make lines shorter
         err = CssSelectorParseError
         badtrail = set(string.punctuation) - set(list(')]*'))
         badlead = '>+~'
 
+        # Raise on empty selectors
         if not self._sel or not self._sel.strip():
             raise err('Empty selector')
 
@@ -7319,65 +7361,127 @@ class selectors(entities.entities):
         starts_with_hyphen_then_number = re.compile('^\-[0-9]')
 
         def demand_valid_identifiers(id):
+            """ Raises a CssSelectorParseError if the identifier is
+            invalid.
+
+            :param id str: The identifier to test.
+
+            """
+            # NOTE See the following for official validation rules:
+            # https://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
             def throw():
                 raise err('Invalid identifier', tok)
 
             if not valid_identifier.match(id):
+                # Identifiers must start with a letter, - or _.
                 throw()
 
             if id.startswith('--'):
+                # if the first character is a hyphen, the second
+                # character must2 be a letter or underscore, and the
+                # name must be at least 2 characters long.
                 throw()
                 
             if starts_with_hyphen_then_number.match(id):
+                # if the first character is a hyphen, the second
+                # character must2 be a letter or underscore, and the
+                # name must be at least 2 characters long.
                 throw()
 
         def element(element):
+            """ Create and return a new selector.element object given
+            the `element`.
+
+            :param: element str: An HTML element, presumably one found
+            in a CSS selector. For example, 'p' is the first and only
+            element found in the CSS selector 'p:lang(fr)'.
+            """
             if not element.isalnum() and element != '*':
                 raise ValueError('Elements must be alphanumeric')
 
             el = selector.element()
             el.element = element
+
+            # Set the numeric value for the combinator 
+            # (' ', '>', '+', # '~') that precedes the element.
             el.combinator = comb
             return el
 
+        # Create and append the first selector. We will always have one
+        # unless the CSS selector string is invalid.
         sel = selector()
         self += sel
         el = comb = attr = cls = pcls = args = None
 
         prev = None
+
+        # Iterate over each token in the CSS selector string
         for tok in self.tokenize(self._sel):
+            
+            # If this is the last token (eof) break the loop, but first
+            # check for unclosed tokens, e,g., 'input[name=username'
             if isinstance(tok, selectors.eof):
                 if attr:
+                    # e.g., '[foo=bar'
                     raise err('Attribute not closed', tok)
 
                 if not el:
+                    # e.g., 'a,b,'
                     raise err( 'Attribute not closed', tok)
 
                 if prev.value in badtrail: 
+                    # If the last token in the string is in the badtrail
+                    # list
                     raise err(tok)
 
                 if pcls and not pcls.hasvalidname:
+                    # Raise error if we are using a pseudoclass with a
+                    # bad name, e.g., ':not-a-pseudoclass()'
                     raise err(
                         'Invalid pseudoclass "%s"' % pcls.value, tok
                     )
                 break
 
             if not prev and tok.value in badlead:
+                # A bad leading token was found, e.g., "~div"
                 raise err(tok)
 
+            # If we are building pseudoclass selector arguments
             if args:
                 if tok.value == ')':
+                    # We are done with collecting the arguments so set
+                    # args to None to indicate this.
                     args = None
                 elif tok.type == 'HASH':
+                    # If token type is a hash (a id selectors such a
+                    # #my-id), prepend a #
                     args += '#' + tok.value
                     continue
                 elif tok.type != 'S':
+                    # If token type is not whitespace (S), append token.
                     args += tok.value
                     continue
 
+            # If the token is a CSS selector identifier (names of
+            # elements, names of pseudoclasses, etc.)
             if tok.type == 'IDENT':
+
+                # If we are in an element (div, p, etc) selector
                 if el:
+                    # If we are in an attribute ([key=value]) selector
                     if attr:
+                        # Set key and value of attribute. Note that some
+                        # attribute selectors only have a key because
+                        # they are selecting for boolean attributes:
+                        #
+                        #     <p hidden lang="en">
+                        #
+                        # would be match by
+                        #
+                        #     p[hidden] or p[lang=en]
+                        #
+                        # The first selector would have 'hidden' as the
+                        # key.
                         for attr1 in ['key', 'value']:
                             if getattr(attr, attr1) is None:
                                 setattr(attr, attr1, tok.value)
@@ -7386,12 +7490,20 @@ class selectors(entities.entities):
                             # NOTE We probably will never get here, but
                             # just in case...
                             CssSelectorParseError(tok)
+                    
+                    # If we are in a class (.my-class) selector
                     elif cls:
                         cls.value = tok.value
+
+                    # If we are in a pseudoclass (:lang()) selector 
                     elif pcls:
                         pcls.value = tok.value
+
+                # Else we are not in an element selector we will want to
+                # create a new one baised on this this IDENT token.
                 else:
                     try:
+                        # Create the element selector
                         el = element(tok.value)
                     except Exception as ex:
                         msg = (
@@ -7402,87 +7514,166 @@ class selectors(entities.entities):
                         raise err(msg, tok)
                     sel.elements += el
 
+            # If the token type is a string, such a the string value of
+            # of an attribute selector: p[name="string token"]
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
+
+            # If the token is a hash, i.e., an id selector: p#my-hash
             elif tok.type == 'HASH':
+                # If we are in a class or attribute selector, a hash
+                # token would be an error.
                 if cls or attr:
                     raise err(tok)
                     
+                # If we aren't in an element, then the universal
+                # selector is implied - #my-hash is the same as
+                # *#my-hash
                 if not el:
-                    # Universal selector was implied (#myid) so create it.
                     el = element('*')
                     sel.elements += el
 
                 if not el.id:
+                    # Raise exception if the token is not a valid
+                    # identifier
                     demand_valid_identifiers(tok.value)
 
+                # Set the token's value to the element's id attribute
                 el.id = tok.value
 
+            # If the token is whitespace
             elif tok.type == 'S':
+                # If we are in an element
                 if el:
+                    # If we have no args
                     if not args:
+                        # Take us out of the element
                         el = None
+
+                        # Set the combinator to Descendant (the
+                        # default combinator when whitespace is used
+                        # instead of < + or ~)
                         comb = selector.element.Descendant
+
+                # If we are in a class selector, but we have whitespace,
+                # there must be a syntax error with the CSS selector,
+                # e.g., 'p . myclass' (this might have been a typo for
+                # 'p .myclass' or 'p.myclass').
                 if cls and not cls.value:
                     raise err(tok)
                     
             elif tok.type == 'NUMBER':
+                # Interpet numbers as identifiers and raise an exception
+                # if the are invalid (I think numbers are always invalid)
                 demand_valid_identifiers(tok.value)
 
+            # If the token is a delimiter (a special character forming
+            # the CSS selector such as the brackets for an attribute
+            # selector)
             elif tok.type == 'DELIM':    
                 v = tok.value
+
+                # If we are in an element
                 if el:
+                    # If we ar not in an attribute selector and the
+                    # delimiter is a combinator
                     if not attr and v in '>+~':
+                        # The combinator indicates we are no longer in an
+                        # element
                         el = None
+
+                        # Get the numeric value for the combinator
                         comb = selector.element.str2comb(v)
+
+                    # If we aren't in an attribute, pseudoclass or class
+                    # selector
                     elif not (attr or pcls or cls):
+                        # Raise if invalid delimiter
                         if v not in ''.join('*[:.,'):
                             raise err(tok)
 
+                    # If we are in a class selector but there is no
+                    # value for the class selector, raise because it's
+                    # syntax error - consider 'id.--foo'
                     if cls and cls.value is None:
                         raise err(tok)
 
+                    # If we are in a pseudoclasses selector but there is
+                    # no value for the class selector, raise because
+                    # it's syntax error - consider 'a:,b'
                     if pcls and pcls.value is None:
                         raise err(tok)
+
+                # Else we aren't in an element
                 else:
+                    # If the token is a conbinator
                     if v in '>+~':
+                        # Get numeric value of combinator
                         comb = selector.element.str2comb(v)
+
+                    # Else token is not combinator
                     else:
                         if v not in '*[:.':
+                            # Syntax error - consider 'a & b'
                             raise err(tok)
 
+                # We should only see a ] if we are in an attribute
                 if not attr and v == ']':
                     raise err(tok)
 
+                # A comma indicates a new selector - consider
+                # 'p.somclass, div.someclass'
                 if tok.value == ',':
+                    # Create and append the selector to this collection
                     sel = selector()
                     self += sel
-                    el = comb = attr = cls = pcls = args = None
 
+                    # args stores the arguments for pseudoclasses. See
+                    # selector.pseudoclass.arguments.
+                    args = None
+
+                    # An instance of selector.attribute. Stores
+                    # attributes collected during parsing.
+                    attr = None
+
+                    el = comb = cls = pcls = None
+
+                # If we are in an attribute selector
                 if attr:
+                    # If we are closing the attribute selector
                     if tok.value == ']':
+
+                        # Make sure it's valid
                         if attr.operator and attr.value is None:
                             raise err(tok)
 
                         if attr.key is None:
                             raise err(tok)
 
+                        # Indicating we are no longer in an attribute
+                        # selector
                         attr = None
+
+                    # If we are trying to open an attribute selector
+                    # while we have one open
                     elif tok.value == '[':
                         raise err('Attribute already opened', tok)
+
+                    # Else we are building the attribute selector
                     else:
+                        # Stringify operator
                         if attr.operator is None:
                             attr.operator = ''
 
+                        # Concatentate operater with token
                         attr.operator += tok.value
-
                         op = attr.operator
 
+                        # Demand attribute is valid at this point
                         if len(op) == 1:
                             if attr.key is None:
                                 raise err(tok)
-                                
                             if op not in ''.join('=~|*^$'):
                                 raise err(tok)
                         elif len(op) == 2:
@@ -7490,12 +7681,17 @@ class selectors(entities.entities):
                                 raise err(tok)
                         elif len(op) > 2:
                             raise err(tok)
+
+                # Else we are not in an attirbute
                 else:
+                    # If tok is [, we are starting an attribute
+                    # selector (p[key=val]). If we are not in an element, create a
+                    # univeral selector element to attach the attribute
+                    # selector to because [key=val] implies *[key=val]
                     if tok.value == '[':
                         if not el:
                             # The universal selector was implied
                             # (.[foo=bar]) so create it.
-
                             el = element('*')
                             sel.elements += el
 
@@ -7509,7 +7705,11 @@ class selectors(entities.entities):
                         el.combinator = comb
                         sel.elements += el
 
+                # If token is . we must me starting a class selector
+                # (.my-class)
                 if tok.value == '.':
+                    # If we are not in an element, create a universal
+                    # one (.my-class is equivalent to *.myclass)
                     if not el:
                         # The universal selector was implied (.my-class)
                         # so create it.
@@ -7517,24 +7717,38 @@ class selectors(entities.entities):
                         sel.elements += el
                     cls = selector.class_()
                     el.classes += cls
+
+                # If tok is : we must be starting a pseudoclass
+                # (p:lang(fr))
                 elif tok.value == ':':
+                    # If we are not in an element, the universal
+                    # element is implied, so create it (:lang(fr))
                     if not el:
-                        # The universal selector was implied (.root)
-                        # so create it.
                         el = element('*')
                         sel.elements += el
                     pcls = selector.pseudoclass()
                     el.pseudoclasses += pcls
+                    
+                    # Since we are in a new pseudoclass, we are out of
+                    # any other simple selector so nullify those
+                    # references.
                     comb = attr = cls = args = None
+
+                # If the token is an open paran, we are in a
+                # pseudoclass's arguments. Set args to indicate that so
+                # the next iteration will know to start collecting
+                # arguments.
                 elif tok.value == '(':
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
                     if args:
+                        # NOTE We don't appear to ever get here
                         args += tok.value
-                    
 
             prev = tok
 
+        # Raise error if any of the selectors we added during parsing
+        # are invalid
         self.demand()
 
     def demand(self):
@@ -7544,22 +7758,81 @@ class selectors(entities.entities):
             sel.demand()
 
     def match(self, els):
+        """ Given a collection of elements (els), return the subset
+        which is matched by any of the selector objects in this
+        selectors collection.
+
+        This is the main entry point for performing a CSS selection on
+        an DOM object. Here is a demonstration of the match method being
+        called.
+
+            # Build DOM object
+            div = dom.div()
+
+            # Add some <p>s to the <div>
+            div += dom.p()
+            div += dom.p()
+
+            # Create a selectors object that selects just the <p>s
+            sels = dom.selectors('p')
+
+            # Use the selectors object to select just the <p>s
+            els = sel.match(div)
+
+            # Demonstrate that we got just the <p>s
+            assert els.count == 2
+            assert els.first is div.first
+            assert els.second is div.second
+
+        Note that this is the unconventional, longhanded way to perform
+        a selection. It would have been better to pass a selector string
+        to the div indexer like this::
+
+            els = div['p']
+
+        The above creates the selectors object and calls the match
+        method behind the scenes.
+
+        :param: els dom.elements: Any collection of elements. This
+        includes hierarchically constructed collections, i.e., DOM
+        objects.
+        """
         r = elements()
+
+        # For each selector object in this collection
         for sel in self:
+            # Call that selector object's match method
             r += sel.match(els)
 
         return r
 
     def __repr__(self):
+        """ A string representation of the selectors object. 
+        """
         return ', '.join(str(x) for x in self)
 
     def __str__(self):
+        """ A string representation of the selectors object. 
+        """
         return repr(self)
 
 class selector(entities.entity):
+    """ Represents a single selector. In the following example, two
+    ``selector`` objects would be created and appended to the
+    ``selectors`` class::
+
+        p#my-id, p#my-other-id
+
+    Usually, only one selector object needs to be created and appended
+    to the ``selectors`` collection object because, obviously, CSS
+    selectors only occasionally have commas.
+    """
 
     ''' Inner classes '''
+
     class _simples(entities.entities):
+        """ An inner class representing a collection of ``simples``.
+        """
         def __init__(self, *args, **kwargs):
             self.element = kwargs.pop('el')
             super().__init__(*args, **kwargs)
@@ -7585,6 +7858,20 @@ class selector(entities.entity):
             return self
 
     class simple(entities.entity):
+        """ The abstract class for the different types of selectors in a
+        CSS3 selector string such as "type" and "universal" selectors
+        (``selector.element``), attribute selectors
+        (``selector.attribute``), class selectors (``selector.class_``),
+        and pseudoclass selectors (``selector.pseudoclass``).
+
+        See
+        https://www.w3.org/TR/2011/REC-css3-selectors-20110929/#simple-selectors-dfn
+        for terminological explanation. 
+
+        Note that ID selectors don't have their own class. The id
+        attribute of selector.element is used for selecting elements
+        based on id.
+        """
         def __init__(self):
             self.element = None
 
@@ -7597,6 +7884,8 @@ class selector(entities.entity):
             )
 
     class elements(entities.entities):
+        """ A collection of ``selector.element`` objects.
+        """
         def demand(self):
             """ Raise error if self is invalid
             """
@@ -7604,6 +7893,8 @@ class selector(entities.entity):
                 el.demand()
 
         def __repr__(self):
+            """ A string representation of this collection.
+            """
             r = str()
             for i, el in self.enumerate():
                 if i:
@@ -7612,17 +7903,45 @@ class selector(entities.entity):
             return r
 
     class element(entities.entity):
-        Descendant         =  0
-        Child              =  1
-        NextSibling        =  2
-        SubsequentSibling  =  3
+        """ Represents the element/tag portions of a selector string,
+        along with its ``simple`` constiuents such as its attribute,
+        class and pseudoclass selectors. The preceding combinator for
+        the element is captured here as well::
+
+        p.my-class, p[key-value].my-other-class
+
+        The above CSS selector would be parsed down to two different
+        element selectors. The first would be the 'p' element (stored in
+        the `element` property) and it's `classes` collection. The next
+        would be another p element with the attribute selector stored in
+        the `attributes` collection and the class selector stored in the
+        `classes` collection.
+        """
+
+        # Constants representing the various selectors. See
+        # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
+        Descendant         =  0  # Default (represented by whitespace)
+        Child              =  1  # Represented by >
+        NextSibling        =  2  # Represented by +
+        SubsequentSibling  =  3  # Represents by ~
 
         def __init__(self):
+            # A string representing the tag name
             self.element        =  None
+
+            # Representss which combinator preceded the element
             self.combinator     =  None
+
+            # A collection of attribute selectors 
             self.attributes     =  selector.attributes(el=self)
+
+            # A collection of class selectors 
             self.classes        =  selector.classes(el=self)
+
+            # A collection of pseudoclass selectors 
             self.pseudoclasses  =  selector.pseudoclasses(el=self)
+
+            # The id portion of an element selection (p#my-id)
             self.id             =  None
 
         def clone(self):
@@ -7639,13 +7958,31 @@ class selector(entities.entity):
 
         @staticmethod
         def comb2str(comb):
+            """ A static method to return the string representation of
+            the combinator.
+
+            :param: comb int: One of the combinator constance (see
+            above).
+            """
             return [' ', '>', '+', '~'][comb]
 
         @staticmethod
         def str2comb(comb):
+            """ A static method to return the int representation of
+            the combinator.
+
+            :param: comb str: A combinator, e.g., ' ', '>', '+', '~'.
+            """
             return [' ', '>', '+', '~'].index(comb)
 
         def match(self, els):
+            """ Returns that subset ef the dom.element objects in `els`
+            which match this CSS selector.
+
+            :param: els dom.elements|dom.element: A dom.element or a
+            collection of dom.elements (i.e, a DOM object) to be
+            matched.
+            """
             if isinstance(els, element):
                 return bool(self.match([els]).count)
             
@@ -7655,18 +7992,25 @@ class selector(entities.entity):
             r = elements()
 
             for el in els:
+                # Test the element,i.e., tag name
                 if self.element.lower() not in ('*', el.tag):
                     continue
 
+                # Test the classes collection against the given element
                 if not self.classes.match(el):
                     continue
 
+                # Test the attributes collection against the given
+                # element
                 if not self.attributes.match(el):
                     continue
 
+                # Test the pseudoclasses collection against the given
+                # element
                 if not self.pseudoclasses.match(el):
                     continue
 
+                # Test the element's id
                 if self.id and self.id != el.id:
                     continue
 
@@ -7684,32 +8028,47 @@ class selector(entities.entity):
 
         @property
         def str_combinator(self):
+            """ Return the string representation of the combinator.
+            """
             return self.comb2str(self.combinator)
 
         def __repr__(self):
+            """ A string representation of this element selector.
+            """
             r = str()
+
+            # Combinator
             if self.combinator not in (None, selector.element.Descendant):
                 r += self.str_combinator + ' '
 
+            # Tag
             if self.element is not None:
                 r += self.element
 
+            # Id
             if self.id is not None:
                 r += '#' + self.id
 
+            # Attributes
             if self.attributes.count:
                 r += str(self.attributes)
 
+            # Classes
             if self.classes.count:
                 r += str(self.classes)
 
+            # Pseudoclasses
             if self.pseudoclasses.count:
                 r += str(self.pseudoclasses)
 
             return r
 
-    ''' Class members '''
+    ''' Members of `selector` '''
+
     def __init__(self):
+        """ Create a new ``selector`` object assigning it an empty
+        ``selector.elements`` collection.
+        """
         self.elements = selector.elements()
 
     def clone(self):
@@ -7721,14 +8080,45 @@ class selector(entities.entity):
         return sel
 
     def match(self, els, el=None, smps=None):
+        """ Of the elements in the `els` collection, return a new
+        elements collection containing those elements that match this
+        selector.
+
+        :param: els dom.elements: A collection of elements, usually a
+        DOM object.
+        """
+        # Get the last element. We match the next element depending on
+        # the combinator. For example, if we have a Descendant
+        # combinator:
+        #
+        #     div p
+        #
+        # We want to first find all the <p> elements - the *last*
+        # element - in `els`. For each of the <p> elements we find, we
+        # can use it's ``ancestors`` property to determine if it is
+        # under a div. Similar logic is used for the other combinators.
         last = self.elements.last
-        els1 = last.match(els.genchildren())
+
+        # Recursively match els' children
+        els1 = last.match(els.getchildren())
+
+        # Create a collection of elements to remove later. These will be
+        # the elements that were match by the above match but ended up
+        # being rejected because preceding simple selectors didn't
+        # match. So if we have 'div p', all the <p>s would have been
+        # selected, and the <p>s that weren't under a <div> would be
+        # added to rms to be removed.
         rms = elements()
 
+        # For each of the elements matched above
         for el1 in els1:
             comb = last.combinator
             orig = el1
+
+            # For each element above the last element in reverse order
             for i, smp in enumerate(self.elements[:-1].reversed()):
+
+                # If combinator is Descendant (whitespace)
                 if comb in (selector.element.Descendant, None):
                     for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
@@ -7737,6 +8127,8 @@ class selector(entities.entity):
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is Child (>)
                 elif comb == selector.element.Child:
                     an = el1.parent
                     if smp.match(an):
@@ -7744,12 +8136,16 @@ class selector(entities.entity):
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is NextSibling (+)
                 elif comb == selector.element.NextSibling:
                     if smp.match(el1.previous):
                         el1 = el1.previous
                     else:
                         rms += orig
                         break
+
+                # Else if combinator is SubsequentSibling (~)
                 elif comb == selector.element.SubsequentSibling:
                     els2 = selectors(repr(self.elements[:-1 - i])).match(els)
                     for precs in el1.preceding:
@@ -7769,28 +8165,57 @@ class selector(entities.entity):
         return els1
 
     def demand(self):
-        """ Raise error if self is invalid
+        """ Raise error if this selector is invalid.
         """
         self.elements.demand()
 
     def __repr__(self):
+        """ Return a string representation of this selector.
+        """
         return repr(self.elements)
 
     def __str__(self):
+        """ Return a string representation of this selector.
+        """
         return repr(self)
 
     class attributes(_simples):
+        """ Represents a collection of selector.attribute objects.
+        """
         def __repr__(self):
+            """ Return a string representation of this attributes
+            selector collection.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Returns True if el matechs all the attribute selectors
+            in this collection.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
+            """ Raise error if this attribute selector collection is
+            invalid.  Although... currently there is nothing that would
+            indicate that it is invalid.
+            """
             pass
 
     class attribute(simple):
+        """ Represents an attribute selector.
+
+        In CSS selector strings, attribute selectors are denoted by
+        brackets::
+
+            p[name=myname]
+
+        In the above, the attribute selector would capture the string
+        'name' in self.key, the operator '=' in self.operator, and
+        'myname' in self.value.
+        """
         def __init__(self):
+            """ Create the attribute selector.
+            """
             self.key       =  None
             self.operator  =  None
             self.value     =  None
@@ -7805,12 +8230,21 @@ class selector(entities.entity):
             return attr
 
         def __repr__(self):
+            """ Return a string representation of this attribute
+            selector.
+            """
             k   =  self.key       or  ''
             op  =  self.operator  or  ''
             v   =  self.value     or  ''
             return '[%s%s%s]' % (k, op, v)
 
         def match(self, el):
+            """ Returns true if the dom.element 'el' has an attribute
+            that matches this selector, False otherwise.
+
+            :param: el dom.element: A dom.element to test the selector
+            against.
+            """
             for attr in el.attributes:
                 if attr.name.lower() == self.key.lower():
                     op = self.operator
@@ -7852,17 +8286,42 @@ class selector(entities.entity):
             return False
 
     class classes(_simples):
+        """ A collection of ``class_`` selectors.
+        """
         def __repr__(self):
+            """ Returns a string representation of this class selectors.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Returns True if all the class selectors in this
+            collection match el.
+
+            :param: el dom.element: A DOM element to test.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
-            pass
+            """ Raise an exception if self is invalid.
+            """
+            # NOTE There are no tests for this at the moment. We just
+            # need to implement the method so it conforms to the
+            # interface.
 
     class class_(simple):
+        """ Represents a class selector.
+
+        In the expression:
+
+            p.my-class
+
+        The string 'my-class' would be assigned to self.value.
+        self.match would return true for any element that has that
+        class.
+        """
         def __init__(self):
+            """ Create the class selector.
+            """
             self.value = None
 
         def clone(self):
@@ -7873,23 +8332,57 @@ class selector(entities.entity):
             return cls
 
         def __repr__(self):
+            """ Returns a string representation of this class selector.
+            """
             return '.' + self.value
 
         def match(self, el):
+            """ Return True if el has a class that matches this class
+            selector, False otherwise.
+
+            :param: el dom.element: The element againt which the class
+            selector is tested.
+            """
             return self.value in el.classes
 
     class pseudoclasses(_simples):
+        """ Represents a collection of ``pseudoclass`` selectors.
+            :v
+        """
         def __repr__(self):
+            """ Returns a string representation of this pseudoclasses
+            collection.
+            """
             return ''.join(str(x) for x in self)
 
         def match(self, el):
+            """ Return True if el has a pseudoclass that matches this
+            pseudoclass selector, False otherwise.
+
+            :param: el dom.element: The element againt which the class
+            selector is tested.
+            """
             return all(x.match(el) for x in self)
 
         def demand(self):
+            """ Raise an exception if this pseudoclasses collection
+            contains a pseudoclass that is invalid.
+            """
             for pcls in self:
                 pcls.demand()
 
     class pseudoclass(simple):
+        """ Represents a tree-structural pseudoclass selector.
+
+        Consider:
+            
+            p:first-child
+
+        In the above CSS selector, the string 'first-child' would
+        be assigned to self.value.
+
+        :abbr: pcls
+        """
         validnames = (
             'root',         'nth-child',         'nth-last-child',
             'nth-of-type',  'nth-last-of-type',  'first-child',
@@ -7899,8 +8392,26 @@ class selector(entities.entity):
         )
 
         ''' Inner classes '''
+
         class arguments(element):
+            """ Represents a pseudoclasses arguments.
+
+            Consider:
+                    
+                    li:nth-child(2n+0)
+
+            In the above example, the nth-child pseudclass would have
+            two arguments: 2 and 0. 2 would be assigned to self.a and 0
+            would be assigned to self.b.
+
+            :abbr: args
+            """
             def __init__(self, pcls):
+                """ Create the arguments object.
+
+                :param: pcls selector.pseudoclass: The pseudoclass to
+                which this argument object belongs.
+                """
                 self.string       =  str()
                 self._a           =  None
                 self._b           =  None
@@ -7916,21 +8427,51 @@ class selector(entities.entity):
                 return args
 
             def __iadd__(self, str):
+                """ Append to the text of the argument string.
+
+                :param: str str: The string to append to self.string.
+                """
                 self.string += str
                 return self
 
             @property
             def a(self):
+                """ Returns the first argument in the arguments object:
+
+                Given: 
+
+                    li:nth-child(2n+0)
+
+                2 is returned.
+                """
+                # Ensure self.string has been parsed.
                 self._parse()
                 return self._a
 
             @property
             def b(self):
+                """ Returns the second argument in the arguments object:
+
+                Given: 
+
+                    li:nth-child(2n+0)
+
+                0 is returned.
+                """
+                # Ensure self.string has been parsed.
                 self._parse()
                 return self._b
 
             @property
             def c(self):
+                """ Return the argument to the lang pseudoclass.
+
+                Given:
+                        
+                    p.lang(fr)
+
+                'fr' is returned
+                """
                 if self.pseudoclass.value != 'lang':
                     raise NotImplementedError(
                         'Only lang pseudoclass has C argument'
@@ -7939,6 +8480,20 @@ class selector(entities.entity):
 
             @property
             def selectors(self):
+                """ When this ``arguments`` object  represents a :not
+                pseudoclass, this method returns a selector object for
+                the selector being negatively selected for. For
+                example, given the following CSS selector::
+
+                    :not(p)
+
+                The 'p' is the argument to the :not pseudoclass. This
+                property would create a selector based on that argument,
+                and return it.
+
+                `None` is returned if the pseudoclass is not a :not
+                pseudoclass.
+                """
                 if self.pseudoclass.value.lower() != 'not':
                     return None
 
@@ -7957,17 +8512,38 @@ class selector(entities.entity):
                 return sels
 
             def _parse(self):
+                """ Parses the value held in self.string (which contains
+                the pseudoclasses arguments as developed by the author of the CSS
+                selector), into values for a and b @property's.
+                """
+                # Store in err for concision
                 err = CssSelectorParseError
+
+                # The argument to :lang pseudoclasses (the 'fr' in
+                # :lang(fr), for example) is returned by the c property.
+                # No parsing needs to be done for :lang.
                 if self.pseudoclass.value == 'lang':
                     return
 
+                # Init
                 a = b = None
+
+                # Get the str to parse
                 s = self.string
+
+                # If the argument is 'odd', e.g., nth-child(odd), set
+                # a,b=2,1 because nth-child(odd) is equivalent to
+                # nth-child(2n+1)
                 if s.lower() == 'odd':
                     a, b = 2, 1
+
+                # Elif the argument is 'even', e.g., nth-child(even), set
+                # a,b=2,0 because nth-child(even) is equivalent to
+                # nth-child(2n+0)
                 elif s.lower() == 'even':
                     a, b = 2, 0
                 elif len(s) == 1:
+                    # nth-child(n) is equivalent to li:nth-child(1n+0)
                     if s.lower() == 'n':
                         a, b = 1, 0
                     else:
@@ -7976,51 +8552,79 @@ class selector(entities.entity):
                         except ValueError:
                             pass
                         else:
+                            # nth-child(2) is equivalent to nth-child(0n+2)
                             a, b = 0, i
                 elif len(s) == 2:
                     try:
-                        # E:nth-child(2n)
                         if s[0] in ('+', '-'):
                             try:
                                 i = int(s)
                             except ValueError:
                                 pass
                             else:
+                                # e.g., nth-child(+6) is equivalent to
+                                # nth-child(0n+6)
                                 a, b = 0, i
                         elif s[1].lower() != 'n':
                             raise err(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
                         else:
+                            # e.g., nth-last-child(4n) is equivalent to
+                            # nth-last-child(4n+0)
                             a, b = int(s[0]), 0
                     except ValueError:
                         raise err(
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
+                    # Match pseudoclass arguments like :nth-child(2n+0)
                     m = re.match(
                         '(\+|-)?([0-9]+)?[nN] *(\+|-) *([0-9])+$', s
                     )
+
+                    # If a match was made
                     if m:
                         gs = m.groups()
 
+                        # If all four groups were matched
                         if len(gs) == 4:
+                            
+                            # If no sign was specified in the argemuntes
+                            # (e.g., 2n+0)
                             if gs[0] is None:
                                 gs = list(gs)
+
+                                # Default to a plus sign if no sign was
+                                # found.
                                 gs[0] = '+'
 
+                            # TODO gs[0] can't be None here so no need
+                            # to test it.
+                            
+                            # If the arguments start with a numeric
+                            # value (e.g., nth-child(+1n+0))
                             if gs[0] is not None and gs[1] is not None:
+                                # Set a to the first numeric value
                                 a = int(gs[0] + gs[1])
 
-                            # gs[0] would be None for 'n+0'
+                            # If the arguments don't start off with a
+                            # numeric value (e.g., nth-child(n+0))
                             if a is None:
+                                # Default a to 1
                                 a = int(gs[0] + '1')
 
+                            # Set be to the second and last value (i.e.
+                            # the 2 in :nth-child(1n+2)(
                             b = int(gs[2] + gs[3])
 
+                # Make a and b the corresponding proprety values of this
+                # object.
                 self._a, self._b = a, b
 
             def __repr__(self):
+                """ Return a string representation of the arguments.
+                """
                 pcls = self.pseudoclass.value
                 if pcls == 'lang':
                     return '(%s)' % self.string
@@ -8038,10 +8642,18 @@ class selector(entities.entity):
 
                 return '(%sn%s)' % (a, b)
 
-        ''' Class members '''
+        ''' Class members of ``pseudoclass`` '''
+
         def __init__(self):
+            """ Create a pseudoclass object.
+            """
+            # Invoke selector._simple.__init__
             super().__init__()
+
+            # Init the value
             self.value = None
+
+            # Set the arguments proprety to an instance of `argument`
             self.arguments = selector.pseudoclass.arguments(self)
 
         def clone(self):
@@ -8053,28 +8665,42 @@ class selector(entities.entity):
             return pcls
 
         def demand(self):
+            """ Raise an exception if pseudoclass is invalid.
+            """
             err = CssSelectorParseError
+
+            # If this represents an nth-* pseudoclass, we should have an
+            # a and b property in the arguments.
             if self.value.lower().startswith('nth-'):
                 if self.arguments.a is None or self.arguments.b is None:
                     raise err(
                         'Error in argument(s) to pseudoclass '
                         '"%s"' % self.value
                     )
+            # If this is a :not pseudoclass...
             elif self.value.lower() == 'not':
                 # If the pseudoclass is 'not', then invoke its
-                # 'arguments.selectors'. That will cause not's arguments
-                # to be parse. If there is a parse error in not's
-                # arguments (stored as a str in self.arguments.string),
-                # invoking this property will raise the
-                # CssSelectorParseError.
+                # 'arguments.selectors'. That will cause :not's
+                # arguments to be parse. If there is a pares error in
+                # not's arguments (stored as a str in
+                # self.arguments.string), invoking this property will
+                # raise the CssSelectorParseError.
                 self.arguments.selectors
 
         def __repr__(self):
+            """ Return a str representation of this pseudoclass object.
+            """
             r = ':' + self.value
             r += repr(self.arguments)
             return r
 
         def _match_lang(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :lang(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             langs = el.language
             if langs is None:
                 return
@@ -8092,9 +8718,21 @@ class selector(entities.entity):
             return args[0] == langs[0]
 
         def _match_root(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :root(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return el is el.root
 
         def _match_nth_child_starting_at(self, begining, el, oftype):
+            """ Called by the self._match_nth_* methods to determine if
+            el matches this pseudoclass selector. See the
+            self._match_nth* methods for more for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             a, b = self.arguments.a, self.arguments.b
 
             sibs = el.getsiblings(accompany=True)
@@ -8122,31 +8760,68 @@ class selector(entities.entity):
             return False
 
         def _match_nth_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-child(). See self.match
+            for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=True, el=el, oftype=False
             )
 
         def _match_nth_last_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-last-child(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=False, el=el, oftype=False
             )
 
         def _match_nth_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :nth-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=True, el=el, oftype=True
             )
 
         def _match_nth_last_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :not(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_nth_child_starting_at(
                 begining=False, el=el, oftype=True
             )
 
         def _match_first_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :first-child(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(accompany=True)
+
             sibs.remove(lambda x: type(x) is text)
             return sibs.first is el
 
         def _match_last_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is
+            :last-child(). See self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(accompany=True)
             sibs.remove(lambda x: type(x) is text)
             return sibs.last is el
@@ -8165,20 +8840,51 @@ class selector(entities.entity):
             return False
 
         def _match_first_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :first-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_x_of_type(el=el)
 
         def _match_last_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :last-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             return self._match_x_of_type(el=el, last=True)
 
         def _match_only_child(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :only-child(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(accompany=True)
             return sibs.where(lambda x: type(x) is not text).issingular
 
         def _match_only_of_type(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :only-of-type(). See
+            self.match for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             sibs = el.getsiblings(accompany=True)
             return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :not-empty(). See self.match
+            for more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
+
             # `comments` elements don't matter when it comes to
             # emptiness but `text' elements actually do. This includes
             # text with just whitespace. Processing instructions matter
@@ -8187,16 +8893,29 @@ class selector(entities.entity):
             return els.isempty
 
         def _match_not(self, el):
+            """ Called by self.match to determine if el matches this
+            pseudoclass selector when it is :not(). See self.match for
+            more details.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             m = self.arguments.selectors[0].elements[0].match
             m = m(el)
             return not m
 
         def match(self, el):
+            """ Returns True if el matches this pseudoclass selector
+            object, False otherwise.
+
+            :param: el dom.element: The DOM element being tested.
+            """
             if type(el) in (text, comment):
                 return False
 
+            # Get name of the actual CSS pseudoclass (e.g., 'nth-child')
             pcls = self.value.replace('-', '_').lower()
             
+            # Delegate to a private pseudoclass-specific method
             return getattr(self, '_match_' + pcls)(el)
 
         @property

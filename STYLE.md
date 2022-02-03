@@ -113,6 +113,7 @@ Discuss prefering non-negated conditional:
             ...
         else:
             ...
+Discuss 'On branch <branch-name>' in git logs
 
 Use x as default list comprension variable
     
