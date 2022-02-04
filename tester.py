@@ -636,9 +636,6 @@ class tester(entities.entity):
     def browser(self, *args, **kwargs):
         return tester._browser(self, *args, **kwargs)
 
-    def print(self, *args, **kwargs):
-        print(*args, **kwargs)
-
     @property
     def ok(self):
         return self.failures.isempty
