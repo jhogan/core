@@ -19,6 +19,7 @@ import dom
 import ecommerce
 import entities
 import gc
+import time
 import inspect
 import io
 import json
@@ -1357,6 +1358,7 @@ class failure(entities.entity):
         
 class cli:
     def __init__(self):
+        self.start = time.time()
         # If we are instantiating, convert the @classmethod cli.run to
         # the instance method cli._run. This makes it possible to call
         # the run() method either as cli.run() or cli().run(). This also
@@ -1381,7 +1383,12 @@ class cli:
         messages would typically be logged to syslog and would probably
         go unnoticed if we didn't print them here.
         """
-        print(eargs.record)
+        rec = eargs.record
+        print(f'{self.seconds:.3f} {rec.levelname} {rec.message}')
+
+    @property
+    def seconds(self):
+        return time.time() - self.start
 
     @property
     def testers(self):
@@ -1566,7 +1573,7 @@ class cli:
         meth = eargs.method[0]
 
         # Print stats with current test method being tested
-        print(f'# {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
+        print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
     pass
