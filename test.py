@@ -958,22 +958,14 @@ class artist_artist(orm.association):
 
 class test_orm(tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'party', 'apriori'
+        super().__init__(mods=mods, *args, **kwargs)
         orm.security().override = True
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += \
             self._chronicler_onadd
 
         if self.rebuildtables:
-            es = orm.orm.getentityclasses(includeassociations=True)
-            # Since orm entities now depends on `party` (someone
-            # circularly), we need to ensure the party classes have
-            # updated tables definitions in the database. `party` is
-            # dependent on `apriori`.
-            for e in es:
-                if e.__module__ in ('party', 'apriori'):
-                    e.orm.recreate()
-
             orm.orm.recreate(
                 artists,
                 presentations,
