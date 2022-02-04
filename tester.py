@@ -86,8 +86,13 @@ class testers(entities.entities):
         if config().inproduction:
             raise Exception("Won't run in production environment.")
 
+
+        logs.info('Getting tester subclasses ...')
+        clss = self.subclasses
+
         # For each of the tester subclasses
-        for cls in self.subclasses:
+        logs.info('Iterating over subclasses ...')
+        for cls in clss:
             # If class was given, but cls isn't that class, skip
             if self.class_ and cls.__name__ != self.class_:
                 continue
@@ -188,8 +193,7 @@ class testers(entities.entities):
                     else:
                         inst._failures += failure(ex, assert_=meth[0])
 
-        # TODO print statements should be in the cli classes
-        print('')
+        logs.info('Test complete')
 
     @property
     def subclasses(self):
@@ -259,6 +263,8 @@ class principle(entities.entity):
         company and the standard Carapacian company
         (ecommerce.company.carapacian).
         """
+        logs.info('Creating principles ...')
+
         iscreated = hasattr(self, 'iscreated')
 
         # Make sure the needed table exist
@@ -358,6 +364,7 @@ class tester(entities.entity):
 
         # Rebuild tables in `mods`
         if mods and self.rebuildtables:
+            logs.info(f'Rebuilding tables for {mods}')
             # Get the list of orm.entity classes.
             es = orm.orm.getentityclasses(includeassociations=True)
 
