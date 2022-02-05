@@ -1543,14 +1543,29 @@ class input(dom.div):
             els += dom.small(self.help)
 
 class error(page):
+    """ A page intended to show an error message. 
+
+    Usually error pages are called when another page raises a
+    www.HttpError exception. This page will be used to capture the
+    exceptions details and present it to the user.
+    """
     @property
     def pages(self):
+        """ A collection of error pages. Usually, the error pages will
+        correspond to an HTTP error code. A default 404 page is added
+        default since it is so common.
+        """
         if not self._pages:
             self._pages = super().pages
             self._pages += _404()
         return self._pages
         
     def main(self, ex):
+        """ The main function for the page.
+
+        :param: ex www.HttpException: The exception that caused this
+        page to be invoked.
+        """
         args = (
             ex.phrase,
             ex.status,
@@ -1600,7 +1615,15 @@ class traceback(dom.article):
             div  +=  dom.span(tb.name,    class_='name')
 
 class _404(page):
+    """ An error page to show that the requested page was not found.
+    """
+    # NOTE I think this shoud inherit from ``error``.
     def main(self, ex: www.NotFoundError):
+        """ The main method of the page.
+
+        :param: ex www.NotFoundError: The www.NotFoundError exception
+        object that caused this error page.
+        """
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
 
@@ -1610,5 +1633,7 @@ class _404(page):
 
     @property
     def name(self):
+        """ Return teh name of the error page.
+        """
         return type(self).__name__.replace('_', '')
 
