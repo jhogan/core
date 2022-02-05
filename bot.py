@@ -360,6 +360,12 @@ class bot(ecommerce.agent):
         if lvl not in self.Levels:
             raise ValueError(f'Invalid level: "{lvl}"')
 
+        if msg:
+            if lvl in ('error', 'critical', 'exception'):
+                import logs
+                meth = getattr(logs, lvl)
+                meth(msg)
+
         # Get the list of levels that the bot should log for
         lvls = self.levels
 
