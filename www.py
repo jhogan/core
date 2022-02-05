@@ -2019,7 +2019,7 @@ class browser(entities.entity):
 
             hdrs = req.headers.dict
 
-            import urllib
+            import urllib.request
             req1 = urllib.request.Request(
                 url, body, hdrs, method=meth
             )
