@@ -284,12 +284,6 @@ class postmark(emailer):
             # Make the HTTP request
             res = tab.request(req)
         except Exception as ex:
-            # Convert Exception to api.Error exception
-            ex1 = api.Error(ex)
-            body = json.loads(ex.response.body)
-            ex1.code = body['ErrorCode']
-            ex1.message = body['Message']
-
             # TODO Some work needs to be done here. If the API responds
             # in a way that implies a hard bounce then we should just
             # record the status entry as such and raise an error.
@@ -313,7 +307,21 @@ class postmark(emailer):
             # Save dispatch
             dis.save()
 
-            raise ex1
+            # HttpException have JSON responses so we can parse them
+            # out. However, we may be getting a non-HttpException so
+            # raise ex if we can't parse response. NOTE We may actually
+            # want to create a seperate `except` block to deal with
+            # HttpException's.
+            try:
+                # Convert Exception to api.Error exception
+                ex1 = api.Error(ex)
+                body = json.loads(ex.response.body)
+                ex1.code = body['ErrorCode']
+                ex1.message = body['Message']
+            except:
+                raise ex
+            else:
+                raise ex1
         else:
             # Successful POST to Postmark
             dis.statuses += message.status(
