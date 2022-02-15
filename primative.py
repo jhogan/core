@@ -13,13 +13,43 @@ import datetime as stddatetime
 import dateutil
 import dateutil.parser
 
-class datetime(stddatetime.datetime):
-    def __new__(cls, *args, **kwargs):
+""" This module provides overrides for basic datatypes (primatives) such
+as datetime. The goal is to make these (typically) builtin datatypes
+more user-friendly and better able to meet the needs of the framework
+and the framework's users.
+"""
 
+class datetime(stddatetime.datetime):
+    """ A datetime class that inherits from Python's standard datetime
+    class. You will usually use this class instead of the standarad
+    datetime class since it provides a more conveniente user experience
+    and can be further customized to meet needs of the framework.
+    """
+    def __new__(cls, *args, **kwargs):
+        """ Create a new primative.datetime.
+
+        :param: *args[0] str|datetime.datetime: A datetime used to
+        create the new primative.datetime. If it's a str, it will be
+        parsed (hopefully correctly) by the powerful dateutil.parser
+        library. A format string will not be needed. The timezone will
+        default to UTC. 
+
+        A standard Python datetime can also be used.
+
+        Note that you can also instatiate this object the same way you
+        would instantiate a Python datetime object. See the
+        documentation at 
+
+            https://docs.python.org/3/library/datetime.html#datetime-objects
+
+        for details.
+        """
         dt = args[0]
         if type(dt) is str:
+            # Parse the datetime as a string
+
             # TODO When parsing a date str, the returned datetime is
-            # naive. It should probably default to UTC. We should
+            # naive. It currently defaults to UTC. However, we should
             # except a `tz` argument to specify the timezone since
             # dateutil.parser.parse doesn't seem to be able to parse a
             # timezone, i.e., the following won't work:
@@ -40,10 +70,13 @@ class datetime(stddatetime.datetime):
             return dt
 
         elif isinstance(dt, stddatetime.datetime):
+            # Instantiate given a standard Python datetime
             return datetime(dt.year,        dt.month,    dt.day,
                             dt.hour,        dt.minute,   dt.second,
                             dt.microsecond, dt.tzinfo)
             
+        # Instantiate using the same arguments that would be given to a
+        # standard Python datetime object.
         return stddatetime.datetime.__new__(cls, *args, **kwargs)
 
     def astimezone(self, tz=None):
