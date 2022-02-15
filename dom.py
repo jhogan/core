@@ -1577,20 +1577,20 @@ class element(entities.entity):
     @property
     def children(self):
         """ Returns a new ``elements`` collection containing all the
-        child elements of this element. Note that comment and text nodes
-        are not included. To get comment and text nodes as well, use
-        ``elements``.
+        direct child elements of this element. Note that comment and
+        text nodes are not included. To get comment and text nodes as
+        well, use ``elements``.
+
+        Also note that this property builds and returns a new elements
+        collection. If you only want to itereate over the direct
+        children of the element, it would be more perfomant to use
+        genchildren since it returns a generator::
+            
+            for el in els.genchildren():
+                ...
 
         """
-        # XXX getchildren should be refactored to filter out comments
-        # and text. Then, this proprety should call getchildren. This
-        # property should have it its docstring a warning about
-        # performance and encouragement to use genchildren for code that
-        # needs to be performant.
-        initial = (
-            x for x in self.elements if type(x) not in (comment, text)
-        )
-        return elements(initial=initial)
+        return elements(initial=self.genchildren())
 
     def getchildren(self, recursive=False):
         """ Returns a new ``elements`` collection containing all the
