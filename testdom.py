@@ -74,7 +74,7 @@ class dom_elements(tester.tester):
 
     def it_calls_pretty(self):
         def rm_uuids(els):
-            for x in els.all:
+            for x in els.walk():
                 # Remove computer generated UUID ids
                 try:
                     primative.uuid(base64=x.id)
@@ -223,7 +223,7 @@ class dom_element(tester.tester):
         </html>
         ''')
 
-        self.all(x.lang is None for x in html.all)
+        self.all(x.lang is None for x in html.walk())
 
     def it_calls_parent(self):
         p = dom.paragraph()

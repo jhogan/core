@@ -967,6 +967,14 @@ class elements(entities.entities):
             yield el
             yield from el.genchildren(recursive=True)
 
+    def walk(self):
+        """ Return a generator that yield all elements underneath this
+        ``elements`` including ``comment`` and ``text`` nodes.
+        """
+        for el in self:
+            yield el
+            yield from el.genelements(recursive=True)
+
     @property
     def all(self):
         """ Return a new ``elements`` collection containing all elements
@@ -974,22 +982,19 @@ class elements(entities.entities):
         nodes.
 
         Note that for performance reasons, it is preferable to use the
-        genelements() method instead::
+        walk() method when iterating instead::
 
-            self.genelements(recursive=True)
+            for el in self.walk():
+                ...
 
-        It produces a generator and therefore does not require a call to
-        entities.append for each element it generates. Use all() for
-        cases where you want to have an ``elements`` collection to work
-        with and performance isn't an issue.
+        self.walk produces a generator and therefore does not require a
+        call to entities.append for each element it generates. Use all()
+        for cases where you want to have an ``elements`` collection to
+        work with and performance isn't an issue.
         """
-        # XXX Create a walk() alternative for this.
         els = elements()
-        for el in self:
+        for el in self.walk():
             els += el
-
-            gen = el.genelements(recursive=True)
-            els += gen
         return els
 
     @property
