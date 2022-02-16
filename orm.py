@@ -7971,20 +7971,20 @@ class orm:
 
         # dicts to store mappings between entity classes and their
         # corresponding names and abbreviations. (see orm.getentity())
-        cls._ent2abbr = dict()
-        cls._abbr2ent = dict()
-        cls._namedict = dict()
+        orm._ent2abbr = dict()
+        orm._abbr2ent = dict()
+        orm._namedict = dict()
 
         # A cache created by orm.getentityclasses to contain all
         # subclasses of orm.entity.
-        cls._entityclasses = None
+        orm._entityclasses = None
 
         # A cache created by orm.getentityclasses to contain all
         # subclasses of orm.association.
-        cls._entityclasseswithassociations = None
+        orm._entityclasseswithassociations = None
 
         # Look up entities classes give a module name and a class name
-        cls._mod_name_entitiesclasses = None
+        orm._mod_name_entitiesclasses = None
 
         for cls in orm.getsubclasses(of=entity):
             # Nullify the _subclass instance field for each orm object
