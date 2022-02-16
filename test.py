@@ -5664,8 +5664,7 @@ class test_orm(tester):
         # run to remove it entirely. See this discussion for why:
         # https://stackoverflow.com/questions/52428679/how-to-remove-classes-from-subclasses
 
-
-        orm.orm._forget(single)
+        orm.forget(single)
 
         # Test explicit detection of orm.entities 
         class bacteria(orm.entities):

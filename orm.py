@@ -7838,6 +7838,44 @@ class security:
         r += ')'
         return r
 
+def forget(cls):
+    """ Completely forget about an entity class.
+
+    This is typically used by tests that need to create a temporary
+    class for testing, then completely remove it. This involves
+    calling the `del` operator on the class, performing cyclical
+    garbage collecting, then removing the class from any caches the
+    ORM uses for quick lookups of entity classes. This function would
+    probably never be used in production code.
+
+    :param: cls type: The class reference to forget.
+    """
+    # Get the complement class of cls
+    complement = None
+    if entity in cls.__mro__:
+        # If cls is an entity, get it's entities complement
+        with suppress(IntegrityError):
+            complement = cls.orm.entities
+
+    elif entities in cls.__mro__:
+        # If cls is an entities, get it's entity complement
+        with suppress(AttributeError):
+            complement = cls.orm.entity
+    else:
+        # Probably won't happen
+        raise TypeError('Cannot find complement')
+
+    # Add to forget list
+    orm._forgotten.append(cls)
+
+    if complement:
+        orm._forgotten.append(complement)
+
+    del cls, complement
+
+    # Invalidate caches
+    orm._invalidate()
+
 class orm:
     """ The ORM class.
 
@@ -7920,52 +7958,8 @@ class orm:
 
         self.recreate = self._recreate
 
-    # XXX TODO Make static method
-    def _forget(cls):
-        """ Completely forget about a entity class.
-
-        This is typically used by tests that need to create a temporary
-        class for testing, then completely remove it. This involves
-        calling the `del` operator on the class, performing cyclical
-        garbage collecting, then removing the class from any caches the
-        ORM uses for quick lookups of entity classes. This method would
-        probably never be used in production code.
-
-        :param: cls type: The class reference to forget.
-        """
-        # Delete the class
-
-        # Get the complment class of cls
-        complement = None
-        if entity in cls.__mro__:
-            # If cls is an entity, get it's entities complement
-            with suppress(IntegrityError):
-                complement = cls.orm.entities
-
-        elif entities in cls.__mro__:
-            # If cls is an entities, get it's entity complement
-            # XXX This won't necessarily raise an IntegrityError,
-            # probably an AttributeError, so change.
-            with suppress(IntegrityError):
-                complement = cls.orm.entity
-        else:
-            # Probably won't happen
-            raise TypeError('Cannot find complement')
-
-        # Add to forget list
-        orm._forgotten.append(cls)
-
-        if complement:
-            orm._forgotten.append(complement)
-
-        del cls, complement
-
-        # Invalidate caches
-        orm._invalidate()
-
-    # XXX This should probably just be a @staticmethod
-    @classmethod
-    def _invalidate(cls):
+    @staticmethod
+    def _invalidate():
         """ Invalidate all the caches the orm keeps.
 
         Note that currently this involves the various entity lookup
