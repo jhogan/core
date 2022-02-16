@@ -1164,7 +1164,7 @@ class benchmark(tester):
         actual /= number
 
         # Record the assesment for future reporting
-        self.assessments += assessment(min, max, actual, number)
+        self.assessments += assessment(min, max, actual)
 
         # If debug mode
         if self.testers.profile:
@@ -1261,7 +1261,7 @@ class assessment(entities.entity):
     actual time it took to complete.
     """
 
-    def __init__(self, min, max, actual, number, *args, **kwargs):
+    def __init__(self, min, max, actual, *args, **kwargs):
         """ Create an assessment.
 
         :param: min float|int: Along with max, represents the range of
@@ -1272,13 +1272,11 @@ class assessment(entities.entity):
 
         :param: actual float: The duration, in milliseconds, the unit took.
         """
-        # XXX Remove number. We aren't using it.
         super().__init__(*args, **kwargs)
 
         # Record object state
         self.min = min
         self.max = max
-        self.number = number
         self.actual = actual
 
         # Use instrospection to get the class (tester) and method that
