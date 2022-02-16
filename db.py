@@ -520,6 +520,12 @@ class pool(entitiesmod.entity):
 
         self.push(conn)
 
+    def __repr__(self):
+        r = '< ' + str(type(self))
+        r += f'nin={len(self._in)}, nout={len(self._out)}'
+        r += '>'
+        return r
+
 class operationeventargs(entitiesmod.eventargs):
     """ An eventargs class to note the details of a database operation
     such as a connection.
