@@ -50,6 +50,9 @@ TODOs:
 
     TODO Remove all the assert* methods. Replace their invocations with
     the terser names, i.e., s/assertEquals/eq/.
+
+    TODO If the class or method given to test can't be found, print an
+    error message and exit with an exit code greater than 0.
 """
 
 class invoketesteventargs(entities.eventargs):
@@ -1462,14 +1465,6 @@ class cli:
             # Only run performance tests. Exclude all the regular logic
             # tests
             ./test.py -p
-
-            # Exclude all performance tests. Only run logic tests.
-            ./test.py -P
-
-            # Note that this will run test_orm.it_instantiates even
-            # though it's not a performance test; the -P will be
-            # ignored.
-            ./test.py -P test_orm.it_instantiates
 
             # Run test_orm.it_instantiates under profile
             ./test.py test_orm.it_instantiates:p

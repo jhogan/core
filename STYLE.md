@@ -118,3 +118,8 @@ Discuss 'On branch <branch-name>' in git logs
 Use x as default list comprension variable
     
     [x for x in ls if x.prop = 'value']
+
+Discuss naming constants
+
+Discuss the importance of keeping the repo small and its file structure
+flat.

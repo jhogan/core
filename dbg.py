@@ -53,12 +53,12 @@ def B(x=True):
 
 def PM(ex):
     """ This function can be called from within an exception to take
-    your pdb debugger to the source of an exception::
+    your PDB debugger to the source of an exception::
 
         try:
             problematic()
         except Exception as ex:
-            # XXX There is some sort of issue with the function
+            # There is some sort of issue with the function
             # `problematic` so I am going to see exactly where the
             # exception is being raised:
             import dbg
@@ -69,10 +69,10 @@ def PM(ex):
 
         pdb.post_mortem(traceback=None)
 
-            Enter post-mortem debugging of the given traceback object. If no
-            traceback is given, it uses the one of the exception that is
-            currently being handled (an exception must be being handled if
-            the default is to be used).
+            Enter post-mortem debugging of the given traceback object.
+            If no traceback is given, it uses the one of the exception
+            that is currently being handled (an exception must be being
+            handled if the default is to be used).
     """
     import pdb
     pdb.post_mortem(ex.__traceback__)
