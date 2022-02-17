@@ -527,11 +527,30 @@ class pool(entitiesmod.entity):
             # finishes
             self.push(conn)
 
+    @property
+    def nin(self):
+        """ Return the number of connection inside the pool.
+        """
+        return len(self._in)
 
+    @property
+    def nout(self):
+        """ Return the number of connection outside the pool.
+        """
+        return len(self._out)
+
+    @property
+    def total(self):
+        """ Return the total number of connections both inside and
+        outside the pool.
+        """
+        return self.nin + self.nout
+        
     def __repr__(self):
-        r = '< ' + str(type(self))
-        r += f'nin={len(self._in)}, nout={len(self._out)}'
-        r += '>'
+        """ Return a string representation of the db.pool.
+        """
+        r = type(self).__name__
+        r += f'<nin={self.nin}, nout={self.nout}, total={self.total}>'
         return r
 
 class operationeventargs(entitiesmod.eventargs):
