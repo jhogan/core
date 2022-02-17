@@ -80,12 +80,37 @@ class datetime(stddatetime.datetime):
         return stddatetime.datetime.__new__(cls, *args, **kwargs)
 
     def astimezone(self, tz=None):
+        """ Return a new primative.datetime object with new tzinfo
+        specified by 'tz', adjusting the date and time data so the
+        result is the same time as self, but in tz’s local time.
+
+        :param: tz str|tzinfo: The new tzinfo. If tz is a str, the
+        string is parsed into a tzinfo object.
+        """
         if type(tz) is str:
             tz = dateutil.tz.gettz(tz)
         return datetime(super().astimezone(tz))
 
     @staticmethod
     def utcnow(**kwargs):
+        """ Return the current UTC primative.datetime.
+
+        Note that unlike the utcnow() method on Python's standard
+        datetime object, the datetime that is returned is aware, i.e.,
+        it knows that its timezone is UTC.
+
+        :param: kwargs **dict: The same arguments that can be passed to
+        Python's standard timedelta constructor can be pased to this
+        method in order to offset the time into the future or the past.
+        For expample, to get a primative.datetime in UTC for the moment
+        30 days prior to now, you could write::
+
+            a_month_ago = primative.datetime.utcnow(days = -30)
+
+        See the documentation for the timedelta constructor for more
+        details on its parameters at 
+        https://docs.python.org/3/library/datetime.html#timedelta-objects
+        """
         r = datetime(stddatetime.datetime.utcnow())
 
         # Make aware
@@ -96,6 +121,14 @@ class datetime(stddatetime.datetime):
 
     @staticmethod
     def now(tz=False):
+        """ Return a primative.datetime adjusted for the current
+        timezone. 
+
+        TODO Currently not implemneted.
+        """
+        # TODO tz should probably default to None. I'm not sure why I
+        # defaulted it to False.
+
         # Demand that tz is not False. 
         if tz is False:
             raise ValueError(
@@ -107,14 +140,39 @@ class datetime(stddatetime.datetime):
         raise NotImplementedError()
 
     def add(self, **kwargs):
+        """ Return a new primative.datetime with time added to the self. 
+
+        :param: kwargs **dict: The same arguments that can be passed to
+        Python's standard timedelta constructor can be pased to this
+        method in order to offset the time into the future or the past.
+        For expample, to get a primative.datetime in UTC for the moment
+        10 seconds into the future::
+
+            # Get the current time
+            dt = primative.datetime.utcnow()
+
+            # Add 10 seconds to the current time
+            dt = dt + datetime.timedelta(seconds = 10)
+
+        See the documentation for the timedelta constructor for more
+        details on its parameters at 
+        https://docs.python.org/3/library/datetime.html#timedelta-objects
+        """
         return self + stddatetime.timedelta(**kwargs)
 
-    def __add__(self, dt):
-        dt = super().__add__(dt)
-        return datetime(dt)
+    def __add__(self, td):
+        """ Override the __add__ method of the standard Python datetime
+        object in order to return a primative.datetime instead:
+
+        :param: td timedelta: The amount of time to add to self.
+        """
+        td = super().__add__(td)
+        return datetime(td)
 
     @property
     def date(self):
+        """ Convert the curent primative.datetime to a primative.date.
+        """
         return date(self)
 
 class date(stddatetime.date):
