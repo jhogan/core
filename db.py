@@ -503,6 +503,9 @@ class pool(entitiesmod.entity):
 
         # Grow as needed
         if not conn:
+            logs.info(
+                f'Grow db.pool by one; current: {self!r}'
+            )
             conn = self._out.last.clone()
 
         self._out += conn
