@@ -1075,7 +1075,7 @@ class pom_page(tester.tester):
             self.one(res['h2.apology'])
             self.one(res['main[data-path="/error/404"]'])
         finally:
-            orm.orm._forget(derpnet)
+            orm.forget(derpnet)
 
     def it_raises_im_a_302(self):
         ws = foonet()

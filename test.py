@@ -2279,6 +2279,8 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        orm.forget(cat)
+
     def it_isolates_brokenrules(self):
         iss = issue.getvalid()
         self.true(iss.isvalid)
