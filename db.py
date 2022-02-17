@@ -517,11 +517,16 @@ class pool(entitiesmod.entity):
 
     @contextmanager
     def take(self):
+        # Pool a connection out of the pool
         conn = self.pull()
 
-        yield conn
+        try:
+            yield conn
+        finally:
+            # Return the connection to the pool when the contextmanager
+            # finishes
+            self.push(conn)
 
-        self.push(conn)
 
     def __repr__(self):
         r = '< ' + str(type(self))

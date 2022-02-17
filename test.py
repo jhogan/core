@@ -2687,13 +2687,6 @@ class test_orm(tester):
         self.true(comments().orm.isrecursive)
 
     def it_computes_abbreviation(self):
-        # XXX Try this now
-        # FIXME Suddenly, running the test script resulted in a mess of
-        # MySQL Too Many Connection errors. It seems to be related to
-        # the GEM entities instatiated by this unit test. When
-        # completed, remove the `return` below.
-        return
-
         es = orm.orm.getentityclasses() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
