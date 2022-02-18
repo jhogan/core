@@ -176,31 +176,81 @@ class datetime(stddatetime.datetime):
         return date(self)
 
 class date(stddatetime.date):
+    """ A date class that inherits from Python's standard date class.
+    """
     def __new__(cls, *args, **kwargs):
+        """ Create a new date, naive (timezone unaware) object.
+
+        :param: args[0] str|date|datetime Create the date object based
+        on date information contained in the argument. If the type is a
+        date like object, its `year`, `month` and `day` properties are
+        used for the new date.
+            
+            import datetime, primative
+
+            # str
+            dt = primative.date('2022/02/28)
+
+            # date
+            dt = date.date(2022, 02, 28)
+            dt = primative.date(dt)
+
+            # date
+            dt = date.datetime.utcnow()
+            dt = primative.date(dt)
+
+        If the above types aren't found in args[0], the default
+        constructor for Python's standard date class is used::
+
+            year, month, day = 2022, 02, 28
+            dt = primative.date(year, month, day)
+        """
         dt = args[0]
         if type(dt) is str:
             dt = datetime(dt)
+
+            # TODO Explain why we insist on the date being naive here
             dt = dt.replace(tzinfo=None)
             dt = dt.date
             return dt
 
-        # TODO All the conditionals have the same consequence so chain
-        # them disjunctively
-        elif isinstance(dt, date):
-            return date(dt.year, dt.month, dt.day)
-        elif isinstance(dt, datetime):
-            return date(dt.year, dt.month, dt.day)
-        elif type(dt) is stddatetime.date:
+        elif isinstance(dt, date) or isinstance(dt, datetime) or \
+                 type(dt) is stddatetime.date:
             return date(dt.year, dt.month, dt.day)
 
         dt = stddatetime.date.__new__(cls, *args, **kwargs)
         return dt
 
     def add(self, **kwargs):
+        """ Return a new primative.date with time added to the self. 
+
+        :param: kwargs **dict: The same arguments that can be passed to
+        Python's standard timedelta constructor can be pased to this
+        method in order to offset the date into the future or the past.
+        For expample, to get a primative.date 10 days into the future::
+
+            # Get the current date
+            dt = primative.date.today()
+
+            # Add 10 days to the current date
+            dt = dt + datetime.timedelta(days = 10)
+
+        See the documentation for the timedelta constructor for more
+        details on its parameters at 
+        https://docs.python.org/3/library/datetime.html#timedelta-objects
+        """
         return self + stddatetime.timedelta(**kwargs)
 
     @staticmethod
     def today(**kwargs):
+        """ A static method to get and return today's date object.
+
+        The arguments you would supply to timedelta can be used to
+        offset the date into the past or the future.  See the
+        documentation for the timedelta constructor for more details on
+        its parameters at 
+        https://docs.python.org/3/library/datetime.html#timedelta-objects
+        """
         r = date(stddatetime.date.today())
 
         r = r.add(**kwargs)
