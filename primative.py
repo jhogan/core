@@ -162,7 +162,7 @@ class datetime(stddatetime.datetime):
 
     def __add__(self, td):
         """ Override the __add__ method of the standard Python datetime
-        object in order to return a primative.datetime instead:
+        class in order to return a primative.datetime instead:
 
         :param: td timedelta: The amount of time to add to self.
         """
@@ -241,6 +241,15 @@ class date(stddatetime.date):
         """
         return self + stddatetime.timedelta(**kwargs)
 
+    def __add__(self, dt):
+        """ Override the __add__ method of the standard Python date
+        class in order to return a primative.date instead:
+
+        :param: td timedelta: The amount of time to add to self.
+        """
+        dt = super().__add__(dt)
+        return date(dt)
+
     @staticmethod
     def today(**kwargs):
         """ A static method to get and return today's date object.
@@ -255,13 +264,6 @@ class date(stddatetime.date):
 
         r = r.add(**kwargs)
         return r
-
-    def add(self, **kwargs):
-        return self + stddatetime.timedelta(**kwargs)
-
-    def __add__(self, dt):
-        dt = super().__add__(dt)
-        return date(dt)
 
 class uuid(UUID):
     def __init__(self, base64=None, *args, **kwargs):
