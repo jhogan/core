@@ -94,7 +94,7 @@ Initialize primatives with objects instead of operators
     ls = list()
     d = dict()
 
-Discuss uses of TODO, NOTE and XXX
+Discuss uses of TODO, NOTE, XXX and bomb-comments.
 
 Discuss housekeeping in git logs
 

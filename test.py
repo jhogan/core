@@ -2703,16 +2703,8 @@ class test_orm(tester):
         abbrs = [e.orm.abbreviation for e in es]
         abbrs1 = [e().orm.abbreviation for e in es]
 
-        # FIXME This failed today:
-        # Jan 21, 2020
-
         self.unique(abbrs)
         self.eq(abbrs, abbrs1)
-
-        # FIXME It was discovered that one of the entities, presumably
-        # battle, was at one point abbreviated as 'ba' then subsequently
-        # abbreviated as 'b'.
-        # - Oct 25 2019
 
         for i in range(10):
             self.eq(abbrs, [e.orm.abbreviation for e in es])
