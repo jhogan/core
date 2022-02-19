@@ -8100,29 +8100,46 @@ class orm:
         # associated with it.
 
         r = list()
-        esup = self.entity.mro()[1]
-        essup = self.entities.mro()[1]
-        if esup.orm.entities is not essup:
+
+        # See if the orm has (or can find) an entities object
+        hasentities = True
+        try:
+            self.entities
+        except IntegrityError:
+            hasentities = False
             r.append(
-                f'{self} inherits from a different entity than does '
-                'its entities collection: \n'
-                f'\t{self.entity.__name__}({esup})\n'
-                f'\t{self.entities.__name__}({essup})'
+                f'{self} has no entities complement'
             )
 
 
-        for map in self.mappings:
-            if isinstance(map, entitymapping):
-                es = [
-                    x
-                    for x in self.mappings.entitymappings
-                    if x.entity is map.entity
-                ]
-                if len(es) > 1:
-                    r.append(
-                        f'The map "{map.name}" has a type {map.entity} '
-                        f'which is the duplicate of another mapping'
-                    )
+        if hasentities:
+            # See if the orm's entity and its complement inherit from
+            # classes that are complements of each other.
+            esup = self.entity.mro()[1]
+            essup = self.entities.mro()[1]
+            if esup.orm.entities is not essup:
+                r.append(
+                    f'{self} inherits from a different entity than '
+                    'does its entities collection: \n'
+                    f'\t{self.entity.__name__}({esup})\n'
+                    f'\t{self.entities.__name__}({essup})'
+                )
+
+            # Look for instances where two or more entitymapping objects
+            # in entity point to the same entity
+            for map in self.mappings:
+                if isinstance(map, entitymapping):
+                    es = [
+                        x
+                        for x in self.mappings.entitymappings
+                        if x.entity is map.entity
+                    ]
+                    if len(es) > 1:
+                        r.append(
+                            f'The map "{map.name}" has a type '
+                            f'{map.entity} which is the duplicate of '
+                            f'another mapping'
+                        )
         return r
 
     def redact(self):
