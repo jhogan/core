@@ -266,15 +266,37 @@ class date(stddatetime.date):
         return r
 
 class uuid(UUID):
+    """ A subclass of Python's builtin UUID class. Subclassing UUID
+    allows us to add some features that are convenient to the framework
+    such as the ability to deal with UUID's as Base64 strings.
+    """
     def __init__(self, base64=None, *args, **kwargs):
+        """ Create a new ``uuid`` object. If no arguments are given, a
+        new uuid4 is created.
+
+        :param: base64 str: A Base64 representation of a UUID. The new
+        ``uuid`` will be constructed with this value.
+
+        :param: args/kwargs sequence: args and kwargs will be passed
+        directly to Python's standard UUID class so its constructors
+        interface can be used. For details, see:
+
+            https://docs.python.org/3/library/uuid.html#uuid.UUID
+        """
         if len(args) or len(kwargs) or base64:
             if base64:
-                kwargs['bytes']= urlsafe_b64decode(base64 + '==')
+                # Decode base64 and set as the bytes argument
+                kwargs['bytes'] = urlsafe_b64decode(base64 + '==')
+
+            # Instantiate
             super().__init__(*args, **kwargs)
         else:
+            # Create new uuid4
             int = uuid4().int
             super().__init__(int=int, version=4)
 
     @property
     def base64(self):
+        """ Return a base64 string representation of the UUID object.
+        """
         return urlsafe_b64encode(self.bytes).rstrip(b'=').decode('ascii')
