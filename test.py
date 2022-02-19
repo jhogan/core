@@ -2140,8 +2140,9 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
-        # TODO Remove `return` when migration algorithm can handle the
-        # below
+        # TODO Remove `return` and orm.forteg when migration algorithm
+        # can handle the below
+        orm.forget(cat)
         return
 
         # This causes confusion. See `except` block for more.
@@ -14588,6 +14589,7 @@ class orm_migration(tester):
         cat.orm.recreate()
 
         mig = orm.migration(e=cat)
+        orm.forget(cat)
 
 class crust_migration(tester):
     def it_shows_migrants(self):
