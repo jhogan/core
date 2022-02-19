@@ -1469,18 +1469,52 @@ class header(dom.header):
 
         return mnu
 
+# TODO We need a footers collection complement
 class footer(dom.footer):
-    pass
+    """ Represents a page's footer.
+    """
 
+# TODO We need an inputs collection complement
 class input(dom.div):
+    """ Represents any text input, vis. an <input type=text>, a
+    <textarea> a <select> or a <datalist>.
+    """
     # TODO Add functionality to create a <datalist>
-    # TODO Add bootstrap classes
     def __init__(self,              
-                 name,              type,       label=None,
-                 placeholder=None,  help=None,  options=None,
-                 selected=None, *args, **kwargs
+            name,              type,       label=None,
+            placeholder=None,  help=None,  options=None,
+            selected=None,     *args,      **kwargs
         ):
+        """ Create an ``input`` object.
+
+        :param: name str: The name of the object. Used for the 'name'
+        attribute of the element.
+
+        :param: type str: The type of input element: 'textarea',
+        'select', input, etc.
+
+        :param: label str: The text for a <lable> element that
+        corresponds to this input element.
+
+        :param: placeholder str: The text to set the placeholder
+        attribute to.
+
+        :param: help str: A help message that corresponds to this input
+        field.
+
+        :param: options sequence<sequence<str, str>>: For 'select' input
+        types, a collection of 2 element sequences, the first element
+        containing the options value, the second containing the options
+        key.
+
+        :param: selected sequence: For 'select' input types. If the
+        value in `options` is in `selected`, the option is marked
+        selected (<option selected>).
+        key.
+
+        """
         super().__init__(*args, **kwargs)
+
         self.name         =  name
         self.label        =  label
         self.placeholder  =  placeholder
@@ -1517,14 +1551,29 @@ class input(dom.div):
             els += dom.small(self.help)
 
 class error(page):
+    """ A page intended to show an error message. 
+
+    Usually error pages are called when another page raises a
+    www.HttpError exception. This page will be used to capture the
+    exceptions details and present it to the user.
+    """
     @property
     def pages(self):
+        """ A collection of error pages. Usually, the error pages will
+        correspond to an HTTP error code. A default 404 page is added
+        default since it is so common.
+        """
         if not self._pages:
             self._pages = super().pages
             self._pages += _404()
         return self._pages
         
     def main(self, ex):
+        """ The main function for the page.
+
+        :param: ex www.HttpException: The exception that caused this
+        page to be invoked.
+        """
         args = (
             ex.phrase,
             ex.status,
@@ -1574,7 +1623,15 @@ class traceback(dom.article):
             div  +=  dom.span(tb.name,    class_='name')
 
 class _404(page):
+    """ An error page to show that the requested page was not found.
+    """
+    # NOTE I think this shoud inherit from ``error``.
     def main(self, ex: www.NotFoundError):
+        """ The main method of the page.
+
+        :param: ex www.NotFoundError: The www.NotFoundError exception
+        object that caused this error page.
+        """
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
 
@@ -1584,5 +1641,7 @@ class _404(page):
 
     @property
     def name(self):
+        """ Return teh name of the error page.
+        """
         return type(self).__name__.replace('_', '')
 
