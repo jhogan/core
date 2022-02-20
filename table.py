@@ -6,6 +6,18 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
+""" Contains classes to model a table, i.e., a two dimentional matrix of
+values.
+
+Tables are convenient for representing things like spreadsheet
+workbooks, board games such a chess, and results from a database query.
+Tables can also be created and their results pretty-printed. This can be
+useful for displaying two dimentional lists of data to a user.
+"""
+
+# NOTE It is currently under consideration that this class be removed
+# and its functionality moved to dom.table.
+
 from entities import *
 
 class table(entity):
