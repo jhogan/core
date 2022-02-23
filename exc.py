@@ -5,7 +5,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 ########################################################################
 
 """ This module contains classes that make it easier to work with
