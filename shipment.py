@@ -4,10 +4,10 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
-""" This module contains ``orm.entity`` objects related the tracking of
-order shipping data.
+""" This module contains ``orm.entity`` objects related to the tracking
+of order shipping data.
 
 These entity objects are based on the "Shipments" chapter of "The Data
 Model Resource Book".

@@ -6,6 +6,17 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+""" This module contains ``orm.entity`` objects related the management
+of products (goods and services), their features,  measurements,
+categories, etc.
+
+These entity objects are based on the "Products" chapter of
+"The Data Model Resource Book".
+
+Examples:
+    See test.py for examples. 
+"""
+
 from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec

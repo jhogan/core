@@ -4,18 +4,65 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
+
+""" Contains classes to model a table, i.e., a two dimensional matrix of
+values.
+
+Tables are convenient for representing things like spreadsheet
+workbooks, board games such a chess, and results from a database query.
+Tables can also be created and their results pretty-printed. This can be
+useful for displaying two dimensional lists of data to a user.
+"""
+
+# NOTE It is currently under consideration that this class be removed
+# and its functionality moved to dom.table.
 
 from entities import *
 
 class table(entity):
+    """ Represents a table, i.e., a two dimensional matrix of
+    values.
+    """
     def __init__(
         self, x=None, y=None, initval=None, border=('-', '|', '+') 
     ):
+        """ Create a table
+
+        :param: x int: If specified, the table will be initialized with
+        x number of columns/fields.
+
+        :param: x int: If specified, the table will be initialized with
+        y number of rows.
+
+        :param: initval object: If specified, this value will be the
+        default value for all the cells in the table.
+
+        :param: border tuple<str>:  A tuple of three string values used
+        to create the borders. The default is '-', '|', '+'. This hyphen
+        is used to create the horizontal lines of a table, the pipe
+        symbol is used to create the vertical lines of the table, and
+        the + is used to create the corners.
+
+            >>> import table
+            >>> # Use default border
+            >>> print(table.table(2, 2, 'XYZ'))
+            +-----------+
+            | XYZ | XYZ |
+            |-----------|
+            | XYZ | XYZ |
+            +-----------+
+
+        :abbr: tbl
+        """
+
         # TODO Write test for different border values
+
+        # Init rowes and fields collection
         self.rows = rows(tbl=self)
         self._fields = fields()
 
+        # Subscribe to events
         self.rows.onfieldadd += self._fields_onadd
         self.rows.onfieldremove += self._fields_onremove
 
@@ -28,9 +75,14 @@ class table(entity):
                 for _ in range(x):
                     r.newfield(initval)
 
+        # Set border. We will use this later for pretty-printing and
+        # stuff
         self.border = border
 
     def _fields_onadd(self, src, eargs):
+        """ An event handler to capture the moment a field is added to a
+        row.
+        """
         f = eargs.entity
         self._fields += f
 
@@ -42,6 +94,9 @@ class table(entity):
         f.onaftervaluechange += self._field_onaftervaluechange
 
     def _fields_onremove(self, src, eargs):
+        """ An event handler to capture the moment a field is removed
+        from a row.
+        """
         f = eargs.entity
         self._fields -= f
 
@@ -51,30 +106,84 @@ class table(entity):
         f.onaftervaluechange -= self._field_onaftervaluechange
 
     def _field_onbeforevaluechange(self, src, eargs):
+        """ An event handler to capture the moment before a fields value
+        is changed.
+        """
+
+        # Remove the fields value it's indexes
         for ix in self._fields.indexes:
             ix.remove(eargs.entity)
 
     def _field_onaftervaluechange(self, src, eargs):
+        """ An event handler to capture the moment after a fields value
+        has changed.
+        """
+        # Add the fields value it's indexes
         for ix in self._fields.indexes:
             ix.append(eargs.entity)
 
     def __iter__(self):
+        """ When iterating over a table, we want to iterate over its
+        rows collection.
+
+        This override of __iter__ makes the following two iterations the
+        same::
+            tbl = table()
+
+            for r in tbl
+                ...
+
+            for r in tbl.rows:
+                ...
+        """
         for r in self.rows:
             yield r
 
     def __getitem__(self, ix):
+        """ Delegate the table's indexer to the rows indexer::
+            
+            tbl = table(4, 4, 'X')
+
+            assert type(tbl[1]) is table.row
+            assert tbl[1] is tbl.rows[1]
+        """
         return self.rows[ix]
 
     def __call__(self, y, x):
+        """ Allow indexing on row and column using parenthesis
+        operator::
+
+            tbl = table(4, 4, 'X')
+
+            # Get second row in table
+            r = tbl[1]
+
+            # Get third field in row
+            fld = r[2]
+
+            # Get the same field that we got above by using the
+            # parenthesis operator
+            fld1 = tbl(1,2)
+            assert fld is fld1
+        """
         return self[y][x]
 
     def add(self, e):
+        """ Add a collection of rows to the table.
+
+        :param: e table.rows|sequence<row>: A collection of rows.
+        """
         for r in e:
             self.rows += r
 
         return self
 
     def newrow(self):
+        """ Create a new row, append it to self's row collection and
+        return it.
+        """
+
+        # TODO This should be renamed `row`. 
         r = row()
         self.rows += r
         r.rows = self.rows
@@ -82,6 +191,15 @@ class table(entity):
 
     @property
     def columns(self):
+        """ Return a new collection of column objects for this table.
+        
+        Note that tables aren't really constructed of columns; they are
+        constructed of rows which themselves are constructed of fields.
+        This property returns a columns collection based on the
+        collection of rows and fields to make certain operations easier.
+        For example, this property is used by the __str__ method to see
+        how many columns the table contains. 
+        """
         cs = columns()
 
         for r in self:
@@ -96,14 +214,32 @@ class table(entity):
 
     @property
     def fields(self):
+        """ The table's private collection of fields.
+
+        Fields are stored in row objects. However, the table object
+        keeps its own reference to these field objects when they are
+        added to the rows so index searched can be performed on them.
+        """
         return self._fields
         
     def count(self, o):
+        """ Return the number of fields that match o. See the ``where``
+        method.
+        """
         return self.where(o).count
 
     def where(self, v, limit=None):
         """ Return a fields collection where each field in the table
         matches v.
+
+        :param v type|callable: If v is type, return only fields where
+        the object is the same type as v. If v is a callable the invoke
+        the callable on each fields' value. Only return the fields where
+        the invocation returns True. If the type is neither `type` or
+        callable, return the fields whose value equals v.
+
+        :param: limit int: Limit the number of fields returned by this
+        number.
         """
         if type(v) == type:
             return self.fields.indexes['type'](v, limit=limit)
@@ -129,6 +265,12 @@ class table(entity):
         return fields(initial=ls)
 
     def remove(self, values):
+        """ Set any field's value to None if the field's value is in the
+        values sequence.
+
+        :param: values sequence: A sequence to test for nullifying the
+        field values.
+        """
         # TODO Use fieldvalueindex
         for r in self:
             for f in r:
@@ -136,12 +278,21 @@ class table(entity):
                     f.value = None
     
     def slice(self, center=None, radius=None):
-        if radius == None:
-            raise NotImplementedError("'radius' must be provided")
+        """ Return a new table object that contains a slice (a subset)
+        of this table starting at the `center` and extending to the
+        radius.
+
+        :param: center field: The center field.
+
+        :param: radius int: The number of fields above, below, left and
+        right of the center field that should be included in nthe slice.
+        """
+        if radius is None:
+            raise ValueError("'radius' must be provided")
         else:
-            if type(radius) != int:
+            if type(radius) is not int:
                 raise TypeError("'radius' must be an integer")
-            if center == None or type(center) != field:
+            if center is None or type(center) is not field:
                 raise TypeError("'center' must be a field")
 
         # Return a <table> object. If <table> has been subclassed, return the
@@ -168,6 +319,8 @@ class table(entity):
         return tbl
 
     def __str__(self, f=None):
+        """ Returns a pretty-printed string of the table. 
+        """
         Reverse='\033[07m'
         Endc = '\033[0m'
 
@@ -220,26 +373,64 @@ class table(entity):
         return R
                 
 class columns(entities):
+    """ Represents a collection of table columns.
+
+    :abbr: cols
+    """
     @property
     def widths(self):
+        """ Return a list of each column's width in the collection.
+        """
         return [c.width for c in self]
 
 class column(entity):
+    """ Represents a table column.
+
+    Note that columns aren't used in the construction of tables; rows
+    and fileds make up tables. However, column objects can be derived
+    from these actual structures. Column structures are useful for
+    reading data about the table sometimes instead. However, it would be
+    a mistake to mutate a column and expect the change to alter the
+    actual table. Columns are read-only abstractions.
+
+    :abbr: col
+    """
     def __init__(self):
+        """ Create a column object.
+        """
         super().__init__()
         self.fields = fields()
 
     def __iter__(self):
+        """ To iterate over a column is to iterate over its fields.
+        """
         for f in self.fields:
             yield f
 
     @property
     def width(self):
+        """ Return the maximum width the column must expand to in order
+        to accomidate all the fields' values it its fields collection.
+        This is an important property for determining how to
+        pretty-print the table.
+        """
         return max([len(str(f.value)) for f in self])
         
 class rows(entities):
+    """ A collection of row objects.
+
+    Tables can largely be thought of merely as collections of rows.
+    """
     def __init__(self, initial=None, tbl=None):
+        """ Create a rows collection.
+
+        :param: initial iterable: See entities.__super__.
+
+        :param: tbl table: A reference to the actual table object to
+        which this rows collection belongs.
+        """
         super().__init__(initial=initial)
+
         self.table = tbl
 
         # Events
@@ -247,11 +438,12 @@ class rows(entities):
         self.onfieldremove = event()
 
     def _self_onremove(self, src, eargs):
-        """ Whenever a row is removed from a rows collection, ensure that all
-        field objects are removed first. This ensure the fields objects'
-        onremove events are raised which is important for indexing, cache
-        invalidation and so forth. """
-
+        """ An event handler to ensure that whenever a row is removed
+        from a rows collection, ensure that all field objects are
+        removed first. This ensure the fields objects' onremove events
+        are raised which is important for indexing, cache invalidation
+        and so forth. 
+        """
         eargs.entity.fields.clear()
 
 class row(entity):

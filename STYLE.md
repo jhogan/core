@@ -123,3 +123,16 @@ Discuss naming constants
 
 Discuss the importance of keeping the repo small and its file structure
 flat.
+
+When testing Constants and object references, be sure to use the `is`
+operator, even though the quality operator (`==`) works::
+
+    if x is True:
+        ...
+
+    If x is None:
+        ...
+
+    if obj1 is obj2:
+        ...
+
