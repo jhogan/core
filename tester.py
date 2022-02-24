@@ -404,6 +404,7 @@ class tester(entities.entity):
         def __init__(self, t, *args, **kwargs):
             self.tester = t
 
+        ''' Inner classes '''
         class _tabs(www.browser._tabs):
             def __init__(self, brw, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -613,6 +614,7 @@ class tester(entities.entity):
                 self.referer = ecommerce.url(address=req.url)
                 return res
 
+        ''' Class members '''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
         ):

@@ -136,3 +136,5 @@ operator, even though the quality operator (`==`) works::
     if obj1 is obj2:
         ...
 
+Acronym glossary:
+    callables: f, callable
