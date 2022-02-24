@@ -1736,6 +1736,26 @@ class entities:
         raise ValueError("'{}' is not in the collection".format(e))
 
     @property
+    def only(self): 
+        """ Returns the first element in the collection. If the
+        collection does not have exactly one element, a ValueError will
+        be raised.
+
+        This is similar to the `first` property. However, often times, a
+        collection is expected to have only one element when it is being
+        accessed from the first element. If zero or multiple elements
+        exists, there is a problem. Using `only` instead of `first` is a
+        convenient way to ensure those problem are detected.
+        """
+
+        # TODO Write tests for this property's logic
+        if self.count != 1:
+            raise ValueError(
+                'The `only` property demands exactly one element'
+            )
+        return self.first
+
+    @property
     def first(self): 
         """ Returns the first element in the collection. If the
         collection is empty, None is returned.
