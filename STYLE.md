@@ -136,3 +136,7 @@ operator, even though the quality operator (`==`) works::
     if obj1 is obj2:
         ...
 
+Abbreviation glossory
+
+    index: ix
+    counters in loops: i, j, k, etc.

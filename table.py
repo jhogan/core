@@ -447,23 +447,54 @@ class rows(entities):
         eargs.entity.fields.clear()
 
 class row(entity):
+    """ Represents a row in a table.
+
+    A table contains a collection of row objects while a row contains a
+    collection of field objects.
+    """
     def __init__(self):
+        """ Create a row.
+        """
         super().__init__()
+
+        # Create the fields collection
         self.fields = fields(row=self)
 
+        # Set up som event handlare
         self.fields.onadd += self._fields_onadd
         self.fields.onremove += self._fields_onremove
 
     def _fields_onadd(self, src, eargs):
+        """ A handler that captures when a field is added to this row.
+        """
+
+        # Propogate the event to the rows collection's onfieldadd event 
         self.rows.onfieldadd(src, eargs)
 
     def _fields_onremove(self, src, eargs):
+        # Propogate the event to the rows collection's onfieldadd event 
         self.rows.onfieldremove(src, eargs)
 
     def __getitem__(self, ix):
+        """ Delegate the rows indexer to the fields collection indexer.
+        This makes the the following lines synonymous where `r` is a row
+        object::
+
+            x = r[123]
+
+            x = r.fields[123]
+        """
         return self.fields[ix]
 
     def __setitem__(self, ix, item):
+        """ Delegate the default setter to the fields collection default
+        setter.  This makes the the following lines synonymous where `r`
+        is a row object::
+
+            r[123] = x
+
+            r.fields[123] = x
+        """
         self.fields[ix] = item
 
     @property
@@ -472,14 +503,29 @@ class row(entity):
 
     @property
     def table(self):
+        """ Return the table object that this row is a part of.
+        """
         return self.rows.table
 
     def __iter__(self):
+        """ Make iterating over this row object the same as iterating
+        over its fields collection. This makes the follwing to looping
+        constructs the synonymous::
+
+            # Where r is a row
+            for f in r:
+                assert isinstance(f, field)
+
+            for f in r.fields:
+                assert isinstance(f, field)
+        """
         for f in self.fields:
             yield f
 
     @property
     def above(self):
+        """ The row immediately above this row.
+        """
         ix = self.index
         if ix == 0:
             return None
@@ -487,22 +533,32 @@ class row(entity):
 
     @property
     def below(self):
+        """ The row immediately below this row.
+        """
         ix = self.index
         if ix == self.rows.ubound:
             return None
         return self.rows(ix + 1)
 
     def newfield(self, v):
+        """ Create a new field with `v` as its value, append the field
+        to this row's fields collection, and return the field.
+        """
         f, fs = field(v), self.fields
         fs += f
         f.fields = fs
         return f
 
     def newfields(self, *vs):
+        """ Create new fields for each value in *vs, append each field
+        to this row's fields collection.
+        """
         for v in vs:
             self.newfield(v)
 
     def __repr__(self):
+        """ Return a string representation of this row object.
+        """
         tbl = table()
         r = tbl.newrow()
 
