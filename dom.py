@@ -1189,6 +1189,16 @@ class element(entities.entity):
             # Add kwargs to attributes collection
             self.attributes += kwargs
 
+    def click(self):
+        # XXX What should eargs be
+        self.onclick(self, None) 
+
+    @property
+    def onclick(self):
+        if not hasattr(self, '_onclick'):
+            self._onclick = event()
+        return self._onclick
+
     def remove(self, el):
         """ Removes ``el`` from this ``element``'s child elements.
 
@@ -9052,3 +9062,20 @@ class CssSelectorParseError(SyntaxError):
             return self.token.pos
 
         return None
+
+class event(entities.event):
+    """ XXX """
+    def __init__(self, *args, **kwargs):
+        self.selector = None
+        super().__init__(*args, **kwargs)
+
+    def __iadd__(self, obj):
+        if isinstance(obj, tuple):
+            f, el = obj
+        elif callable(obj):
+            f = obj
+
+        self.selector = el
+        return super().append(f)
+
+
