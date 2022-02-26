@@ -138,3 +138,5 @@ operator, even though the quality operator (`==`) works::
 
 Acronym glossary:
     callables: f, callable
+    value: v
+    handler: hnd

@@ -1206,7 +1206,7 @@ class element(entities.entity):
         """
         return self.elements.remove(el)
 
-    def reidentify(self):
+    def identify(self, recursive=False):
         """ Assigns new, random values (UUIDs) to the id attribute of
         this HTML5 elements and all of its descendants.
         """

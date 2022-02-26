@@ -1798,7 +1798,10 @@ class pom_page(tester.tester):
             <main>
                 <div id='derp'>
                     <p></p>
-                    <button data-fragment="#r2nd0m" data-event='onclick'>Click me</button>
+                    <button data-click-fragment="#r2nd0m" 
+                            data-click-handler='btn_onclick'>
+                        Click me
+                    </button>
                 </div>
             </main>
         </html>
@@ -1807,7 +1810,7 @@ class pom_page(tester.tester):
             $('*.[data-fragment]').on('click', function(e){
                 $.ajax({
                     method: 'POST',
-                    data: e.innerHTML,
+                    data: {event: btn_onclick, html: e.innerHTML},
                 }).done(
                     function(r){
                         e.parent.remove(e)
