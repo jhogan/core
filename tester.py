@@ -419,6 +419,29 @@ class tester(entities.entity):
             def __init__(self, tabs):
                 super().__init__(tabs)
                 self._referer = None
+                self._html = None
+
+            def element_event(self, src, eargs):
+                print(eargs)
+
+            @property
+            def html(self):
+                """ XXX """
+                return self._html
+
+            @html.setter
+            def html(self, v):
+                self._html = v
+                evs = (
+                    'click', 'keydown', 'keyup'
+                )
+
+                sels = ', '.join([f'[data-{x}-handler]' for x in evs])
+                    
+                targets = v[sels]
+
+                for target in targets:
+                    target.onclick += self.element_event
 
             @property
             def referer(self):
@@ -450,7 +473,9 @@ class tester(entities.entity):
                 return self.tabs.browser
 
             def get(self, pg, ws):
-                return self._request(pg=pg, ws=ws, meth='GET')
+                B()
+                self.html = self._request(pg=pg, ws=ws, meth='GET')
+                return self.html
 
             def post(self, pg, ws, frm=None, files=None):
                 if files:

@@ -1196,8 +1196,12 @@ class element(entities.entity):
     @property
     def onclick(self):
         if not hasattr(self, '_onclick'):
-            self._onclick = event()
+            self._onclick = event(self, 'click')
         return self._onclick
+
+    @onclick.setter
+    def onclick(self, v):
+        self._onclick = v
 
     def remove(self, el):
         """ Removes ``el`` from this ``element``'s child elements.
@@ -1211,6 +1215,9 @@ class element(entities.entity):
         this HTML5 elements and all of its descendants.
         """
         self.id = primative.uuid().base64
+
+        if not recursive:
+            return
 
         for el in self.walk():
             self.id = primative.uuid().base64
@@ -9065,17 +9072,30 @@ class CssSelectorParseError(SyntaxError):
 
 class event(entities.event):
     """ XXX """
-    def __init__(self, *args, **kwargs):
-        self.selector = None
+    def __init__(self, el, name, *args, **kwargs):
+        self.element   =  el
+        self.name      =  name
+        self.selector  =  None
+
         super().__init__(*args, **kwargs)
 
     def __iadd__(self, obj):
+        name = self.name
         if isinstance(obj, tuple):
+            # This is for subscribing DOM events (i.e., XHR events). The
+            # alternative block deals with conventional event
+            # subscription.
             f, el = obj
-        elif callable(obj):
+            el.identify()
+            id = f'#{el.id}'
+            attrs = self.element.attributes
+            attrs[f'data-{name}-fragment'] = id
+            hnd = f.__func__.__name__
+            attrs[f'data-{name}-handler'] = hnd
+
+            self.selector = el
+        else:
+            # Conventional event subscription.
             f = obj
 
-        self.selector = el
         return super().append(f)
-
-

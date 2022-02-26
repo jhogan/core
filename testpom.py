@@ -1767,29 +1767,29 @@ class pom_page(tester.tester):
         self.eq('Invalid brew type', arts.first.text)
 
     def it_responds_to_button(self):
-        def btn_onclick(self, src, eargs):
-            eargs.html.append(
-                dom.strong('Thanks')
-            )
-
         class clickme(pom.page):
+
+            def btn_onclick(self, src, eargs):
+                eargs.html.append(
+                    dom.strong('Thanks')
+                )
+
             def main(self):
-                
                 self.main += (div := dom.div())
                 div += dom.p()
                 div += (btn := dom.button('Click me'))
-                btn.onclick += btn_onclick, div
+                btn.onclick += self.btn_onclick, div
 
         ws = foonet()
         ws.pages += clickme()
 
         tab = self.browser().tab()
-        res = tab.get('/en/clickme', ws)
+        tab.get('/en/clickme', ws)
         self.status(200, res)
 
-        res['button'].only.click()
-
-        self.patch(res, frag)
+        btn = tab.html['button'].only
+        B()
+        btn.click()
 
         self.eq('Thanks', res['p'].text)
 
