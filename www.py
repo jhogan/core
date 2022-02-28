@@ -146,22 +146,36 @@ class application:
         try:
             self.clear()
 
+            # Set the WSGI environ dict
             self.environment = env
 
+            # Get a reference to the application HTTP request object
             req = self.request
 
+            # TODO I think this can be remove; we are using `req`, see
+            # above.
             request = self.request
 
+            # Raise an exception if the current state of the WSGI
+            # application object, or any of its constituents, are
+            # invalid.
             self.demand()
 
             # If request is GET or HEAD
             if req.isget or req.ishead:
                 # Invoke the request object, i.e., make the request
                 data = req()
+
+                # Logically, if we are performing a GET, the data
+                # returned form the request will be the the response
+                # object's body
                 if req.isget:
                     res.body = data
 
+            # If the request is a POST
             elif req.ispost:
+                
+                # If the request is XHR (i.e, an AJAX request)
                 if req.isxhr:
                     reqdata = self.request.post
 
@@ -176,11 +190,13 @@ class application:
                     res.body = req()
 
             else:
+                # Raise if the method is not POST, GET or HEAD.
                 raise MethodNotAllowedError(
                     'Method "%s" is never allowed' % req.method
                 )
 
         except Exception as ex:
+            # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
                 # Immediatly raise to tester's exception handler
                 break_ = True
@@ -191,15 +207,15 @@ class application:
                     # TODO When we start supporting XHR requests, the
                     # `tb` being passed here can be built with the
                     # exc.tracebacks class. See the git-log for how `tb`
-                    # was originally created. Aso NOTE We will only want
+                    # was originally created. Also NOTE We will only want
                     # the traceback if we are in a non-production
                     # environment, so ensure it dosen't get returned to
                     # the client if we are.
                     data = {'_exception': repr(ex), '_traceback': tb}
                 else:
+                    # If the exception was an HttpError, i.e, a 400s and
+                    # 500s
                     if isinstance(ex, HttpError):
-                        # HttpError are 400s and 500s
-
                         lang = req.language
                         path = '/%s/error/%s' % (lang, ex.status)
                         pg = req.site(path)
