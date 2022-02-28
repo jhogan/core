@@ -53,11 +53,20 @@ import traceback
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 
 class application:
+    """ Represents a WSGI application.
+    """
     def __init__(self):
+        """ Create a WSGI application.
+        """
         self.breakonexception = False
+
+        # Clear the request object.
         self.clear()
 
     def clear(self):
+        """ Clear state data currently maintained by the WSGI
+        application.
+        """
         self._request = None
 
     @property
@@ -76,7 +85,6 @@ class application:
         For more information about the actual environ dict, see:
         https://www.python.org/dev/peps/pep-0333/#environ-variables
         """
-
         return self._env 
 
     @environment.setter
@@ -85,11 +93,17 @@ class application:
 
     @property
     def request(self):
+        """ The HTTP request object that this application is currently
+        processing.
+        """
         if not self._request:
             self._request = _request(self)
         return self._request
 
     def demand(self):
+        """ Raise an exception if the current state of the WSGI
+        application object, or any of its constituents, are invalid.
+        """
         if type(self.environment) is not dict:
             # PEP 333 insists that the environs must be a dict. The WSGI
             # server will almost certainly send a dict, but tester.py
@@ -99,6 +113,27 @@ class application:
         self.request.demand()
            
     def __call__(self, env, start_response):
+        """ The main WSGI method.
+
+        In an actual WSGI environment, this method is called by the WSGI
+        server. However, unit tests will invoke this method when testing
+        web pages (see tester._browser._request).
+
+        :param: env dict: From the official WSGI documentation: 
+
+            The [env] parameter is a dictionary object, containing
+            CGI-style environment variables. This object must be a
+            builtin Python dictionary (not a subclass, UserDict or other
+            dictionary emulation), and the application is allowed to
+            modify the dictionary in any way it desires. The dictionary
+            must also include certain WSGI-required variables (described
+            in a later section), and may also include server-specific
+            extension variables, named according to a convention that
+            will be described below."
+
+        :param: start_response callable: A callable as defined by the
+        WSGI standard.
+        """
         global request, response
         res = _response(self.request)
         res.headers += 'Content-Type: text/html'

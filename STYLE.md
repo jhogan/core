@@ -140,3 +140,10 @@ Abbreviation glossory
 
     index: ix
     counters in loops: i, j, k, etc.
+
+Common method names:
+
+    clear: Clears the state of an object or the collected data in a
+    collection object
+
+    demand: Raise an exception if the state of an object is invalid.

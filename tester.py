@@ -11,7 +11,6 @@ from dbg import B, PM, PR
 from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
-from timer import stopwatch
 from types import FunctionType
 import builtins
 import dbg
