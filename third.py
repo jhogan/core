@@ -12,7 +12,8 @@
 API's. Examples of third-party APIs may include SMTP/POP,
 RESTful/GraphQL, SOAP-based web services, etc. These protocols can be
 used for messaging (SMS, email), credit card processing, mapping
-services, and any other services provided by a remote system.
+services, and any other services provided by a remote or external
+system.
 """
 
 from config import config
@@ -387,6 +388,8 @@ class postmark(emailer):
         email address is used. This way, unit tests can be written to
         ensure that errors from Postmark are handled correctly.
         """
+        # FIXME I think the statement(s) after yield should be in a
+        # `finally` block in case of errors.
         self._exsimulate = True
         yield
         self._exsimulate = False

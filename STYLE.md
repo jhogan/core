@@ -136,7 +136,16 @@ operator, even though the quality operator (`==`) works::
     if obj1 is obj2:
         ...
 
-Acronym glossary:
+Abbreviation glossory
     callables: f, callable
     value: v
     handler: hnd
+    index: ix
+    counters in loops: i, j, k, etc.
+
+Common method names:
+
+    clear: Clears the state of an object or the collected data in a
+    collection object
+
+    demand: Raise an exception if the state of an object is invalid.

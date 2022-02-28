@@ -447,23 +447,54 @@ class rows(entities):
         eargs.entity.fields.clear()
 
 class row(entity):
+    """ Represents a row in a table.
+
+    A table contains a collection of row objects while a row contains a
+    collection of field objects.
+    """
     def __init__(self):
+        """ Create a row.
+        """
         super().__init__()
+
+        # Create the fields collection
         self.fields = fields(row=self)
 
+        # Set up som event handlare
         self.fields.onadd += self._fields_onadd
         self.fields.onremove += self._fields_onremove
 
     def _fields_onadd(self, src, eargs):
+        """ A handler that captures when a field is added to this row.
+        """
+
+        # Propogate the event to the rows collection's onfieldadd event 
         self.rows.onfieldadd(src, eargs)
 
     def _fields_onremove(self, src, eargs):
+        # Propogate the event to the rows collection's onfieldadd event 
         self.rows.onfieldremove(src, eargs)
 
     def __getitem__(self, ix):
+        """ Delegate the rows indexer to the fields collection indexer.
+        This makes the the following lines synonymous where `r` is a row
+        object::
+
+            x = r[123]
+
+            x = r.fields[123]
+        """
         return self.fields[ix]
 
     def __setitem__(self, ix, item):
+        """ Delegate the default setter to the fields collection default
+        setter.  This makes the the following lines synonymous where `r`
+        is a row object::
+
+            r[123] = x
+
+            r.fields[123] = x
+        """
         self.fields[ix] = item
 
     @property
@@ -472,14 +503,29 @@ class row(entity):
 
     @property
     def table(self):
+        """ Return the table object that this row is a part of.
+        """
         return self.rows.table
 
     def __iter__(self):
+        """ Make iterating over this row object the same as iterating
+        over its fields collection. This makes the follwing to looping
+        constructs the synonymous::
+
+            # Where r is a row
+            for f in r:
+                assert isinstance(f, field)
+
+            for f in r.fields:
+                assert isinstance(f, field)
+        """
         for f in self.fields:
             yield f
 
     @property
     def above(self):
+        """ The row immediately above this row.
+        """
         ix = self.index
         if ix == 0:
             return None
@@ -487,22 +533,32 @@ class row(entity):
 
     @property
     def below(self):
+        """ The row immediately below this row.
+        """
         ix = self.index
         if ix == self.rows.ubound:
             return None
         return self.rows(ix + 1)
 
     def newfield(self, v):
+        """ Create a new field with `v` as its value, append the field
+        to this row's fields collection, and return the field.
+        """
         f, fs = field(v), self.fields
         fs += f
         f.fields = fs
         return f
 
     def newfields(self, *vs):
+        """ Create new fields for each value in *vs, append each field
+        to this row's fields collection.
+        """
         for v in vs:
             self.newfield(v)
 
     def __repr__(self):
+        """ Return a string representation of this row object.
+        """
         tbl = table()
         r = tbl.newrow()
 
@@ -512,15 +568,25 @@ class row(entity):
         return str(tbl)
 
 class fields(entities):
+    """ A collection of fields. 
+
+    Tables are collection of rows, and each row maintains a collection
+    of fields.
+    """
     def __init__(self, initial=None, row=None):
+        """ Create the fields collection.
+
+        :param: initial sequence: A collection of fields or field
+        values. Used to create the fields for the collection.
+
+        :param: row row: The parent row for this fields collection.
+        """
         self.index = True
-        
 
         # Create index on the type of value
         self.indexes += index(
             name = 'type', keyfn = lambda f: type(f.value)
         )
-
 
         # Create index on the value
         self.indexes += index(
@@ -547,19 +613,39 @@ class fields(entities):
 
     @property
     def table(self):
+        """ Return the root table object of this field collection.
+        """
         return self.row.table if self.row else None
 
     @property
     def values(self):
+        """ Return a list of all the values in this fields collection.
+        """
         return [x.value for x in self]
 
 class field(entity):
+    """ Represents a field in a table.
+
+    Fields are the cells of a table. Each field object has a `value`
+    property that contains the value for the field. When the table is
+    rendered visually, the the `value` property is stringified (run
+    through str()) to produce the rendered value of the field.
+    """
     def __init__(self, v):
+        """ Create the field object.
+
+        :param: v object: The value of the field. The value will be
+        stringified with str() to when the table is rendered for visual
+        consumption.
+        """
         super().__init__()
         self._v = v
 
     @property
     def value(self):
+        """ Return the value of the field. Note that the return type
+        could be any object.
+        """
         return self._v
 
     @value.setter
@@ -569,26 +655,40 @@ class field(entity):
         self._setvalue('_v', v, 'dummy')
 
     def clone(self):
+        """ Return a new field based on the self.
+        """
         return field(self.value)
 
     @property
     def column(self):
+        """ Return a column object for the field.
+        """
         return column(self.index)
 
     @property
     def index(self):
+        """ Return the zero-based ordinal position of this field within
+        its fields collection.
+        """
         return self.fields.getindex(self)
 
     @property
     def table(self):
+        """ Return the root table object for this field object.
+        """
         return self.fields.row.table if self.fields.row else None
 
     @property
     def row(self):
+        """ Return the root row object for this field object.
+        """
         return self.fields.row
 
     @property
     def above(self):
+        """ Return the field immediately above this field. Return None
+        if there is no field.
+        """
         r = self.row.above
 
         if not r:
@@ -598,6 +698,9 @@ class field(entity):
 
     @property
     def below(self):
+        """ Return the field immediately below this field. Return None
+        if there is no field.
+        """
         r = self.row.below
 
         if not r:
@@ -607,6 +710,9 @@ class field(entity):
 
     @property
     def left(self):
+        """ Return the field immediately to the left of this field.
+        Return None if there is no field.
+        """
         ix = self.index
         if ix == 0:
             return None
@@ -614,6 +720,9 @@ class field(entity):
 
     @property
     def right(self):
+        """ Return the field immediately to the right of this field.
+        Return None if there is no field.
+        """
         ix = self.index
         if ix == self.row.fields.ubound:
             return None
@@ -621,53 +730,154 @@ class field(entity):
 
     @property
     def aboveleft(self):
+        """ Return the field immediately above and to the left of this
+        field.  Return None if there is no field.
+        """
         f = self.above
         return f.left if f else None
 
     @property
     def belowleft(self):
+        """ Return the field immediately below and to the left of this
+        field.  Return None if there is no field.
+        """
         f = self.below
         return f.left if f else None
 
     @property
     def aboveright(self):
+        """ Return the field immediately above and to the right of this
+        field.  Return None if there is no field.
+        """
         f = self.above
         return f.right if f else None
 
     @property
     def belowright(self):
+        """ Return the field immediately below and to the right of this
+        field.  Return None if there is no field.
+        """
         f = self.below
         return f.right if f else None
 
     def getabove(self, number, closest=False):
+        """ Get a field above this field.
+
+        :param str direction: The direction of the neigbor: 'above',
+        'below', 'left', 'right', 'aboveleft', 'aboveright',
+        'belowleft', 'belowright', 'aboveright' and 'belowright'.
+        
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('above', number, closest)
 
     def getbelow(self, number, closest=False):
+        """ Get a field below this field.
+
+        :param str direction: The direction of the neigbor: 'above',
+        'below', 'left', 'right', 'aboveleft', 'aboveright',
+        'belowleft', 'belowright', 'aboveright' and 'belowright'.
+        
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('below', number, closest)
 
     def getleft(self, number, closest=False):
+        """ Get a field to the left of this field.
+
+        :param str direction: The direction of the neigbor: 'above',
+        'below', 'left', 'right', 'aboveleft', 'aboveright',
+        'belowleft', 'belowright', 'aboveright' and 'belowright'.
+        
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('left', number, closest)
 
     def getright(self, number, closest=False):
+        """ Get a field to the right of this field.
+
+        :param str direction: The direction of the neigbor: 'above',
+        'below', 'left', 'right', 'aboveleft', 'aboveright',
+        'belowleft', 'belowright', 'aboveright' and 'belowright'.
+        
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('right', number, closest)
 
     def getaboveleft(self, number, closest=False):
+        """ Get a field diagonally, north-west of this field.
+
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('aboveleft', number, closest)
 
     def getbelowleft(self, number, closest=False):
+        """ Get a field diagonally, south-west of this field.
+
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('belowleft', number, closest)
 
     def getaboveright(self, number, closest=False):
+        """ Get a field diagonally, north-east of this field.
+
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('aboveright', number, closest)
 
     def getbelowright(self, number, closest=False):
+        """ Get a field diagonally, north-west of this field.
+
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
+        """
         return self.getneighbor('belowright', number, closest)
 
     def getneighbor(self, direction, number, closest):
-        """
-        Get a neigboring field.
+        """ Get a neigboring field.
 
-        :param str direction: The direction of the neigbor
+        :param str direction: The direction of the neigbor: 'above',
+        'below', 'left', 'right', 'aboveleft', 'aboveright',
+        'belowleft', 'belowright', 'aboveright' and 'belowright'.
         
         :param int number: The number of cells to skip in the given
         direction to get to the desired neigbor
@@ -695,9 +905,9 @@ class field(entity):
 
     @property
     def pt(self):
-        """ 
-        Print table and highlight this field.
+        """ Print table and highlight this field.
 
-        This property is merely intended for debugging purposes.
+        Note that this property is merely intended for debugging
+        purposes.
         """
         print(self.__str__(table=True))
