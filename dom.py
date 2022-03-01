@@ -1190,11 +1190,12 @@ class element(entities.entity):
             self.attributes += kwargs
 
     def click(self):
-        # XXX What should eargs be
-        self.onclick(self, None) 
+        """ XXX """
+        self.onclick(self, clickeventargs(self)) 
 
     @property
     def onclick(self):
+        """ XXX """
         if not hasattr(self, '_onclick'):
             self._onclick = event(self, 'click')
         return self._onclick

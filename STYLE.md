@@ -142,6 +142,9 @@ Abbreviation glossory
     handler: hnd
     index: ix
     counters in loops: i, j, k, etc.
+    document object model: dom
+    identifier: id
+
 
 Common method names:
 

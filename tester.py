@@ -430,6 +430,7 @@ class tester(entities.entity):
 
             @html.setter
             def html(self, v):
+                """ XXX """
                 self._html = v
                 evs = (
                     'click', 'keydown', 'keyup'
