@@ -144,6 +144,8 @@ class application:
         break_ = False
 
         try:
+            # Clear state data currently maintained by the WSGI
+            # application.
             self.clear()
 
             # Set the WSGI environ dict
@@ -213,29 +215,46 @@ class application:
                     # the client if we are.
                     data = {'_exception': repr(ex), '_traceback': tb}
                 else:
-                    # If the exception was an HttpError, i.e, a 400s and
-                    # 500s
+                    # If the exception was an HttpError, i.e, an HTTP
+                    # 400s or 500s error...
                     if isinstance(ex, HttpError):
+
+                        # Call the sites error page for the given
+                        # status 
                         lang = req.language
                         path = '/%s/error/%s' % (lang, ex.status)
                         pg = req.site(path)
 
+                        # If the page was provided by the site
                         if pg:
-                            pg.clear()
-                            pg(ex=ex)
-                        else:
-                            pg = req.site['/%s/error' % lang]
+                            # Clear and invoke the page
                             pg.clear()
                             pg(ex=ex)
 
+                        # Else if no page was provided by the site
+                        else:
+                            # Use the default error page, e.g.,
+                            # /en/error
+                            pg = req.site['/%s/error' % lang]
+
+                            # Clear and invoke
+                            pg.clear()
+                            pg(ex=ex)
+
+                        # Use the response form the page's invocation to
+                        # set the fields of the response object
                         res.body = pg.html
                         res.status = ex.status
+
+                    # If the exception is an HttpException i.e., HTTP 300s. 
                     elif isinstance(ex, HttpException):
-                        # HttpException are HTTP 300s. Allow the
-                        # exception to make modifications to the
-                        # response.
+                        # Allow the exception to make
+                        # modifications to the response.
                         ex(res)
+
+                    # If the exception was a non-HTTP exception
                     else:
+                        # Create a response to report a default 500 Internal Server Error
                         res.status = 500
                         p = dom.p()
                         p += dom.text('Error: ')
@@ -245,10 +264,9 @@ class application:
                         req.page.flash(p)
                         res.body = req.page.html
 
+            # In there was an exception processing the exception,
+            # ensure the response is 500 with a simple error message.
             except Exception as ex:
-                # In case there is an exception processing the
-                # exception, ensure the response is 500 with a simple
-                # error message.
                 res.status = 500
                 res.body = dom.dedent('''
                 <p>Error processing exception: %s</p>
@@ -256,7 +274,11 @@ class application:
 
         finally:
             if not break_:
+                # Use the WSGI start_response to send the HTTP status
+                # and headers back to the browser.
                 start_response(res.status, dict(res.headers.list))
+
+                # Return the responses body to the browser
                 return iter([res.body])
 
             request = None
