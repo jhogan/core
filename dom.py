@@ -9080,7 +9080,8 @@ class event(entities.event):
 
         super().__init__(*args, **kwargs)
 
-    def __iadd__(self, obj):
+    def append(self, obj, *args, **kwargs):
+        """ XXX """
         name = self.name
         if isinstance(obj, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
@@ -9099,4 +9100,21 @@ class event(entities.event):
             # Conventional event subscription.
             f = obj
 
-        return super().append(f)
+        super().append(f)
+
+class eventargs(entities.eventargs):
+    """ XXX """
+    def __init__(self, html, hnd):
+        self.html = html
+        self.handler = hnd
+
+class clickeventargs(eventargs):
+    """ XXX """
+    def __init__(self, el):
+        id = el.attributes['data-click-fragment'].value
+        hnd = el.attributes['data-click-handler'].value
+
+        super().__init__(el.root[id], hnd)
+
+
+

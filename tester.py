@@ -417,11 +417,19 @@ class tester(entities.entity):
         class _tab(www.browser._tab):
             def __init__(self, tabs):
                 super().__init__(tabs)
-                self._referer = None
-                self._html = None
+                self._referer  =  None
+                self._html     =  None
+                self._page     =  None
+                self._site     =  None
 
             def element_event(self, src, eargs):
-                print(eargs)
+                """ XXX """
+                body = {
+                    'hnd': eargs.handler,
+                    'html': eargs.html,
+                }
+
+                self.post(self.page, self.site, body=body)
 
             @property
             def html(self):
@@ -473,22 +481,25 @@ class tester(entities.entity):
                 return self.tabs.browser
 
             def get(self, pg, ws):
-                B()
                 self.html = self._request(pg=pg, ws=ws, meth='GET')
                 return self.html
 
-            def post(self, pg, ws, frm=None, files=None):
+            def post(self, pg, ws, body=None, frm=None, files=None):
                 if files:
                     files = files.orm.collectivize()
 
                 return self._request(
-                    pg=pg, ws=ws, frm=frm, files=files, meth='POST'
+                    pg=pg, ws=ws, body=None, frm=frm, files=files, meth='POST'
                 )
 
             def head(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='HEAD')
 
-            def _request(self, pg, ws, frm=None, files=None, meth='GET'):
+            def _request(
+                self, pg, ws, 
+                body=None, frm=None, files=None, meth='GET'
+            ):
+                B()
                 if not isinstance(pg, str):
                     raise TypeError('pg parameter must be a str')
 
@@ -546,7 +557,15 @@ class tester(entities.entity):
                 pg and pg.clear()
 
                 if meth == 'POST':
-                    if files and files.count:
+                    if body:
+                        inp = io.BytesIO(body)
+
+                        env = create_environ({
+                            'content_length':  len(frm.post),
+                            'wsgi.input':      inp,
+                        })
+                        
+                    elif files and files.count:
                         boundry = uuid.uuid4().hex
                         inp = io.BytesIO()
 
@@ -637,6 +656,9 @@ class tester(entities.entity):
                         self.browser.cookies += cookie 
 
                 self.referer = ecommerce.url(address=req.url)
+
+                self.page = pg
+                self.site = ws
                 return res
 
         ''' Class members '''
