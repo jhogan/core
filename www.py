@@ -1980,7 +1980,7 @@ class header(entities.entity):
             str(self.value)
             
         )
-        return '%s (%s: %s)"' % args
+        return '%s(%s: %s)"' % args
 
     @property
     def tuple(self):

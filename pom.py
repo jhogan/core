@@ -45,7 +45,7 @@ class site(asset.asset):
     are persisted to the database along with their constituents.
     """
     def __init__(self, *args, **kwargs):
-        """
+        """ XXX
         """
         super().__init__(*args, **kwargs)
         self.index = None

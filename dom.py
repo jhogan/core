@@ -1214,6 +1214,8 @@ class element(entities.entity):
     def identify(self, recursive=False):
         """ Assigns new, random values (UUIDs) to the id attribute of
         this HTML5 elements and all of its descendants.
+
+        :param: recursive bool: XXX
         """
         self.id = primative.uuid().base64
 

@@ -137,7 +137,7 @@ operator, even though the quality operator (`==`) works::
         ...
 
 Abbreviation glossory
-    callables: f, callable
+    callables: f, callable, meth
     value: v
     handler: hnd
     index: ix

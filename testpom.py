@@ -1788,7 +1788,6 @@ class pom_page(tester.tester):
         self.status(200, res)
 
         btn = tab.html['button'].only
-        B()
         btn.click()
 
         self.eq('Thanks', res['p'].text)
