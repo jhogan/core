@@ -426,10 +426,10 @@ class tester(entities.entity):
                 """ XXX """
                 body = {
                     'hnd': eargs.handler,
-                    'html': eargs.html,
+                    'html': eargs.html.html,
                 }
 
-                self.post(self.page, self.site, body=body)
+                self.xhr(self.page, self.site, json=body)
 
             @property
             def html(self):
@@ -484,12 +484,27 @@ class tester(entities.entity):
                 self.html = self._request(pg=pg, ws=ws, meth='GET')
                 return self.html
 
+            def xhr(self, pg, ws, json=None):
+                from json import dumps
+
+                body = dumps(json)
+
+                hdrs = www.headers(
+                    content_type = 'application/json'
+                )
+
+                B()
+                return self._request(
+                    pg=pg, ws=ws, body=body, meth='POST', hdrs=hdrs
+                )
+                
             def post(self, pg, ws, body=None, frm=None, files=None):
                 if files:
                     files = files.orm.collectivize()
 
                 return self._request(
-                    pg=pg, ws=ws, body=None, frm=frm, files=files, meth='POST'
+                    pg=pg,    ws=ws,        body=None,
+                    frm=frm,  files=files,  meth='POST'
                 )
 
             def head(self, pg, ws):
@@ -497,16 +512,19 @@ class tester(entities.entity):
 
             def _request(
                 self, pg, ws, 
-                body=None, frm=None, files=None, meth='GET'
+                body=None, frm=None, files=None, meth='GET', hdrs=None
             ):
-                B()
-                if not isinstance(pg, str):
-                    raise TypeError('pg parameter must be a str')
+                arg_hdrs = hdrs
+                isa = isinstance
+                if not isa(pg, str) and not isa(pg, pom.page):
+                    raise TypeError(
+                        'pg parameter must be a str or page'
+                    )
 
-                if not isinstance(ws, pom.site):
+                if not isa(ws, pom.site):
                     raise TypeError('ws parameter must be a pom.site')
 
-                if frm and not isinstance(frm, dom.form):
+                if frm and not isa(frm, dom.form):
                     raise TypeError('frm parameter must be a dom.form')
 
                 def create_environ(env=None):
@@ -540,7 +558,11 @@ class tester(entities.entity):
                         for k, v in env.items():
                             d[k] = v
                     
-                    return www.headers(d)
+                    hdrs1 = www.headers(**d)
+
+                    hdrs1 |= arg_hdrs
+
+                    return hdrs1
 
                 st, hdrs = None, None
                 
@@ -549,19 +571,32 @@ class tester(entities.entity):
                     nonlocal hdrs
                     st, hdrs = st0, hdrs0
 
-                import urllib
-                url = urllib.parse.urlparse(pg)
+                if isinstance(pg, str):
+                    import urllib
+                    url = urllib.parse.urlparse(pg)
 
-                pg = ws(url.path)
+                    pg = ws(url.path)
+                    path = url.path
+                    qs = url.query
+                elif isinstance(pg, pom.page):
+                    # XXX We shoud preserve the language used to GET
+                    # the page (/en/mypage) so subsequent XHR requests
+                    # can use the same language.
+                    path = pg.path
+                    qs = str()
+
 
                 pg and pg.clear()
 
                 if meth == 'POST':
                     if body:
+                        if isa(body, str):
+                            body = body.encode('utf-8')
+
                         inp = io.BytesIO(body)
 
                         env = create_environ({
-                            'content_length':  len(frm.post),
+                            'content_length':  str(len(body)),
                             'wsgi.input':      inp,
                         })
                         
@@ -604,8 +639,8 @@ class tester(entities.entity):
                 else: 
                     env = create_environ()
 
-                env['path_info']       =  url.path
-                env['query_string']    =  url.query
+                env['path_info']       =  path
+                env['query_string']    =  qs
                 env['server_name']     =  ws.host
                 env['server_site']     =  ws
                 env['request_method']  =  meth
@@ -631,7 +666,7 @@ class tester(entities.entity):
 
                 res = www._response(req) 
                 res._status = st
-                res._headers = www.headers(hdrs)
+                res._headers = www.headers(**hdrs)
                 res.body = next(iter)
 
                 # Deal with the set-cookie header

@@ -1801,9 +1801,8 @@ class headers(entities.entities):
     Headers are components of HTTP requests and responses messages and,
     therefore, are constiuents of the ``request`` and ``response``
     objects (viz. www.request.headers and www.response.headers.).
-
     """
-    def __init__(self, d=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """ Creates a headers collection.
 
         :param: d dict: A dict where each key is the header name
@@ -1815,11 +1814,11 @@ class headers(entities.entities):
             }
 
         The dict is used to initialize the collection.
+        XXX Update :param: for new signature
         """
-        super().__init__(*args, **kwargs)
-        if d:
-            for k, v in d.items():
-                self += header(k, v)
+        super().__init__(*args)
+        for k, v in kwargs.items():
+            self += header(k, v)
             
     def __setitem__(self, ix, v):
         """ If ix is a str, allows for indexer notation to set a headers
@@ -1847,9 +1846,11 @@ class headers(entities.entities):
             # value (``v``).
             return super().__setitem__(ix)
 
-        # TODO Why can't we overwrite prior values. 
+        # TODO Why can't we overwrite prior values. XXX UPDATE: I fixed
+        # this; make sure it works in all unit tests.
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
+                hdr.value = v
                 break
         else:
             self += header(ix, v)
@@ -1865,6 +1866,15 @@ class headers(entities.entities):
             if hdr.name.casefold() == ix.casefold():
                 return hdr.value
         return None
+
+    def __ior__(self, hdrs):
+        """ XXX """
+        if not hdrs:
+            return self
+
+        for hdr in hdrs:
+            self[hdr.name] = hdr.value
+        return self
 
     def append(self, obj, uniq=False):
         """ Allows colon seperate strings to be appended as new
