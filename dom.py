@@ -1217,13 +1217,18 @@ class element(entities.entity):
 
         :param: recursive bool: XXX
         """
-        self.id = primative.uuid().base64
+
+        # Set to random identifie. Prepend an x because HTML5's
+        # specification dosen't allow id attributes to start with
+        # numbers.
+        self.id = 'x' + primative.uuid().base64
 
         if not recursive:
             return
 
         for el in self.walk():
-            self.id = primative.uuid().base64
+            # NOTE untested
+            el.identify()
         
     @property
     def isblocklevel(self):
