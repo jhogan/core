@@ -885,8 +885,8 @@ class _request:
 
     @property
     def ip(self):
-        """ Returns an ``ecommerce.ip`` address object corresponding the
-        REMOTE_ADDR WSGI environment variblable.
+        """ Returns an ``ecommerce.ip`` address object corresponding to
+        the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
             ip = str(self.environment['remote_addr'])
@@ -949,6 +949,8 @@ class _request:
             
             https://foo.net:8000/en/my/page
         """
+        # TODO This should probably return an ecommerce.url object
+        # instead of a str.
         if self._url:
             return self._url
 
@@ -1250,6 +1252,8 @@ class _response():
     def contenttype(self):
         """ The content type of the body.
         """
+        # TODO This should probably be renamed to content_type to match
+        # the request class's property.
         return self.headers['Content-Type']
 
     @property
