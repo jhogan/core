@@ -284,7 +284,7 @@ class application:
             request = None
 
 # TODO The class name should be `request` and the main instance should
-# be stored in `_reuest` at the class level. A @property called
+# be stored in `_request` at the class level. A @property called
 # request.main or request.current can store the request object currently
 # being processed.
 request = None
@@ -388,8 +388,8 @@ class _request:
 
     @property
     def files(self):
-        """ Return a collection of files that were uploaded in the HTTP
-        request.
+        """ Return a collection of files (``file.files``) that were
+        uploaded in the HTTP request.
 
         Note that currently, a very rough implementation of a
         multipart/form-data parser is implemented. This is used for
@@ -408,8 +408,8 @@ class _request:
         fs = file.files()
 
         if self.mime != 'multipart/form-data':
-            # Currently, we will only have file in the request if we are
-            # using a multipart mime type. This will change once
+            # Currently, we will only have files in the request if we
+            # are using a multipart mime type. This will change once
             # event-based input is complete.
             return fs
 
