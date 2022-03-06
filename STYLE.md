@@ -21,6 +21,8 @@ Blocks that overflow 72 characters:
     f(
         a, b, ...
     }
+
+Never have more than two linefeeds in a row
      
 Sort imports alphabetically
 
