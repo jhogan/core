@@ -152,7 +152,7 @@ class application:
             # Get a reference to the application HTTP request object
             req = self.request
 
-            # TODO I think this can be remove; we are using `req`, see
+            # XXX I think this can be remove; we are using `req`, see
             # above.
             request = self.request
 
@@ -346,7 +346,9 @@ class _request:
         request. 
         
         Note that WSGI gives us the HTTP headers in its `environ` dict
-        where the keys start with 'http_'.
+        where the keys start with 'http_'. This property uses that dict
+        to produce headers for that subset. Note that other headers can
+        be added at any point.
         """
 
         if not self._headers:
@@ -514,8 +516,8 @@ class _request:
     def environment(self):
         """ The WSGI environ dict.
 
-        This corresponds to the ``environ`` parameter in the classic
-        WSGI method call defined in PEP 333::
+        This corresponds to the ``environ`` parameter in the WSGI method
+        call defined in PEP 333::
 
             def simple_app(environ, start_response):
                 ...
@@ -523,9 +525,11 @@ class _request:
         For the framework's main implementation of the above method, see
         ``www.application.__call__``.
 
-
         For more information about the actual environ dict, see:
         https://www.python.org/dev/peps/pep-0333/#environ-variables
+
+        Note that this property is similar but not the same as the
+        `headers` property.
         """
         return self.app.environment
 
@@ -975,6 +979,8 @@ class _request:
     def content_type(self):
         """ Return the Content-Type of the request.
         """
+        # TODO This should check self.headers['content-type'] if it
+        # can't be found in the WSGI environment.
         return self.environment['content_type'].strip()
 
     @property
