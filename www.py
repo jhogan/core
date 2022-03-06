@@ -989,6 +989,44 @@ class _request:
         """
         return self.content_type.split(';')[0].strip().lower()
 
+    @property
+    def isevent(self):
+        """ XXX """
+        if not self.content_type == 'application/json':
+            return False
+
+        if not isinstance(self.body, dict):
+            return False
+
+        try:
+            self.body['hnd']
+        except:
+            return False
+        else:
+            return True
+            
+    @property
+    def handler(self):
+        ''' XXX '''
+        if not self.isevent:
+            return None
+
+        try:
+            return self.body['hnd']
+        except:
+            return None
+
+    @property
+    def fragment(self):
+        ''' XXX '''
+        if not self.isevent:
+            return None
+
+        try:
+            return self.body['html']
+        except:
+            return None
+
     # TODO Rename to '_demand' since this is a private method
     def demand(self):
         """ Causes an exception to be raised if the request is not
