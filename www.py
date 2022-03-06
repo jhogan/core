@@ -1069,6 +1069,13 @@ class _request:
             if not self.isxhr:
                 return
 
+            # The remaining demands will be for non-event XHR requests
+            # only
+            
+            if self.isevent:
+                B()
+                return
+
             try:
                 post = self.post
             except json.JSONDecodeError as ex:
