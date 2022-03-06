@@ -799,6 +799,19 @@ class _request:
                     # here?  (text/html?) Let's turn this else into an
                     # elif with that information.
                     self._body = inp.read(sz).decode('utf-8')
+
+                    try:
+                        self._body = json.loads(self._body)
+                    except Expectation as ex:
+                        # XXX Catch the JSON specific error here
+
+                        # XXX There are some other places that
+                        # json.loads is called on request.body. THat
+                        # would probably be unnecessary now.
+                        B()
+                        print(ex)
+
+
         return self._body
 
     @body.setter
