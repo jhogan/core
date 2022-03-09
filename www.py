@@ -179,15 +179,18 @@ class application:
                 
                 # If the request is XHR (i.e, an AJAX request)
                 if req.isxhr:
-                    reqdata = self.request.post
+                    if req.isevent:
+                        res.body = req()
+                    else:
+                        reqdata = self.request.post
 
-                    cls, meth = self.class_, self.method
+                        cls, meth = self.class_, self.method
 
-                    obj = cls(self)
+                        obj = cls(self)
 
-                    data = getattr(obj, meth)()
+                        data = getattr(obj, meth)()
 
-                    data = [] if data == None else data
+                        data = [] if data == None else data
                 else:
                     res.body = req()
 
@@ -638,6 +641,14 @@ class _request:
         """
         ws = self.site
         path = self.path
+
+        # XXX This is a hack to mack XHR requests work. Currently, the
+        # page GET does not preserve the langugae that was originally
+        # requested. Consequently, the XHR request doesn't have the
+        # information it needs to add the /<lang>/ prefex to the path.
+        if not path.startswith('/en/'):
+            path = f'/en/{path}'
+
         try:
             return ws[path]
         except IndexError:
@@ -675,11 +686,14 @@ class _request:
         # Create the hit log. In the finally block, we will add some
         # concluding information by calling self.log again, such as the
         # HTTP status code.
+
+        # XXX Write unit tests to ensure that event requests are being
+        # logged correctly. 
         self.log()
 
         try:
             # Invoke the page
-           self.page(**self.arguments)
+            self.page(**self.arguments)
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.

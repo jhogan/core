@@ -9112,6 +9112,9 @@ class event(entities.event):
 class eventargs(entities.eventargs):
     """ XXX """
     def __init__(self, html, hnd):
+        if not isinstance(html, elements):
+            html = sys.modules['dom'].html(html)
+
         self.html = html
         self.handler = hnd
 

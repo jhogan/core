@@ -1770,9 +1770,8 @@ class pom_page(tester.tester):
         class clickme(pom.page):
 
             def btn_onclick(self, src, eargs):
-                eargs.html.append(
-                    dom.strong('Thanks')
-                )
+                B()
+                eargs.html['p'].only += dom.strong('Thanks')
 
             def main(self):
                 self.main += (div := dom.div())

@@ -1250,14 +1250,23 @@ class page(dom.html):
             try:
                 self._calling = True
 
-                # Inject global variables into main()
-                globs = self._mainfunc.__func__.__globals__
-                globs['req'] = www.request
-                globs['res'] = www.response
+                req = www.request
+                if req.isevent:
+                    # XXX Explain
+                    eargs = dom.eventargs(
+                        html = req.body['html'], 
+                        hnd  = req.body['hnd']
+                    )
+                    getattr(self, eargs.handler)(src=req, eargs=eargs)
+                else:
+                    # Inject global variables into main()
+                    globs = self._mainfunc.__func__.__globals__
+                    globs['req'] = www.request
+                    globs['res'] = www.response
 
-                # Call page's main method. It's called `_mainfunc`
-                # here but the web developer will call it `main`.
-                self._mainfunc(**self._arguments)
+                    # Call page's main method. It's called `_mainfunc`
+                    # here but the web developer will call it `main`.
+                    self._mainfunc(**self._arguments)
                 self._called = True
             finally:
                 self._calling = False
