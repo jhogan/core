@@ -493,7 +493,6 @@ class tester(entities.entity):
                     content_type = 'application/json'
                 )
 
-                B()
                 return self._request(
                     pg=pg, ws=ws, body=body, meth='POST', hdrs=hdrs
                 )

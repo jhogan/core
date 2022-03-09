@@ -1109,7 +1109,6 @@ class _request:
             # only
             
             if self.isevent:
-                B()
                 return
 
             try:
