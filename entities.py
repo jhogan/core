@@ -1749,11 +1749,19 @@ class entities:
         """
 
         # TODO Write tests for this property's logic
-        if self.count != 1:
+        if not self.issingular:
             raise ValueError(
                 'The `only` property demands exactly one element'
             )
         return self.first
+
+    @only.setter
+    def only(self, v):
+        if not self.issingular:
+            raise ValueError(
+                'The `only` property demands exactly one element'
+            )
+        self.first = v
 
     @property
     def first(self): 
