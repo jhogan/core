@@ -287,6 +287,11 @@ class application:
 # be stored in `_request` at the class level. A @property called
 # request.main or request.current can store the request object currently
 # being processed.
+
+# NOTE The request class tries to be a generic HTTP request class and a
+# WSGI request class at the same time. We may want to add a new subclass
+# of request call `wsgirequest` that would encapsulate the WSGI logic so
+# we can get it out of the regular `request` class.
 request = None
 class _request:
     """ Represents an HTTP request.
@@ -1827,7 +1832,6 @@ class headers(entities.entities):
     Headers are components of HTTP requests and responses messages and,
     therefore, are constiuents of the ``request`` and ``response``
     objects (viz. www.request.headers and www.response.headers.).
-
     """
     def __init__(self, d=None, *args, **kwargs):
         """ Creates a headers collection.
@@ -2198,14 +2202,3 @@ class browser(entities.entity):
         collection, and return the new tab.
         """
         return self.tabs.tab()
-
-# Start the WSGI application
-
-# TODO This seems really strange that we have this line here. I can't
-# remember what caused me to write this. Perhaps this should be within a
-# 
-#    if __name__ == '__main__'
-#
-# or something. We should reconsider this when revisting the WSGI
-# handling code. At least comment it.
-app = application()
