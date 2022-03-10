@@ -1,3 +1,37 @@
+Style Guide for the Core Framework
+==================================
+
+Title
+-----
+72 characters line limit
+
+Description
+-----------
+Lines of source code logic and comments should not exceed 72 characters.
+
+Justification
+-------------
+* Narrow code is easier to read
+
+* Shorter lines encourage shorter identifier names (e.g. varibles,
+  method names, etc.)
+
+* Text editors can be used to vertically split more legible code 
+  windows when lines are shorter. This enhances a developer's ability to
+  understand the code they are working on.
+
+Exceptions
+----------
+Occasionally, long lines of text need to be put in source code simply
+because breaking those lines would be problematic. A typical example
+would be a URL that exceeds the 72 character boundry. In those cases,
+the text is free to break this rule.
+
+Tags
+----
+    #whitespace
+
+<!--
 Create new objects within collections using methods with the name of the
 object:
 
@@ -149,3 +183,4 @@ Common method names:
     collection object
 
     demand: Raise an exception if the state of an object is invalid.
+-->
