@@ -1,16 +1,13 @@
 Style Guide for the Core Framework
 ==================================
 
-Title
------
-72 characters line limit
+1. 72 characters line limit
+-------------------------
 
-Description
------------
+### Rule
 Lines of source code logic and comments should not exceed 72 characters.
 
-Justification
--------------
+### Justification
 * Narrow code is easier to read
 
 * Shorter lines encourage shorter identifier names (e.g. varibles,
@@ -20,18 +17,90 @@ Justification
   windows when lines are shorter. This enhances a developer's ability to
   understand the code they are working on.
 
-Exceptions
-----------
+### Exceptions
 Occasionally, long lines of text need to be put in source code simply
 because breaking those lines would be problematic. A typical example
 would be a URL that exceeds the 72 character boundry. In those cases,
 the text is free to break this rule.
 
-Tags
-----
-    #whitespace
+### Tags
+whitespace
 
-<!--
+
+2. Breaking lines
+------------------
+
+### Rule
+To fall within the 72 character limit, long source code lines must
+sometimes be broken.  There are specifice ways these should be broken.
+
+#### Method and function signatures
+When a function signature exceeds the 72 character limit, perhaps due to
+a long list of parameters, the parameters should be broken out like so:
+
+    def myfunction(
+        long, list, of, arguments, which, 
+        exceed, the, limit, on, line, length
+    ):
+        ...
+
+When the function is a method, the `self` argument should be placed on
+the same line as the function name:
+
+    def mymethod(self,
+        long, list, of, arguments, which, 
+        exceed, the, limit, on, line, length
+    ):
+        ...
+
+The `column -t` commmand can be used to align the arguments if it
+improves readability:
+
+    def mymethod(self,
+        long,    list,  of,     arguments,  which,
+        exceed,  the,   limit,  on,         line,   length
+    ):
+
+#### Oversized lists, tuple, dicts, etc.
+Oversize container assignments can be written as such:
+    
+    # List
+    ls = [
+        1,    2,    3,    ...
+        100,  101,  102,  ...
+    ]
+
+    # Tuple
+    tup = (
+        1,    2,    3,    ...
+        100,  101,  102,  ...
+    )
+
+    # dict
+    d = {
+        'key1': 'value1', 'key2': 'value2',
+        'key3': 'value3', 'key4': 'value4',
+    }
+
+    # Strings
+    s = (
+        'Hello, '
+        'world'
+    )
+     
+
+### Justification
+Breaking long source code lines in a uniform way improves readability.
+
+### Exceptions
+None
+
+### Tags
+whitespace formatting
+
+
+<!-- TODO
+
 Create new objects within collections using methods with the name of the
 object:
 
