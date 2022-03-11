@@ -1217,7 +1217,7 @@ class page(dom.html):
         self._called = False
         self._attemped = False
 
-    def __call__(self, *args, **qsargs):
+    def __call__(self, eargs=None, *args, **qsargs):
         """ This method calls into the page's `main` method that the
         web developer writes.
 
@@ -1252,11 +1252,7 @@ class page(dom.html):
 
                 req = www.request
                 if req.isevent:
-                    # XXX Explain
-                    eargs = dom.eventargs(
-                        html = req.body['html'], 
-                        hnd  = req.body['hnd']
-                    )
+                    B()
                     getattr(self, eargs.handler)(src=req, eargs=eargs)
                 else:
                     # Inject global variables into main()

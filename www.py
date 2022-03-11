@@ -691,9 +691,17 @@ class _request:
         # logged correctly. 
         self.log()
 
+        # XXX Explain
+        eargs = None
+        if self.isevent:
+            eargs = dom.eventargs(
+                html = self.body['html'], 
+                hnd  = self.body['hnd']
+            )
+
         try:
             # Invoke the page
-            self.page(**self.arguments)
+            self.page(eargs=eargs, **self.arguments)
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.
@@ -709,7 +717,11 @@ class _request:
             # Finish of the hit log
             self.log()
 
-        return self.page.html
+        if self.isevent:
+            B()
+            return eargs.html.html
+        else:
+            return self.page.html
 
     @property
     def hit(self):
