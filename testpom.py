@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 import apriori; apriori.model()
+
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
-import www
-import pytz
 import auth
-import pom
-import tester
-import orm
 import dom
-import primative
-import party
 import ecommerce
+import logs
+import orm
+import party
+import pom
+import primative
+import pytz
+import tester
+import www
 
 class foonets(pom.sites):
     pass
@@ -1770,7 +1772,6 @@ class pom_page(tester.tester):
         class clickme(pom.page):
 
             def btn_onclick(self, src, eargs):
-                B()
                 eargs.html['p'].only += dom.strong('Thanks')
 
             def main(self):
