@@ -1193,7 +1193,6 @@ class element(entities.entity):
         """ XXX """
         eargs = clickeventargs(self)
         self.onclick(self, eargs) 
-        B()
         return html(eargs.html)
 
     @property

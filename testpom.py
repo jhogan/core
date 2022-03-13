@@ -1768,9 +1768,8 @@ class pom_page(tester.tester):
 
         self.eq('Invalid brew type', arts.first.text)
 
-    def it_responds_to_button(self):
+    def it_responds_to_button_click(self):
         class clickme(pom.page):
-
             def btn_onclick(self, src, eargs):
                 eargs.html['p'].only += dom.strong('Thanks')
 
