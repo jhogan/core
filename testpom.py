@@ -1784,13 +1784,23 @@ class pom_page(tester.tester):
         ws.pages += clickme()
 
         tab = self.browser().tab()
+
+        # GET the clickme page
         res = tab.get('/en/clickme', ws)
+
         self.status(200, res)
 
+        # Get the <button> from the response
         btn = tab.html['button'].only
-        res = btn.click()
 
-        self.eq('Thanks', res['p'].text)
+        # Click the button. This will cause an XHR request back to the
+        # page's btn_onclick event handler.
+        btn.click()
+
+        # Now that we've clicked the button, the tab's internal DOM
+        # should have a <p> tag with the word Thanks in it due to the
+        # XHR request having completed successfully.
+        self.eq('Thanks', tab.html['p'].text)
 
         '''
         <html>

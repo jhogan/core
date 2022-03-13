@@ -424,13 +424,29 @@ class tester(entities.entity):
 
             def element_event(self, src, eargs):
                 """ XXX """
+                
+                # Create a JSON object to send in the XHR request
                 body = {
                     'hnd': eargs.handler,
                     'html': eargs.html.html,
                 }
 
+                # Make the XHR request to the page and site that the tab
+                # is currently pointing to.
                 res = self.xhr(self.page, self.site, json=body)
-                eargs.html = res.body
+
+                # Get the fragement of html that is the subject of the
+                # event from the tab's DOM (.html)
+                frag = self.html['#' + eargs.html.only.id].only
+                rent = frag.parent
+
+                # Remove the frament from the tab's DOM
+                frag.remove()
+
+                # Append the response's body to the former parent of the
+                # fragement. We have now replaced the fragment with the
+                # one from the XHR response.
+                rent += dom.html(res.body)
 
             @property
             def html(self):
