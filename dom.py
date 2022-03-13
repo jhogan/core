@@ -1207,12 +1207,19 @@ class element(entities.entity):
     def onclick(self, v):
         self._onclick = v
 
-    def remove(self, el):
+    def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
 
         :param: el element: The element that we want to remove.
         """
-        return self.elements.remove(el)
+        if el:
+            return self.elements.remove(el)
+        else:
+            # XXX This version of remove is more like jQuery's version
+            # in that you can just call the remove method on an element
+            # and it removes itself from the DOM. Make sure this is
+            # documented.
+            return self.parent.remove(self)
 
     def identify(self, recursive=False):
         """ Assigns new, random values (UUIDs) to the id attribute of
