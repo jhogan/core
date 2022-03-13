@@ -498,8 +498,9 @@ class tester(entities.entity):
                 return self.tabs.browser
 
             def get(self, pg, ws):
-                self.html = self._request(pg=pg, ws=ws, meth='GET')
-                return self.html
+                res = self._request(pg=pg, ws=ws, meth='GET')
+                self.html = res.html
+                return res
 
             def xhr(self, pg, ws, json=None):
                 from json import dumps
