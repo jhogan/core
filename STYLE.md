@@ -23,6 +23,18 @@ because breaking those lines would be problematic. A typical example
 would be a URL that exceeds the 72 character boundry. In those cases,
 the text is free to break this rule.
 
+### Implementation tips
+In Vim the 'textwidth' varible can be set in your .vimrc to control the
+line width:
+
+    set tw=72 
+
+Also in Vim, if you have some comments that you want to format to be
+within the 72 character limit, you can select the block of text and type
+`gq`. This will reformat the comments to be within the 72 limit (if you
+use the `tw` command above) and it will also do the right thing with
+regards to comment tokens.
+
 ### Tags
 \#whitespace
 
@@ -173,6 +185,84 @@ flag.
 
 ### Tags
 \#whitespace #formatting
+
+5. Naming @property methods
+---------------------------
+
+### Rule
+Property methods 
+
+    * should be all lowercase, 
+    * should not include prefixes such as 'get' and 'set'
+    * should be composed of a single word if humanly possible
+    * should be implemented using the @property decorator
+
+The setter proprety use `v` as the value parameter:
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, v):
+        self._size = v
+
+### Justification
+Property methods are a nice feature of modern object-oriented
+programming that clearly denote the attributes of an object.
+
+    t = toy()
+    t.color = 'blue'
+
+'get' and 'set' prefixes add unnecessary clutter to property that are
+created using the @property decorator. Single word properties that are
+all lowercase are easier to remember, type and read. Methods that start
+with prefixes such as 'get' and 'set' are difficult to type and
+remember.
+
+### Exceptions
+Occasionally, uppercase characters can imply certain notions. SQL is
+conventionally uppercase, so you could do the following.
+
+    stmt = sql.statement()
+    stmt.SELECT = '*'
+    stmt.FROM = 'mytable'
+
+The `SELECT` and `FROM` properties are uppercased to imply they refer to
+the SQL keywords. However, it would probably be better to lowercase
+these to make them easier to type and less jarring to read.
+
+Also, occasionally compound words can't be avoided, though every effort
+should be made to do so. For example, the `www.request` object currently
+has a `content_type` property. This corresponds to the `Content-Type`
+HTTP header. That header is a standard so it only makes sense to include
+both words (the underscore symbolizes the hyphen).
+
+Properties should be implemented as methods when arguments are requried.
+Usually, there should be an actual proprety for the default invocation:
+
+    @property
+    def children(self):
+        return self.getchildren()
+
+    def getchildren(self, recursive=False):
+        ...
+
+The 'is', 'does', 'has', prefix should be added to boolean propreties if
+it enhances readability:
+    
+    if world.isflat:
+        print('Nyoo my God')
+
+    # 'is' or 'does' does not enhance readability here
+    if file.exist:
+        ...
+    
+### Implementation tips
+None
+
+### Tags
+\#property
 
 <!-- 
 
