@@ -1783,12 +1783,11 @@ class pom_page(tester.tester):
         ws.pages += clickme()
 
         tab = self.browser().tab()
-        tab.get('/en/clickme', ws)
+        res = tab.get('/en/clickme', ws)
         self.status(200, res)
 
         btn = tab.html['button'].only
-        btn.click()
-        B()
+        res = btn.click()
 
         self.eq('Thanks', res['p'].text)
 

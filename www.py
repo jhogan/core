@@ -718,7 +718,6 @@ class _request:
             self.log()
 
         if self.isevent:
-            B()
             return eargs.html.html
         else:
             return self.page.html

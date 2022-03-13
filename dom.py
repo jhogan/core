@@ -1191,7 +1191,10 @@ class element(entities.entity):
 
     def click(self):
         """ XXX """
-        self.onclick(self, clickeventargs(self)) 
+        eargs = clickeventargs(self)
+        self.onclick(self, eargs) 
+        B()
+        return html(eargs.html)
 
     @property
     def onclick(self):
@@ -9121,6 +9124,8 @@ class eventargs(entities.eventargs):
 class clickeventargs(eventargs):
     """ XXX """
     def __init__(self, el):
+        # XXX I think this logic should be in eventargs or some other
+        # base class.
         id = el.attributes['data-click-fragment'].value
         hnd = el.attributes['data-click-handler'].value
 

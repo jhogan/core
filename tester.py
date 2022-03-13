@@ -430,7 +430,7 @@ class tester(entities.entity):
                 }
 
                 res = self.xhr(self.page, self.site, json=body)
-                B()
+                eargs.html = res.body
 
             @property
             def html(self):

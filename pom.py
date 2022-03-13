@@ -1252,7 +1252,6 @@ class page(dom.html):
 
                 req = www.request
                 if req.isevent:
-                    B()
                     getattr(self, eargs.handler)(src=req, eargs=eargs)
                 else:
                     # Inject global variables into main()
