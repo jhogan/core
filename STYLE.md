@@ -24,7 +24,7 @@ would be a URL that exceeds the 72 character boundry. In those cases,
 the text is free to break this rule.
 
 ### Tags
-whitespace
+\#whitespace
 
 
 2. Breaking lines
@@ -33,6 +33,8 @@ whitespace
 ### Rule
 To fall within the 72 character limit, long source code lines must
 sometimes be broken.  There are specifice ways these should be broken.
+
+### Examples
 
 #### Method and function signatures
 When a function signature exceeds the 72 character limit, perhaps due to
@@ -96,11 +98,85 @@ Breaking long source code lines in a uniform way improves readability.
 None
 
 ### Tags
-whitespace formatting
+\#whitespace #formatting
 
 
-<!-- TODO
+3. Multiple empty lines
+----------------------------------------------
 
+### Rule
+Never have more than one empty line in source code file.
+
+### Justification
+All space in source code file is valuable. Don't waste verticle space by
+having more than one empty line. A single empty line, however, can aid
+in readability.
+
+### Examples
+Bad:
+
+    a = b
+
+
+    b = c
+Good:
+
+    a = b
+
+    b = c
+    
+### Exceptions
+None
+
+### Tags
+\#whitespace #formatting
+
+4. Sort import lines
+----------------------------------------------
+
+### Rule
+Sort the `import` lines at the top of modules alphabetically.
+
+### Justification
+Keeping the `import` lines sorted alphabetically makes it easier to
+detect duplicate imports that may have been accedently introduced into
+the source code.
+
+### Examples
+Bad:
+    
+    import re
+    import decimal
+    from dbg import B, PM
+
+Good:
+
+    from dbg import B, PM
+    import decimal
+    import re
+    
+### Exceptions
+Sometimes an `import` line will need to stick out somehow, such as in
+the the idiom that models the ORM entity classes:
+
+    import apriori; apriori.model()
+
+This doesn't need to be a part of the sorted `import` lines.
+
+Also, conditionally `import`ed modules don't need to be sorted with the
+other `import` lines.
+
+### Implementation tips
+You can sort the lines by filtering them through the `sort` command. To
+sort them and ensure that all duplicates have been removed, use the `-u`
+flag.
+
+### Tags
+\#whitespace #formatting
+
+<!-- 
+
+// CONVENTIONS
 Create new objects within collections using methods with the name of the
 object:
 
@@ -111,24 +187,7 @@ object:
     assert rs.count == 1
     assert rs.first is r1
 
-Blocks that overflow 72 characters:
-    
-    def f(self,
-        ..., ...
-    ):
-
-    ls = [x 
-        for x in ...
-    ]
-
-    f(
-        a, b, ...
-    }
-
-Never have more than two linefeeds in a row
-     
-Sort imports alphabetically
-
+// TODO
 @property getters and setters should have no prefix:
     
     @property
