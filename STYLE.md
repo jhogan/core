@@ -10,7 +10,7 @@ Lines of source code logic and comments should not exceed 72 characters.
 ### Justification
 * Narrow code is easier to read
 
-* Shorter lines encourage shorter identifier names (e.g. varibles,
+* Shorter lines encourage shorter identifier names (e.g. variables,
   method names, etc.)
 
 * Text editors can be used to vertically split more legible code 
@@ -20,11 +20,11 @@ Lines of source code logic and comments should not exceed 72 characters.
 ### Exceptions
 Occasionally, long lines of text need to be put in source code simply
 because breaking those lines would be problematic. A typical example
-would be a URL that exceeds the 72 character boundry. In those cases,
+would be a URL that exceeds the 72 character boundary. In those cases,
 the text is free to break this rule.
 
 ### Implementation tips
-In Vim the 'textwidth' varible can be set in your .vimrc to control the
+In Vim the 'textwidth' variable can be set in your .vimrc to control the
 line width:
 
     set tw=72 
@@ -44,7 +44,7 @@ regards to comment tokens.
 
 ### Rule
 To fall within the 72 character limit, long source code lines must
-sometimes be broken.  There are specifice ways these should be broken.
+sometimes be broken.  There are specific ways these should be broken.
 
 ### Examples
 
@@ -67,7 +67,7 @@ the same line as the function name:
     ):
         ...
 
-The `column -t` commmand can be used to align the arguments if it
+The `column -t` command can be used to align the arguments if it
 improves readability:
 
     def mymethod(self,
@@ -75,7 +75,7 @@ improves readability:
         exceed,  the,   limit,  on,         line,   length
     ):
 
-#### Oversized lists, tuple, dicts, etc.
+#### Oversize lists, tuple, dicts, etc.
 Oversize container assignments can be written as such:
     
     # List
@@ -120,7 +120,7 @@ None
 Never have more than one empty line in source code file.
 
 ### Justification
-All space in source code file is valuable. Don't waste verticle space by
+All space in source code file is valuable. Don't waste vertical space by
 having more than one empty line. A single empty line, however, can aid
 in readability.
 
@@ -151,7 +151,7 @@ Sort the `import` lines at the top of modules alphabetically.
 
 ### Justification
 Keeping the `import` lines sorted alphabetically makes it easier to
-detect duplicate imports that may have been accedently introduced into
+detect duplicate imports that may have been accidental introduced into
 the source code.
 
 ### Examples
@@ -197,7 +197,7 @@ Property methods
     * should be composed of a single word if humanly possible
     * should be implemented using the @property decorator
 
-The setter proprety use `v` as the value parameter:
+The setter property use `v` as the value parameter:
 
     @property
     def size(self):
@@ -238,8 +238,8 @@ has a `content_type` property. This corresponds to the `Content-Type`
 HTTP header. That header is a standard so it only makes sense to include
 both words (the underscore symbolizes the hyphen).
 
-Properties should be implemented as methods when arguments are requried.
-Usually, there should be an actual proprety for the default invocation:
+Properties should be implemented as methods when arguments are required.
+Usually, there should be an actual property for the default invocation:
 
     @property
     def children(self):
@@ -248,7 +248,7 @@ Usually, there should be an actual proprety for the default invocation:
     def getchildren(self, recursive=False):
         ...
 
-The 'is', 'does', 'has', prefix should be added to boolean propreties if
+The 'is', 'does', 'has', prefix should be added to Boolean proprieties if
 it enhances readability:
     
     if world.isflat:
@@ -262,7 +262,70 @@ it enhances readability:
 None
 
 ### Tags
-\#property
+\#naming #property
+
+5. Generators vs getters and @property methods.
+------------------------------------------------
+
+### Rule
+@property methods and getter methods should not return generator
+objects. If a generator is desired, a separate method prefixed with
+'gen' should be written.
+
+### Example
+In the dom.element class, we see three methods to get an element's
+child nodes.
+
+    @property
+    def children(self):
+        ...
+
+    def getchildren(self, recursive=False):
+        ...
+
+    def genchildren(self, recursive=False):
+        ...
+
+Here, we have the option of getting the child nodes through a simple
+property and also through a getter method (if we want to get them
+recursively). A third option, `genchildren` is presented if we want a
+generator.
+
+### Justification
+Sometimes we want a generator and sometimes we want the actual
+collection object return. In the example section above, we may want to
+use the `children` property to mutate the DOM:
+
+    children = p.children
+    children.first.remove()
+
+The above removes the first element from the &lt;p&gt; tag.  We could
+proceed to iterate over the children as well:
+
+    for child in children:
+        ...
+
+However, if there is a large number of children, this could be a
+performance problem due to the work involved in building the collection
+when `p.children` is called. A generator would help with this:
+    
+    for child in p.genchildren(recursive=True):
+        ...
+
+However, the down side of a generator is that, by using one, we can't
+mutate the internal tree, thus we should always provide a property that
+doesn't return a generator and only provide a generator if one is
+needed.
+
+### Exceptions
+Generators are used sometimes in lower-level code, such as when
+overriding an `__iter__`, the `builtin.enumerate` function, or language
+tokenizers. This rule is intended to help make object models intended
+for framework users easier to use. It's not intended to interfere with the
+way lower-level code needs to be written.
+
+### Tags
+\#naming #generators
 
 <!-- 
 
@@ -278,26 +341,8 @@ object:
     assert rs.first is r1
 
 // TODO
-@property getters and setters should have no prefix:
-    
-    @property
-    def children
-        ...
 
-getter and setter methods should be prefixed with get and set:
-
-    def getchildren(self, recursive)
-        ...
-
-    def setchildren(self, v)
-        ...
-
-generators shoud be prefixed with 'gen'
-
-    def genchildren(self, recursive):
-        ...
-
-@property prefixes such as 'is' for booleans, 'was', and 'do'.
+How to right generators; generators vs. getters, and properties.
 
 Put consequent block on newline (if cond:\n ...)
 
