@@ -9090,28 +9090,52 @@ class CssSelectorParseError(SyntaxError):
 class event(entities.event):
     """ XXX """
     def __init__(self, el, name, *args, **kwargs):
+        # The element to which the event will occur. This would
+        # typically be a UI widget like a <button>.
         self.element   =  el
+
+        # The elements for which it will be possible for the event
+        # handler(s) to mutate in response to the event occuring
+        self.elements = elements()
+
         self.name      =  name
-        self.selector  =  None
 
         super().__init__(*args, **kwargs)
 
     def append(self, obj, *args, **kwargs):
         """ XXX """
-        name = self.name
         if isinstance(obj, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
             # alternative block deals with conventional event
             # subscription.
-            f, el = obj
-            el.identify()
-            id = f'#{el.id}'
-            attrs = self.element.attributes
-            attrs[f'data-{name}-fragment'] = id
-            hnd = f.__func__.__name__
-            attrs[f'data-{name}-handler'] = hnd
 
-            self.selector = el
+            els = list(obj)
+            f = els.pop(0)
+
+            # Get the element's attirbutes collection
+            attrs = self.element.attributes
+
+            hnd = f.__func__.__name__
+            attrs[f'data-{self.name}-handler'] = hnd
+
+            ids = list()
+            for el in els:
+                # Append to the event's elements collection
+                self.elements += el
+
+                # Ensure their is a unique identifier for the element
+                el.identify()
+
+                # Collect that identifier
+                ids.append(f'#{el.id}')
+
+            # Set the element's data-<event-name>-fragments attribute to
+            # the comma seprated list of ids. NOTE that Using a comma,
+            # along with the hash(es), makes the value for this
+            # attribute a valid CSS selector, which will be useful later
+            # on.
+            attrs[f'data-{self.name}-fragments'] = ', '.join(ids)
+
         else:
             # Conventional event subscription.
             f = obj
@@ -9132,10 +9156,12 @@ class clickeventargs(eventargs):
     def __init__(self, el):
         # XXX I think this logic should be in eventargs or some other
         # base class.
-        id = el.attributes['data-click-fragment'].value
+        B()
+        ids = el.attributes['data-click-fragments'].value
+
         hnd = el.attributes['data-click-handler'].value
 
-        super().__init__(el.root[id], hnd)
+        super().__init__(el.root[ids], hnd)
 
 
 

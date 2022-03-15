@@ -1769,15 +1769,31 @@ class pom_page(tester.tester):
         self.eq('Invalid brew type', arts.first.text)
 
     def it_responds_to_button_click(self):
+        div0 = div1 = div2 = None
         class clickme(pom.page):
             def btn_onclick(self, src, eargs):
                 eargs.html['p'].only += dom.strong('Thanks')
 
             def main(self):
-                self.main += (div := dom.div())
-                div += dom.p()
-                div += (btn := dom.button('Click me'))
-                btn.onclick += self.btn_onclick, div
+                nonlocal div0, div1, div2
+                self.main += (div0 := dom.div())
+                div0 += dom.p()
+
+                self.main += (div1 := dom.div())
+                div1 += dom.p()
+
+                self.main += (div2 := dom.div())
+                div2 += dom.p()
+
+                # When this button is clicked, the html for div0 will be
+                # POSTed in an XHR request
+                div0 += (btn := dom.button('Click me'))
+                btn.onclick += self.btn_onclick, div0
+
+                # When this button is clicked, the html for div1 and
+                # div2 will be POSTed in an XHR request
+                self.main += (btn := dom.button('No, click me'))
+                btn.onclick += self.btn_onclick, div1, div2
 
         ws = foonet()
         ws.pages += clickme()
@@ -1790,7 +1806,7 @@ class pom_page(tester.tester):
         self.status(200, res)
 
         # Get the <button> from the response
-        btn = tab.html['button'].only
+        btn = tab.html['div>button'].only
 
         # Click the button. This will cause an XHR request back to the
         # page's btn_onclick event handler.
@@ -1799,7 +1815,10 @@ class pom_page(tester.tester):
         # Now that we've clicked the button, the tab's internal DOM
         # should have a <p> tag with the word Thanks in it due to the
         # XHR request having completed successfully.
-        self.eq('Thanks', tab.html['p'].text)
+        sel = f'#{div0.id} p strong'
+        self.eq('Thanks', tab.html[sel].text)
+
+        ''' Add multiple fragments '''
 
         '''
         <html>
@@ -1812,6 +1831,10 @@ class pom_page(tester.tester):
                     </button>
                 </div>
             </main>
+            <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
+                    data-click-handler='btn_onclick'>
+                Click me
+            </button>
         </html>
 
         <script>
