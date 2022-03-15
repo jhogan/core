@@ -186,7 +186,101 @@ flag.
 ### Tags
 \#whitespace #formatting
 
-5. Naming @property methods
+5. Naming variables
+-------------------
+
+### Rule
+Varible names
+
+    * should be all lowercase 
+    * should be easy to remember abbreviations when possible
+    * should be document in their class's docstring when they are used
+      as object references
+    * if not abbreviated, should be composed of a single word if humanly
+      possible
+    * should be in *scriptiocontinua* case when they are compound words
+    * should not contain type information (such as in Hungarian
+      notation)
+    * Multiple uses of a variable name should end with 1, then 2,
+      etc.
+
+### Justification
+The most important attributes of variable names is the ability to easily
+type, read and remember them. Short, one word or abbreviated names are
+easiest to use. Being free from having to consider uppercase
+characters and underscores further contribute to ease of use. Type
+information, such as in Hungarian notation adds unnessary clutter when
+when methods are discrete, well written and properly documented. Using
+*scriptiocontinua* case has the added benefit of encouraging single word
+variables since compound variables written in *scriptiocontinua* are
+a little difficult to read. Standard abbreviations also aid in
+usability. Documenting the abbreviation in the class or an abbreviation
+glossary has obvious benefits for standardization.
+
+### Examples
+
+    # Using a non-abbreviated variable
+    name = usr.name
+
+    # Using ls as a standard abbreviation for "list"
+    ls = list()
+
+    # If we can't use a single word, use *scriptiocontinua*
+    firstname = per.firstname
+    lastname = per.lastname
+
+    # Note that this is an encourgement to find synonyms that are
+    # single words:
+    forname = per.firstname
+    surname = per.lastname
+
+    # Note that in this method, Hungarian notation would be surpurflous
+    def getfullname(self, per):
+        """ Return the full name of the `per` as a str.
+
+        :param per person.person: The preson object from which to return
+        the full name.
+        """
+        return per.forname + ' ' + per.surname
+
+    # Here is how to document a standard abbreviation in a class's
+    # docstring
+    class persons:
+        """ Represents a collection of real-life persons.
+
+        :abbr: pers peeps
+        """
+
+    # Now we know what the standard varible name for `persons` is
+    pers = persons()
+
+    # or alternatively
+    peeps = persons()
+
+    # Multiple uses
+    pers = persons()  # There is sort of an implied 0 suffix here
+    pers1 = persons()
+    pers2 = persons()
+
+### Exceptions
+Occasionally, to reflect another standard, it's permissable to use
+underscores to seperate words. For example, the HTTP header
+`Content-Type` should have a varibable name `content_type` because the
+underscore symbolize the hyphen in the original standard. Additionally,
+it is convential to uppercase SQL keywords, so the following may be
+useful:
+
+    SELECT  =  '*'
+    FROM    =  'mytable'
+    WHERE   =  'a=b'
+
+### Implementation tips
+None
+
+### Tags
+\#naming #variables
+
+6. Naming @property methods
 ---------------------------
 
 ### Rule
@@ -264,7 +358,7 @@ None
 ### Tags
 \#naming #property
 
-5. Generators vs getters and @property methods.
+7. Generators vs getters and @property methods.
 ------------------------------------------------
 
 ### Rule
@@ -342,8 +436,6 @@ object:
 
 // TODO
 
-How to right generators; generators vs. getters, and properties.
-
 Put consequent block on newline (if cond:\n ...)
 
 In general, import modules instead of module objects:
@@ -353,7 +445,6 @@ In general, import modules instead of module objects:
     # dont do this
     from mymod import *
     from mymod import myfunc
-
 
 Varible names
 
