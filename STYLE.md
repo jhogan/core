@@ -274,8 +274,27 @@ useful:
     FROM    =  'mytable'
     WHERE   =  'a=b'
 
+Occasionally you may want to have two varibles with the same name and
+which contain the same data, but the data is typed differently. Consider
+a situation like the following:
+
+    # User enters a telephone number as a string
+    str_number = '480-555-2525'
+
+    int_number = int(strnumber.replace('-', ''))
+
+Here, we have the original phone number as a string and an integer. In
+this situation, we want to maintain both version, perhaps the string
+version wil be reported to the user later on for some reason and the
+integer will be saved to the database. 
+
 ### Implementation tips
-None
+For help naming things in general, a thesaurus is one of the most
+valuable resources.
+
+For inspiration on creating abbreviations, it is useful to look at the
+way other technologies abbreviate things. The standard UNIX command `ls`
+inspired the abbreviations for "list".
 
 ### Tags
 \#naming #variables
@@ -421,6 +440,40 @@ way lower-level code needs to be written.
 ### Tags
 \#naming #generators
 
+8. Initilize primatives with using object instantiation
+-------------------------------------------------------
+
+### Rule
+When initializing primative variables to their default value, use
+instatiate syntax instead of assignment syntax. 
+
+### Examples
+Bad:
+    i    =  0
+    s    =  ''
+    d    =  {}
+    tup  =  ()
+    ls   =  []
+    
+Good:
+    i    =  int()
+    s    =  str()
+    d    =  dict()
+    tup  =  tuple()
+    ls   =  list()
+    
+### Justification
+Though this form is a little more verbose, it enhances readability.
+
+### Exceptions
+None
+
+### Implementation tips
+None
+
+### Tags
+\#initialization #variables
+
 <!-- 
 
 // CONVENTIONS
@@ -445,23 +498,6 @@ In general, import modules instead of module objects:
     # dont do this
     from mymod import *
     from mymod import myfunc
-
-Varible names
-
-    varible names should strive to be easily recognizable abbreviations
-    of the object:
-        
-        cc = creditcard()
-
-    The standard varible name for an object should be documented in the
-    class's docstring. When there are more than one varibale of the same
-    type, the second one should end in 1, the third in 2 and so on.
-
-        cc = creditcard()
-        cc1 = creditcard()
-        cc2 = creditcard()
-
-    The 0 is implicit in the first cc.
 
 Method names
 
