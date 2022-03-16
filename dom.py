@@ -9156,7 +9156,6 @@ class clickeventargs(eventargs):
     def __init__(self, el):
         # XXX I think this logic should be in eventargs or some other
         # base class.
-        B()
         ids = el.attributes['data-click-fragments'].value
 
         hnd = el.attributes['data-click-handler'].value

@@ -1769,6 +1769,8 @@ class pom_page(tester.tester):
         self.eq('Invalid brew type', arts.first.text)
 
     def it_responds_to_button_click(self):
+        # XXX An event handler should respond to multiple events
+
         div0 = div1 = div2 = None
         class clickme(pom.page):
             def btn_onclick(self, src, eargs):

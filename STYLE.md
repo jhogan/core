@@ -154,3 +154,14 @@ Common method names:
     collection object
 
     demand: Raise an exception if the state of an object is invalid.
+
+How to break lines for method invocations or class instantiation:
+
+    call_to_a_method(
+        'This line was too long'
+    )
+
+    raise Exception(
+        'There was a long and verbose issues that I need to explain...'
+    )
+
