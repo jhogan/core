@@ -1774,6 +1774,13 @@ class pom_page(tester.tester):
             def btn_onclick(self, src, eargs):
                 eargs.html['p'].only += dom.strong('Thanks')
 
+            def btn_onclick1(self, src, eargs):
+                div1, div2 = eargs.html
+                div1['p'].only += dom.strong('Thanks again')
+                div2['p'].only += dom.strong(
+                    "No really, you're too kind"
+                )
+
             def main(self):
                 nonlocal div0, div1, div2
                 self.main += (div0 := dom.div())
@@ -1793,7 +1800,7 @@ class pom_page(tester.tester):
                 # When this button is clicked, the html for div1 and
                 # div2 will be POSTed in an XHR request
                 self.main += (btn := dom.button('No, click me'))
-                btn.onclick += self.btn_onclick, div1, div2
+                btn.onclick += self.btn_onclick1, div1, div2
 
         ws = foonet()
         ws.pages += clickme()
@@ -1817,6 +1824,24 @@ class pom_page(tester.tester):
         # XHR request having completed successfully.
         sel = f'#{div0.id} p strong'
         self.eq('Thanks', tab.html[sel].text)
+
+        btn = tab.html['main>button'].only
+        btn.click()
+
+        sel = f'#{div1.id} p strong'
+        self.eq('Thanks again', tab.html[sel].text)
+
+        sel = f'#{div2.id} p strong'
+
+        # FIXME The element's `pretty` property returns the encoded
+        # apostrophy. That's not pretty at all. Additionally, using the
+        # `text` node`s `value` property returns a truncated 'No really,
+        # you' for some reason.
+        self.eq(
+            'No really, you&#x27;re too kind',
+            tab.html[sel].first.elements.first.pretty
+        )
+
 
         ''' Add multiple fragments '''
 

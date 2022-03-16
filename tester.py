@@ -435,18 +435,31 @@ class tester(entities.entity):
                 # is currently pointing to.
                 res = self.xhr(self.page, self.site, json=body)
 
-                # Get the fragement of html that is the subject of the
-                # event from the tab's DOM (.html)
-                frag = self.html['#' + eargs.html.only.id].only
-                rent = frag.parent
+                # Convert the fragment(s) from the response into a DOM
+                body = dom.html(res.body)
 
-                # Remove the frament from the tab's DOM
-                frag.remove()
+                # Get the fragement of html in the tab that is the
+                # subject of the event from the tab's DOM (.html)
+                ids = ', '.join('#' + x.id for x in eargs.html)
+                frags = self.html[ids]
 
-                # Append the response's body to the former parent of the
-                # fragement. We have now replaced the fragment with the
-                # one from the XHR response.
-                rent += dom.html(res.body)
+                # For each relevant fragment in the tab's body
+                for i, frag in frags.enumerate():
+                    # Get fragment's parent
+                    rent = frag.parent
+
+                    # XXX This assumes that there is only one element,
+                    # the fragment, in the rent. We should instead
+                    # getindex() on the frag and use that value to
+                    # determine where to insert the replacement.
+
+                    # Remove the frament from the tab's DOM
+                    frag.remove()
+
+                    # Append the response's body to the former parent of
+                    # the fragement. We have now replaced the fragment
+                    # with the one from the XHR response.
+                    rent += body[i]
 
             @property
             def html(self):
