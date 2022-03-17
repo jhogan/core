@@ -198,7 +198,7 @@ Varible names
       as object references
     * if not abbreviated, should be composed of a single word if humanly
       possible
-    * should be in *scriptiocontinua* case when they are compound words
+    * should be in *scriptio continua* case when they are compound words
     * should not contain type information (such as in Hungarian
       notation)
     * Multiple uses of a variable name should end with 1, then 2,
@@ -211,8 +211,8 @@ easiest to use. Being free from having to consider uppercase
 characters and underscores further contribute to ease of use. Type
 information, such as in Hungarian notation adds unnessary clutter when
 when methods are discrete, well written and properly documented. Using
-*scriptiocontinua* case has the added benefit of encouraging single word
-variables since compound variables written in *scriptiocontinua* are
+*scriptio continua* case has the added benefit of encouraging single word
+variables since compound variables written in *scriptio continua* are
 a little difficult to read. Standard abbreviations also aid in
 usability. Documenting the abbreviation in the class or an abbreviation
 glossary has obvious benefits for standardization.
@@ -225,7 +225,7 @@ glossary has obvious benefits for standardization.
     # Using ls as a standard abbreviation for "list"
     ls = list()
 
-    # If we can't use a single word, use *scriptiocontinua*
+    # If we can't use a single word, use *scriptio continua*
     firstname = per.firstname
     lastname = per.lastname
 
@@ -299,6 +299,144 @@ inspired the abbreviations for "list".
 ### Tags
 \#naming #variables
 
+6. Writing methods
+--------------------------------
+
+### Rule
+Methods 
+
+    * should be all lowercase
+
+    * should include prefixes such as 'get' and 'set' if they are
+      getters or setters (see section on writing proprety methods for
+      more on this subject).
+
+    * should be composed of a single word if humanly possible
+
+    * should be in *scriptio continua* case when they are compound words
+
+    * should be document using a docstring that indicates its behaviour
+      and return type
+    
+    * should be named a verb unless it is an getter or setter
+
+    * Most methods will be instance methods. If the `self` parameters is
+      not used in the body of the method, the method is probably a
+      static method. In that case, remove the `self` parameter and add
+      the @staticmethod decorator. You may also consider whether or not
+      you have a @classmethod on your hands.
+
+    * It's almost always a good idea to name the parameter during
+      invocation, e.g., `foo.bar(baz=qux)`
+
+    * should perform a single identifiable, reusable and testable behavor.
+
+The methods parameters:
+    
+    * should be named after standard variable names or standard
+      abbreviations
+
+    * should be thoughouly documented using the :param: keyword
+
+When writing a parameter's default, don't put space before or after the
+assignment operator, e.g.:
+
+    def plot(self, grid, x=0, y=0):
+        ...
+
+Hopefully the method signature will fit on one line. If not, break using
+this format:
+
+    def plot(self
+        grid, x = 0, y = 0
+    ):
+        ...
+
+    # Even more parameters
+    def plot(self
+        alfa,     bravo,  charlie,  delta,  echo,
+        foxtrot,  golf,   hotel,    grid,
+        x = 0, y = 0
+    ):
+        ...
+
+Note that a single space surounds the assignment operator for the
+default assignments when using the broken format. It just looks nicer.
+    
+### Justification
+In object-oriented programming, methods represent the actions that an
+object takes. Thus, they should be named after "action words", i.e.,
+verbs.
+
+One word should be enough to describe the behavior. If you find yourself
+using a compound word, consider if one of the words should be a
+parameter.
+
+Bad:
+    
+    class robot:
+        def killhuman(self):
+            ...
+
+    rbt = robot()
+    rbt.killhuman()
+
+Good:
+    
+    class robot:
+        def kill(self, obj):
+            ...
+
+    rbt = robot()
+    rbt.kill(obj='human'
+
+All methods should perform a discrete unit of work that can be tested.
+(Not every method needs to be tested directly, though it's functionality
+should have tests written for it.) Methods should be written with code
+reuse in mind. A method that is used only once is probably a bad method.
+This is why it's important that the logic in a method be discrete.
+Descrete methods perform exactly one behaviour and are therefore more
+reusable. Adding logic to a method that exceeds its scope makes reuse
+impossible because calling the method no longer does the one thing that
+the client code would expect.
+
+Indiscrete method:
+
+    class salesorder:
+        def place(self):
+            # Save order to database
+            self.save()
+
+            # Send the order's customer a message telling them it has
+            # been placed.
+            self.customer.email("You're order has been placed")
+
+The `place` method does two things. If for some reason we need to call
+the `place` method in an area of the code that doesn't want to bother
+the customer with an email, we would not be able to use the `place`
+method. Perhapse a better way would be to write the class like this:
+
+    class salesorder:
+        def place(self):
+            # Save order to database
+            self.save()
+
+        def notify(who='customer', of='placement')
+            if who is 'customer' and of == 'placment':
+
+                # Send the order's customer a message telling them it has
+                # been placed.
+                self.customer.email("You're order has been placed")
+
+This is far from perfect, but at least `place` and `notify` do what they
+say they do.
+
+### Implementation tips
+None
+
+### Tags
+\#naming #methods
+
 6. Naming @property methods
 ---------------------------
 
@@ -321,7 +459,7 @@ The setter property use `v` as the value parameter:
         self._size = v
 
 ### Justification
-Property methods are a nice feature of modern object-oriented
+Property methods are a nice feature of some object-oriented
 programming that clearly denote the attributes of an object.
 
     t = toy()
@@ -573,4 +711,8 @@ Common method names:
     collection object
 
     demand: Raise an exception if the state of an object is invalid.
+
+Writing inner functions
+
+Don't chain lines using the semicolon
 -->
