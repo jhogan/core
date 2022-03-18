@@ -612,6 +612,106 @@ None
 ### Tags
 \#initialization #variables
 
+6. Writting classes
+--------------------------------
+
+### Rule
+Classes
+    * should represent a distinct entiity that performs a set of
+      identifiable, reusable and testable behavor
+
+    * should document the standard variable name(s) used for instances
+      of that class.
+
+    * should be a collection of mostly instance methods, with
+      occasional static and class methods as well as private methods.
+
+    * should have a corresponding collection class
+
+    * should be document using a docstring that indicates what entity
+      they model, how they model it and what its relationships to other
+      classes are.
+
+
+Class names
+    * should be all lowercase
+
+    * should be composed of a single word if humanly possible
+
+    * should be in *scriptio continua* case when they are compound words
+
+    * should be nouns
+
+### Justification
+In object-oriented programming, methods represent entities. These
+entiities can be real world objects such as cars, people, etc., or they
+can be abstract entities, such as an encryption algorithm or database
+tables. Thus the name for a class should always be a noun. 
+
+Like all identifiers, class names are easier to rememember, write and
+read if they are single words in all lowercase. Good abbreviations or
+acronyms should be identified for use as the instance variables of a
+class. This prevents naming overlap:
+    
+    class person:
+        """ Represents a person.
+
+        :abbr: per
+        """
+
+    per = person()
+
+*Scriptio continua* is used when compound names are used:
+
+    class emailaddress:
+        ...
+
+Virtually all data represented in computer systems is hierarchical. This
+means that instances of a class will need to be grouped in a container.
+Convential programming approches are content to use `list`s and `dict`s
+for this kind of thing. However, these simple container objects were not
+designed to encapsulate business logic. A more sophisticated approach is to
+use classes that represent objects as collections. So the `person` class
+above should have a complementary `persons` collection which can contain
+instances of `person`. For ORM entity classes, this is enforced by the
+framework and is made possible through inheritence:
+
+    class persons(orm.entities):
+        ...
+
+    class person(orm.entity):
+        ...
+
+    pers = persons()
+    per = person()
+
+    # Add per to the pers collection
+    pers += per
+
+However, if you are writting non-ORM classes, you can still create
+collection classes by inheriting from `entities` base classes.
+
+    import entities
+
+    class tables(entities.entities):
+        ...
+
+    class table(entities.entity):
+        ...
+
+    tbls = tables()
+    tbl = table()
+
+    # Add tbl to the tbls collection
+    tbls += tbl
+
+### Implementation tips
+None
+
+### Tags
+\#naming #methods
+
+
 <!-- 
 
 // CONVENTIONS
@@ -636,12 +736,6 @@ In general, import modules instead of module objects:
     # dont do this
     from mymod import *
     from mymod import myfunc
-
-Method names
-
-    Method names should strive to be one word. Underscores are
-    prohibited except in conventional circumstances. Method names should
-    be lowercase except in very unusual cases.
 
 Class names
 
