@@ -331,12 +331,18 @@ Methods
 
     * should perform a single identifiable, reusable and testable behavor.
 
+    * should not contain type annotaion
+
+    * should start with an underscore if the method is considered private
+
 The methods parameters:
     
     * should be named after standard variable names or standard
       abbreviations
 
     * should be thoughouly documented using the :param: keyword
+
+    * should not contain type annotaion
 
 When writing a parameter's default, don't put space before or after the
 assignment operator, e.g.:
@@ -431,8 +437,24 @@ method. Perhapse a better way would be to write the class like this:
 This is far from perfect, but at least `place` and `notify` do what they
 say they do.
 
+Type annotation should not be used. The docstring should contain
+information on parameter and return types. Consistent use of good
+parameter names, along with discrete method bodies, further makes type
+annotation unnecessary.
+
 ### Implementation tips
 None
+
+### Exceptions
+Type annotaion is used in pom.page.main overrides, e.g.:
+
+    class mypage(pom.page):
+        def main(self, greet: bool):
+            ...
+
+This is a special case because the framework-level code that invokes
+`main` introspects this annotation to enforce types and converts to the
+annotated type.
 
 ### Tags
 \#naming #methods
