@@ -9179,11 +9179,18 @@ class eventargs(entities.eventargs):
             
         </script>
     """
-        if not isinstance(html, elements):
-            html = sys.modules['dom'].html(html)
+    def __init__(self, hnd, src, html):
+        domhtml = sys.modules['dom'].html
 
-        self.html = html
-        self.handler = hnd
+        if not isinstance(html, elements):
+            html = domhtml(html)
+
+        if not isinstance(src, element):
+            src = domhtml(src).only
+
+        self.handler  =  hnd
+        self.src      =  src
+        self.html     =  html
 
 class clickeventargs(eventargs):
     """ XXX """
@@ -9194,7 +9201,7 @@ class clickeventargs(eventargs):
 
         hnd = el.attributes['data-click-handler'].value
 
-        super().__init__(el.root[ids], hnd)
+        super().__init__(hnd=hnd, src=el, html=el.root[ids])
 
 
 

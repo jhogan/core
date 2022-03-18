@@ -429,6 +429,7 @@ class tester(entities.entity):
                 body = {
                     'hnd': eargs.handler,
                     'html': eargs.html.html,
+                    'src': src.html
                 }
 
                 # Make the XHR request to the page and site that the tab

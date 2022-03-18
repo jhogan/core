@@ -696,7 +696,8 @@ class _request:
         if self.isevent:
             eargs = dom.eventargs(
                 html = self.body['html'], 
-                hnd  = self.body['hnd']
+                hnd  = self.body['hnd'],
+                src  = self.body['src'],
             )
 
         try:

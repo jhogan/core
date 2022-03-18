@@ -1769,8 +1769,6 @@ class pom_page(tester.tester):
         self.eq('Invalid brew type', arts.first.text)
 
     def it_responds_to_button_click(self):
-        # XXX An event handler should respond to multiple events
-
         div0 = div1 = div2 = None
         class clickme(pom.page):
             def btn_onclick(self, src, eargs):
@@ -1844,41 +1842,113 @@ class pom_page(tester.tester):
             tab.html[sel].first.elements.first.pretty
         )
 
+    def it_responds_to_two_different_buttons_with_single_handler(self):
+        div0 = div1 = div2 = None
+        class clickme(pom.page):
+            def btn_onclick(self, src, eargs):
+                if src.text == 'Click me':
+                    eargs.html['p'].only += dom.strong('Thanks')
+                elif src.text == 'Click me again':
+                    ps = eargs.html['div>p']
+                    assert ps.count == 2
+                    ps.first.text = 'Thanks again'
+                    ps.second.text = 'Again... thanks'
 
-        ''' Add multiple fragments '''
+            def main(self):
+                nonlocal div0, div1, div2
+                self.main += (div0 := dom.div())
+                div0 += dom.p()
 
-        '''
-        <html>
-            <main>
-                <div id='derp'>
-                    <p></p>
-                    <button data-click-fragment="#r2nd0m" 
-                            data-click-handler='btn_onclick'>
-                        Click me
-                    </button>
-                </div>
-            </main>
-            <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
-                    data-click-handler='btn_onclick'>
-                Click me
-            </button>
-        </html>
+                self.main += (div1 := dom.div())
+                div1 += dom.p()
 
-        <script>
-            $('*.[data-fragment]').on('click', function(e){
-                $.ajax({
-                    method: 'POST',
-                    data: {event: btn_onclick, html: e.innerHTML},
-                }).done(
-                    function(r){
-                        e.parent.remove(e)
-                        e.parent.append(r)
-                    }
+                self.main += (div2 := dom.div())
+                div2 += dom.p()
+
+                # When this button is clicked, the html for div0 will be
+                # POSTed in an XHR request
+                div0 += (btnClickMe := dom.button('Click me'))
+                div0 += (
+                    btnClickMeAgain := dom.button('Click me again')
                 )
-            }
-            
-        </script>
-        '''
+
+                btnClickMe.onclick += self.btn_onclick, div0
+                btnClickMeAgain.onclick += self.btn_onclick, div1, div2
+
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        tab = self.browser().tab()
+
+        # GET the clickme page
+        tab.get('/en/clickme', ws)
+
+        self.status(200, res)
+
+        # Get the <button> from the response
+        btns = tab.html['div>button']
+
+        assert btns.count == 2
+
+        btnClickMe, btnClickMeAgain = btns
+
+        btnClickMe.click()
+        self.eq('Thanks', tab.html['#' + div0.id + '>p'].only.text)
+
+        self.eq(
+            str(), tab.html['#' + div1.id + '>p'].only.text
+        )
+        self.eq(
+            str(), tab.html['#' + div2.id + '>p'].only.text
+        )
+
+        btnClickMeAgain.click()
+        self.eq(
+            'Thanks again', tab.html['#' + div1.id + '>p'].only.text
+        )
+        self.eq(
+            'Again... thanks', tab.html['#' + div2.id + '>p'].only.text
+        )
+
+    def it_responds_to_two_different_buttons_with_single_handler(self):
+        div0 = div1 = None
+        class clickme(pom.page):
+            def inp_onfocuschange(self, src, eargs):
+                if src.text == 'Click me':
+                    eargs.html['p'].only += dom.strong('Thanks')
+                elif src.text == 'Click me again':
+                    ps = eargs.html['div>p']
+                    assert ps.count == 2
+                    ps.first.text = 'Thanks again'
+                    ps.second.text = 'Again... thanks'
+
+            def main(self):
+                nonlocal div0, div1
+                self.main += (div0 := dom.div())
+                div0 += dom.p()
+
+                self.main += (div1 := dom.div())
+                div1 += dom.p()
+
+                div0 += (inp := dom.input())
+
+                inp.onfocus += self.inp_onfocuschange, div0
+                inp.onblur += self.inp_onfocuschange, div1
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        tab = self.browser().tab()
+
+        # GET the clickme page
+        tab.get('/en/clickme', ws)
+
+        inp = tab.html['div>button'].only
+        inp.keydown()
+        inp.keydown()
+
+
 
 class admin(pom.page):
     def __init__(self):
