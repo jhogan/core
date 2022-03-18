@@ -9143,8 +9143,42 @@ class event(entities.event):
         super().append(f)
 
 class eventargs(entities.eventargs):
-    """ XXX """
-    def __init__(self, html, hnd):
+    """ XXX 
+
+
+    The below illustrates what happens in the browser side to get web
+    events to work. XXX Continue explaination.
+        <html>
+            <main>
+                <div id='derp'>
+                    <p></p>
+                    <button data-click-fragment="#r2nd0m" 
+                            data-click-handler='btn_onclick'>
+                        Click me
+                    </button>
+                </div>
+            </main>
+            <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
+                    data-click-handler='btn_onclick'>
+                Click me
+            </button>
+        </html>
+
+        <script>
+            $('*.[data-fragment]').on('click', function(e){
+                $.ajax({
+                    method: 'POST',
+                    data: {event: btn_onclick, html: e.innerHTML},
+                }).done(
+                    function(r){
+                        e.parent.remove(e)
+                        e.parent.append(r)
+                    }
+                )
+            }
+            
+        </script>
+    """
         if not isinstance(html, elements):
             html = sys.modules['dom'].html(html)
 

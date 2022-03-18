@@ -1810,7 +1810,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        res = tab.get('/en/clickme', ws)
+        tab.get('/en/clickme', ws)
 
         self.status(200, res)
 
