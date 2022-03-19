@@ -26,6 +26,7 @@ import logs
 import pdb
 import pom
 import primative
+import re
 import resource
 import sys
 import textwrap
@@ -471,16 +472,30 @@ class tester(entities.entity):
             def html(self, v):
                 """ XXX """
                 self._html = v
-                evs = (
-                    'click', 'keydown', 'keyup'
-                )
 
-                sels = ', '.join([f'[data-{x}-handler]' for x in evs])
+                sels = ', '.join(
+                    [
+                        f'[data-{x}-handler]' 
+                        for x in dom.element.Triggers
+                    ]
+                )
                     
                 targets = v[sels]
 
+                # We need to remove te duplicates because of the bug
+                # 9aec36b4
+                targets = set(targets)
+
                 for target in targets:
-                    target.onclick += self.element_event
+                    for attr in target.attributes:
+                        matches = re.match(
+                            'data-([a-z]+)-handler',
+                            attr.name
+                        )
+                        if matches:
+                            ev = 'on' + matches[1]
+                            ev = getattr(target, ev)
+                            ev += self.element_event
 
             @property
             def referer(self):

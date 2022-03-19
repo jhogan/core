@@ -13,6 +13,7 @@ from dbg import B
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
+from primative import undef
 import entities
 import file
 import operator
@@ -1092,6 +1093,12 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
+    Triggers = (
+        'click', 'focus', 'blur',
+    )
+
+    Events = ['on' + x for x in Triggers]
+
     @staticmethod
     def _getblocklevelelements():
         """ Returns a tuple of block-level, HTML5 ``element`` classes
@@ -1191,20 +1198,71 @@ class element(entities.entity):
 
     def click(self):
         """ XXX """
-        eargs = clickeventargs(self)
+        eargs = eventargs(self, 'click')
+
+        # Get the event and invoke (i.e., trigger) it
         self.onclick(self, eargs) 
-        return html(eargs.html)
 
     @property
     def onclick(self):
-        """ XXX """
-        if not hasattr(self, '_onclick'):
-            self._onclick = event(self, 'click')
-        return self._onclick
+        return self._on('click')
 
     @onclick.setter
     def onclick(self, v):
-        self._onclick = v
+        self._on('click', v)
+        
+    def __getattr__(self, attr):
+        if attr in self.Events:
+            ev = attr[2:]
+            return self._on(ev)
+
+        if attr in self.Triggers:
+            B()
+            return self._trigger(attr)
+
+        raise AttributeError()
+
+    def xblur(self):
+        self._trigger('blur')
+
+    @property
+    def xonblur(self):
+        return self._on('blur')
+
+    @xonblur.setter
+    def xonblur(self, v):
+        self._on('blur', v)
+
+    def focus(self):
+        self._trigger('focus')
+
+    @property
+    def onfocus(self):
+        return self._on('focus')
+
+    @onfocus.setter
+    def onfocus(self, v):
+        self._on('focus', v)
+
+    def _on(self, ev, v=undef):
+        """ XXX """
+        priv = '_on' + ev
+
+        if v is not undef:
+            setattr(self, priv, v)
+        else:
+            if not hasattr(self, priv):
+                setattr(self, priv, event(self, ev))
+            return getattr(self, priv)
+
+    def _trigger(self, ev):
+        """ XXX """
+        # Get the event
+        onevent = getattr(self, 'on' + ev)
+
+        # Trigger the event
+        eargs = eventargs(el=self, ev=ev)
+        onevent(self, eargs)
 
     def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
@@ -9195,8 +9253,27 @@ class eventargs(entities.eventargs):
             
         </script>
     """
-    def __init__(self, hnd, src, html):
+    def __init__(self, el=None, ev=None, hnd=None, src=None, html=None):
         domhtml = sys.modules['dom'].html
+
+        if el is not None:
+            if ev is None:
+                raise ValueError(
+                    'if el is not None, there must be a value for ev'
+                )
+
+            if hnd is not None or src is not None or html is not None:
+                raise ValueError(
+                    'if el is not None, hnd, src and html must be None'
+                )
+
+
+            ids = el.attributes[f'data-{ev}-fragments'].value
+            html = el.root[ids]
+
+            hnd = el.attributes[f'data-{ev}-handler'].value
+
+            src = el
 
         if not isinstance(html, elements):
             html = domhtml(html)
@@ -9207,17 +9284,4 @@ class eventargs(entities.eventargs):
         self.handler  =  hnd
         self.src      =  src
         self.html     =  html
-
-class clickeventargs(eventargs):
-    """ XXX """
-    def __init__(self, el):
-        # XXX I think this logic should be in eventargs or some other
-        # base class.
-        ids = el.attributes['data-click-fragments'].value
-
-        hnd = el.attributes['data-click-handler'].value
-
-        super().__init__(hnd=hnd, src=el, html=el.root[ids])
-
-
 

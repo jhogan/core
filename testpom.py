@@ -1867,13 +1867,13 @@ class pom_page(tester.tester):
 
                 # When this button is clicked, the html for div0 will be
                 # POSTed in an XHR request
-                div0 += (btnClickMe := dom.button('Click me'))
+                div0 += (btn_clickme := dom.button('Click me'))
                 div0 += (
-                    btnClickMeAgain := dom.button('Click me again')
+                    btn_clickmeagain := dom.button('Click me again')
                 )
 
-                btnClickMe.onclick += self.btn_onclick, div0
-                btnClickMeAgain.onclick += self.btn_onclick, div1, div2
+                btn_clickme.onclick += self.btn_onclick, div0
+                btn_clickmeagain.onclick += self.btn_onclick, div1, div2
 
 
         ws = foonet()
@@ -1891,9 +1891,9 @@ class pom_page(tester.tester):
 
         assert btns.count == 2
 
-        btnClickMe, btnClickMeAgain = btns
+        btn_clickme, btn_clickmeagain = btns
 
-        btnClickMe.click()
+        btn_clickme.click()
         self.eq('Thanks', tab.html['#' + div0.id + '>p'].only.text)
 
         self.eq(
@@ -1903,7 +1903,7 @@ class pom_page(tester.tester):
             str(), tab.html['#' + div2.id + '>p'].only.text
         )
 
-        btnClickMeAgain.click()
+        btn_clickmeagain.click()
         self.eq(
             'Thanks again', tab.html['#' + div1.id + '>p'].only.text
         )
@@ -1911,17 +1911,12 @@ class pom_page(tester.tester):
             'Again... thanks', tab.html['#' + div2.id + '>p'].only.text
         )
 
-    def it_responds_to_two_different_buttons_with_single_handler(self):
+    def it_responds_to_two_different_widgets_with_single_handler(self):
         div0 = div1 = None
         class clickme(pom.page):
             def inp_onfocuschange(self, src, eargs):
-                if src.text == 'Click me':
-                    eargs.html['p'].only += dom.strong('Thanks')
-                elif src.text == 'Click me again':
-                    ps = eargs.html['div>p']
-                    assert ps.count == 2
-                    ps.first.text = 'Thanks again'
-                    ps.second.text = 'Again... thanks'
+                print('here')
+                print(eargs.handler)
 
             def main(self):
                 nonlocal div0, div1
@@ -1933,8 +1928,8 @@ class pom_page(tester.tester):
 
                 div0 += (inp := dom.input())
 
-                inp.onfocus += self.inp_onfocuschange, div0
                 inp.onblur += self.inp_onfocuschange, div1
+                inp.onfocus += self.inp_onfocuschange, div0
 
         ws = foonet()
         ws.pages += clickme()
@@ -1944,11 +1939,10 @@ class pom_page(tester.tester):
         # GET the clickme page
         tab.get('/en/clickme', ws)
 
-        inp = tab.html['div>button'].only
-        inp.keydown()
-        inp.keydown()
-
-
+        inp = tab.html['div>input'].only
+        inp.focus()
+        B()
+        inp.blur()
 
 class admin(pom.page):
     def __init__(self):
