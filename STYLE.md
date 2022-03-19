@@ -165,3 +165,16 @@ How to break lines for method invocations or class instantiation:
         'There was a long and verbose issues that I need to explain...'
     )
 
+Document the conventions for writting event properties and handlers
+
+Public method shouldn't be abbreviations unless the abbreviations is
+extremely common:
+    
+    # Good
+    req.ajax()
+
+    # Bad
+    req.ptch()
+
+This isn't such a big deal with private methods as long as they are
+clear enough for developers of the class (as opposed to users).

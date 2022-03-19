@@ -7841,6 +7841,23 @@ class selectors(entities.entities):
         # For each selector object in this collection
         for sel in self:
             # Call that selector object's match method
+
+            # FIXME:9aec36b4 It's possible for two or more selectors to
+            # match the same element. In that case, r gets the same
+            # element twice.  For example, if `els` is a DOM with one
+            # <section> tag in it, then calling this method like this:
+            #
+            #     els = sel.match('section, section, section')
+            #
+            # adds the same <section> element three times:
+            #
+            #     assert els.count == 3
+            #     assert els.first is els.second
+            #     assert els.second is els.third
+            #
+            # We should only add unique elements, possible using the &=
+            # operator here instead of the += operator.
+
             r += sel.match(els)
 
         return r
@@ -9144,7 +9161,6 @@ class event(entities.event):
 
 class eventargs(entities.eventargs):
     """ XXX 
-
 
     The below illustrates what happens in the browser side to get web
     events to work. XXX Continue explaination.

@@ -517,6 +517,7 @@ class tester(entities.entity):
                 return res
 
             def xhr(self, pg, ws, json=None):
+
                 from json import dumps
 
                 body = dumps(json)
