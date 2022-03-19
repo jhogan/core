@@ -634,6 +634,92 @@ None
 ### Tags
 \#initialization #variables
 
+
+6. Import modules, not module objects
+-------------------------------------
+
+### Rule
+Generally speaking, simply `import` modules, not individual objects
+(such as classes and functions) from the module.
+
+### Example
+Bad
+    
+    from party import person
+    from dom import *
+
+Good:
+    
+    import person
+    import dom
+
+### Justification
+The framework has a lot of classes that will be used to created the
+logic for a given module. Using the simple `import` method reduces the
+risk of nameing collision. For example, there is currently an `item`
+class in 8 different modules:
+
+    import budget
+    import account
+    budgitem = budget.item()
+    acctitem = account.item()
+
+Simple `import` lines add to clearity as well. For example, the line:
+    
+    itm = budget.item()
+
+is fairly self-explanatory: create a new budget item. However,
+encountering a line such as:
+
+    itm = item()
+
+would be much less clear.
+
+### Implementation tips
+None
+
+### Tags
+\#import #module
+
+6. Put linefeed between conditionals and blocks
+-----------------------------------------------------
+
+### Rule
+When writing a conditional construct, such as an `if` or `while`
+statement, put a newline after after the contitional
+
+### Example
+Bad:
+    
+    if x == y: print('X equals Y')
+
+    while x == y: print('X equals Y')
+
+    for i in range(10): x += i
+
+Good:
+    if x == y: 
+        print('X equals Y')
+
+    while x == y: 
+        print('X equals Y')
+
+    for i in range(10): 
+        x += i
+
+
+### Justification
+Most conditionals have multiline code blocks. Thus the eye becomes used
+to seing the conditional seperated from the code block by a new line.
+Sometimes, it may seem convenient to join the two on the same line, but
+this has a negative impact on readability. 
+
+### Implementation tips
+None
+
+### Tags
+\#whitespace #formatting
+
 6. Writting classes
 --------------------------------
 
@@ -749,7 +835,6 @@ object:
 
 // TODO
 
-Put consequent block on newline (if cond:\n ...)
 
 In general, import modules instead of module objects:
     
