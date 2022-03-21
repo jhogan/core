@@ -428,9 +428,10 @@ class tester(entities.entity):
                 
                 # Create a JSON object to send in the XHR request
                 body = {
-                    'hnd': eargs.handler,
-                    'html': eargs.html.html,
-                    'src': src.html
+                    'hnd':      eargs.handler,
+                    'html':     eargs.html.html,
+                    'src':      src.html,
+                    'trigger':  eargs.trigger,
                 }
 
                 # Make the XHR request to the page and site that the tab

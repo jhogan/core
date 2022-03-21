@@ -1915,8 +1915,12 @@ class pom_page(tester.tester):
         div0 = div1 = None
         class clickme(pom.page):
             def inp_onfocuschange(self, src, eargs):
-                print('here')
-                print(eargs.handler)
+                if eargs.trigger == 'focus':
+                    eargs.html.only['p'].only += 'focus triggered'
+                elif eargs.trigger == 'blur':
+                    eargs.html.only['p'].only += 'blur triggered'
+                else:
+                    raise ValueError('Invalid trigger')
 
             def main(self):
                 nonlocal div0, div1
@@ -1940,9 +1944,20 @@ class pom_page(tester.tester):
         tab.get('/en/clickme', ws)
 
         inp = tab.html['div>input'].only
+
+        p0 = tab.html['#' + div0.id + '>p'].only
+        p1 = tab.html['#' + div1.id + '>p'].only
+
+        self.empty(p1.text)
+        self.empty(p0.text)
+
         inp.focus()
-        B()
         inp.blur()
+
+        p0 = tab.html['#' + div0.id + '>p'].only
+        p1 = tab.html['#' + div1.id + '>p'].only
+        self.eq('blur triggered', p1.text)
+        self.eq('focus triggered', p0.text)
 
 class admin(pom.page):
     def __init__(self):

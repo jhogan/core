@@ -695,9 +695,10 @@ class _request:
         eargs = None
         if self.isevent:
             eargs = dom.eventargs(
-                html = self.body['html'], 
-                hnd  = self.body['hnd'],
-                src  = self.body['src'],
+                hnd      =  self.body['hnd'],
+                html     =  self.body['html'],
+                src      =  self.body['src'],
+                trigger  =  self.body['trigger'],
             )
 
         try:

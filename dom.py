@@ -1217,32 +1217,9 @@ class element(entities.entity):
             return self._on(ev)
 
         if attr in self.Triggers:
-            B()
-            return self._trigger(attr)
+            return self._trigger(trigger=attr)
 
         raise AttributeError()
-
-    def xblur(self):
-        self._trigger('blur')
-
-    @property
-    def xonblur(self):
-        return self._on('blur')
-
-    @xonblur.setter
-    def xonblur(self, v):
-        self._on('blur', v)
-
-    def focus(self):
-        self._trigger('focus')
-
-    @property
-    def onfocus(self):
-        return self._on('focus')
-
-    @onfocus.setter
-    def onfocus(self, v):
-        self._on('focus', v)
 
     def _on(self, ev, v=undef):
         """ XXX """
@@ -1255,14 +1232,20 @@ class element(entities.entity):
                 setattr(self, priv, event(self, ev))
             return getattr(self, priv)
 
-    def _trigger(self, ev):
+    def _trigger(self, trigger):
         """ XXX """
-        # Get the event
-        onevent = getattr(self, 'on' + ev)
 
-        # Trigger the event
-        eargs = eventargs(el=self, ev=ev)
-        onevent(self, eargs)
+        def f():
+            # Get the event
+            onevent = getattr(self, 'on' + trigger)
+
+            # Create the event arguments
+            eargs = eventargs(el=self, trigger=trigger)
+
+            # Trigger the event
+            onevent(self, eargs)
+
+        return f
 
     def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
@@ -9253,13 +9236,16 @@ class eventargs(entities.eventargs):
             
         </script>
     """
-    def __init__(self, el=None, ev=None, hnd=None, src=None, html=None):
+    def __init__(self, 
+        el=None, trigger=None, hnd=None, src=None, html=None
+    ):
         domhtml = sys.modules['dom'].html
 
         if el is not None:
-            if ev is None:
+            if trigger is None:
                 raise ValueError(
-                    'if el is not None, there must be a value for ev'
+                    'if el is not None, there must be a value for '
+                    'trigger'
                 )
 
             if hnd is not None or src is not None or html is not None:
@@ -9268,10 +9254,10 @@ class eventargs(entities.eventargs):
                 )
 
 
-            ids = el.attributes[f'data-{ev}-fragments'].value
+            ids = el.attributes[f'data-{trigger}-fragments'].value
             html = el.root[ids]
 
-            hnd = el.attributes[f'data-{ev}-handler'].value
+            hnd = el.attributes[f'data-{trigger}-handler'].value
 
             src = el
 
@@ -9284,4 +9270,7 @@ class eventargs(entities.eventargs):
         self.handler  =  hnd
         self.src      =  src
         self.html     =  html
+
+        # The name of the method that triggered the event
+        self.trigger  =  trigger
 
