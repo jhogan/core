@@ -1947,7 +1947,6 @@ class pom_page(tester.tester):
 
         p0 = tab.html['#' + div0.id + '>p'].only
         p1 = tab.html['#' + div1.id + '>p'].only
-
         self.empty(p1.text)
         self.empty(p0.text)
 

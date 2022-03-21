@@ -1093,11 +1093,15 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
+    # A tuple of supported trigger methods. These correspond to DOM
+    # methods, such as element.focus(), which trigger a corresponding
+    # event (onfocus).
     Triggers = (
         'click', 'focus', 'blur',
     )
 
-    Events = ['on' + x for x in Triggers]
+    # A tuple of supported DOM events such as onfocus or onkeydown
+    Events = tuple('on' + x for x in Triggers)
 
     @staticmethod
     def _getblocklevelelements():
@@ -1212,11 +1216,23 @@ class element(entities.entity):
         self._on('click', v)
         
     def __getattr__(self, attr):
+        """ Captures attemps to get trigger methods (i.e.,
+        element.click, element.focus, etc) as well as event properties
+        (element.onclick, element.oninput).  """
+
+        # Are we trying to get an event property such as
+        # element.onclick.
         if attr in self.Events:
+            # Strip the 'on'
             ev = attr[2:]
+
+            # Return the dom.eventarg for the event
             return self._on(ev)
 
+        # Are we trying to get a trigger callable
         if attr in self.Triggers:
+            # Return a callable that, when invoked, will trigger the
+            # event.
             return self._trigger(trigger=attr)
 
         raise AttributeError()
