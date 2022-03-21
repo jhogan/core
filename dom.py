@@ -1200,21 +1200,6 @@ class element(entities.entity):
             # Add kwargs to attributes collection
             self.attributes += kwargs
 
-    def click(self):
-        """ XXX """
-        eargs = eventargs(self, 'click')
-
-        # Get the event and invoke (i.e., trigger) it
-        self.onclick(self, eargs) 
-
-    @property
-    def onclick(self):
-        return self._on('click')
-
-    @onclick.setter
-    def onclick(self, v):
-        self._on('click', v)
-        
     def __getattr__(self, attr):
         """ Captures attemps to get trigger methods (i.e.,
         element.click, element.focus, etc) as well as event properties
