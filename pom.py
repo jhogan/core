@@ -1254,7 +1254,7 @@ class page(dom.html):
                 # (not through an HTTP request). In that case, the
                 # www.request would be None.
                 req = www.request
-                if req.isevent:
+                if req and req.isevent:
                     getattr(self, eargs.handler)(
                         src=eargs.src, eargs=eargs
                     )
