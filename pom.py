@@ -1250,6 +1250,9 @@ class page(dom.html):
             try:
                 self._calling = True
 
+                # NOTE It's possible to __call__ a page object directly
+                # (not through an HTTP request). In that case, the
+                # www.request would be None.
                 req = www.request
                 if req.isevent:
                     getattr(self, eargs.handler)(

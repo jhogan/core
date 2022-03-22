@@ -658,7 +658,7 @@ class _request:
     def language(self):
         ''' Return the language code. The default is 'en' for English.
         
-        When the requet if for a page hosted by the framework, this is
+        When the request is for a page hosted by the framework, this is
         usually the first segment of the URL path. 
         '''
 
@@ -835,11 +835,9 @@ class _request:
                     # Normally, the client won't need to get the body
                     # for multipart data; it will usually just use
                     # `request.files`. Either way, return whan we have.
-                    # We probably shouldn't memoize it since it could be
-                    # holding a lot of file data.
 
-                    # TODO We could move this outside the consequence
-                    # block
+                    # NOTE: We probably shouldn't memoize it since it
+                    # could be holding a lot of file data.
                     inp.seek(0)
 
                     return inp.read(sz)
@@ -855,7 +853,7 @@ class _request:
                         # XXX Catch the JSON specific error here
 
                         # XXX There are some other places that
-                        # json.loads is called on request.body. THat
+                        # json.loads is called on request.body. That
                         # would probably be unnecessary now.
                         B()
                         print(ex)

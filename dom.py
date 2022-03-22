@@ -1205,6 +1205,22 @@ class element(entities.entity):
         element.click, element.focus, etc) as well as event properties
         (element.onclick, element.oninput).  """
 
+        # NOTE for those who get here even though the attribute exists:
+        #
+        # Obviously, __getattr__ methods like this are only entered
+        # when an attribute doesn't exist. 
+        #
+        #     el.idontexist
+        #
+        # Actually, the determination of whether or not an attribute
+        # exist is made by calling the attribute and checking whether or
+        # not an AttributeError is raised. Therefore, even though a
+        # property like `children` exists on `element`, were it or any
+        # of the methods it calls to raise an AttributeError, we would
+        # still get here. So if execution leads you here, even though
+        # the attribute exists, check whether the attribute itself
+        # raised AttributeError.
+
         # Are we trying to get an event property such as
         # element.onclick.
         if attr in self.Events:

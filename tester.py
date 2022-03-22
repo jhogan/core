@@ -633,7 +633,6 @@ class tester(entities.entity):
                     path = pg.path
                     qs = str()
 
-
                 pg and pg.clear()
 
                 if meth == 'POST':
