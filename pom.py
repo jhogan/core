@@ -1264,9 +1264,15 @@ class page(dom.html):
                     globs['req'] = www.request
                     globs['res'] = www.response
 
+                    self.lang = req.language
+
                     # Call page's main method. It's called `_mainfunc`
                     # here but the web developer will call it `main`.
                     self._mainfunc(**self._arguments)
+
+                    # Assigne the request language (the language code of
+                    # the URL) to the lang attribute of the <html> root
+                    # tag.
                 self._called = True
             finally:
                 self._calling = False

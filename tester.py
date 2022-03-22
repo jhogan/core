@@ -527,13 +527,20 @@ class tester(entities.entity):
             def browser(self):
                 return self.tabs.browser
 
+            def __getitem__(self, sel):
+                """ XXX
+                """
+                return self.html[sel]
+
             def get(self, pg, ws):
-                res = self._request(pg=pg, ws=ws, meth='GET')
-                self.html = res.html
-                return res
+                req = self._request(pg=pg, ws=ws, meth='GET')
+                self.html = req.html
+
+                # XXX In the HTTP methods (.get, .post, etc.), don't
+                # return anything.
+                return req
 
             def xhr(self, pg, ws, json=None):
-
                 from json import dumps
 
                 body = dumps(json)

@@ -997,7 +997,7 @@ class pom_page(tester.tester):
         frm['textarea[name=comment]'].first.text = comment
         self.one(res['main[data-path="/time"]'])
 
-        res = tab.post('/en/time', ws, frm)
+        res = tab.post('/en/time', ws=ws, frm=frm)
 
         # TODO: 03ff3691
         # selected = res['main>form select option[selected]']
@@ -1109,23 +1109,24 @@ class pom_page(tester.tester):
         ws.pages += pg
 
         tab = self.browser().tab()
-        res = tab.get('/en/lang', ws)
-        self.one(res['main[data-path="/lang"]'])
 
-        self.eq('Lang: en', (res['main p'].first.text))
+        tab.get('/en/lang', ws)
+        self.one(tab['main[data-path="/lang"]'])
+
+        self.eq('Lang: en', (tab['main p'].first.text))
 
         # Use Spainish (es)
-        res = tab.get('/es/lang', ws)
-        self.one(res['main[data-path="/lang"]'])
-        self.eq('Lang: es', (res['main p'].first.text))
+        tab.get('/es/lang', ws)
+        self.one(tab['main[data-path="/lang"]'])
+        self.eq('Lang: es', (tab['main p'].first.text))
         return
 
         # Ensure it defauls to English
         # TODO Remove return
-        res = tab.get('/lang', ws)
+        tab.get('/lang', ws)
 
-        self.one(res['main[data-path="/lang"]'])
-        self.eq('Lang: en', (res['main p'].first.text))
+        self.one(tab['main[data-path="/lang"]'])
+        self.eq('Lang: en', (tab['main p'].first.text))
 
     def it_authenticates(self):
         jwt = None

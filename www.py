@@ -642,13 +642,6 @@ class _request:
         ws = self.site
         path = self.path
 
-        # XXX This is a hack to mack XHR requests work. Currently, the
-        # page GET does not preserve the langugae that was originally
-        # requested. Consequently, the XHR request doesn't have the
-        # information it needs to add the /<lang>/ prefex to the path.
-        if not path.startswith('/en/'):
-            path = f'/en/{path}'
-
         try:
             return ws[path]
         except IndexError:
@@ -841,7 +834,10 @@ class _request:
                     inp.seek(0)
 
                     return inp.read(sz)
-                else:
+                elif self.mime == 'application/x-www-form-urlencoded':
+                    self._body = inp.read(sz).decode('utf-8')
+
+                elif self.mime == 'application/json':
                     # TODO What would the mime type (content-type) be
                     # here?  (text/html?) Let's turn this else into an
                     # elif with that information.
@@ -849,14 +845,16 @@ class _request:
 
                     try:
                         self._body = json.loads(self._body)
-                    except Expectation as ex:
-                        # XXX Catch the JSON specific error here
-
+                    except json.decoder.JSONDecodeError as ex:
                         # XXX There are some other places that
                         # json.loads is called on request.body. That
                         # would probably be unnecessary now.
                         B()
                         print(ex)
+                else:
+                    # XXX Is this ever used
+                    B()
+                    self._body = inp.read(sz)
 
 
         return self._body
