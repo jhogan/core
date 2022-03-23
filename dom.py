@@ -1239,19 +1239,36 @@ class element(entities.entity):
         raise AttributeError()
 
     def _on(self, ev, v=undef):
-        """ XXX """
+        """ Return or set a memoized dom.event object for the event
+        named by `ev`.
+
+        :param: ev str: The name of the event, e.g., 'focus', 'blur'.
+
+        :param: v dom.event: The event to set the priate instance
+        variable when memoizing. This is typicaly used when this method
+        calls itself to memoize the event.
+        """
+
+        # Name the private instance variable for the event.
         priv = '_on' + ev
 
         if v is not undef:
+            # XXX Do we actually get here stil
             setattr(self, priv, v)
         else:
             if not hasattr(self, priv):
+                # Create and memoize event
                 setattr(self, priv, event(self, ev))
+            # Return memozied event
             return getattr(self, priv)
 
     def _trigger(self, trigger):
-        """ XXX """
+        """ Return a callable that itself calls the event corresponding
+        the trigger. 
 
+        :param: trigger str: The name of the trigger method such as
+        'focus' or blur.
+        """
         def f():
             # Get the event
             onevent = getattr(self, 'on' + trigger)
@@ -1267,25 +1284,29 @@ class element(entities.entity):
     def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
 
-        :param: el element: The element that we want to remove.
+        :param: el element: The element that we want to remove. If not
+        given, the element itself (i.e, self) is removed from the DOM.
         """
         if el:
+            # Remove el from self's child elements.
             return self.elements.remove(el)
         else:
-            # XXX This version of remove is more like jQuery's version
-            # in that you can just call the remove method on an element
-            # and it removes itself from the DOM. Make sure this is
-            # documented.
+            # This block causes `.remove` to behave more like jQuery's
+            # version in that you can just call the `.remove` method on
+            # an element and it removes itself from the DOM.
             return self.parent.remove(self)
 
     def identify(self, recursive=False):
-        """ Assigns new, random values (UUIDs) to the id attribute of
-        this HTML5 elements and all of its descendants.
+        """ Assigns a new, random values to the id attribute of this
+        HTML5 elements and all of its descendants. The id value is a
+        UUID encoded in Base64 with an 'x' prepended to it.
 
-        :param: recursive bool: XXX
+        :param: recursive bool: If True, walk the DOM tree run
+        `identify` on each element. Note that this is currently
+        untested functionality.
         """
 
-        # Set to random identifie. Prepend an x because HTML5's
+        # Set to a random identifier. Prepend an x because HTML5's
         # specification dosen't allow id attributes to start with
         # numbers.
         self.id = 'x' + primative.uuid().base64
