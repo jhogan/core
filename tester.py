@@ -406,6 +406,10 @@ class tester(entities.entity):
 
         ''' Inner classes '''
         class _tabs(www.browser._tabs):
+            """ A collection of test browser tabs.
+
+            :abbr: tabs
+            """
             def __init__(self, brw, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.browser = brw
@@ -416,6 +420,12 @@ class tester(entities.entity):
                 return t
 
         class _tab(www.browser._tab):
+            """ Represents a tab in the test browser. The tab makes the
+            actual "HTTP" request and preserves the responses HTML in
+            it's own DOM (.html).
+
+            :abbr: tab
+            """
             def __init__(self, tabs):
                 super().__init__(tabs)
                 self._referer  =  None
@@ -424,7 +434,12 @@ class tester(entities.entity):
                 self._site     =  None
 
             def element_event(self, src, eargs):
-                """ XXX """
+                """ This event handler catches all events that happen to
+                elements in the _tab's DOM (.html), examins the elements
+                and uses information found within the elements to
+                properly route execution to the "server-side" event
+                handler that is actually listening to the event.
+                """
                 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -466,12 +481,20 @@ class tester(entities.entity):
 
             @property
             def html(self):
-                """ XXX """
+                """ Returns the `tab`'s DOM object.
+                """
                 return self._html
 
             @html.setter
             def html(self, v):
-                """ XXX """
+                """ When we set a new HTML DOM for the tab, we want to
+                make sure all elements that have attributes that match
+                the pattern data-<event>-handler are hooked up to the
+                the tab's main event handler], `element_event` so that
+                actions that happen to those elements can be properly
+                routed to the server-side event handler that wants to
+                receive the event.
+                """
                 self._html = v
 
                 sels = ', '.join(
