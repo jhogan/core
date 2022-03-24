@@ -323,8 +323,6 @@ class test_contactmechanism_message(tester.tester):
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
-        else:
-            self._clear()
 
             party.company._carapacian = None
 
