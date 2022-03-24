@@ -634,10 +634,7 @@ class tester(entities.entity):
                     path = url.path
                     qs = url.query
                 elif isinstance(pg, pom.page):
-                    # XXX We shoud preserve the language used to GET
-                    # the page (/en/mypage) so subsequent XHR requests
-                    # can use the same language.
-                    path = pg.path
+                    path = f'/{pg.language}{pg.path}'
                     qs = str()
 
                 pg and pg.clear()
