@@ -1217,7 +1217,7 @@ class pom_page(tester.tester):
             frm['input[name=password]'].first.value = usr.password
 
             # Post the credentials to /en/authenticate
-            res = tab.post('/en/authenticate', ws, frm)
+            res = tab.post('/en/authenticate', ws=ws, frm=frm)
 
             # If the user is authentic (if the user was previously saved
             # to the database...
@@ -1421,7 +1421,7 @@ class pom_page(tester.tester):
         frm['input[name=password]'].first.value = 'password1'
 
         # POST credentials to log in
-        res1 = tab.post('/en/signon', ws, frm)
+        res1 = tab.post('/en/signon', ws=ws, frm=frm)
 
         hit = ecommerce.hits.last
 
