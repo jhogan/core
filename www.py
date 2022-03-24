@@ -1924,8 +1924,20 @@ class headers(entities.entities):
         The dict is used to initialize the collection.
         XXX Update :param: for new signature
         """
+        args = list(args)
+        try:
+            d = args.pop(0)
+            try:
+                d = dict(d)
+            except KeyError:
+                pass
+        except IndexError:
+            d = dict()
+
+        d.update(kwargs.items())
+
         super().__init__(*args)
-        for k, v in kwargs.items():
+        for k, v in d.items():
             self += header(k, v)
             
     def __setitem__(self, ix, v):
