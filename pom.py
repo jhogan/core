@@ -1264,7 +1264,9 @@ class page(dom.html):
                     globs['req'] = www.request
                     globs['res'] = www.response
 
-                    self.lang = req.language
+                    # XXX Explain
+                    if req:
+                        self.lang = req.language
 
                     # Call page's main method. It's called `_mainfunc`
                     # here but the web developer will call it `main`.
