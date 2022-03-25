@@ -67,6 +67,7 @@ import testpom
 import testproduct
 import testsec
 import testthird
+import testwww
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
