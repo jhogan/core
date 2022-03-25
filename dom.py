@@ -9184,14 +9184,26 @@ class CssSelectorParseError(SyntaxError):
         return None
 
 class event(entities.event):
-    """ XXX """
+    """ Represents an event for DOM objects.
+
+    DOM objects need events in the same way that all entities.entities
+    need events. However, DOM object are unique in that their events can
+    be handled on the server side. This subclass of entities.event
+    supports that option.
+    """
     def __init__(self, el, name, *args, **kwargs):
-        # The element to which the event will occur. This would
-        # typically be a UI widget like a <button>.
+        """ Create a dom.event.
+
+        :param: el dom.element: The element to which the event will
+        occur. This would typically be a UI widget like a <button>.
+
+        :param: name str: The name of the event, such as 'click' or
+        'blur'.
+        """
         self.element   =  el
 
         # The elements for which it will be possible for the event
-        # handler(s) to mutate in response to the event occuring
+        # handler(s) to mutate in response to the event occuring.
         self.elements = elements()
 
         self.name      =  name
@@ -9199,7 +9211,39 @@ class event(entities.event):
         super().__init__(*args, **kwargs)
 
     def append(self, obj, *args, **kwargs):
-        """ XXX """
+        """ Appends event handlers to the event.
+
+        In the standard entities.event class, handlers are appended
+        using this idiom:
+
+            def handler(src, eargs):
+                ...
+
+            ev = event()
+            ev += handler
+
+        With DOM events, we want to specify the DOM elements that should
+        be sent to the server-side event handler so it can manipulate
+        them. We do that with a tuple:
+
+            class mypage(pom.page):
+                def btnokay_click(src, eargs):
+                    # Server-side event
+                    mydiv = eargs.html.first
+                    mydiv += dom.p('A modification')
+
+                def main():
+                    mydiv = dom.div()
+                    btnokay = dom.button()
+
+                    # Use the += append operator to specify server-side
+                    # handler and elements.
+                    btnokay.onclick += btnokay_click, mydiv, ...
+
+        Note that mydiv is a DOM object, however, the outer HTML for
+        that DOM object will be sent back up to the server and then
+        re-objectified into a DOM object.
+        """
         if isinstance(obj, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
             # alternative block deals with conventional event
@@ -9219,14 +9263,14 @@ class event(entities.event):
                 # Append to the event's elements collection
                 self.elements += el
 
-                # Ensure their is a unique identifier for the element
+                # Ensure there is a unique identifier for the element
                 el.identify()
 
                 # Collect that identifier
                 ids.append(f'#{el.id}')
 
             # Set the element's data-<event-name>-fragments attribute to
-            # the comma seprated list of ids. NOTE that Using a comma,
+            # the comma seprated list of ids. NOTE that using a comma,
             # along with the hash(es), makes the value for this
             # attribute a valid CSS selector, which will be useful later
             # on.
