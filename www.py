@@ -1934,7 +1934,12 @@ class headers(entities.entities):
         except IndexError:
             d = dict()
 
-        d.update(kwargs.items())
+        for k, v in kwargs.items():
+            # kwargs can't use hyphens, so we will interpret underscores
+            # as hyphens since that is conventionaly how headers names
+            # are seperated.
+            k = k.replace('_', '-')
+            d.update({k: v})
 
         super().__init__(*args)
         for k, v in d.items():

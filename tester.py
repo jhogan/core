@@ -636,7 +636,7 @@ class tester(entities.entity):
                         for k, v in env.items():
                             d[k] = v
                     
-                    hdrs1 = www.headers(**d)
+                    hdrs1 = www.headers(d)
 
                     hdrs1 |= arg_hdrs
 
