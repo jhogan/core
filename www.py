@@ -1976,7 +1976,7 @@ class headers(entities.entities):
             self += header(ix, v)
 
     def __getitem__(self, ix):
-        """ Provides indexor logic for the ``headers`` class. See the
+        """ Provides indexer logic for the ``headers`` class. See the
         docstring at __setitem__ for details.
         """
         if not isinstance(ix, str):
@@ -2087,7 +2087,9 @@ class header(entities.entity):
         """ The headers name.
         """
         # TODO Why do we need to lower() this. I think we should be
-        # case-preserving here.
+        # case-preserving here. Or, maybe we could get "name" to conform
+        # to the standard way headers are cased, i.e, first characters,
+        # and any character after a hyphen are uppercase.
         return self._name.lower()
 
     def __str__(self):

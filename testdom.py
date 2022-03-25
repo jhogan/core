@@ -1014,9 +1014,6 @@ class dom_cssclass(tester.tester):
         rm = '%s %s' % (uuid4().hex, uuid4().hex)
         self.expect(IndexError, lambda: p.classes.remove(rm))
 
-class test_header(tester.tester):
-    pass
-
 class dom_html(tester.tester):
     def it_calls_html_with_text_nodes(self):
         return 
