@@ -551,7 +551,11 @@ class tester(entities.entity):
                 return self.tabs.browser
 
             def __getitem__(self, sel):
-                """ XXX
+                """ Returns a list of elements in the tab's internal DOM
+                that match the CSS selector `sel`.
+
+                :param: sel str|dom.selectors: The CSS selector as a
+                string or a dom.selectors object.
                 """
                 return self.html[sel]
 
@@ -629,20 +633,30 @@ class tester(entities.entity):
                     if cookies.count:
                         d['http_cookie'] = cookies.header.value
 
-                    # XXX Explain
+                    # Merge env into d
                     if env:
                         d.update(env)
                     
-                    # XXX Explain
+                    # Merge the HTTP request headers in `arg_hdrs` into
+                    # the environ dict. According to WSGI, actual HTTP
+                    # request headers should be preceeded by an 'http_'.
                     if arg_hdrs:
                         for hdr in arg_hdrs:
                             name = hdr.name.replace('-', '_').lower()
 
                             d['http_' + name] = hdr.value
 
+                            # Some standard WSGI environ keys overlap
+                            # with standard HTTP request headers. In
+                            # that case, add the WSGI version. So if we
+                            # have a HTTP header of Content-Type, we
+                            # should add that to the WSGI environ dict
+                            # as 'http_content_type' and 'content_type'.
+                            # See:
+                            #     https://wsgi.readthedocs.io/en/latest/definitions.html
+                            #     https://developer.mozilla.org/en-US/docs/Glossary/Request_header
                             if name in ('content_type',):
                                 d[name] = hdr.value
-                                
 
                     return d
 

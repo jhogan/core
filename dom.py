@@ -9235,6 +9235,41 @@ class event(entities.event):
         that DOM object will be sent back up to the server and then
         re-objectified into a DOM object.
         """
+
+        """
+        The below illustrates what happens in the browser side to get
+        DOM events to work. XXX Continue explaination.
+            <html>
+                <main>
+                    <div id='derp'>
+                        <p></p>
+                        <button data-click-fragment="#r2nd0m" 
+                                data-click-handler='btn_onclick'>
+                            Click me
+                        </button>
+                    </div>
+                </main>
+                <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
+                        data-click-handler='btn_onclick'>
+                    Click me
+                </button>
+            </html>
+
+            <script>
+                $('*.[data-fragment]').on('click', function(e){
+                    $.ajax({
+                        method: 'POST',
+                        data: {event: btn_onclick, html: e.innerHTML},
+                    }).done(
+                        function(r){
+                            e.parent.remove(e)
+                            e.parent.append(r)
+                        }
+                    )
+                }
+                
+            </script>
+        """
         if isinstance(obj, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
             # alternative block deals with conventional event
@@ -9274,44 +9309,41 @@ class event(entities.event):
         super().append(f)
 
 class eventargs(entities.eventargs):
-    """ XXX 
-
-    The below illustrates what happens in the browser side to get web
-    events to work. XXX Continue explaination.
-        <html>
-            <main>
-                <div id='derp'>
-                    <p></p>
-                    <button data-click-fragment="#r2nd0m" 
-                            data-click-handler='btn_onclick'>
-                        Click me
-                    </button>
-                </div>
-            </main>
-            <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
-                    data-click-handler='btn_onclick'>
-                Click me
-            </button>
-        </html>
-
-        <script>
-            $('*.[data-fragment]').on('click', function(e){
-                $.ajax({
-                    method: 'POST',
-                    data: {event: btn_onclick, html: e.innerHTML},
-                }).done(
-                    function(r){
-                        e.parent.remove(e)
-                        e.parent.append(r)
-                    }
-                )
-            }
-            
-        </script>
+    """ The eventargs class for DOM events. This object is used to move
+    data from the browser to the server-sied event handler.
     """
+
     def __init__(self, 
         el=None, trigger=None, hnd=None, src=None, html=None
     ):
+        """ Create an eventargs class.
+
+        :param: el dom.element: The element that is causing
+        the event.  This is usualy a DOM object running in a browser
+        that is the subject of an event.
+
+        :param: trigger str: The name of the method that triggers the
+        event. Usually, events happen to elements, but an element can
+        fire it's own event with a method. Consider:
+
+            btn = dom.button()
+            btn.click()
+
+        In this case, the `trigger` would be 'click'.
+
+        :param: hnd str: The name of the event handler this eventargs is
+        destined for.
+
+        :param: src dom.element: The element that was the subject of the
+        event.
+
+        :param: html dom.elements: A collection of DOM objects from
+        the browser's DOM that the event handler would like view or
+        manipulate.
+        """
+
+        # Get the dom.html class reference so we can use it to parse
+        # HTML.
         domhtml = sys.modules['dom'].html
 
         if el is not None:
