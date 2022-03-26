@@ -566,7 +566,7 @@ class tester(entities.entity):
                 body = dumps(json)
 
                 hdrs = www.headers(
-                    content_type = 'application/json'
+                    {'content_type': 'application/json'}
                 )
 
                 return self._request(
@@ -629,15 +629,22 @@ class tester(entities.entity):
                     if cookies.count:
                         d['http_cookie'] = cookies.header.value
 
+                    # XXX Explain
                     if env:
-                        for k, v in env.items():
-                            d[k] = v
+                        d.update(env)
                     
-                    hdrs1 = www.headers(d)
+                    # XXX Explain
+                    if arg_hdrs:
+                        for hdr in arg_hdrs:
+                            name = hdr.name.replace('-', '_').lower()
 
-                    hdrs1 |= arg_hdrs
+                            d['http_' + name] = hdr.value
 
-                    return hdrs1
+                            if name in ('content_type',):
+                                d[name] = hdr.value
+                                
+
+                    return d
 
                 st, hdrs = None, None
                 
@@ -730,10 +737,7 @@ class tester(entities.entity):
                 
                 # Make WSGI call
 
-                # NOTE PEP 0333 insists that the environment variables
-                # passed in must be a dict so we convert `env` which is
-                # a `www.headers` object.
-                iter = app(dict(env.list), start_response)
+                iter = app(env, start_response)
 
                 res = www._response(req) 
                 res._status = st
