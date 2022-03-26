@@ -13,7 +13,6 @@ from dbg import B
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
-from primative import undef
 import entities
 import file
 import operator
@@ -1238,29 +1237,21 @@ class element(entities.entity):
 
         raise AttributeError()
 
-    def _on(self, ev, v=undef):
+    def _on(self, ev):
         """ Return or set a memoized dom.event object for the event
         named by `ev`.
 
         :param: ev str: The name of the event, e.g., 'focus', 'blur'.
-
-        :param: v dom.event: The event to set the priate instance
-        variable when memoizing. This is typicaly used when this method
-        calls itself to memoize the event.
         """
-
         # Name the private instance variable for the event.
         priv = '_on' + ev
 
-        if v is not undef:
-            # XXX Do we actually get here stil
-            setattr(self, priv, v)
-        else:
-            if not hasattr(self, priv):
-                # Create and memoize event
-                setattr(self, priv, event(self, ev))
-            # Return memozied event
-            return getattr(self, priv)
+        if not hasattr(self, priv):
+            # Create and memoize event
+            setattr(self, priv, event(self, ev))
+
+        # Return memozied event
+        return getattr(self, priv)
 
     def _trigger(self, trigger):
         """ Return a callable that itself calls the event corresponding

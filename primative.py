@@ -300,8 +300,3 @@ class uuid(UUID):
         """ Return a base64 string representation of the UUID object.
         """
         return urlsafe_b64encode(self.bytes).rstrip(b'=').decode('ascii')
-
-class undef:
-    """ XXX
-    """
-    # XXX This should replace all the existing undef classes
