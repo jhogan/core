@@ -558,9 +558,6 @@ class tester(entities.entity):
             def get(self, pg, ws):
                 req = self._request(pg=pg, ws=ws, meth='GET')
                 self.html = req.html
-
-                # XXX In the HTTP methods (.get, .post, etc.), don't
-                # return anything.
                 return req
 
             def xhr(self, pg, ws, json=None):
