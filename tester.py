@@ -438,7 +438,7 @@ class tester(entities.entity):
                 elements in the _tab's DOM (.html), examins the elements
                 and uses information found within the elements to
                 properly route execution to the "server-side" event
-                handler that is actually listening to the event.
+                handler that is intended to capture the event.
                 """
                 
                 # Create a JSON object to send in the XHR request

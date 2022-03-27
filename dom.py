@@ -9182,6 +9182,82 @@ class event(entities.event):
     be handled on the server side. This subclass of entities.event
     supports that option.
     """
+
+    """
+    The below illustrates what the HTML looks like to make events
+    happen. 
+
+        <html>
+            <main>
+                <button data-click-fragments="#r2nd0m" 
+                        data-click-handler='btn_onclick'>
+                    Click me
+                </button>
+                <div id="#r2nd0m">
+                    I will be sent to the server-side event handler for
+                    modification.
+                <div>
+            </main>
+        </html>
+
+    Elements that need event handling have two attributes that are named
+    after this pattern: data-<event>-handler and data-<event>-fragments.
+    The <event> is the name of the event that should be handled; in the
+    above example, the 'click' event' of the <button> is being handled.
+    The data-<event>-handler attribute indicates which method on the
+    page object is the server-side event handler. The
+    data-<event>-fragments attribute indicates the id value(s) of the
+    element's in the document that should be sent to the server-side
+    event handler. The element(s) outerHTML is sent. The server-side
+    handler is free to view and modifier these HTML fragments. The
+    modified versions are returned to the browser and are used to
+    replace the original version.
+
+    This process will be managed by JavaScript code in a real browser,
+    however, a Python implementation for this process already exists at
+    `tester.browser._tab.element_event`
+
+    This example show two different <button>s sending their click event
+    to the same server-side event handler:
+
+        <main>
+            <button 
+                data-click-handler="btn_onclick" 
+                data-click-fragments="#x5vK2fqVsRGGJy5JtHsXggw">
+                Click me
+            </button>
+            <button 
+                data-click-handler="btn_onclick" 
+                data-click-fragments="#xw7bdDL1BS5aUfCB7hFk3xA, #xO5g0ZY5sRuSshlA2Y0jiRA">
+                Click me again
+            </button>
+            <div id="x5vK2fqVsRGGJy5JtHsXggw"></div>
+            <div id="xw7bdDL1BS5aUfCB7hFk3xA"></div>
+            <div id="xO5g0ZY5sRuSshlA2Y0jiRA"></div>
+        </main>
+
+    Notice that the first button sends the first <div> but the second
+    <button> sends the second and third <div> (a comma is used to
+    seperate the id values instead of whitespace because that makes the
+    data-<event>-fragments value a proper CSS3 selector).
+
+    An element can also be declared to have two different events sent to
+    the same event handler:
+        <main>
+            <input 
+                data-blur-handler="inp_onfocuschange" 
+                data-blur-fragments="#xBGH5zf5WRmqyP_QT4l2vqw" 
+                data-focus-handler="inp_onfocuschange" 
+                data-focus-fragments="#xphe7_ybRSeSgxK_PGrPZ2A"
+            >
+            <div id="xphe7_ybRSeSgxK_PGrPZ2A"></div>
+            <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
+        </main>
+
+    Here, we have the onblur and onfocus event sent to the
+    inp_onfocuschange server side event handler. These different events
+    are able to send different HTML fragments as can be seen above.
+    """
     def __init__(self, el, name, *args, **kwargs):
         """ Create a dom.event.
 
@@ -9236,40 +9312,6 @@ class event(entities.event):
         re-objectified into a DOM object.
         """
 
-        """
-        The below illustrates what happens in the browser side to get
-        DOM events to work. XXX Continue explaination.
-            <html>
-                <main>
-                    <div id='derp'>
-                        <p></p>
-                        <button data-click-fragment="#r2nd0m" 
-                                data-click-handler='btn_onclick'>
-                            Click me
-                        </button>
-                    </div>
-                </main>
-                <button data-click-fragments="#r2nd0m0 #r2nd0m1" 
-                        data-click-handler='btn_onclick'>
-                    Click me
-                </button>
-            </html>
-
-            <script>
-                $('*.[data-fragment]').on('click', function(e){
-                    $.ajax({
-                        method: 'POST',
-                        data: {event: btn_onclick, html: e.innerHTML},
-                    }).done(
-                        function(r){
-                            e.parent.remove(e)
-                            e.parent.append(r)
-                        }
-                    )
-                }
-                
-            </script>
-        """
         if isinstance(obj, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
             # alternative block deals with conventional event
