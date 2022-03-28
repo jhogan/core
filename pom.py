@@ -45,7 +45,7 @@ class site(asset.asset):
     are persisted to the database along with their constituents.
     """
     def __init__(self, *args, **kwargs):
-        """ XXX
+        """ Create a new web ``site`` object.
         """
         super().__init__(*args, **kwargs)
         self.index = None
@@ -1264,7 +1264,13 @@ class page(dom.html):
                     globs['req'] = www.request
                     globs['res'] = www.response
 
-                    # XXX Explain
+                    # If there is an HTTP request object, set the
+                    # `page`'s `lang` attribute to that of the
+                    # `request`.  Remember that `page` is a subclass of
+                    # dom.html, so we are basically setting the lang
+                    # attribute of the <html> tag:
+                    #
+                    #     <html lang="en">
                     if req:
                         self.lang = req.language
 

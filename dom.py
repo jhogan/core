@@ -9213,11 +9213,11 @@ class event(entities.event):
     modified versions are returned to the browser and are used to
     replace the original version.
 
-    This process will be managed by JavaScript code in a real browser,
+    This process will be managed by JavaScript in a real browser,
     however, a Python implementation for this process already exists at
     `tester.browser._tab.element_event`
 
-    This example show two different <button>s sending their click event
+    This example shows two different <button>s sending their click event
     to the same server-side event handler:
 
         <main>

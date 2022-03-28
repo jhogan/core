@@ -154,8 +154,7 @@ class application:
             # Get a reference to the application HTTP request object
             req = self.request
 
-            # XXX I think this can be remove; we are using `req`, see
-            # above.
+            # Set the global request object
             request = self.request
 
             # Raise an exception if the current state of the WSGI
@@ -179,7 +178,12 @@ class application:
                 
                 # If the request is XHR (i.e, an AJAX request)
                 if req.isxhr:
+
+                    # If the request is in response to a dom.event.
                     if req.isevent:
+
+                        # Make the request and set the response's body
+                        # to the HTML that is returned.
                         res.body = req()
                     else:
                         reqdata = self.request.post
@@ -684,7 +688,21 @@ class _request:
         # logged correctly. 
         self.log()
 
-        # XXX Explain
+        # If the request is in response to a dom.event, create the
+        # eventargs object that will pass the following to the
+        # server-side event handler:
+        #
+        #     hnd: The name of the event handler.
+        #
+        #     html:  The collection of DOM subtrees that were selected
+        #     to be passed to the event handler.
+        # 
+        #     src: The DOM object, such as the <button> or <input>,
+        #     that was the subject of the event.
+        #
+        #     trigger: The name of the method that caused the event. For
+        #     example, if the `click()` method of a <button> caused the
+        #     event, trigger would be 'click'.
         eargs = None
         if self.isevent:
             eargs = dom.eventargs(
