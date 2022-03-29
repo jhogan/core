@@ -178,3 +178,13 @@ extremely common:
 
 This isn't such a big deal with private methods as long as they are
 clear enough for developers of the class (as opposed to users).
+
+Header comments should start with three single comments:
+
+    ''' This is a header comment. '''
+
+as opposed to docstrings:
+
+    """ This is a 
+    docstring.
+    """"

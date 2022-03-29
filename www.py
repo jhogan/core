@@ -361,6 +361,8 @@ class _request:
         body = self.body
         if body:
             try:
+                # TODO If body is JSON, it should return as dict, so
+                # there is no need to call json.loads on it.
                 body = json.dumps(json.loads(body), indent=2)
             except:
                 pass
@@ -856,24 +858,12 @@ class _request:
                     self._body = inp.read(sz).decode('utf-8')
 
                 elif self.mime == 'application/json':
-                    # TODO What would the mime type (content-type) be
-                    # here?  (text/html?) Let's turn this else into an
-                    # elif with that information.
                     self._body = inp.read(sz).decode('utf-8')
-
-                    try:
-                        self._body = json.loads(self._body)
-                    except json.decoder.JSONDecodeError as ex:
-                        # XXX There are some other places that
-                        # json.loads is called on request.body. That
-                        # would probably be unnecessary now.
-                        B()
-                        print(ex)
+                    self._body = json.loads(self._body)
                 else:
-                    # XXX Is this ever used
-                    B()
+                    # NOTE This block doesn't appear to be used at the
+                    # moment
                     self._body = inp.read(sz)
-
 
         return self._body
 
@@ -1007,6 +997,7 @@ class _request:
             
             https://foo.net:8000/en/my/page
         """
+        # TODO Ensure this always returns a ecommerce.url
         if self._url:
             return self._url
 
@@ -1067,13 +1058,21 @@ class _request:
 
     @property
     def isevent(self):
-        """ XXX """
+        """ Returns True if this ``_request`` is an XHR request for a
+        dom.event, such as a <button> being clicked. Returns False if
+        the request is a non-dom.event, such as a conventional HTTP GET,
+        POST, etc.
+        """
+
+        # dom.events are encoded as JSON
         if not self.content_type == 'application/json':
             return False
 
         if not isinstance(self.body, dict):
             return False
 
+        # A dom.event would specify the name of an event handler (hnd)
+        # in its request body.
         try:
             self.body['hnd']
         except:
@@ -1081,28 +1080,6 @@ class _request:
         else:
             return True
             
-    @property
-    def handler(self):
-        ''' XXX '''
-        if not self.isevent:
-            return None
-
-        try:
-            return self.body['hnd']
-        except:
-            return None
-
-    @property
-    def fragment(self):
-        ''' XXX '''
-        if not self.isevent:
-            return None
-
-        try:
-            return self.body['html']
-        except:
-            return None
-
     # TODO Rename to '_demand' since this is a private method
     def demand(self):
         """ Causes an exception to be raised if the request is not
@@ -1426,7 +1403,7 @@ class _response():
         the selector (``sels``).
 
         :param: sels str: If the body contains JSON data, the ``sels``
-        parameter should be a string used to select form the list
+        parameter should be a string used to select from the list
         returned by json.loads. For example, the following are the
         same::
             
@@ -1931,16 +1908,44 @@ class headers(entities.entities):
     def __init__(self, *args, **kwargs):
         """ Creates a headers collection.
 
-        :param: d dict: A dict where each key is the header name
-        and the value is the header's value::
+        :param: d sequence: There are a number of ways to initialize the
+        headers collection. For example, the following produces the same
+        headers collection::
 
-            {
-                'Content-Type': 'text/html',
-                'Referer': 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol'
-            }
+            # list<tuple>
+            hdrs = headers([
+                ('Content-Type', 'application/json'), 
+                ('Accept-Encoding', 'gzip, deflate, br')
+            ])
 
-        The dict is used to initialize the collection.
-        XXX Update :param: for new signature
+            # tuple<tuple>
+            hdrs = headers((
+                ('Content-Type', 'application/json'), 
+                ('Accept-Encoding', 'gzip, deflate, br')
+            })
+
+            # Dict
+            hdrs = headers({
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip, deflate, br'
+            })
+
+        :param: kwargs dict: You can also use **kwargs::
+
+            hdrs = headers(
+                content_type = 'application/json',
+                accept_encoding': 'gzip, deflate, br'
+            )
+
+            Note that content_type and accept_encoding will be converted
+            to content-type and accept-encoding. If you really want an
+            underscore, use the sequence arguments as described above.
+
+            You can mix the sequence arguments with the kwargs as well.
+            hdrs = headers(
+                (('Content_Type, 'application/json'))
+                accept_encoding': 'gzip, deflate, br'
+            )
         """
         args = list(args)
         try:
@@ -1985,12 +1990,10 @@ class headers(entities.entities):
         the above explanations is inaccurate.
         """
         if not isinstance(ix, str):
-            # TODO This can't be write. super().__setitem__ would need a
+            # TODO This can't be correct. super().__setitem__ would need a
             # value (``v``).
             return super().__setitem__(ix)
 
-        # TODO Why can't we overwrite prior values. XXX UPDATE: I fixed
-        # this; make sure it works in all unit tests.
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
                 hdr.value = v
@@ -2009,15 +2012,6 @@ class headers(entities.entities):
             if hdr.name.casefold() == ix.casefold():
                 return hdr.value
         return None
-
-    def __ior__(self, hdrs):
-        """ XXX """
-        if not hdrs:
-            return self
-
-        for hdr in hdrs:
-            self[hdr.name] = hdr.value
-        return self
 
     def append(self, obj, uniq=False):
         """ Allows colon seperate strings to be appended as new
