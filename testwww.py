@@ -77,5 +77,28 @@ class headers(tester.tester):
                 hdrs['cache-control']
             )
 
+    def it_sets_values(self):
+        hdrs = www.headers()
+        hdrs += www.header('Content-Type', 'abc')
+        hdrs += www.header('Accept-Language', 'xyz')
+
+        self.eq('abc', hdrs['Content-Type'])
+        self.eq('abc', hdrs.first.value)
+        self.eq('xyz', hdrs.second.value)
+        self.two(hdrs)
+
+        # Ensure we can overwrite existing header
+        hdrs['Content-Type'] = 'def'
+        self.eq('def', hdrs['Content-Type'])
+        self.eq('def', hdrs.first.value)
+        self.eq('xyz', hdrs.second.value)
+        self.two(hdrs)
+
+        hdrs[0] = 'ghi'
+        self.eq('ghi', hdrs['Content-Type'])
+        self.eq('ghi', hdrs.first.value)
+        self.eq('xyz', hdrs.second.value)
+        self.two(hdrs)
+
 if __name__ == '__main__':
     tester.cli().run()
