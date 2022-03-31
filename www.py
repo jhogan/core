@@ -686,8 +686,6 @@ class _request:
         # concluding information by calling self.log again, such as the
         # HTTP status code.
 
-        # XXX Write unit tests to ensure that event requests are being
-        # logged correctly. 
         self.log()
 
         # If the request is in response to a dom.event, create the

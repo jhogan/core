@@ -1774,6 +1774,7 @@ class pom_page(tester.tester):
         class clickme(pom.page):
             def btn_onclick(self, src, eargs):
                 eargs.html['p'].only += dom.strong('Thanks')
+                req.hit.logs += ecommerce.log(message='I got clicked')
 
             def btn_onclick1(self, src, eargs):
                 div1, div2 = eargs.html
@@ -1819,6 +1820,17 @@ class pom_page(tester.tester):
         # Click the button. This will cause an XHR request back to the
         # page's btn_onclick event handler.
         btn.click()
+
+        hit = ecommerce.hits.last
+        self.eq('/clickme', hit.path)
+        self.eq('POST', hit.method)
+        self.true(hit.isxhr)
+        self.eq(tab.html.first.language, hit.language)
+        self.eq(200, hit.status)
+        self.one(hit.logs)
+        self.eq('I got clicked', hit.logs.first.message)
+        self.none(hit.isjwtvalid)
+
 
         # Now that we've clicked the button, the tab's internal DOM
         # should have a <p> tag with the word Thanks in it due to the
