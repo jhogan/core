@@ -728,18 +728,23 @@ Classes
     * should represent a distinct entiity that performs a set of
       identifiable, reusable and testable behavor
 
+    * should be document using a docstring that indicates it's purpose
+      and what it represents
+    
     * should document the standard variable name(s) used for instances
-      of that class.
+      of that class
 
-    * should be a collection of mostly instance methods, with
-      occasional static and class methods as well as private methods.
+    * Should be composed of mostly instance methods, i.e., avoid the
+      [Abuse Of Utility Classes](https://wiki.c2.com/?AbuseOfUtilityClasses)
+      anti-pattern
 
     * should have a corresponding collection class
 
-    * should be document using a docstring that indicates what entity
-      they model, how they model it and what its relationships to other
-      classes are.
+    * should represent a real-world entity (a sales order, a user
+      account.) or a real-world concept (a database connection, a DOM
+      element, etc.)
 
+    * should start with an underscore if the class is considered private
 
 Class names
     * should be all lowercase
@@ -751,15 +756,15 @@ Class names
     * should be nouns
 
 ### Justification
-In object-oriented programming, methods represent entities. These
+In object-oriented programming, classes represent entities. These
 entiities can be real world objects such as cars, people, etc., or they
 can be abstract entities, such as an encryption algorithm or database
 tables. Thus the name for a class should always be a noun. 
 
 Like all identifiers, class names are easier to rememember, write and
-read if they are single words in all lowercase. Good abbreviations or
-acronyms should be identified for use as the instance variables of a
-class. This prevents naming overlap:
+read if they are single words in all lowercase. A good abbreviations or
+acronyms should be identified for use as the instance variables name of
+a class. This prevents naming overlap:
     
     class person:
         """ Represents a person.
@@ -813,11 +818,121 @@ collection classes by inheriting from `entities` base classes.
     # Add tbl to the tbls collection
     tbls += tbl
 
+### Exceptions
+In keeping with the Python convention, exception class names should be
+written in StudlyCase and should end in the suffix "Error":
+
+    class ComputationalOperationError(Exception):
+        pass
+
+In the ORM, and underscore is used in orm.association classes to
+seperate the names of the two entities being associated:
+
+    class order(orm.entity):
+        ...
+
+    class customer(orm.entity):
+        ...
+
+    class customer_order(orm.association):
+        ...
+
 ### Implementation tips
 None
 
 ### Tags
-\#naming #methods
+\#naming #class
+
+6. Comment tags
+--------------------------------
+
+### Rule
+
+    * NOTE comments indicate something that anyone should read before
+      working on the code beneath the comment:
+        
+        # NOTE: If the following call raises an AttributeError, it is
+        # almost certainly because there was an issue connecting to the
+        # database.
+
+    * TODO comments indicate that something should be done at
+      a future, but indefinite date. A TODO comment should coorsponding
+      to a ticket in the ticketing system. The TODO should be proceeded
+      by a : and 4 random bytes written in hex:
+
+        # TODO:73d12047 Something should really be done about the logic
+        # here.
+
+    * HACK is like a TODO but indicates that the code is a workaround
+      or some sort of trick to get something working for the current
+      moment. A HACK is a suboptimal solution that should be fixed in
+      the future:
+
+        # HACK:241d1d7c Artificially increment `i` here to get around
+        # the one-off issue.
+    
+    * FIXME comments indicate a bug has been discovered in the code.
+      Like TODO comments, a FIXME comment should coorsponding
+      to a ticket in the ticketing system. The FIXME should be succeeded
+      by a : and 4 random bytes written in hex:
+
+        # FIXME:c5248240 The below line will break if a list has zero
+        # elements.
+    
+    * XXX comments imply that something must be fixed in a feature
+      branch before the branch is merged back into main. It's like a
+      FIXME but more urgent. There is usually no need to give it an
+      identifier.
+
+        # XXX This will cause the table to be truncated when called with
+        # an integer. Type checking needs to be used here to avoid data
+        # loss.
+
+    * Bomb-comments are used to flag sensitive areas of source code.
+      They are intended to bring attention to changes made to these
+      parts of the source code when viewed in `git-log`, `git-diff` and
+      other analysis tools used during code reviews and code analysis.
+      Changes made to these areas of source code should receive more
+      attention and scrutenty. Use these liberaly in areas dealing with
+      authentication, authorization and other sensitive areas.
+
+        class security:
+            """
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            A singleton that stores security related values such as the
+            orm's owner, proprietor, and whether or not the
+            accessibility override is set.
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            """
+            ...
+
+### Justification
+It's normal for bugs and and code optizitions of varying severity to be
+noted and accumulated in source code. Having standard, well defined
+comment tags helps categorize the severity issues.
+
+The 4 bytes of random hex is intended to be a unique identifier for the
+comment. The identifier can be used in other comments to reference the
+original issue.
+
+At the moment, there is no ticket system, but there are plans to write a
+program that creates tickets based on the comments found in the source
+code. The semantic information in the tag, along with the identifier,
+will be useful to that program.
+
+### Exceptions
+None.
+
+### Implementation tips
+Your text editor should be configured to highlight the comment tag. Vim
+does this by default for TODO, FIXME and NOTE in Python comments.
+
+The random hex digets can be generate using `uuidgen`:
+
+    uuidgen | cut -c1-8
+
+### Tags
+\#comments
 
 
 <!-- 
@@ -835,29 +950,6 @@ object:
 
 // TODO
 
-
-In general, import modules instead of module objects:
-    
-    import mymod
-
-    # dont do this
-    from mymod import *
-    from mymod import myfunc
-
-Class names
-
-    Class names should strive to be one word. Underscores are
-    prohibited except in conventional circumstances. They should
-    be lowercase except in when they are exception classes in which case
-    they should be StudlyCase.
-
-
-
-Initialize primatives with objects instead of operators
-
-    s = str()
-    ls = list()
-    d = dict()
 
 Discuss uses of TODO, NOTE, XXX and bomb-comments.
 
