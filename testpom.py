@@ -1971,6 +1971,36 @@ class pom_page(tester.tester):
         self.eq('blur triggered', p1.text)
         self.eq('focus triggered', p0.text)
 
+    def it_fires_event_with_no_html_fragments(self):
+        """ XXX:5aa3bcde '"""
+
+    # XXX We shouldn't allow modification of the HTML fragments outer
+    # element. The fragment should be a container that can be resent
+    def it_returns_traceback_on_exception_during_event_handling(self):
+        div0 = div1 = div2 = None
+        class clickme(pom.page):
+            def btn_onclick(self, src, eargs):
+                raise NotImplementedError("No, I'm not ready")
+
+            def main(self):
+                self.main += (btn := dom.button('Click me'))
+                self.main += (div := dom.div())
+                btn.onclick += self.btn_onclick, div
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        tab = self.browser().tab()
+
+        # GET the clickme page
+        tab.get('/en/clickme', ws)
+        self.zero(tab['.exception'])
+
+        btn = tab.html['main>button'].only
+        btn.click()
+        self.one(tab['.exception'])
+        self.one(tab['.exception .traceback'])
+
 class admin(pom.page):
     def __init__(self):
         super().__init__()

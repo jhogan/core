@@ -41,6 +41,7 @@ import logs
 import os
 import party, ecommerce
 import pdb
+import pom
 import primative
 import re
 import sys
@@ -220,7 +221,15 @@ class application:
                     # the traceback if we are in a non-production
                     # environment, so ensure it dosen't get returned to
                     # the client if we are.
-                    data = {'_exception': repr(ex), '_traceback': tb}
+                    art = dom.article()
+                    art.classes += 'exception'
+                    art += dom.h1('''
+                        An unexpected error was encountered.
+                    ''')
+
+                    art += dom.span(str(ex), class_='message')
+                    art += pom.traceback(ex)
+                    res.body = art.html
                 else:
                     # If the exception was an HttpError, i.e, an HTTP
                     # 400s or 500s error...
