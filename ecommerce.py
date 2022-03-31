@@ -778,6 +778,9 @@ class visit(orm.entity):
         delta = now - begin
         return delta.seconds < Seconds
 
+# TODO It's not clear why this doesn't inherit from apriori.log. Or
+# perhaps we should be using apriori.log itself here. If not, we need a
+# comment explaining why not.
 class log(orm.entity):
     """ A log entry a user can add to the hit entity.
 
@@ -830,6 +833,10 @@ class hit(orm.entity):
     # XHR/AJAX request.
     isxhr = bool
 
+    # TODO: We will want to have an addtitional boolean called `isevent`
+    # to distinguish event-based XHR requests from other XHR request
+    # such standard RPC calls.
+
     # The language the page is being requested in, i.e., the 'en' in
     # 'www.mysite.com/en/path/to/page.html'
     language = str
@@ -843,7 +850,7 @@ class hit(orm.entity):
     # The logs the web developer may write for the hit.
     logs = logs
 
-    # Was a valid JWT sent
+    # Was a valid JWT sent. If no JWT was sent, None will be returned.
     isjwtvalid = bool
 
     @property

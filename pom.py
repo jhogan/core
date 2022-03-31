@@ -1614,7 +1614,7 @@ class error(page):
         self.main += traceback(ex)
 
 class traceback(dom.article):
-    """ A subclass of dom.article that renders an exception as a HTML.
+    """ A subclass of dom.article that renders an exception as HTML.
     """
     def __init__(self, ex, *args, **kwargs):
         """ Create the trackback article.

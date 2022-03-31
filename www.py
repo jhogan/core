@@ -213,10 +213,10 @@ class application:
 
             try:
                 if self.request.isxhr:
-                    # TODO When we start supporting XHR requests, the
+                    # XXX When we start supporting XHR requests, the
                     # `tb` being passed here can be built with the
                     # exc.tracebacks class. See the git-log for how `tb`
-                    # was originally created. Also NOTE We will only want
+                    # was originally created. Also NOTE we will only want
                     # the traceback if we are in a non-production
                     # environment, so ensure it dosen't get returned to
                     # the client if we are.
