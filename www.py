@@ -303,6 +303,11 @@ class application:
 # be stored in `_request` at the class level. A @property called
 # request.main or request.current can store the request object currently
 # being processed.
+
+# NOTE The request class tries to be a generic HTTP request class and a
+# WSGI request class at the same time. We may want to add a new subclass
+# of request call `wsgirequest` that would encapsulate the WSGI logic so
+# we can get it out of the regular `request` class.
 request = None
 class _request:
     """ Represents an HTTP request.
@@ -940,8 +945,8 @@ class _request:
 
     @property
     def ip(self):
-        """ Returns an ``ecommerce.ip`` address object corresponding the
-        REMOTE_ADDR WSGI environment variblable.
+        """ Returns an ``ecommerce.ip`` address object corresponding to
+        the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
             ip = str(self.environment['remote_addr'])
@@ -1338,6 +1343,8 @@ class _response():
     def contenttype(self):
         """ The content type of the body.
         """
+        # TODO This should probably be renamed to content_type to match
+        # the request class's property.
         return self.headers['Content-Type']
 
     @property
@@ -2328,14 +2335,3 @@ class browser(entities.entity):
         collection, and return the new tab.
         """
         return self.tabs.tab()
-
-# Start the WSGI application
-
-# TODO This seems really strange that we have this line here. I can't
-# remember what caused me to write this. Perhaps this should be within a
-# 
-#    if __name__ == '__main__'
-#
-# or something. We should reconsider this when revisting the WSGI
-# handling code. At least comment it.
-app = application()
