@@ -1255,9 +1255,12 @@ class page(dom.html):
                 # www.request would be None.
                 req = www.request
                 if req and req.isevent:
-                    getattr(self, eargs.handler)(
-                        src=eargs.src, eargs=eargs
-                    )
+                    hnd = getattr(self, eargs.handler)
+                    globs = hnd.__globals__
+                    globs['req'] = www.request
+                    globs['res'] = www.response
+
+                    hnd(src=eargs.src, eargs=eargs)
                 else:
                     # Inject global variables into main()
                     globs = self._mainfunc.__func__.__globals__
