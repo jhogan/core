@@ -909,7 +909,7 @@ None
 ### Justification
 It's normal for bugs and and code optizitions of varying severity to be
 noted and accumulated in source code. Having standard, well defined
-comment tags helps categorize the severity issues.
+comment tags helps categorize the severity of the issues.
 
 The 4 bytes of random hex is intended to be a unique identifier for the
 comment. The identifier can be used in other comments to reference the
@@ -934,27 +934,44 @@ The random hex digets can be generate using `uuidgen`:
 ### Tags
 \#comments
 
+1. Don't use needless negation
+-------------------------------
+
+### Rule
+Don't use the negation operator unless it necessary.
+
+
+### Example
+Bad 
+    if not X
+        ...
+    else:
+        ...
+
+Good:
+    if x:
+        ...
+    else:
+        ...
+
+### Justification
+The negation operator can sometimes be when it doesn't need to be. To
+the reader, this would simply represent one more thing to remember.
+Strive to code that's as easiy to read as possible.  To solve complex
+problems, our code must be as simple as possible.
+
+### Exceptions
+None
+
+### Implementation tips
+None
+
+### Tags
+\#negation #operators
 
 <!-- 
 
 // CONVENTIONS
-Create new objects within collections using methods with the name of the
-object:
-
-    rs = rows()
-    assert rs.count == 0
-
-    r1 = rows.row()
-    assert rs.count == 1
-    assert rs.first is r1
-
-// TODO
-
-
-Discuss uses of TODO, NOTE, XXX and bomb-comments.
-
-Discuss housekeeping in git logs
-
 Discuss performance metrics in git logs
 
 Discuss prefering non-negated conditional:
@@ -1008,4 +1025,20 @@ Common method names:
 Writing inner functions
 
 Don't chain lines using the semicolon
+
+Create new objects within collections using methods with the name of the
+object:
+
+    rs = rows()
+    assert rs.count == 0
+
+    r1 = rows.row()
+    assert rs.count == 1
+    assert rs.first is r1
+
+// TODO
+
+
+Discuss housekeeping in git logs
+
 -->
