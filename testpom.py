@@ -1974,8 +1974,6 @@ class pom_page(tester.tester):
     def it_fires_event_with_no_html_fragments(self):
         """ XXX:5aa3bcde '"""
 
-    # XXX We shouldn't allow modification of the HTML fragments outer
-    # element. The fragment should be a container that can be resent
     def it_returns_traceback_on_exception_during_event_handling(self):
         div0 = div1 = div2 = None
         class clickme(pom.page):

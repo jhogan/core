@@ -214,13 +214,6 @@ class application:
 
             try:
                 if self.request.isxhr:
-                    # XXX When we start supporting XHR requests, the
-                    # `tb` being passed here can be built with the
-                    # exc.tracebacks class. See the git-log for how `tb`
-                    # was originally created. Also NOTE we will only want
-                    # the traceback if we are in a non-production
-                    # environment, so ensure it dosen't get returned to
-                    # the client if we are.
                     art = dom.article()
                     art.classes += 'exception'
                     art += dom.h1('''
@@ -243,7 +236,6 @@ class application:
                     # If the exception was an HttpError, i.e, an HTTP
                     # 400s or 500s error...
                     if isinstance(ex, HttpError):
-
                         # Call the sites error page for the given
                         # status 
                         lang = req.language
@@ -279,7 +271,8 @@ class application:
 
                     # If the exception was a non-HTTP exception
                     else:
-                        # Create a response to report a default 500 Internal Server Error
+                        # Create a response to report a default 500
+                        # Internal Server Error
                         res.status = 500
                         p = dom.p()
                         p += dom.text('Error: ')
@@ -293,6 +286,9 @@ class application:
             # ensure the response is 500 with a simple error message.
             except Exception as ex:
                 res.status = 500
+
+                # TODO We should probably run the output of
+                # str(ex) through html.escape(). 
                 res.body = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
