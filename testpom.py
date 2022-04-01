@@ -1995,9 +1995,13 @@ class pom_page(tester.tester):
         self.zero(tab['.exception'])
 
         btn = tab.html['main>button'].only
+
         btn.click()
-        self.one(tab['.exception'])
-        self.one(tab['.exception .traceback'])
+
+        self.one(tab['main>.error-modal'])
+        self.one(tab['main>.error-modal'])
+        self.one(tab['main>.error-modal .message'])
+        self.one(tab['main>.error-modal .traceback'])
 
 class admin(pom.page):
     def __init__(self):
