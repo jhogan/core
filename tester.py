@@ -453,7 +453,11 @@ class tester(entities.entity):
                 # is currently pointing to.
                 res = self.xhr(self.page, self.site, json=body)
 
+                # If the event was unsucessful, append a "modal" to the
+                # <main> element of the tab's HTML.
                 if res.status >= 400:
+                    # TODO Instead of a div, we can use the pom.modal
+                    # class when it is written.
                     self.html['main'].only += (mod := dom.div())
                     mod.classes += 'error-modal'
                     mod += res.html.only

@@ -214,10 +214,14 @@ class application:
 
             try:
                 if self.request.isxhr:
+                    # Create an <article> that explains the exception
+                    # and gives traceback information. The article can
+                    # be presented to the user (as a modal, for example)
+                    # by the JavaScript.
                     art = dom.article()
                     art.classes += 'exception'
                     art += dom.h1('''
-                        An unexpected error was encountered.
+                        An unexpected error occured.
                     ''')
 
                     art += dom.span(str(ex), class_='message')
@@ -230,8 +234,8 @@ class application:
                         # modifications to the response.
                         ex(res)
                     else:
+                        # Set to the generic 500 status code
                         res.status = InternalServerError.status
-
                 else:
                     # If the exception was an HttpError, i.e, an HTTP
                     # 400s or 500s error...

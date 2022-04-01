@@ -1624,13 +1624,6 @@ class traceback(dom.article):
 
         :param: ex Exception: The exception to render as HTML.
         """
-        # TODO When we can determine if we are in production or not, we
-        # can return immediately if we are in production since the
-        # end user will not need the stack trace and it will reveal
-        # details about the code we don't necessarily want revealed. A
-        # bool argument can be used to force the trace back to be
-        # created, however.
-
         super().__init__(*args, **kwargs)
 
         # To identify the traceback article, give the article a
