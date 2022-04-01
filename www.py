@@ -230,6 +230,15 @@ class application:
                     art += dom.span(str(ex), class_='message')
                     art += pom.traceback(ex)
                     res.body = art.html
+                    if isinstance(ex, HttpError):
+                        res.status = ex.status
+                    elif isinstance(ex, HttpException):
+                        # Allow the exception to make
+                        # modifications to the response.
+                        ex(res)
+                    else:
+                        res.status = InternalServerError.status
+
                 else:
                     # If the exception was an HttpError, i.e, an HTTP
                     # 400s or 500s error...

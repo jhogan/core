@@ -453,6 +453,12 @@ class tester(entities.entity):
                 # is currently pointing to.
                 res = self.xhr(self.page, self.site, json=body)
 
+                if res.status >= 400:
+                    self.html['main'].only += (mod := dom.div())
+                    mod.classes += 'error-modal'
+                    mod += res.html.only
+                    return
+
                 # Convert the fragment(s) from the response into a DOM
                 body = dom.html(res.body)
 
