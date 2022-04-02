@@ -9277,7 +9277,21 @@ class event(entities.event):
 
         super().__init__(*args, **kwargs)
 
-    def append(self, obj, *args, **kwargs):
+    def __iadd__(self, t):
+        """ Implement the += operator. See the docstring at
+        ``entities.append`` for details.
+        """
+        if isinstance(t, tuple):
+            obj = t[0]
+            els = t[1:]
+        else:
+            obj = t
+            els = tuple()
+
+        self.append(obj=obj, els=els)
+        return self
+
+    def append(self, obj, els=None, *args, **kwargs):
         """ Appends event handlers to the event.
 
         In the standard entities.event class, handlers are appended
@@ -9294,31 +9308,45 @@ class event(entities.event):
         them. We do that with a tuple:
 
             class mypage(pom.page):
-                def btnokay_click(src, eargs):
+                def btnok_click(src, eargs):
                     # Server-side event
                     mydiv = eargs.html.first
                     mydiv += dom.p('A modification')
 
                 def main():
                     mydiv = dom.div()
-                    btnokay = dom.button()
+                    btnok = dom.button()
 
                     # Use the += append operator to specify server-side
                     # handler and elements.
-                    btnokay.onclick += btnokay_click, mydiv, ...
+                    btnok.onclick += btnok_click, mydiv, ...
 
         Note that mydiv is a DOM object, however, the outer HTML for
         that DOM object will be sent back up to the server and then
         re-objectified into a DOM object.
+
+        :param: obj callable: A reference to the server-side event
+        handler (e.g. btnok_click).
+
+        :param: els tuple: The collection of dom.elements whose HTML
+        representation will be sent to the server. This tuple can
+        contain zero elements when there is no need for any HTML to be
+        sent:
+
+            def main():
+                ...
+                btnok.onclick += btnok_click
+
+        `els` can be None if a conventional (non-JavaScript)
+        subscription to an event is being made.
         """
 
-        if isinstance(obj, tuple):
+        if isinstance(els, tuple):
             # This is for subscribing DOM events (i.e., XHR events). The
             # alternative block deals with conventional event
             # subscription.
 
-            els = list(obj)
-            f = els.pop(0)
+            f = obj
 
             # Get the element's attirbutes collection
             attrs = self.element.attributes
@@ -9326,23 +9354,24 @@ class event(entities.event):
             hnd = f.__func__.__name__
             attrs[f'data-{self.name}-handler'] = hnd
 
-            ids = list()
-            for el in els:
-                # Append to the event's elements collection
-                self.elements += el
+            if els:
+                ids = list()
+                for el in els:
+                    # Append to the event's elements collection
+                    self.elements += el
 
-                # Ensure there is a unique identifier for the element
-                el.identify()
+                    # Ensure there is a unique identifier for the element
+                    el.identify()
 
-                # Collect that identifier
-                ids.append(f'#{el.id}')
+                    # Collect that identifier
+                    ids.append(f'#{el.id}')
 
-            # Set the element's data-<event-name>-fragments attribute to
-            # the comma seprated list of ids. NOTE that using a comma,
-            # along with the hash(es), makes the value for this
-            # attribute a valid CSS selector, which will be useful later
-            # on.
-            attrs[f'data-{self.name}-fragments'] = ', '.join(ids)
+                # Set the element's data-<event-name>-fragments attribute to
+                # the comma seprated list of ids. NOTE that using a comma,
+                # along with the hash(es), makes the value for this
+                # attribute a valid CSS selector, which will be useful later
+                # on.
+                attrs[f'data-{self.name}-fragments'] = ', '.join(ids)
 
         else:
             # Conventional event subscription.
@@ -9401,14 +9430,20 @@ class eventargs(entities.eventargs):
                 )
 
 
-            ids = el.attributes[f'data-{trigger}-fragments'].value
-            html = el.root[ids]
+            # Get ids from data-{trigger}-fragments, look up their data
+            # fragments in `el` DOM.
+            if ids := el.attributes[f'data-{trigger}-fragments'].value:
+                html = el.root[ids]
+            else:
+                # If there is no data-{trigger}-fragments attribute, set
+                # `html` to None.
+                html = None
 
             hnd = el.attributes[f'data-{trigger}-handler'].value
 
             src = el
 
-        if not isinstance(html, elements):
+        if html and not isinstance(html, elements):
             html = domhtml(html)
 
         if not isinstance(src, element):

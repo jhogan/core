@@ -1972,7 +1972,31 @@ class pom_page(tester.tester):
         self.eq('focus triggered', p0.text)
 
     def it_fires_event_with_no_html_fragments(self):
-        """ XXX:5aa3bcde '"""
+        handled = False
+        class clickme(pom.page):
+            def btn_onclick(self, src, eargs):
+                nonlocal handled
+                handled = True
+
+            def main(self):
+                self.main += (btn := dom.button('Click me'))
+                btn.onclick += self.btn_onclick
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        tab = self.browser().tab()
+
+        # GET the clickme page
+        tab.get('/en/clickme', ws)
+
+        html = tab.html.html
+        btn = tab.html['main>button'].only
+
+        btn.click()
+
+        self.eq(tab.html.html, html)
+        self.true(handled)
 
     def it_returns_traceback_on_exception_during_event_handling(self):
         div0 = div1 = div2 = None

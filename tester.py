@@ -441,10 +441,15 @@ class tester(entities.entity):
                 handler that is intended to capture the event.
                 """
                 
+
+                # eargs.html is None when there is no HTML being sent by
+                # the browser.
+                html = eargs.html.html if eargs.html else None
+
                 # Create a JSON object to send in the XHR request
                 body = {
                     'hnd':      eargs.handler,
-                    'html':     eargs.html.html,
+                    'html':     html,
                     'src':      src.html,
                     'trigger':  eargs.trigger,
                 }
@@ -461,6 +466,9 @@ class tester(entities.entity):
                     self.html['main'].only += (mod := dom.div())
                     mod.classes += 'error-modal'
                     mod += res.html.only
+                    return
+
+                if not eargs.html:
                     return
 
                 # Convert the fragment(s) from the response into a DOM
@@ -529,7 +537,7 @@ class tester(entities.entity):
                         if matches:
                             ev = 'on' + matches[1]
                             ev = getattr(target, ev)
-                            ev += self.element_event
+                            ev.append(obj=self.element_event)
 
             @property
             def referer(self):

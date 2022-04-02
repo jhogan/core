@@ -754,7 +754,11 @@ class _request:
             self.log()
 
         if self.isevent:
-            return eargs.html.html
+            if eargs.html:
+                return eargs.html.html
+
+            # If the browser didn't send HTML fragments, return None.
+            return None
         else:
             return self.page.html
 
