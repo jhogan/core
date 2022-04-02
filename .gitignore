@@ -112,3 +112,6 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
+
+# Most .html file will be generate from Markdown files.
+*.html
