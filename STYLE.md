@@ -969,31 +969,70 @@ None
 ### Tags
 \#negation #operators
 
+1. Use x a list comprension variable
+------------------------------------
+
+### Rule
+When writing list comprehentions, use x as the default variable.
+
+### Example
+    [x for x in ls if x.prop = 'value']
+
+### Justification
+I similar pattern to this is the use of `i` as the index variable in for
+loops:
+
+    for i in range(10):
+        ...
+
+This convention is seen used in almost every programming language. Like
+the `i`, the intent of the `x` is instantly recognizable (or will be
+once you program in the framework from some time). Also, since `x` is a
+single character, it is easy to type and read, like the `i`.
+
+### Exception
+None
+
+### Tags
+\#list-comprension #naming
+
+1. Naming constants
+-------------------
+
+### Definition
+A constant is just a variable in Python. However, conventions, usually
+based on case, can be established that certain varibles shouldn't be
+assigned more than once.
+
+### Rule
+Use StudlyCase to indicate denote a variable as a constant.
+
+### Example
+        
+    def area(r):
+        Pi = 3.14
+        return self.Pi * (r * r)
+
+    class ratios:
+        GoldenRatio       =  1.618
+        SuperGoldenRatio  =  1.465571231876768026656731
+### Exceptions
+Exceptions can be made to honor traditions.
+
+    class constants:
+        # Underscore can symbolize the hythen
+        Meissel_MertensConstant = 0.26149 
+
+        # A lowercase, Greek Pi character
+        π = 3.14159
+
+### Tags
+\#constants #naming
+
 <!-- 
 
 // CONVENTIONS
-Discuss performance metrics in git logs
 
-Discuss prefering non-negated conditional:
-
-    Good:
-        if x:
-            ...
-        else:
-            ...
-
-    Bad 
-        if not X
-            ...
-        else:
-            ...
-Discuss 'On branch <branch-name>' in git logs
-
-Use x as default list comprension variable
-    
-    [x for x in ls if x.prop = 'value']
-
-Discuss naming constants
 
 Discuss the importance of keeping the repo small and its file structure
 flat.
@@ -1041,4 +1080,6 @@ object:
 
 Discuss housekeeping in git logs
 
+Discuss performance metrics in git logs
+Discuss 'On branch <branch-name>' in git logs
 -->
