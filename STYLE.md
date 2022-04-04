@@ -1016,6 +1016,24 @@ Use StudlyCase to indicate denote a variable as a constant.
     class ratios:
         GoldenRatio       =  1.618
         SuperGoldenRatio  =  1.465571231876768026656731
+
+### Justifications
+It is useful to make a distinction between regular variables and
+constants using casing. The conventional way to make this distinction is
+to use uppercase and underscores:
+    
+    THIS_IS_A_CONSTANT = 123
+
+However, this can be difficult to type and jarring to read. Though this
+is an accepted way to denote constants in Python, another convention can
+be seen in Python where StudlyCase is used, namely in builtin constants
+such as `False`, `True`, `None` and `NotImplemented`. 
+
+    https://docs.python.org/3/library/constants.html
+
+StudlyCase is easier to type and read and nicely denotes constants while
+preserving a Python tradition.
+
 ### Exceptions
 Exceptions can be made to honor traditions.
 
@@ -1029,17 +1047,14 @@ Exceptions can be made to honor traditions.
 ### Tags
 \#constants #naming
 
-<!-- 
+1. Use `is` to test builtin constants and object reference
+----------------------------------------------------------
 
-// CONVENTIONS
+### Rule
+When testing the equality of builtin constants and object references,
+use the `is` operator
 
-
-Discuss the importance of keeping the repo small and its file structure
-flat.
-
-When testing Constants and object references, be sure to use the `is`
-operator, even though the quality operator (`==`) works::
-
+### Example
     if x is True:
         ...
 
@@ -1049,10 +1064,24 @@ operator, even though the quality operator (`==`) works::
     if obj1 is obj2:
         ...
 
-Abbreviation glossory
+### Justification
+Though the equality operator, `==`, would work in most of these cases,
+using the `is` operator is more semantically correct since you are
+testing object identity.
 
-    index: ix
-    counters in loops: i, j, k, etc.
+Also, it's possible that an object could override the __eq__ method,
+which would change the meaing of `==` when testing object equality, thus
+having an adverse impact on reliability.
+
+### Exceptions
+None
+
+### Tags
+\#constants
+
+<!-- 
+
+// CONVENTIONS
 
 Common method names:
 
@@ -1082,4 +1111,7 @@ Discuss housekeeping in git logs
 
 Discuss performance metrics in git logs
 Discuss 'On branch <branch-name>' in git logs
+Discuss the importance of keeping the repo small and its file structure
+flat.
+
 -->
