@@ -481,21 +481,21 @@ class tester(entities.entity):
 
                 # For each relevant fragment in the tab's body
                 for i, frag in frags.enumerate():
+
                     # Get fragment's parent
                     rent = frag.parent
 
-                    # XXX This assumes that there is only one element,
-                    # the fragment, in the rent. We should instead
-                    # getindex() on the frag and use that value to
-                    # determine where to insert the replacement.
+                    # Get the location of the fragment within its parent
+                    ix =rent.elements.getindex(frag)
 
                     # Remove the frament from the tab's DOM
                     frag.remove()
 
-                    # Append the response's body to the former parent of
-                    # the fragement. We have now replaced the fragment
-                    # with the one from the XHR response.
-                    rent += body[i]
+                    # Insert the response's body into the parent of the
+                    # fragement at the location it was removed from. We
+                    # have now replaced the fragment with the one from
+                    # the XHR response.
+                    rent.elements.insert(ix, body[i])
 
             @property
             def html(self):

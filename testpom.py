@@ -2027,6 +2027,50 @@ class pom_page(tester.tester):
         self.one(tab['main>.error-modal .message'])
         self.one(tab['main>.error-modal .traceback'])
 
+    def it_replaces_correct_fragment(self):
+        """ This was written due to a bug found in
+        tester._browser._tab.element_event which incorrectly patched the
+        DOM object. Instead of replacing the element in it's current
+        position, it removed the old element and appended the new
+        element to the end.  This is obviously wrong because it can
+        result in elements getting ordered incorrectly in the DOM. This
+        test would fail when the bug was in place.
+        """
+        class clickme(pom.page):
+            def btn_onclick(self, src, eargs):
+                div = eargs.html.only
+                div.text = 'I am changed'
+
+            def main(self):
+                self.main += (sec := dom.section())
+                sec += (div0 := dom.div('I should be changed'))
+                sec += (div1 := dom.div('I should remain unchanged'))
+
+                self.main += (btn := dom.button('Click me'))
+                btn.onclick += self.btn_onclick, div0
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        tab = self.browser().tab()
+
+        # GET the clickme page
+        tab.get('/en/clickme', ws)
+
+        self.status(200, res)
+
+        # Get the <button> from the response
+        btn = tab.html['main>button'].only
+
+        # Click the button. This will cause an XHR request back to the
+        # page's btn_onclick event handler.
+        btn.click()
+
+        sec = tab['main>section'].only
+
+        self.eq('I am changed', sec.elements.first.text)
+        self.eq('I should remain unchanged', sec.elements.second.text)
+
 class admin(pom.page):
     def __init__(self):
         super().__init__()
