@@ -1721,7 +1721,9 @@ class entities:
         # using the standard events
         if isinstance(e, entity):
             for ix, e1 in builtins.enumerate(self):
-                if e is e1: return ix
+                if e is e1: 
+                    return ix
+
         elif type(e) is str:
             # TODO Write test
             for i, e1 in builtins.enumerate(self._ls):

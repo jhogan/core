@@ -8096,9 +8096,6 @@ class orm:
         the issue in the future for the issue they are currently working
         on.
         """
-        # XXX Test if an entity class has an entities collection
-        # associated with it.
-
         r = list()
 
         # See if the orm has (or can find) an entities object
