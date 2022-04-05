@@ -728,18 +728,23 @@ Classes
     * should represent a distinct entiity that performs a set of
       identifiable, reusable and testable behavor
 
+    * should be document using a docstring that indicates it's purpose
+      and what it represents
+    
     * should document the standard variable name(s) used for instances
-      of that class.
+      of that class
 
-    * should be a collection of mostly instance methods, with
-      occasional static and class methods as well as private methods.
+    * Should be composed of mostly instance methods, i.e., avoid the
+      [Abuse Of Utility Classes](https://wiki.c2.com/?AbuseOfUtilityClasses)
+      anti-pattern
 
     * should have a corresponding collection class
 
-    * should be document using a docstring that indicates what entity
-      they model, how they model it and what its relationships to other
-      classes are.
+    * should represent a real-world entity (a sales order, a user
+      account.) or a real-world concept (a database connection, a DOM
+      element, etc.)
 
+    * should start with an underscore if the class is considered private
 
 Class names
     * should be all lowercase
@@ -751,15 +756,15 @@ Class names
     * should be nouns
 
 ### Justification
-In object-oriented programming, methods represent entities. These
+In object-oriented programming, classes represent entities. These
 entiities can be real world objects such as cars, people, etc., or they
 can be abstract entities, such as an encryption algorithm or database
 tables. Thus the name for a class should always be a noun. 
 
 Like all identifiers, class names are easier to rememember, write and
-read if they are single words in all lowercase. Good abbreviations or
-acronyms should be identified for use as the instance variables of a
-class. This prevents naming overlap:
+read if they are single words in all lowercase. A good abbreviations or
+acronyms should be identified for use as the instance variables name of
+a class. This prevents naming overlap:
     
     class person:
         """ Represents a person.
@@ -813,85 +818,243 @@ collection classes by inheriting from `entities` base classes.
     # Add tbl to the tbls collection
     tbls += tbl
 
+### Exceptions
+In keeping with the Python convention, exception class names should be
+written in StudlyCase and should end in the suffix "Error":
+
+    class ComputationalOperationError(Exception):
+        pass
+
+In the ORM, and underscore is used in orm.association classes to
+seperate the names of the two entities being associated:
+
+    class order(orm.entity):
+        ...
+
+    class customer(orm.entity):
+        ...
+
+    class customer_order(orm.association):
+        ...
+
 ### Implementation tips
 None
 
 ### Tags
-\#naming #methods
+\#naming #class
 
+6. Comment tags
+--------------------------------
 
-<!-- 
+### Rule
 
-// CONVENTIONS
-Create new objects within collections using methods with the name of the
-object:
+    * NOTE comments indicate something that anyone should read before
+      working on the code beneath the comment:
+        
+        # NOTE: If the following call raises an AttributeError, it is
+        # almost certainly because there was an issue connecting to the
+        # database.
 
-    rs = rows()
-    assert rs.count == 0
+    * TODO comments indicate that something should be done at
+      a future, but indefinite date. A TODO comment should coorsponding
+      to a ticket in the ticketing system. The TODO should be proceeded
+      by a : and 4 random bytes written in hex:
 
-    r1 = rows.row()
-    assert rs.count == 1
-    assert rs.first is r1
+        # TODO:73d12047 Something should really be done about the logic
+        # here.
 
-// TODO
+    * HACK is like a TODO but indicates that the code is a workaround
+      or some sort of trick to get something working for the current
+      moment. A HACK is a suboptimal solution that should be fixed in
+      the future:
 
-
-In general, import modules instead of module objects:
+        # HACK:241d1d7c Artificially increment `i` here to get around
+        # the one-off issue.
     
-    import mymod
+    * FIXME comments indicate a bug has been discovered in the code.
+      Like TODO comments, a FIXME comment should coorsponding
+      to a ticket in the ticketing system. The FIXME should be succeeded
+      by a : and 4 random bytes written in hex:
 
-    # dont do this
-    from mymod import *
-    from mymod import myfunc
-
-Class names
-
-    Class names should strive to be one word. Underscores are
-    prohibited except in conventional circumstances. They should
-    be lowercase except in when they are exception classes in which case
-    they should be StudlyCase.
-
-
-
-Initialize primatives with objects instead of operators
-
-    s = str()
-    ls = list()
-    d = dict()
-
-Discuss uses of TODO, NOTE, XXX and bomb-comments.
-
-Discuss housekeeping in git logs
-
-Discuss performance metrics in git logs
-
-Discuss prefering non-negated conditional:
-
-    Good:
-        if x:
-            ...
-        else:
-            ...
-
-    Bad 
-        if not X
-            ...
-        else:
-            ...
-Discuss 'On branch <branch-name>' in git logs
-
-Use x as default list comprension variable
+        # FIXME:c5248240 The below line will break if a list has zero
+        # elements.
     
+    * XXX comments imply that something must be fixed in a feature
+      branch before the branch is merged back into main. It's like a
+      FIXME but more urgent. There is usually no need to give it an
+      identifier.
+
+        # XXX This will cause the table to be truncated when called with
+        # an integer. Type checking needs to be used here to avoid data
+        # loss.
+
+    * Bomb-comments are used to flag sensitive areas of source code.
+      They are intended to bring attention to changes made to these
+      parts of the source code when viewed in `git-log`, `git-diff` and
+      other analysis tools used during code reviews and code analysis.
+      Changes made to these areas of source code should receive more
+      attention and scrutenty. Use these liberaly in areas dealing with
+      authentication, authorization and other sensitive areas.
+
+        class security:
+            """
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            A singleton that stores security related values such as the
+            orm's owner, proprietor, and whether or not the
+            accessibility override is set.
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            """
+            ...
+
+### Justification
+It's normal for bugs and and code optizitions of varying severity to be
+noted and accumulated in source code. Having standard, well defined
+comment tags helps categorize the severity of the issues.
+
+The 4 bytes of random hex is intended to be a unique identifier for the
+comment. The identifier can be used in other comments to reference the
+original issue.
+
+At the moment, there is no ticket system, but there are plans to write a
+program that creates tickets based on the comments found in the source
+code. The semantic information in the tag, along with the identifier,
+will be useful to that program.
+
+### Exceptions
+None.
+
+### Implementation tips
+Your text editor should be configured to highlight the comment tag. Vim
+does this by default for TODO, FIXME and NOTE in Python comments.
+
+The random hex digets can be generate using `uuidgen`:
+
+    uuidgen | cut -c1-8
+
+### Tags
+\#comments
+
+1. Don't use needless negation
+-------------------------------
+
+### Rule
+Don't use the negation operator unless it necessary.
+
+
+### Example
+Bad 
+    if not X
+        ...
+    else:
+        ...
+
+Good:
+    if x:
+        ...
+    else:
+        ...
+
+### Justification
+The negation operator can sometimes be when it doesn't need to be. To
+the reader, this would simply represent one more thing to remember.
+Strive to code that's as easiy to read as possible.  To solve complex
+problems, our code must be as simple as possible.
+
+### Exceptions
+None
+
+### Implementation tips
+None
+
+### Tags
+\#negation #operators
+
+1. Use x a list comprension variable
+------------------------------------
+
+### Rule
+When writing list comprehentions, use x as the default variable.
+
+### Example
     [x for x in ls if x.prop = 'value']
 
-Discuss naming constants
+### Justification
+I similar pattern to this is the use of `i` as the index variable in for
+loops:
 
-Discuss the importance of keeping the repo small and its file structure
-flat.
+    for i in range(10):
+        ...
 
-When testing Constants and object references, be sure to use the `is`
-operator, even though the quality operator (`==`) works::
+This convention is seen used in almost every programming language. Like
+the `i`, the intent of the `x` is instantly recognizable (or will be
+once you program in the framework from some time). Also, since `x` is a
+single character, it is easy to type and read, like the `i`.
 
+### Exception
+None
+
+### Tags
+\#list-comprension #naming
+
+1. Naming constants
+-------------------
+
+### Definition
+A constant is just a variable in Python. However, conventions, usually
+based on case, can be established that certain varibles shouldn't be
+assigned more than once.
+
+### Rule
+Use StudlyCase to indicate denote a variable as a constant.
+
+### Example
+        
+    def area(r):
+        Pi = 3.14
+        return self.Pi * (r * r)
+
+    class ratios:
+        GoldenRatio       =  1.618
+        SuperGoldenRatio  =  1.465571231876768026656731
+
+### Justifications
+It is useful to make a distinction between regular variables and
+constants using casing. The conventional way to make this distinction is
+to use uppercase and underscores:
+    
+    THIS_IS_A_CONSTANT = 123
+
+However, this can be difficult to type and jarring to read. Though this
+is an accepted way to denote constants in Python, another convention can
+be seen in Python where StudlyCase is used, namely in builtin constants
+such as `False`, `True`, `None` and `NotImplemented`. 
+
+    https://docs.python.org/3/library/constants.html
+
+StudlyCase is easier to type and read and nicely denotes constants while
+preserving a Python tradition.
+
+### Exceptions
+Exceptions can be made to honor traditions.
+
+    class constants:
+        # Underscore can symbolize the hythen
+        Meissel_MertensConstant = 0.26149 
+
+        # A lowercase, Greek Pi character
+        π = 3.14159
+
+### Tags
+\#constants #naming
+
+1. Use `is` to test builtin constants and object reference
+----------------------------------------------------------
+
+### Rule
+When testing the equality of builtin constants and object references,
+use the `is` operator
+
+### Example
     if x is True:
         ...
 
@@ -901,15 +1064,24 @@ operator, even though the quality operator (`==`) works::
     if obj1 is obj2:
         ...
 
-Abbreviation glossory
-    callables: f, callable, meth
-    value: v
-    handler: hnd
-    index: ix
-    counters in loops: i, j, k, etc.
-    document object model: dom
-    identifier: id
+### Justification
+Though the equality operator, `==`, would work in most of these cases,
+using the `is` operator is more semantically correct since you are
+testing object identity.
 
+Also, it's possible that an object could override the __eq__ method,
+which would change the meaing of `==` when testing object equality, thus
+having an adverse impact on reliability.
+
+### Exceptions
+None
+
+### Tags
+\#constants
+
+<!-- 
+
+// CONVENTIONS
 
 Common method names:
 
@@ -954,4 +1126,25 @@ as opposed to docstrings:
 Writing inner functions
 
 Don't chain lines using the semicolon
+
+Create new objects within collections using methods with the name of the
+object:
+
+    rs = rows()
+    assert rs.count == 0
+
+    r1 = rows.row()
+    assert rs.count == 1
+    assert rs.first is r1
+
+// TODO
+
+
+Discuss housekeeping in git logs
+
+Discuss performance metrics in git logs
+Discuss 'On branch <branch-name>' in git logs
+Discuss the importance of keeping the repo small and its file structure
+flat.
+
 -->
