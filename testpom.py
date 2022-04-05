@@ -2071,6 +2071,31 @@ class pom_page(tester.tester):
         self.eq('I am changed', sec.elements.first.text)
         self.eq('I should remain unchanged', sec.elements.second.text)
 
+    def it_changes_page_on_menu_click(self):
+        class spa(pom.page):
+            def main(self):
+                self.main += dom.p('Welcome to the SPA')
+
+        ws = foonet()
+        ws.pages += spa()
+
+        tab = self.browser().tab()
+
+        tab.inspa = True
+
+        # GET the clickme page
+        tab.get('/en/spa', ws)
+
+        # XXX This should use `only` instead of `first`. For some
+        # reason, we are getting the same menu items in the web page
+        # three times.
+        a_blog = tab['a[href|="/blogs"]'].first
+
+        a_blog.click()
+
+
+
+
 class admin(pom.page):
     def __init__(self):
         super().__init__()

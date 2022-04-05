@@ -440,11 +440,28 @@ class tester(entities.entity):
                 properly route execution to the "server-side" event
                 handler that is intended to capture the event.
                 """
-                
 
-                # eargs.html is None when there is no HTML being sent by
-                # the browser.
-                html = eargs.html.html if eargs.html else None
+                def is_nav_link(e):
+                    """ XXX
+                    """
+                    tree = dom.a, dom.li, dom.ul, dom.nav
+
+                    for c in tree:
+                        if not isinstance(e, c):
+                            return False
+
+                        e = e.parent
+
+                    return True
+
+                isnav = is_nav_link(src)
+
+                if isnav:
+                    html = src.root['main'].only.html
+                else:
+                    # eargs.html is None when there is no HTML being
+                    # sent by the browser.
+                    html = eargs.html.html if eargs.html else None
 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -452,6 +469,7 @@ class tester(entities.entity):
                     'html':     html,
                     'src':      src.html,
                     'trigger':  eargs.trigger,
+                    'isnav':    isnav
                 }
 
                 # Make the XHR request to the page and site that the tab
@@ -538,6 +556,14 @@ class tester(entities.entity):
                             ev = 'on' + matches[1]
                             ev = getattr(target, ev)
                             ev.append(obj=self.element_event)
+
+                as_ = v['nav>ul>li>a']
+
+                # XXX Comment
+                for a in as_:
+                    ev = a.onclick
+                    ev.append(obj=self.element_event)
+                    
 
             @property
             def referer(self):
