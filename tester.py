@@ -531,6 +531,9 @@ class tester(entities.entity):
                 routed to the server-side event handler that wants to
                 receive the event.
                 """
+
+                # XXX Write NOTE on the option of creating event
+                # subscriptions to every element
                 self._html = v
 
                 sels = ', '.join(

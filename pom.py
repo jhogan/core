@@ -546,6 +546,7 @@ class menu(dom.nav):
 
     # TODO This should inherit from dom.menu, not dom.nav
 
+    ''' Inner classes '''
     class items(dom.lis):
         """ A collection of ``item`` objects (<li>) which contain the
         menu items.
@@ -557,7 +558,7 @@ class menu(dom.nav):
 
             self._els = dom.elements()
 
-            # Start the menu off with an unorded list
+            # Start the menu off with an unordered list
             self._ul = dom.ul()
             self._els += self._ul
 
@@ -770,6 +771,7 @@ class menu(dom.nav):
             els += dom.hr()
             return els
 
+    ''' Class members '''
     def __init__(self, name, *args, **kwargs):
         """ Create a new menu.
 
