@@ -9456,3 +9456,18 @@ class eventargs(entities.eventargs):
         # The name of the method that triggered the event
         self.trigger  =  trigger
 
+    def __repr__(self):
+        r = type(self).__name__
+        if (html := self.html) is not None:
+            html = html[:10] + (html[10:] and '...')
+            html += f"'{html}'"
+
+        r += '('
+        r += f'handler={self.handler}, '
+        r += f'html={html}, '
+        r += f'src={self.src!r}, '
+        r += f"trigger='{self.trigger}'"
+        r += ')'
+        return r
+
+
