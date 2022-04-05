@@ -305,6 +305,9 @@ inspired the abbreviations for "list".
 ### Rule
 Methods 
 
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `ajax()` for an AJAX post).
+
     * should be all lowercase
 
     * should include prefixes such as 'get' and 'set' if they are
@@ -465,6 +468,9 @@ annotated type.
 ### Rule
 Property methods 
 
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `.sql` for an SQL representation of an
+      object).
     * should be all lowercase, 
     * should not include prefixes such as 'get' and 'set'
     * should be composed of a single word if humanly possible
@@ -560,9 +566,9 @@ child nodes.
         ...
 
 Here, we have the option of getting the child nodes through a simple
-property and also through a getter method (if we want to get them
-recursively). A third option, `genchildren` is presented if we want a
-generator.
+property and also through a getter method (if we want to optionally get
+them recursively). A third option, `genchildren` is presented if we want
+a generator.
 
 ### Justification
 Sometimes we want a generator and sometimes we want the actual
@@ -725,6 +731,11 @@ None
 
 ### Rule
 Classes
+
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `sql` for a class that represents an SQL
+      statement)
+
     * should represent a distinct entiity that performs a set of
       identifiable, reusable and testable behavor
 
@@ -1083,33 +1094,7 @@ None
 
 // CONVENTIONS
 
-Common method names:
-
-    clear: Clears the state of an object or the collected data in a
-    collection object
-
-    demand: Raise an exception if the state of an object is invalid.
-
-How to break lines for method invocations or class instantiation:
-
-    call_to_a_method(
-        'This line was too long'
-    )
-
-    raise Exception(
-        'There was a long and verbose issues that I need to explain...'
-    )
-
 Document the conventions for writting event properties and handlers
-
-Public method shouldn't be abbreviations unless the abbreviations is
-extremely common:
-    
-    # Good
-    req.ajax()
-
-    # Bad
-    req.ptch()
 
 This isn't such a big deal with private methods as long as they are
 clear enough for developers of the class (as opposed to users).
@@ -1146,5 +1131,15 @@ Discuss performance metrics in git logs
 Discuss 'On branch <branch-name>' in git logs
 Discuss the importance of keeping the repo small and its file structure
 flat.
+
+Common method names:
+
+    clear: Clears the state of an object or the collected data in a
+    collection object
+
+    demand: Raise an exception if the state of an object is invalid.
+
+    clone: Create a copy of an object.
+
 
 -->
