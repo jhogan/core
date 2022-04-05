@@ -442,7 +442,16 @@ class tester(entities.entity):
                 """
 
                 def is_nav_link(e):
-                    """ XXX
+                    """ Returns True if the element `e` is a "nav link",
+                    i.e., it is an anchor tag nested within a <nav>:
+
+                        <nav>
+                            <ul>
+                                <li>
+                                    <a>I'm an nav link</a>
+                                </li>
+                            </ul>
+                        </nav>
                     """
                     tree = dom.a, dom.li, dom.ul, dom.nav
 
@@ -530,10 +539,12 @@ class tester(entities.entity):
                 actions that happen to those elements can be properly
                 routed to the server-side event handler that wants to
                 receive the event.
-                """
 
-                # XXX Write NOTE on the option of creating event
-                # subscriptions to every element
+                In addition to those elements that are declared to have
+                server-side event handlers, we also register the click
+                event of each menu item (<nav> link) so we can have
+                testing support for SPA navigation.
+                """
                 self._html = v
 
                 sels = ', '.join(
@@ -560,13 +571,13 @@ class tester(entities.entity):
                             ev = getattr(target, ev)
                             ev.append(obj=self.element_event)
 
-                as_ = v['nav>ul>li>a']
 
-                # XXX Comment
+                # Subscript to element_event for each anchor tag's click
+                # event.
+                as_ = v['nav>ul>li>a']
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.element_event)
-                    
 
             @property
             def referer(self):
