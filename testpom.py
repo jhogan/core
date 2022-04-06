@@ -2071,7 +2071,7 @@ class pom_page(tester.tester):
         self.eq('I am changed', sec.elements.first.text)
         self.eq('I should remain unchanged', sec.elements.second.text)
 
-    def it_changes_page_on_menu_click(self):
+    def it_patches_page_on_menu_click(self):
         class spa(pom.page):
             def main(self):
                 self.main += dom.p('Welcome to the SPA')

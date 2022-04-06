@@ -463,14 +463,15 @@ class tester(entities.entity):
 
                     return True
 
-                isnav = is_nav_link(src)
-
-                if isnav:
-                    html = src.root['main'].only.html
+                if is_nav_link(src):
+                    html = None
+                    pg = '/' + src.root.lang 
+                    pg += src.attributes['href'].value
                 else:
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
                     html = eargs.html.html if eargs.html else None
+                    pg = self.page
 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -478,12 +479,11 @@ class tester(entities.entity):
                     'html':     html,
                     'src':      src.html,
                     'trigger':  eargs.trigger,
-                    'isnav':    isnav
                 }
 
                 # Make the XHR request to the page and site that the tab
                 # is currently pointing to.
-                res = self.xhr(self.page, self.site, json=body)
+                res = self.xhr(pg, self.site, json=body)
 
                 # If the event was unsucessful, append a "modal" to the
                 # <main> element of the tab's HTML.
