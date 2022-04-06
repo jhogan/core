@@ -618,15 +618,44 @@ class tester(entities.entity):
                 return self.html[sel]
 
             def get(self, pg, ws):
+                """ Issues an HTTP GET request for a page (`pg`) on
+                the  webserver (ws). The response is used to update the
+                tab's internal DOM (self.html). The www._response object
+                is returned if needed.
+
+                :param: pg pom.page|str: The page to GET.
+
+                :param: ws pom.site: The site to get the page from.
+                """
                 req = self._request(pg=pg, ws=ws, meth='GET')
                 self.html = req.html
                 return req
 
             def xhr(self, pg, ws, json=None):
+                """ Issues an XHR (AJAX) request to a server. The
+                response object from the request is returned.
+
+                XHR requests are HTTP POSTs. They usually contain JSON
+                data. XHR requests route server-side event handling from
+                the browser, perform page changes for SPA pages, and can
+                facilitate general RPC request.
+
+                :param: pg pom.page|str: In server-side event handling,
+                the page object that contains the event handler. In SPA
+                page changes, this is the pg we want to change the SPA
+                to.
+
+                :param: ws pom.site: The site to post to.
+
+                :parson: json dict: The body, encoded as a dict, to be
+                POSTed as the request's body.
+                """
                 from json import dumps
 
                 body = dumps(json)
 
+                # Setting the Content-Type header to application/json
+                # basically flags the request as XHR.
                 hdrs = www.headers(
                     {'content_type': 'application/json'}
                 )
@@ -636,6 +665,23 @@ class tester(entities.entity):
                 )
                 
             def post(self, pg, ws, body=None, frm=None, files=None):
+                """ Issues an HTTP POST request to a page (`pg`) on
+                the  webserver (ws). The response object is retured.
+
+                :param: pg pom.page|str: The page to POST to.
+
+                :param: ws pom.site: The site to get the page from.
+
+                :param: body str: The data being posted.
+
+                :param: body dom.frm: The dom.form which contains the
+                data being posted.
+
+                :param: body file.file|file.files: The files being
+                posted.
+                """
+
+                # Make sure we have a collection of files
                 if files:
                     files = files.orm.collectivize()
 
@@ -645,12 +691,37 @@ class tester(entities.entity):
                 )
 
             def head(self, pg, ws):
+                """ Issues an HTTP HEAD request for a page (`pg`) on
+                the  webserver (ws). 
+
+                :param: pg pom.page|str: The page object.
+
+                :param: ws pom.site: The website.
+                """
                 return self._request(pg=pg, ws=ws, meth='HEAD')
 
             def _request(
                 self, pg, ws, 
                 body=None, frm=None, files=None, meth='GET', hdrs=None
             ):
+                """ Issues an HTTP request to or for a page (`pg`) on
+                the  webserver (ws). The response object is retured.
+
+                :param: pg pom.page|str: The page to request.
+
+                :param: ws pom.site: The site to send the request to.
+
+                :param: body str: The data being sent in a POST.
+
+                :param: body dom.frm: The dom.form which contains the
+                data being POSTed.
+
+                :param: body file.file|file.files: The files being
+                POSTed.
+
+                :param: hdrs www.headers: A collection of headers to be
+                appended to the request.
+                """
                 arg_hdrs = hdrs
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):
@@ -808,7 +879,6 @@ class tester(entities.entity):
                     self.browser.tester.testers.breakonexception
                 
                 # Make WSGI call
-
                 iter = app(env, start_response)
 
                 res = www._response(req) 
