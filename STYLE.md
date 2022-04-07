@@ -954,4 +954,10 @@ as opposed to docstrings:
 Writing inner functions
 
 Don't chain lines using the semicolon
+
+Though method names should strive to be one word, parameters should
+strive to be standard abbreviations. Regular varibales strive to be
+standarad abbreviations so this creates a standard look and feel for all
+variables.
+
 -->

@@ -9380,7 +9380,7 @@ class event(entities.event):
         super().append(f)
 
 class eventargs(entities.eventargs):
-    """ The eventargs class for DOM events. This object is used to move
+    """ The eventargs class for DOM events. This object is ud to move
     data from the browser to the server-sied event handler.
     """
 

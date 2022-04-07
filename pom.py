@@ -912,6 +912,8 @@ class page(dom.html):
         self._args         =  dict()
         self._resources    =  None
         
+        # TODO Shouldn't a page have a main function. If not, explain
+        # why here.
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -1257,7 +1259,6 @@ class page(dom.html):
                 # www.request would be None.
                 req = www.request
                 if req and req.isevent:
-                    B()
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)
                     else:

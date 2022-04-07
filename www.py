@@ -1100,6 +1100,8 @@ class _request:
         # in its request body.
         try:
             self.body['hnd']
+
+        # XXX This should be `except KeyError`
         except:
             return False
         else:

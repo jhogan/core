@@ -481,8 +481,9 @@ class tester(entities.entity):
                     'trigger':  eargs.trigger,
                 }
 
-                # Make the XHR request to the page and site that the tab
-                # is currently pointing to.
+                # Make the XHR request to the page (pg) (or for the page
+                # if we are refreshing a subpage for an SPA) and site
+                # that the tab is currently pointing to.
                 res = self.xhr(pg, self.site, json=body)
 
                 # If the event was unsucessful, append a "modal" to the
