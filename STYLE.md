@@ -459,6 +459,9 @@ This is a special case because the framework-level code that invokes
 `main` introspects this annotation to enforce types and converts to the
 annotated type.
 
+An underscore is used in event handlers to seperate the subject of the
+event from the event.
+
 ### Tags
 \#naming #methods
 
@@ -1090,6 +1093,87 @@ None
 ### Tags
 \#constants
 
+1. Writing event properties handlers
+------------------------------------
+
+### Rule
+Event properties should be named in the form of
+'on{temporal-preposition}{event}':
+
+Event handler names should start with the name of the object that the event is
+based on, followed by an underscore, followed by the word 'on', followed
+by the temporal preposition ('before', after), followed by the name of
+the event. The should contain the parameters 'src', (the source of the
+event) and 'eargs' the event arguments (see entities.eventargs).
+
+### Example
+    # Create a carrots collection and a carrot compliment
+    class carrots:
+
+        # The event proprety returns a lazy-loaded, memoized event.
+        # Lazy-loading events can be a real performance boast so is
+        # considered the better choice.
+        @property
+        def onbeforepick(self):
+            if not hasattr(self, '_onbeforepick'):
+                self._onbeforepick = event()
+
+            return self._onbeforepick
+
+        def pick(self):
+            # Trigger the onbeforepick event
+            self.onbeforepick()
+
+            # Do the picking
+
+            # onafterepick will not be implemented in this example, but
+            # normally would be.
+            #self.onafterepick()
+
+    class carrot:
+        pass
+
+    # Create a picker class that maintains a collection of carrots,
+    # picks the carrots and handles the onbeforepick event.
+    class picker
+        def __init__(self):
+            self.carrots += carrots()
+
+            for i in range(10):
+                self.carrots += carrot()
+
+            # Subscribe to the event handler
+            self.carrots.onbeforepick += self.carrots_onbeforepick
+
+        # Here is the event handler. The name follows the form:
+        #    
+        #     {object}_on{preposition}{event}
+        # 
+        # The parameters should always end with src, then eargs. 
+        def carrots_onbeforepick(self, src, eargs):
+            print("Your about to be picked")
+            
+        def pick(self):
+            # This will cause the the onbeforepick event to be fired and
+            # the carrots_onbeforepick methed will handle the event.
+            self.carrots.pick()
+
+### Justification
+Events in the Core Framework were largely based on .NET's events, so
+many of the conventions of that framework were copied.
+
+Using an `eventarg` class to contain the arguments for the event handler
+is a useful way to ensure the correct data gets to the event handlers.
+Prefacing the event handler with the name of the object followed by an
+underscore helps signal that the method is an event handler and denotes
+which object is the subject of the event.
+
+### Exceptions
+None
+
+### Tags
+\#naming #event #eventarg
+
 <!-- 
 
 // CONVENTIONS
@@ -1124,6 +1208,7 @@ object:
 
 // TODO
 
+How to write exceptions.
 
 Discuss housekeeping in git logs
 
