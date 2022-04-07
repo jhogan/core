@@ -2085,6 +2085,8 @@ class pom_page(tester.tester):
 
         # GET the clickme page
         tab.get('/en/spa', ws)
+        attrs = tab.html['main'].only.attributes
+        self.eq('/spa', attrs['data-path'].value)
 
         # XXX This should use `only` instead of `first`. For some
         # reason, we are getting the same menu items in the web page
@@ -2092,6 +2094,8 @@ class pom_page(tester.tester):
         a_blog = tab['a[href|="/blogs"]'].first
 
         a_blog.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/blogs', attrs['data-path'].value)
 
 
 
@@ -2144,6 +2148,9 @@ class blogs(pom.page):
         self.pages += blog_categories('categories')
         self.pages += blog_posts('posts')
         self.pages += blog_comments('comments')
+
+    def main(self):
+        pass
 
 class blog_categories(pom.page):
     pass

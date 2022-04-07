@@ -1268,7 +1268,11 @@ class page(dom.html):
                     globs['req'] = www.request
                     globs['res'] = www.response
 
-                    meth(src=eargs.src, eargs=eargs)
+                    if eargs.handler:
+                        meth(src=eargs.src, eargs=eargs)
+                    else:
+                        meth()
+                        
                 else:
                     # Inject global variables into main()
                     globs = self._mainfunc.__func__.__globals__

@@ -754,8 +754,11 @@ class _request:
             self.log()
 
         if self.isevent:
-            if eargs.html:
-                return eargs.html.html
+            if self.isspa:
+                return self.page.main.html
+            else:
+                if eargs.html:
+                    return eargs.html.html
 
             # If the browser didn't send HTML fragments, return None.
             return None
@@ -1107,6 +1110,17 @@ class _request:
         else:
             return True
             
+    @property
+    def isspa(self):
+        """ Returns True if this ``_request`` is an XHR request 
+        a SPA subpage. 
+        """
+
+        if not self.isevent:
+            return False
+
+        # XXX
+        return self.body['hnd'] is None
     # TODO Rename to '_demand' since this is a private method
     def demand(self):
         """ Causes an exception to be raised if the request is not

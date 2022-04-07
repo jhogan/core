@@ -463,7 +463,7 @@ class tester(entities.entity):
 
                     return True
 
-                if is_nav_link(src):
+                if isnav := is_nav_link(src):
                     html = None
                     pg = '/' + src.root.lang 
                     pg += src.attributes['href'].value
@@ -496,34 +496,57 @@ class tester(entities.entity):
                     mod += res.html.only
                     return
 
-                if not eargs.html:
-                    return
+                def replace(this, that):
+                    this = self.html[this].only
 
-                # Convert the fragment(s) from the response into a DOM
-                body = dom.html(res.body)
+                    rent = this.parent
+                    ix = rent.elements.getindex(this)
+                    this.remove()
 
-                # Get the fragement of html in the tab that is the
-                # subject of the event from the tab's DOM (.html)
-                ids = ', '.join('#' + x.id for x in eargs.html)
-                frags = self.html[ids]
+                    # XXX The insert method should be able to take a
+                    # string of HTML and convert it to a DOM internally.
+                    el = dom.html(res.body)
 
-                # For each relevant fragment in the tab's body
-                for i, frag in frags.enumerate():
+                    rent.elements.insert(ix, that)
+                if isnav:
+                    # XXX The insert method should be able to take a
+                    # string of HTML and convert it to a DOM internally.
+                    el = dom.html(res.body)
 
-                    # Get fragment's parent
-                    rent = frag.parent
+                    replace(this='main', that=el)
+                else:
+                    if not eargs.html:
+                        return
 
-                    # Get the location of the fragment within its parent
-                    ix =rent.elements.getindex(frag)
+                    # Convert the fragment(s) from the response into a
+                    # DOM
+                    body = dom.html(res.body)
 
-                    # Remove the frament from the tab's DOM
-                    frag.remove()
+                    # XXX Use the replace() function here
 
-                    # Insert the response's body into the parent of the
-                    # fragement at the location it was removed from. We
-                    # have now replaced the fragment with the one from
-                    # the XHR response.
-                    rent.elements.insert(ix, body[i])
+                    # Get the fragement of html in the tab that is the
+                    # subject of the event from the tab's DOM (.html)
+                    ids = ', '.join('#' + x.id for x in eargs.html)
+                    frags = self.html[ids]
+
+                    # For each relevant fragment in the tab's body
+                    for i, frag in frags.enumerate():
+
+                        # Get fragment's parent
+                        rent = frag.parent
+
+                        # Get the location of the fragment within its
+                        # parent
+                        ix =rent.elements.getindex(frag)
+
+                        # Remove the frament from the tab's DOM
+                        frag.remove()
+
+                        # Insert the response's body into the parent of
+                        # the fragement at the location it was removed
+                        # from. We have now replaced the fragment with
+                        # the one from the XHR response.
+                        rent.elements.insert(ix, body[i])
 
             @property
             def html(self):
