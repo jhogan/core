@@ -1103,9 +1103,9 @@ class _request:
         # in its request body.
         try:
             self.body['hnd']
-
-        # XXX This should be `except KeyError`
         except:
+            # If there is any issue, like a KeyError, then it's not an
+            # event.
             return False
         else:
             return True
@@ -1119,8 +1119,8 @@ class _request:
         if not self.isevent:
             return False
 
-        # XXX
         return self.body['hnd'] is None
+
     # TODO Rename to '_demand' since this is a private method
     def demand(self):
         """ Causes an exception to be raised if the request is not
