@@ -1174,24 +1174,69 @@ None
 ### Tags
 \#naming #event #eventarg
 
+1. Writting comments
+--------------------
+
+### Rule
+Methods and classes must have docstrings written using three double
+quotes. The concluding double quotes must exist on their own line.
+Example code should be indented.
+
+Comments using the octothorp (#) token should be used to explain the
+purpose of logic throughout methods and functions.
+
+Similar to docstrings, header comments can be used to indicates major
+segments of logic. They should be enveloped in three single quotes.
+Unlike docstrings, the concluding single quotes should exist on the same
+line as the last line of comment text.
+
+### Example
+
+    class widget:
+        """ This represents reprenents a widgets.
+
+        Widgets are metasyntatic products.
+
+        :abbr: widg
+        """
+
+        def __init__(self, id=None):
+            """ Create a widget.
+
+            Examples:
+
+                widg = widget()
+
+            :param: id int: The identifier of the widget
+            """
+
+            ''' Setup the widget. '''
+
+            # Set the private fields
+            self._features = dict()
+            self._location = 0, 0
+
+            ''' Eager-load the widget '''
+
+            if id
+                # Search db
+                self._data = db.search(id=id)
+
+### Justification
+Comments are useful for the long-term maintenance of the codebase.
+Consistency in comment usage makes for code that is easier for the eye
+to parse through.
+
+### Exceptions
+None
+
+### Tags
+\#comments
+
 <!-- 
 
 // CONVENTIONS
 
-Document the conventions for writting event properties and handlers
-
-This isn't such a big deal with private methods as long as they are
-clear enough for developers of the class (as opposed to users).
-
-Header comments should start with three single comments:
-
-    ''' This is a header comment. '''
-
-as opposed to docstrings:
-
-    """ This is a 
-    docstring.
-    """"
 Writing inner functions
 
 Don't chain lines using the semicolon
