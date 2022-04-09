@@ -465,6 +465,33 @@ class tester(entities.entity):
 
                     return True
 
+                def replace(this, that):
+                    """ Take `this` and replace it with `that`.
+
+                    :param: this str|dom.selector A CSS selector that
+                    identifies a unique element in self that should be
+                    replaced.
+                    """
+
+                    # Find the element object
+                    this = self.html[this].only
+
+                    # Get the parent
+                    rent = this.parent
+
+                    # Get the ordinal index of this as a child of it
+                    # parent.
+                    ix = rent.elements.getindex(this)
+
+                    # Remove `this` from its parent and thus the DOM
+                    # self.
+                    this.remove()
+
+                    # Put `that` where `this` was
+                    rent.elements.insert(ix, that)
+
+                ''' Method logic '''
+
                 if isnav := is_nav_link(src):
                     html = None
                     pg = '/' + src.root.lang 
@@ -498,57 +525,21 @@ class tester(entities.entity):
                     mod += res.html.only
                     return
 
-                def replace(this, that):
-                    this = self.html[this].only
-
-                    rent = this.parent
-                    ix = rent.elements.getindex(this)
-                    this.remove()
-
-                    # XXX The insert method should be able to take a
-                    # string of HTML and convert it to a DOM internally.
-                    el = dom.html(res.body)
-
-                    rent.elements.insert(ix, that)
                 if isnav:
-                    # XXX The insert method should be able to take a
-                    # string of HTML and convert it to a DOM internally.
-                    el = dom.html(res.body)
-
-                    replace(this='main', that=el)
+                    # Replace the <main> element with the response
+                    # (res.html)
+                    replace(this='main', that=res.html)
                 else:
+                    # No HTML fragments were sent, so there can be
+                    # nothing to replace.
                     if not eargs.html:
                         return
 
-                    # Convert the fragment(s) from the response into a
-                    # DOM
-                    body = dom.html(res.body)
-
-                    # XXX Use the replace() function here
-
                     # Get the fragement of html in the tab that is the
                     # subject of the event from the tab's DOM (.html)
-                    ids = ', '.join('#' + x.id for x in eargs.html)
-                    frags = self.html[ids]
-
-                    # For each relevant fragment in the tab's body
-                    for i, frag in frags.enumerate():
-
-                        # Get fragment's parent
-                        rent = frag.parent
-
-                        # Get the location of the fragment within its
-                        # parent
-                        ix =rent.elements.getindex(frag)
-
-                        # Remove the frament from the tab's DOM
-                        frag.remove()
-
-                        # Insert the response's body into the parent of
-                        # the fragement at the location it was removed
-                        # from. We have now replaced the fragment with
-                        # the one from the XHR response.
-                        rent.elements.insert(ix, body[i])
+                    ids = list('#' + x.id for x in eargs.html)
+                    for i, id in enumerate(ids):
+                        replace(id, res.html[i])
 
             @property
             def html(self):
