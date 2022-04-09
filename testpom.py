@@ -2088,10 +2088,7 @@ class pom_page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
-        # XXX This should use `only` instead of `first`. For some
-        # reason, we are getting the same menu items in the web page
-        # three times.
-        a_blog = tab['a[href|="/blogs"]'].first
+        a_blog = tab['header>nav a[href|="/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
