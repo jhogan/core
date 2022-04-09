@@ -1233,11 +1233,90 @@ None
 ### Tags
 \#comments
 
+1. Writing function
+-------------------
+
+### Rule
+
+Functions should:
+    
+    * only be written when they can not be integrated into an object
+    model as a method
+
+    * should be written in snake case
+
+    * should contain docstrings just like methods.
+
+    * should contain well understood, abbreviations for parameters just
+      like methods.
+
+### Example
+
+    def this_is_a_module_level_function(ls, obj, f):
+        """ This is a module level function.
+
+        :param: ls list: A list.
+
+        :param: obj list: A object.
+
+        :param: f callable: A reference to a function.
+        """
+        ...
+
+    class aclass:
+        
+        def save():
+            
+            ''' Inner functions '''
+            def create_sql(tbl, crud='C')
+                """ Returns a string of SQL for the table (`tbl`).
+
+                :param: tbl str: The name of the table.
+
+                :param: crud str: The abbreviation for the CRUD
+                operation.
+                ...
+
+            for tbl in self.tables:
+                sql = create_sql(tbl)
+                ...
+
+### Justification
+Functions are much more rare that methods in the framework. Very
+occasionally, there will be a need for a module-level method. Somewhat
+more frequently, inner functions will be useful to avoid code
+duplication within a method.
+
+Unlike methods, function aren't integrated into an object model which
+means they lack the context for them to be named a single word.
+Consider the following:
+
+    ''' Object-oriented version '''
+    class entity:
+        def save(self):
+            ...
+
+    ''' Function version '''
+    def save_entity(e):
+        ...
+
+In the entity object, we wouldn't need to name the `save` method
+`save_entity` because it is nested in a class called `entity`; "entity"
+would be redundant. However, a stand-alone function would lack that
+context. Therefore, we use snake case to seperate the words. Snake case
+is good here because we don't have to type capital letters (as with
+StudlyCase), and the underscores help distinguish the different words.
+
+### Exceptions
+None
+
+### Tags
+\#functions #naming
+
+
 <!-- 
 
 // CONVENTIONS
-
-Writing inner functions
 
 Don't chain lines using the semicolon
 
