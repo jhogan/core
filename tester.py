@@ -441,6 +441,8 @@ class tester(entities.entity):
                 handler that is intended to capture the event.
                 """
 
+                ''' Inner functions '''
+
                 def is_nav_link(e):
                     """ Returns True if the element `e` is a "nav link",
                     i.e., it is an anchor tag nested within a <nav>:

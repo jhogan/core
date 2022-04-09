@@ -2097,9 +2097,6 @@ class pom_page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
-
-
-
 class admin(pom.page):
     def __init__(self):
         super().__init__()

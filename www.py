@@ -1112,10 +1112,9 @@ class _request:
             
     @property
     def isspa(self):
-        """ Returns True if this ``_request`` is an XHR request 
-        a SPA subpage. 
+        """ Returns True if this ``_request`` is an XHR request for
+        an SPA subpage. 
         """
-
         if not self.isevent:
             return False
 
@@ -1439,7 +1438,6 @@ class _response():
             self._html = dom.html(self.body)
 
         return self._html
-
 
     def __getitem__(self, sels):
         """ Returns the portion of the response body corresponding to
