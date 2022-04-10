@@ -707,7 +707,7 @@ Bad:
     for i in range(10): x += i
 
 Good:
-    if x == y: 
+    if x == y:
         print('X equals Y')
 
     while x == y: 
@@ -728,6 +728,37 @@ None
 
 ### Tags
 \#whitespace #formatting
+
+6. Line chaining
+------------------------------------
+
+### Rule
+Don't join lines using semicolons.
+
+### Examples:
+Bad:
+
+    x = 0; y = 1
+
+Good
+    x = 0
+    y = 1
+
+### Justification
+A line of code should read as a distinct unit of logic. In the example
+above, the assignment of x and y may be related (i.e., the two variables
+are both being initialized) they are still distinct logical operations.
+A programer's eye is primed to read each line of code as a seperate
+imperative statement. Violating this convention impairs readability.
+Also, in costs more in horizontal space which further hampers
+understandability.
+
+### Implsementation tips
+None
+
+### Tags
+\#whitespace, #semicolon, #formating
+
 
 6. Writting classes
 --------------------------------
@@ -1318,7 +1349,6 @@ None
 
 // CONVENTIONS
 
-Don't chain lines using the semicolon
 
 Create new objects within collections using methods with the name of the
 object:
