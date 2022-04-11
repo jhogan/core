@@ -1344,6 +1344,95 @@ None
 ### Tags
 \#functions #naming
 
+6. Writing Exception classes
+----------------------------
+
+### Rule
+Exception classes
+    
+    * should be in StudlyCase
+    
+    * should end in the word "Error"
+
+    * should contain methods and properties that are appropriate to the
+      exception
+
+    * should contain docstrings at the class and method/property level
+
+### Example
+Here is an (abbriviated) example from the `dom` module.
+
+    class HtmlParseError(Exception):
+        """ Raised when there is an error during the parsing of an HTML
+        document.
+        """
+        def __init__(self, frm=None, *args, **kwargs):
+            """ Create the exception:
+
+            :param: frm list: A list indiating the element and position of
+            the element in the HTML document where parsing failed:
+            """
+            super().__init__(*args, **kwargs)
+            self._frame = frm
+
+        @property
+        def line(self):
+            """ Returns the line number where the parsing failed.
+            """
+            frm = self._frame
+
+            if not frm:
+                return None
+
+            return frm[1][0]
+
+        @property
+        def element(self):
+            """ Returns the element object where the parsing failed.
+            """
+            frm = self._frame
+
+            if not frm:
+                return None
+
+            return frm[0]
+
+        @property
+        def column(self):
+            """ Returns the column number where the parsing failed.
+            """
+            frm = self._frame
+
+            if not frm:
+                return None
+
+            return frm[1][1]
+
+        def __str__(self):
+            """ Returns a string representation of the exception.
+            """
+            r = super().__str__()
+            if self._frame:
+                if self.element:
+                    r += ' <%s>' % self.element.tag
+
+                r += ' at line %s column %s' % (self.line, self.column)
+            return r
+
+### Exceptions
+An exception (as it were) to the 'Error' suffix rule was made for the
+`www.HttpException` class. This
+class deals with **exceptional** HTTP responses that correspond to
+status codes in the 300's. These are not really errors. The `www.HttpError`
+exception class inherits from HttpException and deals with HTTP responses
+with status codes equal to or greater than 400. These status codes
+denote actual errors, making the suffix "Error" appropriate. Thus it could
+be said that, unless the exception class represents an error, it should
+not end in the word Error.
+
+### Tags
+\#exceptions #naming #class
+
 
 <!-- 
 
@@ -1361,8 +1450,6 @@ object:
     assert rs.first is r1
 
 // TODO
-
-How to write exceptions.
 
 Discuss housekeeping in git logs
 
