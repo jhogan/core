@@ -9078,6 +9078,8 @@ class HtmlParseError(Exception):
         HTMLParser.getpos(). See the line, column and element
         @property's below.
         """
+        # TODO We should call Super().__init__ and pass the message
+        # using through *args.
         self._frame = frm
         self._msg = msg
 

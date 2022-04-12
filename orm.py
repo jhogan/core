@@ -11534,4 +11534,4 @@ class violation(entitiesmod.entity):
         return r
 
 class IntegrityError(Exception):
-    ...
+    pass

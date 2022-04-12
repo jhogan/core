@@ -433,6 +433,29 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
+                # We not in SPA mode by default. The `inspa`
+                # analogue for a real browser tab would be something
+                # like a global JavaScript varibale. The user may be
+                # given the option of turing SPA mode on or off. This
+                # would be a useful option to give user for a number of
+                # reasons:
+                #
+                #   * They are using a text-based browser like `links`
+                #   that has no JavaScript support.
+                #
+                #   * They are usinga a legacy browser that has poor
+                #   Javascript support
+                #   
+                #   * They have JavaScript support disable, perhaps for
+                #   security reasons.
+                # 
+                #   * The "browser" is actually a bot, such as a web
+                #   crawler, whose willingness to execute JavaScript is
+                #   not well understood. In this case, you may want to
+                #   let the crawler index the page as if the site were a
+                #   multi-page application.
+                self.inspa     =  False
+
             def element_event(self, src, eargs):
                 """ This event handler catches all events that happen to
                 elements in the _tab's DOM (.html), examins the elements
