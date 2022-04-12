@@ -2094,6 +2094,30 @@ class pom_page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
+    def it_navigates_to_pages_when_spa_is_disabled(self):
+        class spa(pom.page):
+            def main(self):
+                self.main += dom.p('Welcome to the SPA')
+
+        ws = foonet()
+        ws.pages += spa()
+
+        tab = self.browser().tab()
+
+
+        # GET the clickme page
+        B()
+        tab.get('/en/spa', ws)
+
+        self.eq('foonet | Spa', tab.html['title'].only.text)
+
+        a_blog = tab['header>nav a[href|="/blogs"]'].only
+
+        tab.inspa = False
+        a_blog.click()
+
+        self.eq('foonet | Blogs', tab.html['title'].only.text)
+
 class admin(pom.page):
     def __init__(self):
         super().__init__()

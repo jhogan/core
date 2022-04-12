@@ -533,6 +533,15 @@ class tester(entities.entity):
                     'trigger':  eargs.trigger,
                 }
 
+                # If the "user" "clicked" on a link that was intended to
+                # navigate the tab to a different URL, and the tab isn't
+                # in SPA mode (not `self.inspa`), then we should do a
+                # traditional page navigation to the new page.
+                B()
+                if not self.inspa and isnav:
+                    self.navigate(pg=pg, ws=self.site)
+                    return
+
                 # Make the XHR request to the page (pg) (or for the page
                 # if we are refreshing a subpage for an SPA) and site
                 # that the tab is currently pointing to.
@@ -656,6 +665,12 @@ class tester(entities.entity):
                 string or a dom.selectors object.
                 """
                 return self.html[sel]
+
+            def navigate(self, pg, ws):
+                # XXX We should refactor self.get to simply do a GET and
+                # return the response. This method, `navigate` should do
+                # the work of updating the internal DOM.
+                self.get(pg, ws)
 
             def get(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
