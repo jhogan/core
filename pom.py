@@ -969,9 +969,10 @@ class page(dom.html):
         from the site's title and the page's name.
         """
         if self._title is None:
-            if self.site:
-                self.title = '%s | %s' % self.site.title, self.Name
-            self.title = self.Name
+            if ws := self.site:
+                self._title = f'{ws.title} | {self.Name}'
+        else:
+            self._title = self.Name
 
         return self._title
 
@@ -1023,6 +1024,8 @@ class page(dom.html):
                 self._head = self.site.head
             else:
                 self._head = dom.head()
+
+            self._head['title'].only.text = self.title
 
             for res in self.resources:
                 if res.mime == 'application/javascript':
