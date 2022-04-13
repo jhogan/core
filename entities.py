@@ -1577,6 +1577,7 @@ class entities:
 
         return r
 
+    # TODO Rename 'item' to 'v'
     def __setitem__(self, key, item):
         """ Implements an indexer that can be assigned an element.
 

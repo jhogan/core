@@ -2106,7 +2106,6 @@ class pom_page(tester.tester):
 
 
         # GET the clickme page
-        B()
         tab.get('/en/spa', ws)
 
         self.eq('foonet | Spa', tab.html['title'].only.text)

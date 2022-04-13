@@ -537,7 +537,6 @@ class tester(entities.entity):
                 # navigate the tab to a different URL, and the tab isn't
                 # in SPA mode (not `self.inspa`), then we should do a
                 # traditional page navigation to the new page.
-                B()
                 if not self.inspa and isnav:
                     self.navigate(pg=pg, ws=self.site)
                     return
