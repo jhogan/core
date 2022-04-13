@@ -2030,17 +2030,22 @@ class headers(entities.entities):
         NOTE The implementation looks a little buggy. See the TODO's if
         the above explanations is inaccurate.
         """
-        if not isinstance(ix, str):
-            # TODO This can't be correct. super().__setitem__ would need a
-            # value (``v``).
-            return super().__setitem__(ix)
-
-        for hdr in self:
-            if hdr.name.casefold() == ix.casefold():
-                hdr.value = v
-                break
+        if isinstance(ix, int):
+            for i, hdr in self.enumerate():
+                if i == ix:
+                    hdr.value = v
+                    break
+            else:
+                raise IndexError(
+                    f'Index out of range: {ix}'
+                )
         else:
-            self += header(ix, v)
+            for hdr in self:
+                if hdr.name.casefold() == ix.casefold():
+                    hdr.value = v
+                    break
+            else:
+                self += header(ix, v)
 
     def __getitem__(self, ix):
         """ Provides indexer logic for the ``headers`` class. See the
