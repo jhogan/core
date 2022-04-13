@@ -36,10 +36,78 @@ use the `tw` command above) and it will also do the right thing with
 regards to comment tokens.
 
 ### Tags
-\#whitespace
+\#whitespace #formatting
+
+2. Put linefeed between conditionals and blocks
+-----------------------------------------------------
+
+### Rule
+When writing a conditional construct, such as an `if` or `while`
+statement, put a newline after after the contitional
+
+### Example
+Bad:
+    
+    if x == y: print('X equals Y')
+
+    while x == y: print('X equals Y')
+
+    for i in range(10): x += i
+
+Good:
+    if x == y:
+        print('X equals Y')
+
+    while x == y: 
+        print('X equals Y')
+
+    for i in range(10): 
+        x += i
 
 
-2. Breaking lines
+### Justification
+Most conditionals have multiline code blocks. Thus the eye becomes used
+to seing the conditional seperated from the code block by a new line.
+Sometimes, it may seem convenient to join the two on the same line, but
+this has a negative impact on readability. 
+
+### Implementation tips
+None
+
+### Tags
+\#whitespace #formatting
+
+3. Line chaining
+------------------------------------
+
+### Rule
+Don't join lines using semicolons.
+
+### Examples:
+Bad:
+
+    x = 0; y = 1
+
+Good
+    x = 0
+    y = 1
+
+### Justification
+A line of code should read as a distinct unit of logic. In the example
+above, the assignment of x and y may be related (i.e., the two variables
+are both being initialized) they are still distinct logical operations.
+A programer's eye is primed to read each line of code as a seperate
+imperative statement. Violating this convention impairs readability.
+Also, in costs more in horizontal space which further hampers
+understandability.
+
+### Implsementation tips
+None
+
+### Tags
+\#whitespace, #semicolon, #formating
+
+4. Breaking lines
 ------------------
 
 ### Rule
@@ -113,7 +181,7 @@ None
 \#whitespace #formatting
 
 
-3. Multiple empty lines
+5. Multiple empty lines
 ----------------------------------------------
 
 ### Rule
@@ -143,7 +211,42 @@ None
 ### Tags
 \#whitespace #formatting
 
-4. Sort import lines
+6. Don't use needless negation
+-------------------------------
+
+### Rule
+Don't use the negation operator unless it necessary.
+
+
+### Example
+Bad 
+    if not X
+        ...
+    else:
+        ...
+
+Good:
+    if x:
+        ...
+    else:
+        ...
+
+### Justification
+The negation operator can sometimes be when it doesn't need to be. To
+the reader, this would simply represent one more thing to remember.
+Strive to code that's as easiy to read as possible.  To solve complex
+problems, our code must be as simple as possible.
+
+### Exceptions
+None
+
+### Implementation tips
+None
+
+### Tags
+\#negation #operators
+
+7. Sort import lines
 ----------------------------------------------
 
 ### Rule
@@ -186,7 +289,288 @@ flag.
 ### Tags
 \#whitespace #formatting
 
-5. Naming variables
+8. Initilize primatives with using object instantiation
+-------------------------------------------------------
+
+### Rule
+When initializing primative variables to their default value, use
+instatiate syntax instead of assignment syntax. 
+
+### Examples
+Bad:
+    i    =  0
+    s    =  ''
+    d    =  {}
+    tup  =  ()
+    ls   =  []
+    
+Good:
+    i    =  int()
+    s    =  str()
+    d    =  dict()
+    tup  =  tuple()
+    ls   =  list()
+    
+### Justification
+Though this form is a little more verbose, it enhances readability.
+
+### Exceptions
+None
+
+### Implementation tips
+None
+
+### Tags
+\#initialization #variables
+
+9. Import modules, not module objects
+-------------------------------------
+
+### Rule
+Generally speaking, simply `import` modules, not individual objects
+(such as classes and functions) from the module.
+
+### Example
+Bad
+    
+    from party import person
+    from dom import *
+
+Good:
+    
+    import person
+    import dom
+
+### Justification
+The framework has a lot of classes that will be used to created the
+logic for a given module. Using the simple `import` method reduces the
+risk of nameing collision. For example, there is currently an `item`
+class in 8 different modules:
+
+    import budget
+    import account
+    budgitem = budget.item()
+    acctitem = account.item()
+
+Simple `import` lines add to clearity as well. For example, the line:
+    
+    itm = budget.item()
+
+is fairly self-explanatory: create a new budget item. However,
+encountering a line such as:
+
+    itm = item()
+
+would be much less clear.
+
+### Implementation tips
+None
+
+### Tags
+\#import #module
+
+10. Comment tags
+--------------------------------
+
+### Rule
+
+    * NOTE comments indicate something that anyone should read before
+      working on the code beneath the comment:
+        
+        # NOTE: If the following call raises an AttributeError, it is
+        # almost certainly because there was an issue connecting to the
+        # database.
+
+    * TODO comments indicate that something should be done at
+      a future, but indefinite date. A TODO comment should coorsponding
+      to a ticket in the ticketing system. The TODO should be proceeded
+      by a : and 4 random bytes written in hex:
+
+        # TODO:73d12047 Something should really be done about the logic
+        # here.
+
+    * HACK is like a TODO but indicates that the code is a workaround
+      or some sort of trick to get something working for the current
+      moment. A HACK is a suboptimal solution that should be fixed in
+      the future:
+
+        # HACK:241d1d7c Artificially increment `i` here to get around
+        # the one-off issue.
+    
+    * FIXME comments indicate a bug has been discovered in the code.
+      Like TODO comments, a FIXME comment should coorsponding
+      to a ticket in the ticketing system. The FIXME should be succeeded
+      by a : and 4 random bytes written in hex:
+
+        # FIXME:c5248240 The below line will break if a list has zero
+        # elements.
+    
+    * XXX comments imply that something must be fixed in a feature
+      branch before the branch is merged back into main. It's like a
+      FIXME but more urgent. There is usually no need to give it an
+      identifier.
+
+        # XXX This will cause the table to be truncated when called with
+        # an integer. Type checking needs to be used here to avoid data
+        # loss.
+
+    * Bomb-comments are used to flag sensitive areas of source code.
+      They are intended to bring attention to changes made to these
+      parts of the source code when viewed in `git-log`, `git-diff` and
+      other analysis tools used during code reviews and code analysis.
+      Changes made to these areas of source code should receive more
+      attention and scrutenty. Use these liberaly in areas dealing with
+      authentication, authorization and other sensitive areas.
+
+        class security:
+            """
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            A singleton that stores security related values such as the
+            orm's owner, proprietor, and whether or not the
+            accessibility override is set.
+            💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            """
+            ...
+
+### Justification
+It's normal for bugs and and code optizitions of varying severity to be
+noted and accumulated in source code. Having standard, well defined
+comment tags helps categorize the severity of the issues.
+
+The 4 bytes of random hex is intended to be a unique identifier for the
+comment. The identifier can be used in other comments to reference the
+original issue.
+
+At the moment, there is no ticket system, but there are plans to write a
+program that creates tickets based on the comments found in the source
+code. The semantic information in the tag, along with the identifier,
+will be useful to that program.
+
+### Exceptions
+None.
+
+### Implementation tips
+Your text editor should be configured to highlight the comment tag. Vim
+does this by default for TODO, FIXME and NOTE in Python comments.
+
+The random hex digets can be generate using `uuidgen`:
+
+    uuidgen | cut -c1-8
+
+### Tags
+\#comments
+
+11. Use x as list comprension variable
+--------------------------------------
+
+### Rule
+When writing list comprehentions, use x as the default variable.
+
+### Example
+    [x for x in ls if x.prop = 'value']
+
+### Justification
+I similar pattern to this is the use of `i` as the index variable in for
+loops:
+
+    for i in range(10):
+        ...
+
+This convention is seen used in almost every programming language. Like
+the `i`, the intent of the `x` is instantly recognizable (or will be
+once you program in the framework from some time). Also, since `x` is a
+single character, it is easy to type and read, like the `i`.
+
+### Exception
+None
+
+### Tags
+\#list-comprension #naming
+
+12. Use `is` to test builtin constants and object reference
+----------------------------------------------------------
+
+### Rule
+When testing the equality of builtin constants and object references,
+use the `is` operator
+
+### Example
+    if x is True:
+        ...
+
+    If x is None:
+        ...
+
+    if obj1 is obj2:
+        ...
+
+### Justification
+Though the equality operator, `==`, would work in most of these cases,
+using the `is` operator is more semantically correct since you are
+testing object identity.
+
+Also, it's possible that an object could override the __eq__ method,
+which would change the meaing of `==` when testing object equality, thus
+having an adverse impact on reliability.
+
+### Exceptions
+None
+
+### Tags
+\#constants
+
+13. Naming constants
+-------------------
+
+### Definition
+A constant is just a variable in Python. However, conventions, usually
+based on case, can be established that certain varibles shouldn't be
+assigned more than once.
+
+### Rule
+Use StudlyCase to indicate denote a variable as a constant.
+
+### Example
+        
+    def area(r):
+        Pi = 3.14
+        return self.Pi * (r * r)
+
+    class ratios:
+        GoldenRatio       =  1.618
+        SuperGoldenRatio  =  1.465571231876768026656731
+
+### Justifications
+It is useful to make a distinction between regular variables and
+constants using casing. The conventional way to make this distinction is
+to use uppercase and underscores:
+    
+    THIS_IS_A_CONSTANT = 123
+
+However, this can be difficult to type and jarring to read. Though this
+is an accepted way to denote constants in Python, another convention can
+be seen in Python where StudlyCase is used, namely in builtin constants
+such as `False`, `True`, `None` and `NotImplemented`. 
+
+    https://docs.python.org/3/library/constants.html
+
+StudlyCase is easier to type and read and nicely denotes constants while
+preserving a Python tradition.
+
+### Exceptions
+Exceptions can be made to honor traditions.
+
+    class constants:
+        # Underscore can symbolize the hythen
+        Meissel_MertensConstant = 0.26149 
+
+        # A lowercase, Greek Pi character
+        π = 3.14159
+
+### Tags
+\#constants #naming
+
+14. Naming variables
 -------------------
 
 ### Rule
@@ -299,11 +683,286 @@ inspired the abbreviations for "list".
 ### Tags
 \#naming #variables
 
-6. Writing methods
+15. Writing @property methods
+---------------------------
+
+### Rule
+Property methods 
+
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `.sql` for an SQL representation of an
+      object).
+    * should be all lowercase, 
+    * should not include prefixes such as 'get' and 'set'
+    * should be composed of a single word if humanly possible
+    * should be implemented using the @property decorator
+
+The setter property use `v` as the value parameter:
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, v):
+        self._size = v
+
+### Justification
+Property methods are a nice feature of some object-oriented
+programming that clearly denote the attributes of an object.
+
+    t = toy()
+    t.color = 'blue'
+
+'get' and 'set' prefixes add unnecessary clutter to property that are
+created using the @property decorator. Single word properties that are
+all lowercase are easier to remember, type and read. Methods that start
+with prefixes such as 'get' and 'set' are difficult to type and
+remember.
+
+### Exceptions
+Occasionally, uppercase characters can imply certain notions. SQL is
+conventionally uppercase, so you could do the following.
+
+    stmt = sql.statement()
+    stmt.SELECT = '*'
+    stmt.FROM = 'mytable'
+
+The `SELECT` and `FROM` properties are uppercased to imply they refer to
+the SQL keywords. However, it would probably be better to lowercase
+these to make them easier to type and less jarring to read.
+
+Also, occasionally compound words can't be avoided, though every effort
+should be made to do so. For example, the `www.request` object currently
+has a `content_type` property. This corresponds to the `Content-Type`
+HTTP header. That header is a standard so it only makes sense to include
+both words (the underscore symbolizes the hyphen).
+
+Properties should be implemented as methods when arguments are required.
+Usually, there should be an actual property for the default invocation:
+
+    @property
+    def children(self):
+        return self.getchildren()
+
+    def getchildren(self, recursive=False):
+        ...
+
+The 'is', 'does', 'has', prefix should be added to Boolean proprieties if
+it enhances readability:
+    
+    if world.isflat:
+        print('Nyoo my God')
+
+    # 'is' or 'does' does not enhance readability here
+    if file.exist:
+        ...
+    
+### Implementation tips
+None
+
+### Tags
+\#naming #property
+
+16. Generators vs getters and @property methods.
+------------------------------------------------
+
+### Rule
+@property methods and getter methods should not return generator
+objects. If a generator is desired, a separate method prefixed with
+'gen' should be written.
+
+### Example
+In the dom.element class, we see three methods to get an element's
+child nodes.
+
+    @property
+    def children(self):
+        ...
+
+    def getchildren(self, recursive=False):
+        ...
+
+    def genchildren(self, recursive=False):
+        ...
+
+Here, we have the option of getting the child nodes through a simple
+property and also through a getter method (if we want to optionally get
+them recursively). A third option, `genchildren` is presented if we want
+a generator.
+
+### Justification
+Sometimes we want a generator and sometimes we want the actual
+collection object return. In the example section above, we may want to
+use the `children` property to mutate the DOM:
+
+    children = p.children
+    children.first.remove()
+
+The above removes the first element from the &lt;p&gt; tag.  We could
+proceed to iterate over the children as well:
+
+    for child in children:
+        ...
+
+However, if there is a large number of children, this could be a
+performance problem due to the work involved in building the collection
+when `p.children` is called. A generator would help with this:
+    
+    for child in p.genchildren(recursive=True):
+        ...
+
+However, the down side of a generator is that, by using one, we can't
+mutate the internal tree, thus we should always provide a property that
+doesn't return a generator and only provide a generator if one is
+needed.
+
+### Exceptions
+Generators are used sometimes in lower-level code, such as when
+overriding an `__iter__`, the `builtin.enumerate` function, or language
+tokenizers. This rule is intended to help make object models intended
+for framework users easier to use. It's not intended to interfere with the
+way lower-level code needs to be written.
+
+### Tags
+\#naming #generators
+
+17. Writting classes
+--------------------------------
+
+### Rule
+Classes
+
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `sql` for a class that represents an SQL
+      statement)
+
+    * should represent a distinct entiity that performs a set of
+      identifiable, reusable and testable behavor
+
+    * should be document using a docstring that indicates it's purpose
+      and what it represents
+    
+    * should document the standard variable name(s) used for instances
+      of that class
+
+    * Should be composed of mostly instance methods, i.e., avoid the
+      [Abuse Of Utility Classes](https://wiki.c2.com/?AbuseOfUtilityClasses)
+      anti-pattern
+
+    * should have a corresponding collection class
+
+    * should represent a real-world entity (a sales order, a user
+      account.) or a real-world concept (a database connection, a DOM
+      element, etc.)
+
+    * should start with an underscore if the class is considered private
+
+Class names
+    * should be all lowercase
+
+    * should be composed of a single word if humanly possible
+
+    * should be in *scriptio continua* case when they are compound words
+
+    * should be nouns
+
+### Justification
+In object-oriented programming, classes represent entities. These
+entiities can be real world objects such as cars, people, etc., or they
+can be abstract entities, such as an encryption algorithm or database
+tables. Thus the name for a class should always be a noun. 
+
+Like all identifiers, class names are easier to rememember, write and
+read if they are single words in all lowercase. A good abbreviations or
+acronyms should be identified for use as the instance variables name of
+a class. This prevents naming overlap:
+    
+    class person:
+        """ Represents a person.
+
+        :abbr: per
+        """
+
+    per = person()
+
+*Scriptio continua* is used when compound names are used:
+
+    class emailaddress:
+        ...
+
+Virtually all data represented in computer systems is hierarchical. This
+means that instances of a class will need to be grouped in a container.
+Convential programming approches are content to use `list`s and `dict`s
+for this kind of thing. However, these simple container objects were not
+designed to encapsulate business logic. A more sophisticated approach is to
+use classes that represent objects as collections. So the `person` class
+above should have a complementary `persons` collection which can contain
+instances of `person`. For ORM entity classes, this is enforced by the
+framework and is made possible through inheritence:
+
+    class persons(orm.entities):
+        ...
+
+    class person(orm.entity):
+        ...
+
+    pers = persons()
+    per = person()
+
+    # Add per to the pers collection
+    pers += per
+
+However, if you are writting non-ORM classes, you can still create
+collection classes by inheriting from `entities` base classes.
+
+    import entities
+
+    class tables(entities.entities):
+        ...
+
+    class table(entities.entity):
+        ...
+
+    tbls = tables()
+    tbl = table()
+
+    # Add tbl to the tbls collection
+    tbls += tbl
+
+### Exceptions
+In keeping with the Python convention, exception class names should be
+written in StudlyCase and should end in the suffix "Error":
+
+    class ComputationalOperationError(Exception):
+        pass
+
+In the ORM, and underscore is used in orm.association classes to
+seperate the names of the two entities being associated:
+
+    class order(orm.entity):
+        ...
+
+    class customer(orm.entity):
+        ...
+
+    class customer_order(orm.association):
+        ...
+
+### Implementation tips
+None
+
+### Tags
+\#naming #class
+
+18. Writing methods
 --------------------------------
 
 ### Rule
 Methods 
+
+    * should not be abbreviate unless it is a common
+      abbreviation (such as `ajax()` for an AJAX post).
 
     * should be all lowercase
 
@@ -456,503 +1115,322 @@ This is a special case because the framework-level code that invokes
 `main` introspects this annotation to enforce types and converts to the
 annotated type.
 
+An underscore is used in event handlers to seperate the subject of the
+event from the event.
+
 ### Tags
 \#naming #methods
 
-6. Naming @property methods
----------------------------
-
-### Rule
-Property methods 
-
-    * should be all lowercase, 
-    * should not include prefixes such as 'get' and 'set'
-    * should be composed of a single word if humanly possible
-    * should be implemented using the @property decorator
-
-The setter property use `v` as the value parameter:
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, v):
-        self._size = v
-
-### Justification
-Property methods are a nice feature of some object-oriented
-programming that clearly denote the attributes of an object.
-
-    t = toy()
-    t.color = 'blue'
-
-'get' and 'set' prefixes add unnecessary clutter to property that are
-created using the @property decorator. Single word properties that are
-all lowercase are easier to remember, type and read. Methods that start
-with prefixes such as 'get' and 'set' are difficult to type and
-remember.
-
-### Exceptions
-Occasionally, uppercase characters can imply certain notions. SQL is
-conventionally uppercase, so you could do the following.
-
-    stmt = sql.statement()
-    stmt.SELECT = '*'
-    stmt.FROM = 'mytable'
-
-The `SELECT` and `FROM` properties are uppercased to imply they refer to
-the SQL keywords. However, it would probably be better to lowercase
-these to make them easier to type and less jarring to read.
-
-Also, occasionally compound words can't be avoided, though every effort
-should be made to do so. For example, the `www.request` object currently
-has a `content_type` property. This corresponds to the `Content-Type`
-HTTP header. That header is a standard so it only makes sense to include
-both words (the underscore symbolizes the hyphen).
-
-Properties should be implemented as methods when arguments are required.
-Usually, there should be an actual property for the default invocation:
-
-    @property
-    def children(self):
-        return self.getchildren()
-
-    def getchildren(self, recursive=False):
-        ...
-
-The 'is', 'does', 'has', prefix should be added to Boolean proprieties if
-it enhances readability:
-    
-    if world.isflat:
-        print('Nyoo my God')
-
-    # 'is' or 'does' does not enhance readability here
-    if file.exist:
-        ...
-    
-### Implementation tips
-None
-
-### Tags
-\#naming #property
-
-7. Generators vs getters and @property methods.
-------------------------------------------------
-
-### Rule
-@property methods and getter methods should not return generator
-objects. If a generator is desired, a separate method prefixed with
-'gen' should be written.
-
-### Example
-In the dom.element class, we see three methods to get an element's
-child nodes.
-
-    @property
-    def children(self):
-        ...
-
-    def getchildren(self, recursive=False):
-        ...
-
-    def genchildren(self, recursive=False):
-        ...
-
-Here, we have the option of getting the child nodes through a simple
-property and also through a getter method (if we want to get them
-recursively). A third option, `genchildren` is presented if we want a
-generator.
-
-### Justification
-Sometimes we want a generator and sometimes we want the actual
-collection object return. In the example section above, we may want to
-use the `children` property to mutate the DOM:
-
-    children = p.children
-    children.first.remove()
-
-The above removes the first element from the &lt;p&gt; tag.  We could
-proceed to iterate over the children as well:
-
-    for child in children:
-        ...
-
-However, if there is a large number of children, this could be a
-performance problem due to the work involved in building the collection
-when `p.children` is called. A generator would help with this:
-    
-    for child in p.genchildren(recursive=True):
-        ...
-
-However, the down side of a generator is that, by using one, we can't
-mutate the internal tree, thus we should always provide a property that
-doesn't return a generator and only provide a generator if one is
-needed.
-
-### Exceptions
-Generators are used sometimes in lower-level code, such as when
-overriding an `__iter__`, the `builtin.enumerate` function, or language
-tokenizers. This rule is intended to help make object models intended
-for framework users easier to use. It's not intended to interfere with the
-way lower-level code needs to be written.
-
-### Tags
-\#naming #generators
-
-8. Initilize primatives with using object instantiation
--------------------------------------------------------
-
-### Rule
-When initializing primative variables to their default value, use
-instatiate syntax instead of assignment syntax. 
-
-### Examples
-Bad:
-    i    =  0
-    s    =  ''
-    d    =  {}
-    tup  =  ()
-    ls   =  []
-    
-Good:
-    i    =  int()
-    s    =  str()
-    d    =  dict()
-    tup  =  tuple()
-    ls   =  list()
-    
-### Justification
-Though this form is a little more verbose, it enhances readability.
-
-### Exceptions
-None
-
-### Implementation tips
-None
-
-### Tags
-\#initialization #variables
-
-
-6. Import modules, not module objects
+19. Writing event properties handlers
 -------------------------------------
 
 ### Rule
-Generally speaking, simply `import` modules, not individual objects
-(such as classes and functions) from the module.
+Event properties should be named in the form of
+'on{temporal-preposition}{event}':
+
+Event handler names should start with the name of the object that the event is
+based on, followed by an underscore, followed by the word 'on', followed
+by the temporal preposition ('before', after), followed by the name of
+the event. The should contain the parameters 'src', (the source of the
+event) and 'eargs' the event arguments (see entities.eventargs).
 
 ### Example
-Bad
-    
-    from party import person
-    from dom import *
+    # Create a carrots collection and a carrot compliment
+    class carrots:
 
-Good:
-    
-    import person
-    import dom
+        # The event proprety returns a lazy-loaded, memoized event.
+        # Lazy-loading events can be a real performance boast so is
+        # considered the better choice.
+        @property
+        def onbeforepick(self):
+            if not hasattr(self, '_onbeforepick'):
+                self._onbeforepick = event()
+
+            return self._onbeforepick
+
+        def pick(self):
+            # Trigger the onbeforepick event
+            self.onbeforepick()
+
+            # Do the picking
+
+            # onafterepick will not be implemented in this example, but
+            # normally would be.
+            #self.onafterepick()
+
+    class carrot:
+        pass
+
+    # Create a picker class that maintains a collection of carrots,
+    # picks the carrots and handles the onbeforepick event.
+    class picker
+        def __init__(self):
+            self.carrots += carrots()
+
+            for i in range(10):
+                self.carrots += carrot()
+
+            # Subscribe to the event handler
+            self.carrots.onbeforepick += self.carrots_onbeforepick
+
+        # Here is the event handler. The name follows the form:
+        #    
+        #     {object}_on{preposition}{event}
+        # 
+        # The parameters should always end with src, then eargs. 
+        def carrots_onbeforepick(self, src, eargs):
+            print("Your about to be picked")
+            
+        def pick(self):
+            # This will cause the the onbeforepick event to be fired and
+            # the carrots_onbeforepick methed will handle the event.
+            self.carrots.pick()
 
 ### Justification
-The framework has a lot of classes that will be used to created the
-logic for a given module. Using the simple `import` method reduces the
-risk of nameing collision. For example, there is currently an `item`
-class in 8 different modules:
+Events in the Core Framework were largely based on .NET's events, so
+many of the conventions of that framework were copied.
 
-    import budget
-    import account
-    budgitem = budget.item()
-    acctitem = account.item()
+Using an `eventarg` class to contain the arguments for the event handler
+is a useful way to ensure the correct data gets to the event handlers.
+Prefacing the event handler with the name of the object followed by an
+underscore helps signal that the method is an event handler and denotes
+which object is the subject of the event.
 
-Simple `import` lines add to clearity as well. For example, the line:
-    
-    itm = budget.item()
-
-is fairly self-explanatory: create a new budget item. However,
-encountering a line such as:
-
-    itm = item()
-
-would be much less clear.
-
-### Implementation tips
+### Exceptions
 None
 
 ### Tags
-\#import #module
+\#naming #event #eventarg
 
-6. Put linefeed between conditionals and blocks
------------------------------------------------------
+20. Writting comments
+---------------------
 
 ### Rule
-When writing a conditional construct, such as an `if` or `while`
-statement, put a newline after after the contitional
+Methods and classes must have docstrings written using three double
+quotes. The concluding double quotes must exist on their own line.
+Example code should be indented.
+
+Comments using the octothorp (#) token should be used to explain the
+purpose of logic throughout methods and functions.
+
+Similar to docstrings, header comments can be used to indicates major
+segments of logic. They should be enveloped in three single quotes.
+Unlike docstrings, the concluding single quotes should exist on the same
+line as the last line of comment text.
 
 ### Example
-Bad:
-    
-    if x == y: print('X equals Y')
 
-    while x == y: print('X equals Y')
+    class widget:
+        """ This represents reprenents a widgets.
 
-    for i in range(10): x += i
+        Widgets are metasyntatic products.
 
-Good:
-    if x == y: 
-        print('X equals Y')
-
-    while x == y: 
-        print('X equals Y')
-
-    for i in range(10): 
-        x += i
-
-
-### Justification
-Most conditionals have multiline code blocks. Thus the eye becomes used
-to seing the conditional seperated from the code block by a new line.
-Sometimes, it may seem convenient to join the two on the same line, but
-this has a negative impact on readability. 
-
-### Implementation tips
-None
-
-### Tags
-\#whitespace #formatting
-
-6. Writting classes
---------------------------------
-
-### Rule
-Classes
-    * should represent a distinct entiity that performs a set of
-      identifiable, reusable and testable behavor
-
-    * should document the standard variable name(s) used for instances
-      of that class.
-
-    * should be a collection of mostly instance methods, with
-      occasional static and class methods as well as private methods.
-
-    * should have a corresponding collection class
-
-    * should be document using a docstring that indicates what entity
-      they model, how they model it and what its relationships to other
-      classes are.
-
-
-Class names
-    * should be all lowercase
-
-    * should be composed of a single word if humanly possible
-
-    * should be in *scriptio continua* case when they are compound words
-
-    * should be nouns
-
-### Justification
-In object-oriented programming, methods represent entities. These
-entiities can be real world objects such as cars, people, etc., or they
-can be abstract entities, such as an encryption algorithm or database
-tables. Thus the name for a class should always be a noun. 
-
-Like all identifiers, class names are easier to rememember, write and
-read if they are single words in all lowercase. Good abbreviations or
-acronyms should be identified for use as the instance variables of a
-class. This prevents naming overlap:
-    
-    class person:
-        """ Represents a person.
-
-        :abbr: per
+        :abbr: widg
         """
 
-    per = person()
+        def __init__(self, id=None):
+            """ Create a widget.
 
-*Scriptio continua* is used when compound names are used:
+            Examples:
 
-    class emailaddress:
-        ...
+                widg = widget()
 
-Virtually all data represented in computer systems is hierarchical. This
-means that instances of a class will need to be grouped in a container.
-Convential programming approches are content to use `list`s and `dict`s
-for this kind of thing. However, these simple container objects were not
-designed to encapsulate business logic. A more sophisticated approach is to
-use classes that represent objects as collections. So the `person` class
-above should have a complementary `persons` collection which can contain
-instances of `person`. For ORM entity classes, this is enforced by the
-framework and is made possible through inheritence:
+            :param: id int: The identifier of the widget
+            """
 
-    class persons(orm.entities):
-        ...
+            ''' Setup the widget. '''
 
-    class person(orm.entity):
-        ...
+            # Set the private fields
+            self._features = dict()
+            self._location = 0, 0
 
-    pers = persons()
-    per = person()
+            ''' Eager-load the widget '''
 
-    # Add per to the pers collection
-    pers += per
+            if id
+                # Search db
+                self._data = db.search(id=id)
 
-However, if you are writting non-ORM classes, you can still create
-collection classes by inheriting from `entities` base classes.
+### Justification
+Comments are useful for the long-term maintenance of the codebase.
+Consistency in comment usage makes for code that is easier for the eye
+to parse through.
 
-    import entities
-
-    class tables(entities.entities):
-        ...
-
-    class table(entities.entity):
-        ...
-
-    tbls = tables()
-    tbl = table()
-
-    # Add tbl to the tbls collection
-    tbls += tbl
-
-### Implementation tips
+### Exceptions
 None
 
 ### Tags
-\#naming #methods
+\#comments
 
+21. Writing function
+-------------------
 
-<!-- 
+### Rule
 
-// CONVENTIONS
-Create new objects within collections using methods with the name of the
-object:
-
-    rs = rows()
-    assert rs.count == 0
-
-    r1 = rows.row()
-    assert rs.count == 1
-    assert rs.first is r1
-
-// TODO
-
-
-In general, import modules instead of module objects:
+Functions should:
     
-    import mymod
+    * only be written when they can not be integrated into an object
+    model as a method
 
-    # dont do this
-    from mymod import *
-    from mymod import myfunc
+    * should be written in snake case
 
-Class names
+    * should contain docstrings just like methods.
 
-    Class names should strive to be one word. Underscores are
-    prohibited except in conventional circumstances. They should
-    be lowercase except in when they are exception classes in which case
-    they should be StudlyCase.
+    * should contain well understood, abbreviations for parameters just
+      like methods.
 
+### Example
 
+    def this_is_a_module_level_function(ls, obj, f):
+        """ This is a module level function.
 
-Initialize primatives with objects instead of operators
+        :param: ls list: A list.
 
-    s = str()
-    ls = list()
-    d = dict()
+        :param: obj list: A object.
 
-Discuss uses of TODO, NOTE, XXX and bomb-comments.
-
-Discuss housekeeping in git logs
-
-Discuss performance metrics in git logs
-
-Discuss prefering non-negated conditional:
-
-    Good:
-        if x:
-            ...
-        else:
-            ...
-
-    Bad 
-        if not X
-            ...
-        else:
-            ...
-Discuss 'On branch <branch-name>' in git logs
-
-Use x as default list comprension variable
-    
-    [x for x in ls if x.prop = 'value']
-
-Discuss naming constants
-
-Discuss the importance of keeping the repo small and its file structure
-flat.
-
-When testing Constants and object references, be sure to use the `is`
-operator, even though the quality operator (`==`) works::
-
-    if x is True:
+        :param: f callable: A reference to a function.
+        """
         ...
 
-    If x is None:
+    class aclass:
+        
+        def save():
+            
+            ''' Inner functions '''
+            def create_sql(tbl, crud='C')
+                """ Returns a string of SQL for the table (`tbl`).
+
+                :param: tbl str: The name of the table.
+
+                :param: crud str: The abbreviation for the CRUD
+                operation.
+                ...
+
+            for tbl in self.tables:
+                sql = create_sql(tbl)
+                ...
+
+### Justification
+Functions are much more rare that methods in the framework. Very
+occasionally, there will be a need for a module-level method. Somewhat
+more frequently, inner functions will be useful to avoid code
+duplication within a method.
+
+Unlike methods, function aren't integrated into an object model which
+means they lack the context for them to be named a single word.
+Consider the following:
+
+    ''' Object-oriented version '''
+    class entity:
+        def save(self):
+            ...
+
+    ''' Function version '''
+    def save_entity(e):
         ...
 
-    if obj1 is obj2:
-        ...
+In the entity object, we wouldn't need to name the `save` method
+`save_entity` because it is nested in a class called `entity`; "entity"
+would be redundant. However, a stand-alone function would lack that
+context. Therefore, we use snake case to seperate the words. Snake case
+is good here because we don't have to type capital letters (as with
+StudlyCase), and the underscores help distinguish the different words.
 
-Abbreviation glossory
-    callables: f, callable, meth
-    value: v
-    handler: hnd
-    index: ix
-    counters in loops: i, j, k, etc.
-    document object model: dom
-    identifier: id
+### Exceptions
+None
 
+### Tags
+\#functions #naming
 
-Common method names:
+22. Writing Exception classes
+----------------------------
 
-    clear: Clears the state of an object or the collected data in a
-    collection object
-
-    demand: Raise an exception if the state of an object is invalid.
-
-How to break lines for method invocations or class instantiation:
-
-    call_to_a_method(
-        'This line was too long'
-    )
-
-    raise Exception(
-        'There was a long and verbose issues that I need to explain...'
-    )
-
-Document the conventions for writting event properties and handlers
-
-Public method shouldn't be abbreviations unless the abbreviations is
-extremely common:
+### Rule
+Exception classes
     
-    # Good
-    req.ajax()
+    * should be in StudlyCase
+    
+    * should end in the word "Error"
 
-    # Bad
-    req.ptch()
+    * should contain methods and properties that are appropriate to the
+      exception
 
-This isn't such a big deal with private methods as long as they are
-clear enough for developers of the class (as opposed to users).
+    * should contain docstrings at the class and method/property level
 
-Header comments should start with three single comments:
+### Example
+Here is an (abbriviated) example from the `dom` module.
 
-    ''' This is a header comment. '''
+    class HtmlParseError(Exception):
+        """ Raised when there is an error during the parsing of an HTML
+        document.
+        """
+        def __init__(self, frm=None, *args, **kwargs):
+            """ Create the exception:
 
-as opposed to docstrings:
+            :param: frm list: A list indiating the element and position of
+            the element in the HTML document where parsing failed:
+            """
+            super().__init__(*args, **kwargs)
+            self._frame = frm
 
-    """ This is a 
-    docstring.
-    """"
-Writing inner functions
+        @property
+        def line(self):
+            """ Returns the line number where the parsing failed.
+            """
+            frm = self._frame
 
+            if not frm:
+                return None
+
+            return frm[1][0]
+
+        @property
+        def element(self):
+            """ Returns the element object where the parsing failed.
+            """
+            frm = self._frame
+
+            if not frm:
+                return None
+
+            return frm[0]
+
+        @property
+        def column(self):
+            """ Returns the column number where the parsing failed.
+            """
+            frm = self._frame
+
+            if not frm:
+                return None
+
+            return frm[1][1]
+
+        def __str__(self):
+            """ Returns a string representation of the exception.
+            """
+            r = super().__str__()
+            if self._frame:
+                if self.element:
+                    r += ' <%s>' % self.element.tag
+
+                r += ' at line %s column %s' % (self.line, self.column)
+            return r
+
+### Exceptions
+An exception (as it were) to the 'Error' suffix rule was made for the
+`www.HttpException` class. This
+class deals with **exceptional** HTTP responses that correspond to
+status codes in the 300's. These are not really errors. The `www.HttpError`
+exception class inherits from HttpException and deals with HTTP responses
+with status codes equal to or greater than 400. These status codes
+denote actual errors, making the suffix "Error" appropriate. Thus it could
+be said that, unless the exception class represents an error, it should
+not end in the word Error.
+
+### Tags
+\#exceptions #naming #class
+
+<!-- TODO
 Don't chain lines using the semicolon
 
 Though method names should strive to be one word, parameters should
