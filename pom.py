@@ -971,8 +971,8 @@ class page(dom.html):
         if self._title is None:
             if ws := self.site:
                 self._title = f'{ws.title} | {self.Name}'
-        else:
-            self._title = self.Name
+            else:
+                self._title = self.Name
 
         return self._title
 
@@ -1022,10 +1022,12 @@ class page(dom.html):
         if self._head is None:
             if self.site:
                 self._head = self.site.head
+                title = self._head['title'].only
             else:
                 self._head = dom.head()
+                self._head += (title := dom.title())
 
-            self._head['title'].only.text = self.title
+            title.text = self.title
 
             for res in self.resources:
                 if res.mime == 'application/javascript':
