@@ -666,12 +666,6 @@ class tester(entities.entity):
                 return self.html[sel]
 
             def navigate(self, pg, ws):
-                # XXX We should refactor self.get to simply do a GET and
-                # return the response. This method, `navigate` should do
-                # the work of updating the internal DOM.
-                self.get(pg, ws)
-
-            def get(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
                 the  webserver (ws). The response is used to update the
                 tab's internal DOM (self.html). The www._response object
@@ -681,9 +675,20 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
-                req = self._request(pg=pg, ws=ws, meth='GET')
+                req = self.get(pg, ws)
                 self.html = req.html
                 return req
+
+            def get(self, pg, ws):
+                """ Issues an HTTP GET request for the page `pg` to the
+                site `ws`. The responses object from the request is
+                returned.
+                
+                :param: pg pom.page|str: The page to GET.
+
+                :param: ws pom.site: The site to get the page from.
+                """
+                return self._request(pg=pg, ws=ws, meth='GET')
 
             def xhr(self, pg, ws, json=None):
                 """ Issues an XHR (AJAX) request to a server. The

@@ -1110,20 +1110,20 @@ class pom_page(tester.tester):
 
         tab = self.browser().tab()
 
-        tab.get('/en/lang', ws)
+        tab.navigate('/en/lang', ws)
         self.one(tab['main[data-path="/lang"]'])
 
         self.eq('Lang: en', (tab['main p'].first.text))
 
         # Use Spainish (es)
-        tab.get('/es/lang', ws)
+        tab.navigate('/es/lang', ws)
         self.one(tab['main[data-path="/lang"]'])
         self.eq('Lang: es', (tab['main p'].first.text))
         return
 
         # Ensure it defauls to English
         # TODO Remove return
-        tab.get('/lang', ws)
+        tab.navigate('/lang', ws)
 
         self.one(tab['main[data-path="/lang"]'])
         self.eq('Lang: en', (tab['main p'].first.text))
@@ -1810,7 +1810,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 
@@ -1895,7 +1895,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 
@@ -1954,7 +1954,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
 
         inp = tab.html['div>input'].only
 
@@ -1988,7 +1988,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
 
         html = tab.html.html
         btn = tab.html['main>button'].only
@@ -2015,7 +2015,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
         self.zero(tab['.exception'])
 
         btn = tab.html['main>button'].only
@@ -2055,7 +2055,7 @@ class pom_page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.get('/en/clickme', ws)
+        tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 
@@ -2084,7 +2084,7 @@ class pom_page(tester.tester):
         tab.inspa = True
 
         # GET the clickme page
-        tab.get('/en/spa', ws)
+        tab.navigate('/en/spa', ws)
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
@@ -2104,9 +2104,8 @@ class pom_page(tester.tester):
 
         tab = self.browser().tab()
 
-
         # GET the clickme page
-        tab.get('/en/spa', ws)
+        tab.navigate('/en/spa', ws)
 
         self.eq('foonet | Spa', tab.html['title'].only.text)
 
