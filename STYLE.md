@@ -24,8 +24,8 @@ would be a URL that exceeds the 72 character boundary. In those cases,
 the text is free to break this rule.
 
 ### Implementation tips
-In Vim the 'textwidth' variable can be set in your .vimrc to control the
-line width:
+In Vim the 'textwidth' variable can be set in your `.vimrc` to control
+the line width:
 
     set tw=72 
 
@@ -38,12 +38,12 @@ regards to comment tokens.
 ### Tags
 \#whitespace #formatting
 
-2. Put linefeed between conditionals and blocks
------------------------------------------------------
+2. Put a linefeed between conditionals and blocks
+-------------------------------------------------
 
 ### Rule
 When writing a conditional construct, such as an `if` or `while`
-statement, put a newline after after the contitional
+statement, put a newline after the contitional.
 
 ### Example
 Bad:
@@ -55,6 +55,7 @@ Bad:
     for i in range(10): x += i
 
 Good:
+
     if x == y:
         print('X equals Y')
 
@@ -67,7 +68,7 @@ Good:
 
 ### Justification
 Most conditionals have multiline code blocks. Thus the eye becomes used
-to seing the conditional seperated from the code block by a new line.
+to seeing the conditional seperated from the code block by a new line.
 Sometimes, it may seem convenient to join the two on the same line, but
 this has a negative impact on readability. 
 
@@ -78,7 +79,7 @@ None
 \#whitespace #formatting
 
 3. Line chaining
-------------------------------------
+----------------
 
 ### Rule
 Don't join lines using semicolons.
@@ -88,13 +89,14 @@ Bad:
 
     x = 0; y = 1
 
-Good
+Good:
+
     x = 0
     y = 1
 
 ### Justification
 A line of code should read as a distinct unit of logic. In the example
-above, the assignment of x and y may be related (i.e., the two variables
+above, the assignment of x and y may be related (i.e. the two variables
 are both being initialized) they are still distinct logical operations.
 A programer's eye is primed to read each line of code as a seperate
 imperative statement. Violating this convention impairs readability.
@@ -158,7 +160,7 @@ Oversize container assignments can be written as such:
         100,  101,  102,  ...
     )
 
-    # dict
+    # Dict
     d = {
         'key1': 'value1', 'key2': 'value2',
         'key3': 'value3', 'key4': 'value4',
@@ -220,22 +222,24 @@ Don't use the negation operator unless it necessary.
 
 ### Example
 Bad 
+
     if not X
         ...
     else:
         ...
 
 Good:
+
     if x:
         ...
     else:
         ...
 
 ### Justification
-The negation operator can sometimes be when it doesn't need to be. To
-the reader, this would simply represent one more thing to remember.
-Strive to code that's as easiy to read as possible.  To solve complex
-problems, our code must be as simple as possible.
+The negation operator can sometimes be used when it doesn't need to be.
+To the reader, this would simply represent one more thing to parse out.
+Strive to write code that's as easiy to read as possible.  To solve
+complex problems, our code must be as simple as possible.
 
 ### Exceptions
 None
@@ -272,7 +276,7 @@ Good:
     
 ### Exceptions
 Sometimes an `import` line will need to stick out somehow, such as in
-the the idiom that models the ORM entity classes:
+the idiom that models the ORM entity classes:
 
     import apriori; apriori.model()
 
@@ -289,15 +293,16 @@ flag.
 ### Tags
 \#whitespace #formatting
 
-8. Initilize primatives with using object instantiation
--------------------------------------------------------
+8. Initilize primatives using object instantiation
+--------------------------------------------------
 
 ### Rule
 When initializing primative variables to their default value, use
-instatiate syntax instead of assignment syntax. 
+instatiation instead of literal assignment. 
 
 ### Examples
 Bad:
+
     i    =  0
     s    =  ''
     d    =  {}
@@ -305,6 +310,7 @@ Bad:
     ls   =  []
     
 Good:
+
     i    =  int()
     s    =  str()
     d    =  dict()
@@ -312,7 +318,9 @@ Good:
     ls   =  list()
     
 ### Justification
-Though this form is a little more verbose, it enhances readability.
+Though this form is a little more verbose, it enhances readability
+because the class is spelled out instead of encoded in special
+characters.
 
 ### Exceptions
 None
@@ -344,7 +352,7 @@ Good:
 ### Justification
 The framework has a lot of classes that will be used to created the
 logic for a given module. Using the simple `import` method reduces the
-risk of nameing collision. For example, there is currently an `item`
+risk of name collision. For example, there is currently an `item`
 class in 8 different modules:
 
     import budget
@@ -361,7 +369,8 @@ encountering a line such as:
 
     itm = item()
 
-would be much less clear.
+would be much less clear because we don't know what kind of "item" is
+being created.
 
 ### Implementation tips
 None
@@ -372,6 +381,10 @@ None
 10. Comment tags
 --------------------------------
 
+Comment tags are the uppercased tags often used in comments such as
+NOTE, TODO, HACK, etc. See the "Rule" section below for guidance on how
+to use these in the framework.
+
 ### Rule
 
     * NOTE comments indicate something that anyone should read before
@@ -381,7 +394,7 @@ None
         # almost certainly because there was an issue connecting to the
         # database.
 
-    * TODO comments indicate that something should be done at
+    * TODO comments indicate that the code should be modified at
       a future, but indefinite date. A TODO comment should coorsponding
       to a ticket in the ticketing system. The TODO should be proceeded
       by a : and 4 random bytes written in hex:
@@ -406,7 +419,7 @@ None
         # elements.
     
     * XXX comments imply that something must be fixed in a feature
-      branch before the branch is merged back into main. It's like a
+      branch before the branch is merged back into 'main'. It's like a
       FIXME but more urgent. There is usually no need to give it an
       identifier.
 
@@ -1182,7 +1195,7 @@ event) and 'eargs' the event arguments (see entities.eventargs).
             print("Your about to be picked")
             
         def pick(self):
-            # This will cause the the onbeforepick event to be fired and
+            # This will cause the onbeforepick event to be fired and
             # the carrots_onbeforepick methed will handle the event.
             self.carrots.pick()
 
