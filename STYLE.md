@@ -483,7 +483,7 @@ When writing list comprehentions, use x as the default variable.
     [x for x in ls if x.prop = 'value']
 
 ### Justification
-I similar pattern to this is the use of `i` as the index variable in for
+A similar pattern to this is the use of `i` as the index variable in for
 loops:
 
     for i in range(10):
@@ -500,20 +500,24 @@ None
 ### Tags
 \#list-comprension #naming
 
-12. Use `is` to test builtin constants and object reference
-----------------------------------------------------------
+12. Use `is` to test builtin constants and object references
+------------------------------------------------------------
 
 ### Rule
 When testing the equality of builtin constants and object references,
 use the `is` operator
 
 ### Example
+    
+    # Test if x is a true boolean True
     if x is True:
         ...
 
+    # Is x the same as None
     If x is None:
         ...
 
+    # Do oobj1 and obj2 reference the same object
     if obj1 is obj2:
         ...
 
@@ -522,7 +526,7 @@ Though the equality operator, `==`, would work in most of these cases,
 using the `is` operator is more semantically correct since you are
 testing object identity.
 
-Also, it's possible that an object could override the __eq__ method,
+Also, it's possible that an object could override the `__eq__` method,
 which would change the meaing of `==` when testing object equality, thus
 having an adverse impact on reliability.
 
@@ -533,21 +537,21 @@ None
 \#constants
 
 13. Naming constants
--------------------
+--------------------
 
 ### Definition
 A constant is just a variable in Python. However, conventions, usually
-based on case, can be established that certain varibles shouldn't be
-assigned more than once.
+based on case, can be established that to indicate that certain varibles
+shouldn't be assigned more than once.
 
 ### Rule
-Use StudlyCase to indicate denote a variable as a constant.
+Use StudlyCase to denote a variable as a constant.
 
 ### Example
         
     def area(r):
         Pi = 3.14
-        return self.Pi * (r * r)
+        return Pi * (r * r)
 
     class ratios:
         GoldenRatio       =  1.618
@@ -571,7 +575,7 @@ StudlyCase is easier to type and read and nicely denotes constants while
 preserving a Python tradition.
 
 ### Exceptions
-Exceptions can be made to honor traditions.
+Exceptions can be made to honor traditions:
 
     class constants:
         # Underscore can symbolize the hythen
@@ -589,30 +593,30 @@ Exceptions can be made to honor traditions.
 ### Rule
 Varible names
 
-    * should be all lowercase 
-    * should be easy to remember abbreviations when possible
-    * should be document in their class's docstring when they are used
-      as object references
-    * if not abbreviated, should be composed of a single word if humanly
-      possible
-    * should be in *scriptio continua* case when they are compound words
-    * should not contain type information (such as in Hungarian
-      notation)
-    * Multiple uses of a variable name should end with 1, then 2,
-      etc.
+* should be all lowercase 
+* should be easy to remember and abbreviated when possible
+* should be document in their class's docstring when they are used
+  as object references
+* if not abbreviated, should be composed of a single word if humanly
+  possible
+* should be in *scriptio continua* case when they are compound words
+* should not contain type information (such as in Hungarian
+  notation)
+* Multiple uses of a variable name should end with 1, then 2,
+  etc.
 
 ### Justification
 The most important attributes of variable names is the ability to easily
 type, read and remember them. Short, one word or abbreviated names are
-easiest to use. Being free from having to consider uppercase
-characters and underscores further contribute to ease of use. Type
-information, such as in Hungarian notation adds unnessary clutter when
-when methods are discrete, well written and properly documented. Using
-*scriptio continua* case has the added benefit of encouraging single word
-variables since compound variables written in *scriptio continua* are
-a little difficult to read. Standard abbreviations also aid in
-usability. Documenting the abbreviation in the class or an abbreviation
-glossary has obvious benefits for standardization.
+easiest to use. Being free from having to consider uppercase characters
+and underscores further contribute to ease of use. Type information,
+such as in Hungarian notation, adds unnessary clutter when methods are
+discrete, well written and properly documented. Using *scriptio
+continua* case has the added benefit of encouraging single word
+variables since compound variables written in *scriptio continua* are a
+little difficult to read. Standard abbreviations also aids in usability.
+Documenting the abbreviation in the class or an abbreviation glossary
+has obvious benefits for standardization.
 
 ### Examples
 
@@ -622,13 +626,13 @@ glossary has obvious benefits for standardization.
     # Using ls as a standard abbreviation for "list"
     ls = list()
 
-    # If we can't use a single word, use *scriptio continua*
+    # If we can't use a single word, use scriptio continua
     firstname = per.firstname
     lastname = per.lastname
 
-    # Note that this is an encourgement to find synonyms that are
+    # Note that the above is an encourgement to find synonyms that are
     # single words:
-    forname = per.firstname
+    forename = per.firstname
     surname = per.lastname
 
     # Note that in this method, Hungarian notation would be surpurflous
@@ -638,7 +642,7 @@ glossary has obvious benefits for standardization.
         :param per person.person: The preson object from which to return
         the full name.
         """
-        return per.forname + ' ' + per.surname
+        return per.forename + ' ' + per.surname
 
     # Here is how to document a standard abbreviation in a class's
     # docstring
@@ -681,7 +685,7 @@ a situation like the following:
     int_number = int(strnumber.replace('-', ''))
 
 Here, we have the original phone number as a string and an integer. In
-this situation, we want to maintain both version, perhaps the string
+this situation, we want to maintain both versions, perhaps the string
 version wil be reported to the user later on for some reason and the
 integer will be saved to the database. 
 
@@ -690,8 +694,8 @@ For help naming things in general, a thesaurus is one of the most
 valuable resources.
 
 For inspiration on creating abbreviations, it is useful to look at the
-way other technologies abbreviate things. The standard UNIX command `ls`
-inspired the abbreviations for "list".
+way other technologies abbreviate things. For example, the standard UNIX
+command `ls` inspired the abbreviations for "list" used above.
 
 ### Tags
 \#naming #variables
