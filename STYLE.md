@@ -700,21 +700,25 @@ command `ls` inspired the abbreviations for "list" used above.
 ### Tags
 \#naming #variables
 
+<a id="writing-property-methods"></a>
 15. Writing @property methods
 ---------------------------
 
 ### Rule
 Property methods 
 
-    * should not be abbreviate unless it is a common
-      abbreviation (such as `.sql` for an SQL representation of an
-      object).
-    * should be all lowercase, 
-    * should not include prefixes such as 'get' and 'set'
-    * should be composed of a single word if humanly possible
-    * should be implemented using the @property decorator
+* should be decorated with @property
+* should not be abbreviate unless it is a common
+  abbreviation (such as `.sql` for an SQL representation of an
+  object)
+* should be all lowercase
+* should not include prefixes such as 'get' and 'set'
+* should be composed of a single word if humanly possible
+* should be implemented using the @property decorator
 
-The setter property use `v` as the value parameter:
+The setter property should use `v` as the value parameter
+
+### Example
 
     @property
     def size(self):
@@ -725,21 +729,21 @@ The setter property use `v` as the value parameter:
         self._size = v
 
 ### Justification
-Property methods are a nice feature of some object-oriented
-programming that clearly denote the attributes of an object.
+Property methods are a nice feature of some object-oriented programming,
+such as Python, because they clearly denote the attributes of an object.
 
     t = toy()
     t.color = 'blue'
 
-'get' and 'set' prefixes add unnecessary clutter to property that are
-created using the @property decorator. Single word properties that are
+'get' and 'set' prefixes add unnecessary clutter to properties that are
+created using the @property decorator. Single-word properties that are
 all lowercase are easier to remember, type and read. Methods that start
 with prefixes such as 'get' and 'set' are difficult to type and
 remember.
 
 ### Exceptions
 Occasionally, uppercase characters can imply certain notions. SQL is
-conventionally uppercase, so you could do the following.
+conventionally uppercase, so you could do something like the following:
 
     stmt = sql.statement()
     stmt.SELECT = '*'
@@ -753,7 +757,8 @@ Also, occasionally compound words can't be avoided, though every effort
 should be made to do so. For example, the `www.request` object currently
 has a `content_type` property. This corresponds to the `Content-Type`
 HTTP header. That header is a standard so it only makes sense to include
-both words (the underscore symbolizes the hyphen).
+both words in the property's name (the underscore symbolizing the
+hyphen).
 
 Properties should be implemented as methods when arguments are required.
 Usually, there should be an actual property for the default invocation:
@@ -765,6 +770,9 @@ Usually, there should be an actual property for the default invocation:
     def getchildren(self, recursive=False):
         ...
 
+`get` and `set` prefixes should be added to getter and setter methods.
+
+#### Boolean properties
 The 'is', 'does', 'has', prefix should be added to Boolean proprieties if
 it enhances readability:
     
@@ -804,8 +812,8 @@ child nodes.
         ...
 
 Here, we have the option of getting the child nodes through a simple
-property and also through a getter method (if we want to optionally get
-them recursively). A third option, `genchildren` is presented if we want
+property, and also through a getter method (if we want to optionally get
+them recursively). A third option, `genchildren`, is presented if we want
 a generator.
 
 ### Justification
@@ -829,9 +837,9 @@ when `p.children` is called. A generator would help with this:
     for child in p.genchildren(recursive=True):
         ...
 
-However, the down side of a generator is that, by using one, we can't
+However, the downside of a generator is that, by using one, we can't
 mutate the internal tree, thus we should always provide a property that
-doesn't return a generator and only provide a generator if one is
+doesn't return a generator and only provide a generator method if one is
 needed.
 
 ### Exceptions
@@ -850,44 +858,45 @@ way lower-level code needs to be written.
 ### Rule
 Classes
 
-    * should not be abbreviate unless it is a common
-      abbreviation (such as `sql` for a class that represents an SQL
-      statement)
+* should not be abbreviate unless it is a common
+  abbreviation (such as `sql` for a class that represents an SQL
+  statement)
 
-    * should represent a distinct entiity that performs a set of
-      identifiable, reusable and testable behavor
+* should represent a distinct entiity that performs a set of
+  identifiable, reusable and testable behavor
 
-    * should be document using a docstring that indicates it's purpose
-      and what it represents
-    
-    * should document the standard variable name(s) used for instances
-      of that class
+* should be document using a docstring that indicates it's purpose
+  and what it represents
 
-    * Should be composed of mostly instance methods, i.e., avoid the
-      [Abuse Of Utility Classes](https://wiki.c2.com/?AbuseOfUtilityClasses)
-      anti-pattern
+* should document the standard variable name(s) used for instances
+  of that class
 
-    * should have a corresponding collection class
+* Should be composed of mostly instance methods, i.e., avoid the
+  [Abuse Of Utility Classes](https://wiki.c2.com/?AbuseOfUtilityClasses)
+  anti-pattern
 
-    * should represent a real-world entity (a sales order, a user
-      account.) or a real-world concept (a database connection, a DOM
-      element, etc.)
+* should have a corresponding collection class
 
-    * should start with an underscore if the class is considered private
+* should represent a real-world entity (a sales order, a user
+  account.) or a real-world concept (a database connection, a DOM
+  element, etc.)
+
+* should start with an underscore if the class is considered private
 
 Class names
-    * should be all lowercase
 
-    * should be composed of a single word if humanly possible
+* should be all lowercase
 
-    * should be in *scriptio continua* case when they are compound words
+* should be composed of a single word if humanly possible
 
-    * should be nouns
+* should be in *scriptio continua* case when they are compound words
+
+* should be nouns
 
 ### Justification
 In object-oriented programming, classes represent entities. These
 entiities can be real world objects such as cars, people, etc., or they
-can be abstract entities, such as an encryption algorithm or database
+can be abstract entities, such as encryption algorithms or database
 tables. Thus the name for a class should always be a noun. 
 
 Like all identifiers, class names are easier to rememember, write and
@@ -954,6 +963,9 @@ written in StudlyCase and should end in the suffix "Error":
     class ComputationalOperationError(Exception):
         pass
 
+See the section [Writing Exception classes](#writing-exception-classes)
+for more.
+
 In the ORM, and underscore is used in orm.association classes to
 seperate the names of the two entities being associated:
 
@@ -978,47 +990,47 @@ None
 ### Rule
 Methods 
 
-    * should not be abbreviate unless it is a common
-      abbreviation (such as `ajax()` for an AJAX post).
+* should not be abbreviate unless it is a common
+  abbreviation (such as `ajax()` for an AJAX post)
 
-    * should be all lowercase
+* should be all lowercase
 
-    * should include prefixes such as 'get' and 'set' if they are
-      getters or setters (see section on writing proprety methods for
-      more on this subject).
+* should include prefixes such as 'get' and 'set' if they are
+  getters or setters (see section on [Writing @proprety Methods](#writing-property-methods) 
+  for more on this subject
 
-    * should be composed of a single word if humanly possible
+* should be composed of a single word if humanly possible
 
-    * should be in *scriptio continua* case when they are compound words
+* should be in *scriptio continua* case when they are compound words
 
-    * should be document using a docstring that indicates its behaviour
-      and return type
-    
-    * should be named a verb unless it is an getter or setter
+* should be document using a docstring that indicates its behaviour
+  and return type
 
-    * Most methods will be instance methods. If the `self` parameters is
-      not used in the body of the method, the method is probably a
-      static method. In that case, remove the `self` parameter and add
-      the @staticmethod decorator. You may also consider whether or not
-      you have a @classmethod on your hands.
+* should be named a verb unless it is an getter or setter
 
-    * It's almost always a good idea to name the parameter during
-      invocation, e.g., `foo.bar(baz=qux)`
+* Most methods will be instance methods. If the `self` parameters is
+  not used in the body of the method, the method is probably a static
+  method. In that case, remove the `self` parameter and add the
+  @staticmethod decorator. You may also consider whether or not you have
+  a @classmethod on your hands.
 
-    * should perform a single identifiable, reusable and testable behavor.
+* It's almost always a good idea to use named parameters, e.g.,
+  `foo.bar(baz=qux)`
 
-    * should not contain type annotaion
+* should perform a single identifiable, reusable and testable behavor
 
-    * should start with an underscore if the method is considered private
+* should not contain type annotaion
+
+* should start with an underscore if the method is considered private
 
 The methods parameters:
     
-    * should be named after standard variable names or standard
-      abbreviations
+* should be named after standard variable names or standard
+  abbreviations
 
-    * should be thoughouly documented using the :param: keyword
+* should be thoughouly documented using the :param: keyword
 
-    * should not contain type annotaion
+* should not contain type annotaion
 
 When writing a parameter's default, don't put space before or after the
 assignment operator, e.g.:
@@ -1070,17 +1082,17 @@ Good:
             ...
 
     rbt = robot()
-    rbt.kill(obj='human'
+    rbt.kill(obj='human')
 
 All methods should perform a discrete unit of work that can be tested.
 (Not every method needs to be tested directly, though it's functionality
 should have tests written for it.) Methods should be written with code
-reuse in mind. A method that is used only once is probably a bad method.
-This is why it's important that the logic in a method be discrete.
-Descrete methods perform exactly one behaviour and are therefore more
-reusable. Adding logic to a method that exceeds its scope makes reuse
-impossible because calling the method no longer does the one thing that
-the client code would expect.
+reuse in mind. A method that is expected to ever be called once is
+probably a bad method.  This is why it's important that the logic in a
+method be discrete.  Descrete methods perform exactly one behaviour and
+are therefore more reusable. Adding logic to a method that exceeds its
+scope makes reuse impossible because calling the method no longer does
+the one thing that the client code would expect.
 
 Indiscrete method:
 
@@ -1148,7 +1160,7 @@ Event properties should be named in the form of
 Event handler names should start with the name of the object that the event is
 based on, followed by an underscore, followed by the word 'on', followed
 by the temporal preposition ('before', after), followed by the name of
-the event. The should contain the parameters 'src', (the source of the
+the event. They should contain the parameters 'src', (the source of the
 event) and 'eargs' the event arguments (see entities.eventargs).
 
 ### Example
@@ -1156,8 +1168,8 @@ event) and 'eargs' the event arguments (see entities.eventargs).
     class carrots:
 
         # The event proprety returns a lazy-loaded, memoized event.
-        # Lazy-loading events can be a real performance boast so is
-        # considered the better choice.
+        # Lazy-loading events can sometimes be a real performance boast
+        # so is considered the better choice.
         @property
         def onbeforepick(self):
             if not hasattr(self, '_onbeforepick'):
@@ -1170,6 +1182,7 @@ event) and 'eargs' the event arguments (see entities.eventargs).
             self.onbeforepick()
 
             # Do the picking
+            ...
 
             # onafterepick will not be implemented in this example, but
             # normally would be.
@@ -1182,7 +1195,7 @@ event) and 'eargs' the event arguments (see entities.eventargs).
     # picks the carrots and handles the onbeforepick event.
     class picker
         def __init__(self):
-            self.carrots += carrots()
+            self.carrots = carrots()
 
             for i in range(10):
                 self.carrots += carrot()
@@ -1207,7 +1220,7 @@ event) and 'eargs' the event arguments (see entities.eventargs).
 Events in the Core Framework were largely based on .NET's events, so
 many of the conventions of that framework were copied.
 
-Using an `eventarg` class to contain the arguments for the event handler
+Using an `eventargs` class to contain the arguments for the event handler
 is a useful way to ensure the correct data gets to the event handlers.
 Prefacing the event handler with the name of the object followed by an
 underscore helps signal that the method is an event handler and denotes
@@ -1217,7 +1230,7 @@ which object is the subject of the event.
 None
 
 ### Tags
-\#naming #event #eventarg
+\#naming #event #eventargs
 
 20. Writting comments
 ---------------------
@@ -1238,7 +1251,7 @@ line as the last line of comment text.
 ### Example
 
     class widget:
-        """ This represents reprenents a widgets.
+        """ This represents a widgets.
 
         Widgets are metasyntatic products.
 
@@ -1278,22 +1291,22 @@ None
 ### Tags
 \#comments
 
-21. Writing function
--------------------
+21. Writing functions
+---------------------
 
 ### Rule
 
 Functions should:
     
-    * only be written when they can not be integrated into an object
-    model as a method
+* only be written when they can not be integrated into an object
+  model as a method
 
-    * should be written in snake case
+* should be written in snake case
 
-    * should contain docstrings just like methods.
+* should contain docstrings just like methods
 
-    * should contain well understood, abbreviations for parameters just
-      like methods.
+* should contain well understood abbreviations for parameters just
+  like methods
 
 ### Example
 
@@ -1327,7 +1340,7 @@ Functions should:
                 ...
 
 ### Justification
-Functions are much more rare that methods in the framework. Very
+Functions are much rarer than methods in the framework. Very
 occasionally, there will be a need for a module-level method. Somewhat
 more frequently, inner functions will be useful to avoid code
 duplication within a method.
@@ -1358,20 +1371,21 @@ None
 ### Tags
 \#functions #naming
 
-22. Writing Exception classes
-----------------------------
+<a id="writing-exception-classes"></a>
+22. Writing Exception Classes
+-----------------------------
 
 ### Rule
 Exception classes
     
-    * should be in StudlyCase
-    
-    * should end in the word "Error"
+* should be in StudlyCase
 
-    * should contain methods and properties that are appropriate to the
-      exception
+* should end in the word "Error"
 
-    * should contain docstrings at the class and method/property level
+* should contain methods and properties that are appropriate to the
+  exception
+
+* should contain docstrings at the class and method/property level
 
 ### Example
 Here is an (abbriviated) example from the `dom` module.
@@ -1442,17 +1456,16 @@ exception class inherits from HttpException and deals with HTTP responses
 with status codes equal to or greater than 400. These status codes
 denote actual errors, making the suffix "Error" appropriate. Thus it could
 be said that, unless the exception class represents an error, it should
-not end in the word Error.
+not end in the word Error. (Note that Python drops or replaces the
+"Error" suffix in some of its builtin exception class as well such as
+`StopIteration` and `SyntaxWarning`).
 
 ### Tags
 \#exceptions #naming #class
 
 <!-- TODO
-Don't chain lines using the semicolon
-
 Though method names should strive to be one word, parameters should
 strive to be standard abbreviations. Regular varibales strive to be
 standarad abbreviations so this creates a standard look and feel for all
 variables.
-
 -->
