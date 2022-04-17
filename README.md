@@ -1,6 +1,19 @@
 Carapacian Core
-====
-A web framework.
+================
+Carapacian Core is a web framework. It is written and maintained to
+facilitate the creation of web application that deal with business data.
+It offers the following features:
+
+* An object-relational mapper (ORM)
+* A univeral object/data model for business objects
+* Robotic process automation (RPA)
+* Command-line administration
+* Database migration
+* Server-side DOM authoring
+* A web page object model (POM)
+* Logging
+* A automated unit/regression testing framework
+* Robust third-party API integration
 
 Current Memory Issues
 =====================
