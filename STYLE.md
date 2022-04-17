@@ -43,7 +43,7 @@ regards to comment tokens.
 
 ### Rule
 When writing a conditional construct, such as an `if` or `while`
-statement, put a newline after the contitional.
+statement, put a newline after the conditional.
 
 ### Example
 Bad:
@@ -67,8 +67,8 @@ Good:
 
 
 ### Justification
-Most conditionals have multiline code blocks. Thus the eye becomes used
-to seeing the conditional seperated from the code block by a new line.
+Most conditionals have multi-line code blocks. Thus the eye becomes used
+to seeing the conditional separated from the code block by a new line.
 Sometimes, it may seem convenient to join the two on the same line, but
 this has a negative impact on readability. 
 
@@ -98,16 +98,16 @@ Good:
 A line of code should read as a distinct unit of logic. In the example
 above, the assignment of x and y may be related (i.e. the two variables
 are both being initialized) they are still distinct logical operations.
-A programer's eye is primed to read each line of code as a seperate
+A programmer's eye is primed to read each line of code as a separate
 imperative statement. Violating this convention impairs readability.
 Also, in costs more in horizontal space which further hampers
-understandability.
+readability.
 
-### Implsementation tips
+### Implementation tips
 None
 
 ### Tags
-\#whitespace, #semicolon, #formating
+\#whitespace, #semicolon, #formatting
 
 4. Breaking lines
 ------------------
@@ -238,7 +238,7 @@ Good:
 ### Justification
 The negation operator can sometimes be used when it doesn't need to be.
 To the reader, this would simply represent one more thing to parse out.
-Strive to write code that's as easiy to read as possible.  To solve
+Strive to write code that's as easily to read as possible.  To solve
 complex problems, our code must be as simple as possible.
 
 ### Exceptions
@@ -293,12 +293,12 @@ flag.
 ### Tags
 \#whitespace #formatting
 
-8. Initilize primatives using object instantiation
+8. Initialize primitives using object instantiation
 --------------------------------------------------
 
 ### Rule
-When initializing primative variables to their default value, use
-instatiation instead of literal assignment. 
+When initializing primitive variables to their default value, use
+instantiation instead of literal assignment. 
 
 ### Examples
 Bad:
@@ -360,7 +360,7 @@ class in 8 different modules:
     budgitem = budget.item()
     acctitem = account.item()
 
-Simple `import` lines add to clearity as well. For example, the line:
+Simple `import` lines add to clarity as well. For example, the line:
     
     itm = budget.item()
 
@@ -446,7 +446,7 @@ to use these in the framework.
             ...
 
 ### Justification
-It's normal for bugs and and code optizitions of varying severity to be
+It's normal for bugs and and code optimizations of varying severity to be
 noted and accumulated in source code. Having standard, well defined
 comment tags helps categorize the severity of the issues.
 
@@ -466,18 +466,18 @@ None.
 Your text editor should be configured to highlight the comment tag. Vim
 does this by default for TODO, FIXME and NOTE in Python comments.
 
-The random hex digets can be generate using `uuidgen`:
+The random hex digits can be generate using `uuidgen`:
 
     uuidgen | cut -c1-8
 
 ### Tags
 \#comments
 
-11. Use x as list comprension variable
+11. Use x as list comprehension variable
 --------------------------------------
 
 ### Rule
-When writing list comprehentions, use x as the default variable.
+When writing list comprehensions, use x as the default variable.
 
 ### Example
     [x for x in ls if x.prop = 'value']
@@ -498,7 +498,7 @@ single character, it is easy to type and read, like the `i`.
 None
 
 ### Tags
-\#list-comprension #naming
+\#list-comprehension #naming
 
 12. Use `is` to test builtin constants and object references
 ------------------------------------------------------------
@@ -527,7 +527,7 @@ using the `is` operator is more semantically correct since you are
 testing object identity.
 
 Also, it's possible that an object could override the `__eq__` method,
-which would change the meaing of `==` when testing object equality, thus
+which would change the meaning of `==` when testing object equality, thus
 having an adverse impact on reliability.
 
 ### Exceptions
@@ -541,7 +541,7 @@ None
 
 ### Definition
 A constant is just a variable in Python. However, conventions, usually
-based on case, can be established that to indicate that certain varibles
+based on case, can be established that to indicate that certain variables
 shouldn't be assigned more than once.
 
 ### Rule
@@ -591,7 +591,7 @@ Exceptions can be made to honor traditions:
 -------------------
 
 ### Rule
-Varible names
+Variable names
 
 * should be all lowercase 
 * should be easy to remember and abbreviated when possible
@@ -610,7 +610,7 @@ The most important attributes of variable names is the ability to easily
 type, read and remember them. Short, one word or abbreviated names are
 easiest to use. Being free from having to consider uppercase characters
 and underscores further contribute to ease of use. Type information,
-such as in Hungarian notation, adds unnessary clutter when methods are
+such as in Hungarian notation, adds unnecessary clutter when methods are
 discrete, well written and properly documented. Using *scriptio
 continua* case has the added benefit of encouraging single word
 variables since compound variables written in *scriptio continua* are a
@@ -664,18 +664,18 @@ has obvious benefits for standardization.
     pers2 = persons()
 
 ### Exceptions
-Occasionally, to reflect another standard, it's permissable to use
-underscores to seperate words. For example, the HTTP header
-`Content-Type` should have a varibable name `content_type` because the
+Occasionally, to reflect another standard, it's permissible to use
+underscores to separate words. For example, the HTTP header
+`Content-Type` should have a variable name `content_type` because the
 underscore symbolize the hyphen in the original standard. Additionally,
-it is convential to uppercase SQL keywords, so the following may be
+it is conventional to uppercase SQL keywords, so the following may be
 useful:
 
     SELECT  =  '*'
     FROM    =  'mytable'
     WHERE   =  'a=b'
 
-Occasionally you may want to have two varibles with the same name and
+Occasionally you may want to have two variables with the same name and
 which contain the same data, but the data is typed differently. Consider
 a situation like the following:
 
@@ -686,7 +686,7 @@ a situation like the following:
 
 Here, we have the original phone number as a string and an integer. In
 this situation, we want to maintain both versions, perhaps the string
-version wil be reported to the user later on for some reason and the
+version will be reported to the user later on for some reason and the
 integer will be saved to the database. 
 
 ### Implementation tips
@@ -852,7 +852,7 @@ way lower-level code needs to be written.
 ### Tags
 \#naming #generators
 
-17. Writting classes
+17. Writing classes
 --------------------------------
 
 ### Rule
@@ -862,8 +862,8 @@ Classes
   abbreviation (such as `sql` for a class that represents an SQL
   statement)
 
-* should represent a distinct entiity that performs a set of
-  identifiable, reusable and testable behavor
+* should represent a distinct entity that performs a set of
+  identifiable, reusable and testable behavior
 
 * should be document using a docstring that indicates it's purpose
   and what it represents
@@ -895,11 +895,11 @@ Class names
 
 ### Justification
 In object-oriented programming, classes represent entities. These
-entiities can be real world objects such as cars, people, etc., or they
+entities can be real world objects such as cars, people, etc., or they
 can be abstract entities, such as encryption algorithms or database
 tables. Thus the name for a class should always be a noun. 
 
-Like all identifiers, class names are easier to rememember, write and
+Like all identifiers, class names are easier to remember, write and
 read if they are single words in all lowercase. A good abbreviations or
 acronyms should be identified for use as the instance variables name of
 a class. This prevents naming overlap:
@@ -919,13 +919,13 @@ a class. This prevents naming overlap:
 
 Virtually all data represented in computer systems is hierarchical. This
 means that instances of a class will need to be grouped in a container.
-Convential programming approches are content to use `list`s and `dict`s
+Conventional programming approaches are content to use `list`s and `dict`s
 for this kind of thing. However, these simple container objects were not
 designed to encapsulate business logic. A more sophisticated approach is to
 use classes that represent objects as collections. So the `person` class
 above should have a complementary `persons` collection which can contain
 instances of `person`. For ORM entity classes, this is enforced by the
-framework and is made possible through inheritence:
+framework and is made possible through inheritance:
 
     class persons(orm.entities):
         ...
@@ -939,7 +939,7 @@ framework and is made possible through inheritence:
     # Add per to the pers collection
     pers += per
 
-However, if you are writting non-ORM classes, you can still create
+However, if you are writing non-ORM classes, you can still create
 collection classes by inheriting from `entities` base classes.
 
     import entities
@@ -967,7 +967,7 @@ See the section [Writing Exception classes](#writing-exception-classes)
 for more.
 
 In the ORM, and underscore is used in orm.association classes to
-seperate the names of the two entities being associated:
+separate the names of the two entities being associated:
 
     class order(orm.entity):
         ...
@@ -996,14 +996,14 @@ Methods
 * should be all lowercase
 
 * should include prefixes such as 'get' and 'set' if they are
-  getters or setters (see section on [Writing @proprety Methods](#writing-property-methods) 
+  getters or setters (see section on [Writing @property Methods](#writing-property-methods) 
   for more on this subject
 
 * should be composed of a single word if humanly possible
 
 * should be in *scriptio continua* case when they are compound words
 
-* should be document using a docstring that indicates its behaviour
+* should be document using a docstring that indicates its behavior
   and return type
 
 * should be named a verb unless it is an getter or setter
@@ -1017,9 +1017,9 @@ Methods
 * It's almost always a good idea to use named parameters, e.g.,
   `foo.bar(baz=qux)`
 
-* should perform a single identifiable, reusable and testable behavor
+* should perform a single identifiable, reusable and testable behavior
 
-* should not contain type annotaion
+* should not contain type annotation
 
 * should start with an underscore if the method is considered private
 
@@ -1028,9 +1028,9 @@ The methods parameters:
 * should be named after standard variable names or standard
   abbreviations
 
-* should be thoughouly documented using the :param: keyword
+* should be thoroughly documented using the :param: keyword
 
-* should not contain type annotaion
+* should not contain type annotation
 
 When writing a parameter's default, don't put space before or after the
 assignment operator, e.g.:
@@ -1054,7 +1054,7 @@ this format:
     ):
         ...
 
-Note that a single space surounds the assignment operator for the
+Note that a single space surrounds the assignment operator for the
 default assignments when using the broken format. It just looks nicer.
     
 ### Justification
@@ -1089,12 +1089,12 @@ All methods should perform a discrete unit of work that can be tested.
 should have tests written for it.) Methods should be written with code
 reuse in mind. A method that is expected to ever be called once is
 probably a bad method.  This is why it's important that the logic in a
-method be discrete.  Descrete methods perform exactly one behaviour and
+method be discrete.  Discrete methods perform exactly one behavior and
 are therefore more reusable. Adding logic to a method that exceeds its
 scope makes reuse impossible because calling the method no longer does
 the one thing that the client code would expect.
 
-Indiscrete method:
+Indiscreet method:
 
     class salesorder:
         def place(self):
@@ -1108,7 +1108,7 @@ Indiscrete method:
 The `place` method does two things. If for some reason we need to call
 the `place` method in an area of the code that doesn't want to bother
 the customer with an email, we would not be able to use the `place`
-method. Perhapse a better way would be to write the class like this:
+method. Perhaps a better way would be to write the class like this:
 
     class salesorder:
         def place(self):
@@ -1134,7 +1134,7 @@ annotation unnecessary.
 None
 
 ### Exceptions
-Type annotaion is used in pom.page.main overrides, e.g.:
+Type annotation is used in pom.page.main overrides, e.g.:
 
     class mypage(pom.page):
         def main(self, greet: bool):
@@ -1144,7 +1144,7 @@ This is a special case because the framework-level code that invokes
 `main` introspects this annotation to enforce types and converts to the
 annotated type.
 
-An underscore is used in event handlers to seperate the subject of the
+An underscore is used in event handlers to separate the subject of the
 event from the event.
 
 ### Tags
@@ -1232,7 +1232,7 @@ None
 ### Tags
 \#naming #event #eventargs
 
-20. Writting comments
+20. Writing comments
 ---------------------
 
 ### Rule
@@ -1240,7 +1240,7 @@ Methods and classes must have docstrings written using three double
 quotes. The concluding double quotes must exist on their own line.
 Example code should be indented.
 
-Comments using the octothorp (#) token should be used to explain the
+Comments using the octothorpe (#) token should be used to explain the
 purpose of logic throughout methods and functions.
 
 Similar to docstrings, header comments can be used to indicates major
@@ -1361,7 +1361,7 @@ Consider the following:
 In the entity object, we wouldn't need to name the `save` method
 `save_entity` because it is nested in a class called `entity`; "entity"
 would be redundant. However, a stand-alone function would lack that
-context. Therefore, we use snake case to seperate the words. Snake case
+context. Therefore, we use snake case to separate the words. Snake case
 is good here because we don't have to type capital letters (as with
 StudlyCase), and the underscores help distinguish the different words.
 
@@ -1388,7 +1388,7 @@ Exception classes
 * should contain docstrings at the class and method/property level
 
 ### Example
-Here is an (abbriviated) example from the `dom` module.
+Here is an (abbreviated) example from the `dom` module.
 
     class HtmlParseError(Exception):
         """ Raised when there is an error during the parsing of an HTML
