@@ -55,6 +55,8 @@ class configuration:
         :param: cls type: The ``configuration`` class or a subtype
         thereof.
         """
+        # XXX Are we still using this
+        B()
         if not cls._instance:
             cls._instance = cls()
         return cls._instance

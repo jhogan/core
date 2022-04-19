@@ -1671,7 +1671,7 @@ class _404(page):
 
     @property
     def name(self):
-        """ Return teh name of the error page.
+        """ Return the name of the error page.
         """
         return type(self).__name__.replace('_', '')
 
