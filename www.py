@@ -301,11 +301,11 @@ class application:
             if not break_:
                 # Use the WSGI start_response to send the HTTP status
                 # and headers back to the browser.
-                start_response(res.status, dict(res.headers.list))
+                phrase = f'{res.status} XXX'
+                start_response(phrase, res.headers.list)
 
                 # Return the responses body to the browser
-                return iter([res.body])
-
+                return iter([bytes(res.body, 'UTF-8')]) 
             request = None
 
 # TODO The class name should be `request` and the main instance should

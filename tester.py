@@ -942,7 +942,7 @@ class tester(entities.entity):
 
                 res = www._response(req) 
                 res._status = st
-                res._headers = www.headers(**hdrs)
+                res._headers = www.headers(hdrs)
                 res.body = next(iter)
 
                 # Deal with the set-cookie header
