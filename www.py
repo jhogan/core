@@ -32,6 +32,7 @@ from dbg import B, PM
 from functools import reduce
 from pprint import pprint
 import auth
+import config
 import dom
 import entities
 import exc
@@ -642,23 +643,26 @@ class _request:
     def site(self):
         """ Get the single site (``pom.site``) for this instance.
         """
+        # Prevent circular importing by importing pom here instead
+        # of at the top
+        import pom
+        # NOTE 'server_site' is a contrived, non-HTTP environment
+        # variable used by test scripts to pass in instances of site
+        # objects to use.
+
+        ws = None
         try:
-            # NOTE 'server_site' is a contrived, non-HTTP environment
-            # variable used by test scripts to pass in instances of site
-            # objects to use.
-
-            # TODO When the config logic is complete (eb7e5ad0) Ensure
-            # that we are in a test environment before accepting this
-            # variable to prevent against tampering.
-            ws = self.environment['server_site']
-
-            # Prevent circular importing by importing pom here instead
-            # of at the top
-            import pom
-            if isinstance(ws, pom.site):
-                return ws
+            B()
+            ws = self.environment['HTTP_HOST']
         except KeyError:
-            pass
+            if config().indevelopment:
+                try:
+                    ws = self.environment['server_site']
+                except KeyError:
+                    pass
+
+        if isinstance(ws, pom.site):
+            return ws
 
         # Return the site object as set in the config logic
         return pom.site.getinstance()
