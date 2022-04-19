@@ -15,9 +15,60 @@ It offers the following features:
 * A automated unit/regression testing framework
 * Robust third-party API integration
 
-## Environment
+Environment
+-----------
+The recommend operating system for Carapacian Core is Linux. The Ubuntu
+distribution of Linux is where the Core was developed and where it has
+received most of its testing, however, it should run on moste
+Debian-based distributions without much modification - if any. It's
+recommend that you use the latest LTS version of Ubuntu and use its
+native packages for the Python interpretor along with Green Unicorn. The
+version of Python shipped with the latest Ubuntu LTS version is
+considered the officially supported version.
 
-## Git usage and conventions
+There is a `deb` file in the source directory that contains a list of
+Ubuntu/Debian packages that Carapacian Core depends on. Currently, the
+list contains the following:
+
+    python3-mistune
+    python3-inflect
+    python3-mysqldb
+    mysql-server
+    python-mysqldb
+    python3-dateutil
+
+Thus running the following command is enough to install the OS-level
+dependencies.
+
+    apt install `cat deb`
+
+Ubuntu packages are prefered over PIP packages because running updates
+on Ubuntu will capture updates to these packages:
+
+    apt update && apt dist-upgrade -y
+
+However, some dependencies are not available at the OS-level. They can,
+however, be obtain through PIP. Those packages can be found in the `pip`
+file. Listed are its current contents:
+    
+    pyyaml
+    ua-parser
+    user-agents
+    pytz
+
+We can install they using `pip3`:
+
+    pip3 install `cat pip`
+
+Adding the `-U` flag causes the packages to be update.
+
+    pip3 install -U `cat pip`
+
+Hacking
+----------
+
+Git usage and conventions
+-------------------------
 The 'main' branch alwaws contains the latest, accepted code changes. Feature
 branches are created off the 'main' branch to add features or fix bugs to the
 framework. After the code has been peer reviewed, it can be merged back into
@@ -25,7 +76,7 @@ the 'main' branch. Git tags **will** be used to mark specific points in 'main's
 history indicating release of the framework. The Git tags will use standard
 [semantic versioning](https://semver.org/).
 
-### Code commits
+### Code commits ###
 Two main types of Git commits are used in the framework: standard code commits
 and "housekeeping" commits.  The distinguishing feature of a code commit is
 that it should only contain code changes. Any comments are whitespaces in these
@@ -76,7 +127,7 @@ The comment should always end with the branch name. It should be prefaced with
 This exact text will be provide for you when you run `git commit -v` in the
 commented area, so you can easily copy-and-paste it.
 
-### Housekeeping commits
+### Housekeeping commits ###
 Housekeeping commits mainly consist of post facto comments, whitespace
 changes, changes to documentation files, and other such changes that
 have very little to do with computer logic.  They typically have one
@@ -118,7 +169,8 @@ use a command like this:
 
 Removing `--invert-grep` shows only the housekeeping commits.
 
-## Current Memory Issues
+Current Memory Issues
+---------------------
 
 At the moment, there is an unresolved issue with the way test.py
 accumulates memory as it runs: It never seems to free certain a large
