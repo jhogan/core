@@ -2187,7 +2187,7 @@ class header(entities.entity):
 
             ('content-type', 'text/html')
         """
-        return (self.name, self.value)
+        return (str(self.name), str(self.value))
 
 class browsers(entities.entities):
     """ A collection of ``browser`` objects.
