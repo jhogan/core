@@ -1656,7 +1656,14 @@ class _404(page):
     """ An error page to show that the requested page was not found.
     """
     # NOTE I think this shoud inherit from ``error``.
-    def main(self, ex: www.NotFoundError):
+
+    # XXX Commented out reference to www.NotFoundError. When `gunicorn`
+    # runs www.py, www.py imports pom.py. Referencing `www` before
+    # `www.py` has been fully loaded causes a circular reference issue.
+    # I can't remember exactly why `ex` needs to be annotated. Either
+    # way, a solution needs to be devised for this.
+    #def main(self, ex: www.NotFoundError):
+    def main(self, ex):
         """ The main method of the page.
 
         :param: ex www.NotFoundError: The www.NotFoundError exception
