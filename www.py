@@ -607,7 +607,7 @@ class _request:
         environment varible is returned.
         """
         if self.iswsgi:
-            return self.environment['server_name']
+            return self.environment['SERVER_NAME']
 
         import urllib
         return urllib.parse.urlparse(self._url).hostname
@@ -629,7 +629,7 @@ class _request:
         If there is no query string, None is returned.
         """
         if self.iswsgi:
-            qs = self.environment['query_string']
+            qs = self.environment['QUERY_STRING']
 
             if not qs:
                 qs = None
@@ -657,7 +657,7 @@ class _request:
         except KeyError:
             if config().indevelopment:
                 try:
-                    ws = self.environment['server_site']
+                    ws = self.environment['SERVER_SITE']
                 except KeyError:
                     pass
 
@@ -851,12 +851,12 @@ class _request:
             # Failing to log a hit shouldn't stop page invocation. We
             # should log the failure to the syslog.
             try:
-                ua = str(self.environment['user_agent'])
+                ua = str(self.environment['USER_AGENT'])
             except:
                 ua = str()
 
             try:
-                ip = str(self.environment['remote_addr'])
+                ip = str(self.environment['REMOTE_ADDR'])
             except:
                 ua = str()
 
@@ -915,7 +915,7 @@ class _request:
             slash.
         """
         if self.iswsgi:
-            return self.environment['path_info']
+            return self.environment['PATH_INFO']
 
     @property
     def size(self):
@@ -952,7 +952,7 @@ class _request:
         in the HTTP request.
         """
         if self.iswsgi:
-            return self.environment['request_method'].upper()
+            return self.environment['REQUEST_METHOD'].upper()
         
         if self._method:
             return self._method.upper()
@@ -969,7 +969,7 @@ class _request:
         the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
-            ip = str(self.environment['remote_addr'])
+            ip = str(self.environment['REMOTE_ADDR'])
             self._ip = ecommerce.ip(address=ip)
         return self._ip
 
@@ -979,7 +979,7 @@ class _request:
         HTTP_REFERER of the HTTP request.
         """
         if not self._referer:
-            if not (url := self.environment['http_referer']):
+            if not (url := self.environment['HTTP_REFERER']):
                 # We should return None here. However, because of
                 # 6028ce62, this causes an exception. We need to addres
                 # that first, then we should be able to return None
@@ -999,7 +999,7 @@ class _request:
         """
         if not self._useragent:
             if self.iswsgi:
-                ua = str(self.environment['user_agent'])
+                ua = str(self.environment['USER_AGENT'])
                 self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
@@ -1018,7 +1018,7 @@ class _request:
         """ Return the TCP port for the request, e.g., 80, 8080, 443.
         """
         if self.iswsgi:
-            return int(self.environment['server_port'])
+            return int(self.environment['SERVER_PORT'])
 
         import urllib
         return urllib.parse.urlparse(self._url).port
