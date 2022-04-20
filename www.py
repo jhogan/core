@@ -652,7 +652,6 @@ class _request:
 
         ws = None
         try:
-            B()
             ws = self.environment['HTTP_HOST']
         except KeyError:
             if config().indevelopment:
