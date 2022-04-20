@@ -1096,7 +1096,10 @@ class _request:
         """
         # TODO This should check self.headers['content-type'] if it
         # can't be found in the WSGI environment.
-        return self.environment['content_type'].strip()
+        try:
+            return self.environment['CONTENT_TYPE'].strip()
+        except KeyError:
+            return None
 
     @property
     def mime(self):
