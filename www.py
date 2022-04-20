@@ -660,6 +660,23 @@ class _request:
                 except KeyError:
                     pass
 
+        # If ws is a string, look for the website module that matches
+        # the string. The website module will have the `site` class, so
+        # get that class and use it to instantiate a site object.
+
+        # XXX With the below changes, it's obvious we should be
+        # memoizing the return value
+
+        # XXX Corret this so we can load website modules that have
+        # corresponding file names with dots in them, i.e.,
+        # s/carapacian_com.py/carapacian.com.py/
+        if isinstance(ws, str):
+            # XXX Try without a port
+            host, port = ws.split(':')
+            host = host.replace('.', '_')
+            mod = __import__(host,  globals(), locals())
+            ws = getattr(mod, 'site')()
+
         if isinstance(ws, pom.site):
             return ws
 
