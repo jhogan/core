@@ -17,6 +17,8 @@ It offers the following features:
 
 Environment
 -----------
+
+## Operating system ##
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
 received most of its testing, however, it should run on moste
@@ -64,8 +66,53 @@ Adding the `-U` flag causes the packages to be update.
 
     pip3 install -U `cat pip`
 
+## Database ##
+The RDBMS of choice is MySQL. The configuration for the database
+connection can set using the `config.accounts` property in the
+`config.py` file. Iteratate over the the accounts from the base class
+`configuration` and find the MySQL connection, then set its values to
+whatever you need. This will usually just be the password.
+
+See the [Configuration](#assets-configuration) section for more details
+on the configuration files.
+
+    class config(configuration):
+        @property
+        def accounts(self):
+            accts = super().accounts
+            for acct in accts:
+                if isinstance(acct, accounts.mysql):
+                    acct.password = 'MyP@ssw0rd'
+
+            return accts
+
+The framework's uses the database for persisting data and maintaining
+indexes for fast data retrival. It doesn't use the database to store
+code such as in the case of stored procedures, views, UDF's, etc. Thus,
+the SQL that it uses to interact with the RDBMS is fairly simple and
+standard. It could probably be easily ported to another RDBMS if that
+were somehow deemed desireable, that MySQL seems like an excellent
+choice for the framework's needs.
+
+The RDBMS is also expected to take care of it's on scalability and
+backup needs as well as provide network transparency. However, a
+database bot <!--TODO reference the bot section--> will be written to
+tend the administration of these functions.
+
+## Lower environments ##
+As of this writing, not much work has been done to determine how the
+production environment, as well as the lower enviroments, such as UAT,
+QA, and development will be managed. This section will be updated when
+concrete solutions to this problem domain have been devised.
+
+Assets
+------
+
+<a id="assets-configuration"></a>
+## Configuration ##
+
 Hacking
-----------
+-------
 
 Git usage and conventions
 -------------------------
