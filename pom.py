@@ -123,7 +123,26 @@ class site(asset.asset):
             except IndexError:
                 resx = file.directory('resources')
                 self.directory += resx
-                resx.save()
+                
+                sec = orm.security()
+
+                try:
+                    # If the owner hasn't been set, make root the
+                    # owner. XXX It's not clear who the owner should be
+                    # at this point. If the site's resource directory
+                    # hasn't been created yet, the anonymous user might
+                    # end up being the owner. Or an authenticated. The
+                    # owner of the directory will have rights to that
+                    # directory. The user that ends up creating the
+                    # resources directory probably shouldn't have those
+                    # rights. Maybe the site object needs its own admin
+                    # user for these types of things.
+                    if not (own := sec.owner):
+                        sec.owner = ecommerce.users.root
+                    resx.save()
+                finally:
+                    sec.owner = own
+
                 self._resources = resx
         return self._resources
 
