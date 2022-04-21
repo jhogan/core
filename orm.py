@@ -4552,6 +4552,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             elif isinstance(map, foreignkeyfieldmapping):
                 if map.isowner and not isroot:
                     if not isinstance(map.value, UUID):
+                        B()
                         msg = 'Owner reference not set correctly'
                         brs += entitiesmod.brokenrule(
                             msg, map.name, 'valid', self
@@ -8017,6 +8018,16 @@ class orm:
                 entities = virii
         """
         # TODO Don't allow to run unless apriori.model has been run
+
+        # FIXME:f6c7d0f1 There is a design inherent in this property.
+        # This proprety was created so we could lazy-load the
+        # association between an entity and its complement. However,
+        # lazy-loading this means that the `orm` reference on the
+        # entities class won't exist until this property has been run on
+        # the entity class's orm. See the HACK at f6c7d0f1 for more. We
+        # may want to go back to the original eager-loading approach
+        # where this was done in orm.entitymeta.__new__. The downside
+        # would be an increase in startup time (not sure how much).
 
         # Memoize
         if not self._entities:

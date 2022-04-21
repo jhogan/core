@@ -31,6 +31,7 @@ are also provided in this module.
 from dbg import B, PM
 from functools import reduce
 from pprint import pprint
+import apriori
 import auth
 import config
 import dom
@@ -146,6 +147,20 @@ class application:
         break_ = False
 
         try:
+
+            import orm
+
+            # HACK:f6c7d0f1 Calling `party.anonymous` calls
+            # `ecommerce.root`. In that property, `ecommerce.users.orm`
+            # is called. Due to a design flaw in `orm.entities`, `.orm`
+            # does no exist on `ecommerce.users` until we call the below
+            # line first. See FIXME:f6c7d0f1
+            ecommerce.user.orm.entities
+
+            # Set the owner to anonymous. XXX This doesn't address how
+            # an authenticated user would be set.
+            orm.security.owner = party.party.anonymous
+
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
