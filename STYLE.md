@@ -1468,4 +1468,6 @@ Though method names should strive to be one word, parameters should
 strive to be standard abbreviations. Regular varibales strive to be
 standarad abbreviations so this creates a standard look and feel for all
 variables.
+
+Explain that discrete methods are easier to read in small windows.
 -->

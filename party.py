@@ -376,9 +376,10 @@ class company(legalorganization):
     def carapacian(cls):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns the official Carapacian company entity. If the entity does
-        not exist in the database, it will be created. The id for the entity
-        is hardcoded and should never be changed.
+        Returns the official Carapacian company entity
+        (`party.company`). If the entity does not exist in the database,
+        it will be created. The id for the entity is hardcoded and
+        should never be changed.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         

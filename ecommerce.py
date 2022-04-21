@@ -65,6 +65,15 @@ class users(orm.entities):
 
     @classproperty
     def root(cls):
+        """ XXX
+        """
+
+        # XXX If an exception is raised here (and probably most other
+        # places), a different exception is reported to the browser via
+        # gunicorn. Ensure that the following get's reported to the
+        # user agent.
+        # raise ValueError('derp');
+
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
             for map in users.orm.mappings.foreignkeymappings:
@@ -80,6 +89,7 @@ class users(orm.entities):
             )
 
             if usrs.isplurality:
+                # TODO Replace with IntegrityError
                 raise ValueError('Multiple roots found')
 
             if usrs.issingular:
