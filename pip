@@ -1,4 +1,4 @@
 pyyaml
 ua-parser
 user-agents
-pip install pytz
+pytz
