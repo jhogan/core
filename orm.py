@@ -4552,7 +4552,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             elif isinstance(map, foreignkeyfieldmapping):
                 if map.isowner and not isroot:
                     if not isinstance(map.value, UUID):
-                        B()
                         msg = 'Owner reference not set correctly'
                         brs += entitiesmod.brokenrule(
                             msg, map.name, 'valid', self

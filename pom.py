@@ -936,6 +936,9 @@ class page(dom.html):
         try:
             self._mainfunc = self.main
         except AttributeError:
+            # XXX See why we get here and explain why. See TODO above.
+            # Should we log this? A user may forget to add a `main`
+            # method and get a `pass` instead of a helpful error message.
             pass
 
         self.clear()
