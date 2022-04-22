@@ -113,6 +113,46 @@ Assets
 
 Hacking
 -------
+## Writing tests ##
+<!-- TODO -->
+
+## Testing through Green Unicorn ##
+On the occasion that you need to debug an issue through the HTTP
+interface directory, you can run the Green Unicorn HTTP/WSGI server and
+hit the services from a browser of some other user agent like `curl`. To
+run the service, you can `cd` into the framework's source directory and
+run the command:
+
+   gunicorn -b carapacian.com:8000 --reload --timeout 0 'www:application()' 
+
+The `-b` flag binds the above invokation to the `carapacian.com`
+interface on port 8000. 
+
+The ``--reload`` option is useful because it
+causes `gunicorn` to detect changes made to the source files. This way
+you don't have to rerun `gunicorn` everytime you make a change to the
+source. It uses **inotify** to monitor files. inotify should be
+installed by default in Ubuntu.
+
+Setting `--timeout` to 0 means the worker classes will wait an
+indefinate amount of time for the request to complete. This is useful
+for step-by-step debugging described below.
+
+the 'www.application()' instantiates the `application`` class in
+`www.py` and returns an instance to ``gunicorn``. This is where the
+framework code takes the request per the WSGI standard.
+
+The above service can then be invoked with `curl`:
+
+    curl carapacian.com:8000
+
+You can set breakpoints in the code with the call `B()` described above.
+When the breakpoint is encounterd, the terminal that `gunicorn` is
+running in will display a PDB prompt giving you PDB`s full capacity to
+debug the code at the break point. When you are ready for the request to
+complete, just enter the command `c` into the PDB prompt to cause the
+code to continue. The request will complete and the `gunicorn` is ready
+for the next request.
 
 Git usage and conventions
 -------------------------
