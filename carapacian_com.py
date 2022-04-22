@@ -22,6 +22,9 @@ class site(pom.site):
         self.pages += home()
 
 class home(pom.page):
+    def main(self):
+        pass
+
     @property
     def name(self):
         return 'index'
