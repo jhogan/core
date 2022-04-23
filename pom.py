@@ -345,6 +345,13 @@ class site(asset.asset):
             self._header = header(site=self)
         return self._header
 
+    @property
+    def proprietor(self):
+        aps = self.asset_parties.where(
+            lambda x: x.asset_partytype.name == 'proprietor'
+        )
+        return aps.only
+
 class forms:
     """ ``forms`` acts as a namespace to get to standard forms that a
     developer can access and reuse, such as the login form.
