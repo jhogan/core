@@ -107,6 +107,13 @@ class foonet(pom.site):
 
         return mnu
 
+    @property
+    def proprietor(self):
+        for ap in self.asset_parties:
+            if ap.asset_partystatustype.name == 'proprietor':
+                return ap.party
+        return None
+
 class pom_menu_item(tester.tester):
     def it_calls__init__(self):
         itm = pom.menu.item('A text item')
