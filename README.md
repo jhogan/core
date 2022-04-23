@@ -113,6 +113,114 @@ Assets
 
 Hacking
 -------
+
+## Running tests
+Most feature development and bug fixes are done through the automated
+regration testing scripts. 
+
+Each module has, or should have, a corresponding test module. For
+example, the tests for the `product.py` module are located in
+`testproduct.py`. Within the test module, there are (or should be)
+*tester* classes which test classes in the corresponding module. 
+
+For example, to test the ability of the ORM class
+`product.product` to update itself, a tester method called
+`testproduct.test_product.it_updates` contains code to update a
+`product` and assert that the update works. Conventionally, tester
+methods start with the `it_` prefix, though this isn't a strict
+requirement of the tester framework. 
+
+To run all the tests, you can simply run the `test.py` script.
+
+    ./test.py
+
+This runs all the tests in that file as well as all the tests in files
+that match the pattern `test*.py`. 
+
+To narrow you tests down a little, you choose to run only the
+module-level tests. To run all the product tests, run the testproduct.py
+script mentioned above:
+
+    ./testproduct.py
+
+
+To narrow things down even more, you can choose to run a tester module
+specifically:
+
+    ./testproduct.py test_product
+
+This only runs the tests in the `test_product` class.
+
+During development, you will probably want to focus on one tester method
+at a time. If you were testing the updating capabilities of the
+`product` class, as described above, you could choose to run only the
+`it_updates` method like this.
+
+    ./testproduct.py test_product.it_updates
+
+This is much faster. 
+
+By default, tests rebuild database tables that are needed for the tests.
+This takes some time and is often unnecessary. You can cause the test
+process to skip this process with the `-T` flag.
+
+    ./testproduct.py test_product.it_updates -T
+
+Now the test runs even faster.
+
+## Dropping into the debugger
+If the test reports exceptions, you can rerun the tests and cause test
+to break on those exceptions. This is an extremely important technique
+to know because it makes development so much faster. All you have to do
+is pass in the `-b` flag.
+
+    ./testproduct.py test_product.it_updates -T -b
+
+If there is an exception, you will be dropped into the PDB debugger. At
+that point, you will be able to get the values of any variable, step in,
+out of, and over lines of code, print a stack trace, jump to different
+lines of code, etc. If you don't know how to use PDB you can find a
+reference
+[here](https://docs.python.org/3/library/pdb.html#debugger-commands).
+
+You can also set breakpoints in the code. This is typically done by
+calling the `B` function (the `B` function is imported in each module
+with the line `from dbg import B`). For example, if you want to be
+dropped in the debugger when the below method is called, just call `B`
+on the first line:
+
+    def some_dubious_logic(self):
+        B()
+        ...
+
+Run the code as you normally would:
+
+    ./test.py
+
+If the `B` function is encountered, you will be dropped into PDB.
+
+If an exception is raised an caught, you may find yourself in the
+`except` block not knowing where the exception was actually raised.
+Another function from `dbg` called `PM` is imported in most modules:
+
+    from dbg import B, PM
+
+You can use this to bring the PDB debugger to the actual line that
+raised the exception.
+
+    try:
+        this_raises_an_exception_somewhere()
+    except AttributeError:
+        # This line will bring us to the actual line that raise the
+        # exception.
+        PM(ex)
+        ...
+
+The `B` and `PM` functions are added to the actual source code. They
+shouldn't be pushed into the Git repository, though. It's okay to push
+them into feature branches if that is conventient, but the should never
+be pushed into 'main'.
+
 ## Writing tests ##
 <!-- TODO -->
 
