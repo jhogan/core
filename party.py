@@ -24,7 +24,7 @@ from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
 import apriori, asset, file
-import db,orm, primative
+import db, orm, primative
 import uuid, builtins
 
 class parties(orm.entities):                                 
