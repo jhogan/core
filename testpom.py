@@ -73,6 +73,15 @@ class foonet(pom.site):
         self.sidebars += sb
         sb += mnus
 
+        ''' Proprietor '''
+        com = party.company(name='Foonet, Inc')
+        apst = party.asset_partystatustype(name='proprietor')
+        self.asset_parties += party.asset_party(
+            asset = self,
+            party = com,
+            asset_partystatustype = apst,
+        )
+
         ''' Footer  '''
 
     @property
@@ -242,7 +251,9 @@ class pom_menu_items(tester.tester):
 
 class pom_site(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'party', 'apriori'
+        super().__init__(mods=mods, *args, **kwargs)
+
         orm.security().override = True
     
     def it_calls__init__(self):
@@ -466,6 +477,15 @@ class pom_site(tester.tester):
         sels = dom.selectors('li > a[href="%s"]' % itm.page.path)
         self.zero(ws.header[sels])
         self.zero(mnu[sels])
+
+    def it_assigns_proprietor(self):
+        ws = foonet()
+        aps = ws.asset_parties
+        self.plural(aps)
+        aps = aps.where(
+            lambda x: x.asset_partystatustype.name == 'proprietor'
+        )
+        self.one(aps)
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
