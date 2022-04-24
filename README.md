@@ -107,6 +107,91 @@ concrete solutions to this problem domain have been devised.
 
 Assets
 ------
+This section provides an overview of the various files in the framework.
+
+## Test Scipts ##
+Most development begins with the test scripts. All test scripts are in
+the glob pattern `test*.py`, e.g., `testlogs.py`. Each test script
+corresponds to a module which is the subject of its tests. 
+
+Each test class in the test scripts inherits from the `tester` class.
+This class provides basic assert methods that you may be familiar with
+from other testing framworks.
+
+For more information on test scripts, see the section [Running
+tests](#hacking-running-tests).
+
+Below is a list of the current test scripts:
+
+    testbot.py
+    testdom.py
+    testecommerce.py
+    testentities.py
+    testfile.py
+    testlogs.py
+    testmessage.py
+    testorder.py
+    testparty.py
+    testpom.py
+    testproduct.py
+    test.py
+    testsec.py
+    testthird.py
+    testwww.py
+
+## General Entity Model (GEM) ##
+The General Entity Model, sometimes called the universal data model, is
+a large collection of business objects designed to work together to
+persist business data in a robust and universal way. 
+
+The GEM is based on the data models provided by the book "The Data Model
+Resource Book, Vol.  1: A Library of Universal Data Models for All
+Enterprises" and its second volume "The Data Model Resource Book, Volume
+2: A Library of Universal Data Models by Industry Types". These books
+provide several hundred tables that form a single data model that span a
+number of business domains such as order entry, product management,
+human resource management, as wel as industry specific data models such
+manufacturing and professional services. The GEM is a collection of ORM
+entity classes that correspond to the data model from the books. Note
+that at the moment, only the data model from the first volume has been
+fully incorpated into the framework.
+
+The GEM is truly vast, and can be used to persist and retrieve
+virtually any business data in a highly normalized and robust way. The
+GEM classes, being ORM classes, each have persistence logic built in.
+Additionally, the contain the logic to ensure that the data they contain
+is valid and that the user retriving or persisting that data is
+authorized to do so. Note that though many GEM classes have been fully
+incorporated into the framework, validation and authorization is an
+ongoing effort.
+
+It is highly recommend that developers obtain these two books and
+absorb the data modeling and business ontology concepts in them before
+endevoring to use or alter the GEM.
+
+Below is a list of the modules that currently contain GEM classes.
+
+    account.py
+    apriori.py
+    asset.py
+    budget.py
+    ecommerce.py
+    effort.py
+    hr.py
+    invoice.py
+    message.py
+    order.py
+    party.py
+    product.py
+    shipment.py
+
+## Entity and ORM modules ##
+## DOM and POM modules ##
+## Robotic process automation (RPA) ##
+## HTTP and WSGI modules ##
+## Command line interface (crust) ##
+## Library dependency files ##
+## Documentation files ##
 
 <a id="assets-configuration"></a>
 ## Configuration ##
@@ -114,6 +199,7 @@ Assets
 Hacking
 -------
 
+<a id="hacking-running-testes"></a>
 ## Running tests
 Most feature development and bug fixes are done through the automated
 regration testing scripts. 
