@@ -123,21 +123,21 @@ tests](#hacking-running-tests).
 
 Below is a list of the current test scripts:
 
-    testbot.py
-    testdom.py
-    testecommerce.py
-    testentities.py
-    testfile.py
-    testlogs.py
-    testmessage.py
-    testorder.py
-    testparty.py
-    testpom.py
-    testproduct.py
-    test.py
-    testsec.py
-    testthird.py
-    testwww.py
+* **testbot.py**        Test classes in bot.py
+* **testdom.py**        Test classes in dom.py
+* **testecommerce.py**  Test classes in ecommerce.py
+* **testentities.py**   Test classes in ecommerce.py
+* **testfile.py**       Test classes in file.py
+* **testlogs.py**       Test classes in logs.py
+* **testmessage.py**    Test classes in message.py
+* **testorder.py**      Test classes in order.py
+* **testparty.py**      Test classes in party.py
+* **testpom.py**        Test classes in pom.py
+* **testproduct.py**    Test classes in product.py
+* **test.py**           Test classes in orm.py
+* **testsec.py**        Test authorization related code.
+* **testthird.py**      Test classes in third.py
+* **testwww.py**        Test classes in www.py
 
 ## General Entity Model (GEM) ##
 The General Entity Model, sometimes called the universal data model, is
@@ -171,21 +171,75 @@ endevoring to use or alter the GEM.
 
 Below is a list of the modules that currently contain GEM classes.
 
-    account.py
-    apriori.py
-    asset.py
-    budget.py
-    ecommerce.py
-    effort.py
-    hr.py
-    invoice.py
-    message.py
-    order.py
-    party.py
-    product.py
-    shipment.py
+* **account.py**    Contains class that manage accounting data
+* **apriori.py**    Contains GEMs that all GEM entities could use
+* **asset.py**      Contains class that manage the assets used by people and organizations
+* **budget.py**     Contains class that manage budgeting data
+* **ecommerce.py**  Contains class that manage web and user data
+* **effort.py**     Contains class that manage work effort data
+* **hr.py**         Contains class involved in human resource management
+* **invoice.py**    Contains classes related to invoicing
+* **message.py**    Contains classes involved in messages such as email,
+                    SMS, chat, etc.
+* **order.py**      Contains class involved in order entry
+* **party.py**      Contains classes that track people and organizations
+* **product.py**    Contains classes involved in product managemnts
+* **shipment.py**   Contains class involved in shipping
 
-## Entity and ORM modules ##
+## Entity modules ##
+The entity modules, `entities.py`, contains base classes that most of
+the class in the framework ultimately inherit from. The most import of
+these are `entities` and `entity`. The classes contain many facilities
+that make working with collections of entity objects easy. 
+
+    import entities
+
+    class products(entities.entities)
+        pass
+
+    class product(entitie.entity)
+        pass
+
+    # Create a collection
+    prds = products()
+
+    # Create some entity objects
+    prd1 = product()
+    prd2 = product()
+
+    # Assert that the collection has no entities
+    assset prds.count == 0
+
+    # Append the entity objects to the collection
+    prds += prd1
+    prds += prd2
+
+    # Assert that the collection has 2 entities
+    assset prds.count == 2
+
+Here, the `products` class acts as a smart array or list for the
+`product` entity because we are free to add as much functionality to the
+`products` colllection class as we want.
+
+The entity system also supports a rebost event management system that
+allows us to subscribe one or more event handlers to events that happen
+to the `entities` object or the `entity` object, such as the event when
+an entity is added to the collection, or when an attribute of an entity
+changes.
+
+`entities` and `entity` classes also support robust validation logic
+through their `brokenrule` properties.
+
+Indexing is provided, as well, for fast lookup of `entity` objects within
+an `entities` colection (although, for OLTP applications, this is rarely
+needed.).
+
+The `entities` and `entity` class provide the base classes for ORM
+`entities` and `entity` classes. See [below](#assets-orm-module) for
+more on ORM classes.
+
+<a id="assets-orm-module"></a>
+## ORM module ##
 ## DOM and POM modules ##
 ## Robotic process automation (RPA) ##
 ## HTTP and WSGI modules ##
