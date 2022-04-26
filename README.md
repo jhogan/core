@@ -139,6 +139,7 @@ Below is a list of the current test scripts:
 * **testthird.py**      Test classes in third.py
 * **testwww.py**        Test classes in www.py
 
+<a id="assets-gem"></a>
 ## General Entity Model (GEM) ##
 The General Entity Model, sometimes called the universal data model, is
 a large collection of business objects designed to work together to
@@ -239,7 +240,52 @@ The `entities` and `entity` class provide the base classes for ORM
 more on ORM classes.
 
 <a id="assets-orm-module"></a>
-## ORM module ##
+## Object-relational mapper (ORM) module ##
+An important part part of the framework is the **object-relational mapper
+(ORM)**. It provides the persistence layer for the [GEM](#assets-gem)
+classes as well as other data-driven classes. These classes are
+collectively refered to as "ORM classes"
+
+Basic data mutation (creation, updating, and deletion) operations for
+ORM object is provided through the `save()` method, and data queriying
+is provided through the constructors.
+
+The ORM protects data from invalid data through the ORM object's
+`brokenrules` @property.
+
+Data is further protected from unauthorized access and modification
+through the ORM's `security` and `violations` classes.
+
+Data can be streamed through collection objects by loading an arbitrary
+number of records at a time. This is useful when working with large
+datasets. See the `orm.streaming` class for more.
+
+Atomic, cascading persistence is supported through the use of collection
+objects:
+
+    import order
+
+    # Create order object
+    ord = order.order()
+
+    # Add 10 order items to the order's `items` collection
+    for _ in range(10):
+        ord.items += order.item()
+
+    # Save the order and all it's line itmes
+    ord.save()
+
+Here, an order object is created and 10 child (constituent) items are
+added to the order. When `save()` is called, the order and it's items
+are saved atomically resulting in 11 records being saved in two
+different database tables. The cascading can go on indefinately.
+
+Database subclassing is also supported. That is to say, if an ORM class
+has a subclass, the subclass and the ORM class have corresponding
+tables. For example, the `order.order` class above is subclassed by the
+`order.salesorder` class. If we create and save a `salesorder`, a record
+in its table, as well as the `order` table, are saved atomically.
+
 ## DOM and POM modules ##
 ## Robotic process automation (RPA) ##
 ## HTTP and WSGI modules ##
