@@ -4,7 +4,8 @@ import apriori; apriori.model()
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
+
 import auth
 import dom
 import ecommerce
@@ -258,7 +259,7 @@ class pom_menu_items(tester.tester):
         )
         self.eq(expect, itms.html)
 
-class pom_site(tester.tester):
+class site(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'apriori'
         super().__init__(mods=mods, *args, **kwargs)
