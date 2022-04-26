@@ -74,7 +74,6 @@ class foonet(pom.site):
         sb += mnus
 
         ''' Proprietor '''
-        com = party.company(name='Foonet, Inc')
         apst = party.asset_partystatustype(name='proprietor')
         self.asset_parties += party.asset_party(
             asset = self,
@@ -83,6 +82,16 @@ class foonet(pom.site):
         )
 
         ''' Footer  '''
+
+    @property
+    def proprietor(self):
+        ProprietorId = UUID(hex='f00E37b406c4424ea351f8baf1f3500e')
+        if not self._proprietor:
+            self._proprietor = party.company(
+                id = ProprietorId, name='Foonet, Inc'
+            )
+
+        return self._proprietor
 
     @property
     def _adminmenu(self):
@@ -106,13 +115,6 @@ class foonet(pom.site):
         rpt.items += pom.menu.item(pg)
 
         return mnu
-
-    @property
-    def proprietor(self):
-        for ap in self.asset_parties:
-            if ap.asset_partystatustype.name == 'proprietor':
-                return ap.party
-        return None
 
 class pom_menu_item(tester.tester):
     def it_calls__init__(self):

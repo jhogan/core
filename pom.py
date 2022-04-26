@@ -48,6 +48,46 @@ class site(asset.asset):
         """ Create a new web ``site`` object.
         """
         super().__init__(*args, **kwargs)
+
+        self._proprietor = None
+
+        def persist_proprietor():
+            if type(self) is site:
+                return
+
+            propr = self.proprietor
+            with orm.sudo(), orm.proprietor(propr.id):
+                try:
+                    propr = propr.orm.reloaded()
+                except db.RecordNotFoundError:
+                    sup = propr
+                    while sup:
+                        sup.owner = ecommerce.users.root
+                        sup.proprietor = propr
+                        sup = sup.orm.super
+                    
+                    propr.save()
+
+                orm.proprietor = propr
+                B()
+                for ap in self.asset_parties:
+                    if ap.asset_partystatustype.name == 'proprietor':
+                        if ap.party.id == propr.id:
+                            break
+                else:
+                    apst = party.asset_partystatustype(name='proprietor')
+                    ap = party.asset_party(
+                        asset                  =  self,
+                        party                  =  propr,
+                        asset_partystatustype  =  apst,
+                    )
+                    self.asset_parties += ap
+
+                    ap.save()
+
+
+        persist_proprietor()
+
         self.index = None
         self._pages = None
         self._html = None
@@ -86,6 +126,12 @@ class site(asset.asset):
     directory = file.directory
 
     _resources = None
+
+    @property
+    def proprietor(self):
+        raise NotImplementedError(
+            'A proprietor must be set for the site'
+        )
 
     @orm.attr(file.directory)
     def directory(self):
@@ -344,13 +390,6 @@ class site(asset.asset):
         if not self._header:
             self._header = header(site=self)
         return self._header
-
-    @property
-    def proprietor(self):
-        aps = self.asset_parties.where(
-            lambda x: x.asset_partytype.name == 'proprietor'
-        )
-        return aps.only
 
 class forms:
     """ ``forms`` acts as a namespace to get to standard forms that a
