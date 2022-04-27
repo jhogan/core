@@ -23,6 +23,7 @@ import itertools
 import orm
 import primative
 import textwrap
+import party
 import www
 
 # References:
@@ -57,35 +58,38 @@ class site(asset.asset):
             if type(self) is site:
                 return
 
-            propr = self.proprietor
-            with orm.sudo(), orm.proprietor(propr.id):
+            root = ecommerce.users.root
+            with orm.sudo(), orm.proprietor(self.Proprietor.id):
                 try:
-                    propr = propr.orm.reloaded()
+                    propr = self.Proprietor.orm.reloaded()
                 except db.RecordNotFoundError:
-                    sup = propr
-                    while sup:
-                        sup.owner = ecommerce.users.root
-                        sup.proprietor = propr
-                        sup = sup.orm.super
+                    propr = self.Proprietor
+                    with orm.proprietor(propr):
+                        sup = propr
+                        while sup:
+                            sup.owner = root
+                            sup = sup.orm.super
                     
-                    propr.save()
+                with orm.proprietor(propr):
+                    for ap in self.asset_parties:
+                        if ap.asset_partystatustype.name == 'proprietor':
+                            if ap.party.id == propr.id:
+                                break
+                    else:
+                        self.proprietor = propr
 
-                orm.proprietor = propr
-                B()
-                for ap in self.asset_parties:
-                    if ap.asset_partystatustype.name == 'proprietor':
-                        if ap.party.id == propr.id:
-                            break
-                else:
-                    apst = party.asset_partystatustype(name='proprietor')
-                    ap = party.asset_party(
-                        asset                  =  self,
-                        party                  =  propr,
-                        asset_partystatustype  =  apst,
-                    )
-                    self.asset_parties += ap
+                        apst = party.asset_partystatustype(name='proprietor')
+                        ap = party.asset_party(
+                            asset                  =  self,
+                            party                  =  propr,
+                            asset_partystatustype  =  apst,
+                        )
+                        self.asset_parties += ap
 
-                    ap.save()
+                        sup = self
+                        while sup:
+                            sup.owner = root
+                            sup = sup.orm.super
 
 
         persist_proprietor()
@@ -128,12 +132,6 @@ class site(asset.asset):
     directory = file.directory
 
     _resources = None
-
-    @property
-    def proprietor(self):
-        raise NotImplementedError(
-            'A proprietor must be set for the site'
-        )
 
     @orm.attr(file.directory)
     def directory(self):

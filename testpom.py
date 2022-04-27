@@ -22,6 +22,11 @@ class foonets(pom.sites):
     pass
 
 class foonet(pom.site):
+    Proprietor = party.company(
+        id = UUID(hex='f00E37b406c4424ea351f8baf1f3500e'),
+        name = 'Foonet, Inc'
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
@@ -74,25 +79,7 @@ class foonet(pom.site):
         self.sidebars += sb
         sb += mnus
 
-        ''' Proprietor '''
-        apst = party.asset_partystatustype(name='proprietor')
-        self.asset_parties += party.asset_party(
-            asset = self,
-            party = com,
-            asset_partystatustype = apst,
-        )
-
         ''' Footer  '''
-
-    @property
-    def proprietor(self):
-        ProprietorId = UUID(hex='f00E37b406c4424ea351f8baf1f3500e')
-        if not self._proprietor:
-            self._proprietor = party.company(
-                id = ProprietorId, name='Foonet, Inc'
-            )
-
-        return self._proprietor
 
     @property
     def _adminmenu(self):
@@ -489,13 +476,34 @@ class site(tester.tester):
         self.zero(mnu[sels])
 
     def it_assigns_proprietor(self):
-        ws = foonet()
-        aps = ws.asset_parties
-        self.plural(aps)
-        aps = aps.where(
-            lambda x: x.asset_partystatustype.name == 'proprietor'
-        )
-        self.one(aps)
+        root = ecommerce.users.root
+
+        with orm.proprietor(None), orm.su(None):
+            ws = foonet()
+
+        def test_principles(ws):
+            self.eq(ws.Proprietor.id, ws.proprietor.id)
+            self.eq(root.id, ws.owner.id)
+
+            self.eq(ws.Proprietor.id, ws.proprietor.proprietor.id)
+            self.eq(root.id, ws.proprietor.owner.id)
+
+        test_principles(ws)
+
+        return
+
+
+        #XXX
+
+        with orm.proprietor(ws.proprietor), orm.sudo():
+            ws.save()
+            test_principles(ws.orm.reloaded())
+            aps = ws.asset_parties
+            self.plural(aps)
+            aps = aps.where(
+                lambda x: x.asset_partystatustype.name == 'proprietor'
+            )
+            self.one(aps)
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
