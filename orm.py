@@ -3328,7 +3328,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # proprietor gets saved to the database.
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 if propr := security().proprietor:
-                    self.proprietor = propr
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If self.proprietor is not an instance of party,
+                    # e.g., it's a UUID, we can't assign, so ignore.
+                    # This is for unusual circumstances, such as when
+                    # setting up principles and trying to avoid
+                    # catch-22's.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    import party
+                    if isinstance(propr, party.party):
+                        self.proprietor = propr
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
