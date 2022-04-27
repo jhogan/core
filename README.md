@@ -287,6 +287,27 @@ tables. For example, the `order.order` class above is subclassed by the
 in its table, as well as the `order` table, are saved atomically.
 
 ## DOM and POM modules ##
+The DOM module, `dom.py`, provides class that support DOM authoring and
+parsing - similar to the DOM objects provided to JavaScript through a
+browser - though the interface is easier and more Pythonic. 
+
+The DOM module also offers CSS3 selector support and automatic XHR
+request management (through its subclassing of `entities.event`).
+
+The POM (Page Object Model) module provides an abstraction that sits on top
+of the DOM. It offers support for page-level objects such as page
+headers, footers, navigation menus, sidebars, forms, pages and websites.
+Many of it's classes inherit from the DOM objects. For example, since
+`pom page`s are basically HTML pages, `pom.page` objects inherit from
+`dom.html`, while `pom.menu` represents an menu on a page, and therefore
+inherits from `dom.nav`.
+
+Entire websites are represented by classes that inherit from `pom.site`.
+For example, in website modules, such as `carpacian_com.py`, the
+`carapacian_com.site` class inherits from `pom.site`, while class that
+inherit from `pom.page` exist in that module to represent the website's
+pages.
+
 ## Robotic process automation (RPA) ##
 ## HTTP and WSGI modules ##
 ## Command line interface (crust) ##
