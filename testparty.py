@@ -1873,6 +1873,12 @@ class party_(tester.tester):
             self.eq(ks.rating, ks1.rating)
             self.eq(ks.skilltype.id, ks1.skilltype.id)
 
+    def it_returns_same_anonymous(self):
+        self.is_(
+            party.party.anonymous,
+            party.party.anonymous,
+        )
+
 class contactmechanism(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

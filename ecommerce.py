@@ -61,7 +61,8 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    RootUserId = uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+    AnonymousUserId  =  uuid.UUID('616e6f6e-7573-6572-8a2e-882b3978ef54')
+    RootUserId       =  uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
 
     @classproperty
     def root(cls):
@@ -92,6 +93,24 @@ class users(orm.entities):
                     cls._root.save()
 
         return cls._root
+
+    @classproperty
+    def anonymous(cls):
+        if not hasattr(cls, '_anon') or not cls._anon:
+            try:
+                cls._anon = user(cls.AnonymousUserId)
+            except db.RecordNotFoundError:
+                cls._anon = user(
+                    id = cls.AnonymousUserId,
+                    name = 'anonymous',
+                )
+
+                par = party.party.anonymous
+                usr.party = par
+                usr.save()
+
+
+        return cls._anon
         
 class histories(orm.entities):                                pass
 class preferences(orm.entities):                              pass

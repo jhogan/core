@@ -259,6 +259,8 @@ class ecommerce_(tester.tester):
         ip = ecommerce.ip(address='127.0.0.2')
         self.eq('127.0.0.2', str(ip))
 
+    def it_calls_anonymous(self):
+
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
