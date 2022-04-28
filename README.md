@@ -309,6 +309,34 @@ inherit from `pom.page` exist in that module to represent the website's
 pages.
 
 ## Robotic process automation (RPA) ##
+The `bot.py` modules provides classes that inherit from the `bot.bot`
+class. These bot's are intended to be run as background process to
+automate a number of routine tasks. 
+
+Currently, there is only the `sendbot` class which send messages from
+the message queue to third-party system's such as SMTP servers. However,
+there are plans to develop a number of other bot's to manage routine
+administrative tasks such as an `adminbot` to monitor servers and a
+`cfgbot` (configuration management bot) to maintain Git repositories and
+automate running tests. 
+
+Bot's are intended to replace most tasks that are conventionally
+performed by Bash scripts invoked by Crontabs. These bots will go a long
+way toward reducing the administrative burden conventionally put on
+software developers and will help to keep the systems secure. 
+
+Another use for bots is to create QA bots that can run tests on live
+servers.  These bots could be use for things like checking for spelling
+or testing performance on live websites. This will help improve the
+quality of service provided by these systems.
+
+Though the `bot.py` module is a collection of classes, it can be run as
+an executable. Each invocation would bring to life a certain bot:
+
+    ./bot.py --iterations 1 --verbosity 5 sendbot
+
+Init systems, like systemd, can be used to invoke the bots this way.
+
 ## HTTP and WSGI modules ##
 ## Command line interface (crust) ##
 ## Library dependency files ##
