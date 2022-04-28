@@ -75,6 +75,7 @@ class users(orm.entities):
                     'Could not find site foreign key'
                 )
                 
+            # XXX Explain this logic
             usrs = users(
                 f'name = %s and {map.name} is %s', 'root', None
             )

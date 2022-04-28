@@ -375,6 +375,25 @@ being created.
 ### Implementation tips
 None
 
+### Exceptions
+If, for some reason it has been deemed a good idea to put the statement
+inside a method or function, it may be a good idea to use the 
+
+    from x import y
+
+form. This is because within a method, the potential for name collision
+is greately reduced. Consider:
+
+    class robot:
+
+        @property
+        def user(self):
+            """ Return the robot's user account.
+            """
+            from ecommerce import user
+            return user(name='johnny5')
+        
+
 ### Tags
 \#import #module
 

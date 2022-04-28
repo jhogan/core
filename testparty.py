@@ -23,7 +23,7 @@ import bot
 from uuid import uuid4, UUID
 from random import randint
 
-class test_party(tester.tester):
+class party_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -526,7 +526,7 @@ class test_party(tester.tester):
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
-        com = test_party.getvalidcompany()
+        com = party_.getvalidcompany()
 
         pp = party.party_party()
         pp.object = com

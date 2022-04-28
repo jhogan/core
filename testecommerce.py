@@ -20,7 +20,7 @@ import product
 import tester
 import uuid
 
-class test_ecommerce(tester.tester):
+class ecommerce_(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = (
             'ecommerce', 'apriori', 'party', 

@@ -17022,7 +17022,7 @@ class gem_hr(tester):
         # TODO We should be able to create a position in any
         # party.legalorganization such as a non-profit.
         postyp = self.getvalidpositiontype()
-        com = testparty.test_party.getvalidcompany()
+        com = testparty.party_.getvalidcompany()
 
         # Create positions based on the job
         poss = hr.positions()
@@ -17068,7 +17068,7 @@ class gem_hr(tester):
         self.two(com1.departments.first.divisions.first.positions)
 
     def it_fulfills_postition(self):
-        per = testparty.test_party.getvalid(first='Mike', last='Johnson')
+        per = testparty.party_.getvalid(first='Mike', last='Johnson')
 
         postype = hr.positiontype(name='Mail Clerk', description=None)
         clerk = hr.position()

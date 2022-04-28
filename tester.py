@@ -1224,7 +1224,7 @@ class tester(entities.entity):
     def twelve(self, actual):
         if len(actual) != 12: self._failures += failure()
 
-    def plural(self, actual):
+    def populated(self, actual):
         if len(actual) == 0: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
