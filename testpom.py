@@ -475,35 +475,39 @@ class site(tester.tester):
         self.zero(ws.header[sels])
         self.zero(mnu[sels])
 
-    def it_assigns_proprietor(self):
+    def it_assigns_principles(self):
+        # Get root user
         root = ecommerce.users.root
+        ws = foonet()
 
-        with orm.proprietor(None), orm.su(None):
-            ws = foonet()
 
         def test_principles(ws):
+            """ Test the id's of ws's proprietor and owner
+            """
             self.eq(ws.Proprietor.id, ws.proprietor.id)
-            self.eq(root.id, ws.owner.id)
+
+
+            # Assert the owner of the website is root
+            self.eq(root.id, ws.owner__userid)
 
             self.eq(ws.Proprietor.id, ws.proprietor.proprietor.id)
-            self.eq(root.id, ws.proprietor.owner.id)
+            self.eq(root.id, ws.proprietor.owner__userid)
 
         test_principles(ws)
 
-        return
-
-
-        #XXX
-
+        # Save website as root
         with orm.proprietor(ws.proprietor), orm.sudo():
             ws.save()
-            test_principles(ws.orm.reloaded())
-            aps = ws.asset_parties
-            self.plural(aps)
-            aps = aps.where(
-                lambda x: x.asset_partystatustype.name == 'proprietor'
-            )
-            self.one(aps)
+
+            ws = ws.orm.reloaded()
+            test_principles(ws)
+
+        aps = ws.asset_parties
+        self.populated(aps)
+        aps = aps.where(
+            lambda x: x.asset_partystatustype.name == 'proprietor'
+        )
+        self.one(aps)
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
