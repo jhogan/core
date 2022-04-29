@@ -259,7 +259,32 @@ class ecommerce_(tester.tester):
         ip = ecommerce.ip(address='127.0.0.2')
         self.eq('127.0.0.2', str(ip))
 
+class users(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party', 'ecommerce',
+        super().__init__(mods=mods, *args, **kwargs)
+
     def it_calls_anonymous(self):
+        # Call twice to make sure anonymous is being memoized
+        anon = ecommerce.users.anonymous
+        self.is_(anon, ecommerce.users.anonymous)
+
+        # Ensure id matches constant
+        self.eq(ecommerce.users.AnonymousUserId, anon.id)
+
+        cara = party.company.carapacian
+        with orm.sudo(), orm.proprietor(cara):
+            # Verify its actually in the database
+            self.expect(None, anon.orm.reloaded)
+
+            # Test the id of the parent party
+            self.eq(party.party.AnonymousId, anon.party.id)
+
+        # The proprietor of the anon user should be Carapacian
+        # (although, maybe there should be a "commons" that owns anon)
+        self.eq(party.company.CarapacianId, anon.proprietor__partyid)
+        self.eq(ecommerce.users.RootUserId, anon.owner__userid)
+
 
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
