@@ -132,8 +132,9 @@ class application:
             extension variables, named according to a convention that
             will be described below."
 
-        :param: start_response callable: A callable as defined by the
-        WSGI standard.
+        :param: start_response callable: A callable defined by the
+        WSGI standard to invoke in order to return a response to the
+        WSGI server and ultimately the user agent.
         """
         global request, response
         res = _response(self.request)
@@ -2212,8 +2213,8 @@ class browser(entities.entity):
     The ``request`` method returns a ``response`` object.
 
     The ``browser`` itself contains a ``cookies`` collections which,
-    amoung othre things, can cause the ``browser`` to be authenticated
-    to a give web site, by storing a JWT issued by the web site open
+    among other things, can cause the ``browser`` to be authenticated
+    to a give web site, by storing a JWT issued by the web site upon
     login.
     """
     class _tabs(entities.entities):

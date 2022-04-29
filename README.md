@@ -338,6 +338,16 @@ an executable. Each invocation would bring to life a certain bot:
 Init systems, like systemd, can be used to invoke the bots this way.
 
 ## HTTP and WSGI modules ##
+The `www.py` contains support for HTTP objects such as HTTP requests and
+responses, HTTP exceptions and error. It also contains a `browser`
+object to make HTTP requests easier and more intuitive (for example, the
+`www.browser` can store cookies).
+
+In addition to providing HTTP facilities, it also contains an
+`application` that, when instantiated, is a callable that the WSGI
+server invokes thus providing an entry for HTTP requests into the
+framework's logic (see `www.application.__call__`).
+
 ## Command line interface (crust) ##
 ## Library dependency files ##
 ## Documentation files ##
