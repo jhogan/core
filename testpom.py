@@ -480,14 +480,16 @@ class site(tester.tester):
         root = ecommerce.users.root
         ws = foonet()
 
-
         def test_principles(ws):
             """ Test the id's of ws's proprietor and owner
             """
             self.eq(ws.Proprietor.id, ws.proprietor.id)
 
-
             # Assert the owner of the website is root
+            # FIXME Calling ws.owner.id dosen't work here the second
+            # time test_principles (after ws has been reloaded) because
+            # the owner is root, and root can't be reloaded for some
+            # reason.
             self.eq(root.id, ws.owner__userid)
 
             self.eq(ws.Proprietor.id, ws.proprietor.proprietor.id)

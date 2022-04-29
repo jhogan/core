@@ -32,6 +32,7 @@ from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, timespan, datespan
 import apriori
+import db
 import entities
 import file
 import hashlib

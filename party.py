@@ -371,6 +371,7 @@ class company(legalorganization):
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
 
+    # TODO Move this to party.companies
     _carapacian = None
     @classproperty
     def carapacian(cls):

@@ -232,7 +232,7 @@ class ecommerce_(tester.tester):
 
         self.eq(brw.id,       brw1.id)
         self.eq('Mozilla',    brw1.name)
-        self.eq('5.2',       brw1.version)
+        self.eq('5.2',        brw1.version)
         self.eq(brw.name,     brw1.name)
         self.eq(brw.version,  brw1.version)
 
@@ -250,10 +250,10 @@ class ecommerce_(tester.tester):
             model = 'iPhone',
         )
 
-        self.eq(dev.id,       dev1.id)
-        self.eq('iPhone',    dev1.name)
-        self.eq('Apple',       dev1.brand)
-        self.eq('iPhone',       dev1.model)
+        self.eq(dev.id,    dev1.id)
+        self.eq('iPhone',  dev1.name)
+        self.eq('Apple',   dev1.brand)
+        self.eq('iPhone',  dev1.model)
 
     def it_calls__str__(self):
         ip = ecommerce.ip(address='127.0.0.2')
@@ -288,7 +288,6 @@ class test_visits(tester.tester):
         self.is_(visitor.visits.last, visit)
 
 class test_visit(tester.tester):
-
     def it_calls_iscurrent(self):
         now = primative.datetime.utcnow()
 

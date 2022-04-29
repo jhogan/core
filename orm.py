@@ -7753,7 +7753,7 @@ class security:
     def override(self, v):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        The setter for security.overide.
+        The setter for security.override.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         self._override = v
@@ -8370,7 +8370,7 @@ class orm:
             art = artist()
             assert art.style == 'classicism'
 
-        The ``kwargs`` argument can be used to overide this default::
+        The ``kwargs`` argument can be used to override this default::
 
             art = artist(style='cubism')
             assert art.style == 'cubism'
