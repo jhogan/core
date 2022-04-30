@@ -18,6 +18,7 @@ It offers the following features:
 Environment
 -----------
 
+<a href="environment-operating-system"></a>
 ## Operating system ##
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
@@ -349,8 +350,21 @@ server invokes thus providing an entry for HTTP requests into the
 framework's logic (see `www.application.__call__`).
 
 ## Command line interface (crust) ##
+`crust` is the main command-line interface to the framework. 
+Currently,  `crust` is used to intactively perform database migrations.
+Future uses would include issuing queries to learn about the framework's
+environment as well as communicating with bots.
+
 ## Library dependency files ##
+A couple of simple text files exists to store the third-party libraries
+that the framework depends on. These files are `deb` and `pip`. The
+packages listed in deb should be installed using `apt` while the
+packages listed in `pip` should be installed with `pip`. See the
+[Operating system](#environment-operating-system) section for details on
+how and why to use these files.
+
 ## Documentation files ##
+## File module##
 
 <a id="assets-configuration"></a>
 ## Configuration ##
