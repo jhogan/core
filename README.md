@@ -364,6 +364,27 @@ packages listed in `pip` should be installed with `pip`. See the
 how and why to use these files.
 
 ## Documentation files ##
+There are a few file, all in upppercase, used for various documentation
+purposes:
+
+* **ABBREVIATIONS.md** Contains a list of abbreviations to be used for
+common varibles (such as using `ls` for a variable representing some
+sort of list). Note that typically, a class will document the variable
+name that should be used for instances of the class.
+
+* **LICENCE\_cssselect** The licence for code copied into the framework
+                         from Ian Bicking's 
+                         ['cssselect'](https://github.com/scrapy/cssselect)
+                         project to help with CSS selector tokenization.
+* **LICENSE**            The Carapacian Core licence.
+* **README.md**          The readme file that you are currently reading.
+* **STYLE.md**           The style guide to be followed when developing and
+                         maintaining code for the framework.
+* **VARIABLES**          Similar to **ABBREVIATIONS**, but documents the
+                         conventional names given to varibles in certain
+                         contexts.
+* **VERSION**            Contains the version number of Carapacian Core.
+
 ## File module##
 
 <a id="assets-configuration"></a>
