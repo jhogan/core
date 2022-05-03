@@ -54,9 +54,36 @@ class site(asset.asset):
 
         self._proprietor = None
 
-        def persist_proprietor():
+        def demand_proprietor():
+            """
+            XXX
+            """
+            try:
+                self.Proprietor
+            except AttributeError:
+                raise AttributeError(
+                    'Sites must have a Proprietor constant attribute'
+                )
+
+            if not isinstance(self.Proprietor, party.party):
+                raise TypeError(
+                    "Site's Proprietor constant is the wrong type"
+                )
+
+            if not self.Proprietor.name:
+                raise ValueError(
+                    "Site's Proprietor constant "
+                    'must have an id an and a name'
+                )
+
+        def associate_proprietor():
+            """
+            XXX
+            """
             if type(self) is site:
                 return
+
+            demand_proprietor()
 
             root = ecommerce.users.root
             with orm.sudo(), orm.proprietor(self.Proprietor.id):
@@ -91,8 +118,7 @@ class site(asset.asset):
                             sup.owner = root
                             sup = sup.orm.super
 
-
-        persist_proprietor()
+        associate_proprietor()
 
         self.index = None
         self._pages = None

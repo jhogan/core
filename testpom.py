@@ -511,6 +511,26 @@ class site(tester.tester):
         )
         self.one(aps)
 
+    def it_demands_propritor_is_setup_on_site(self):
+        class squatnets(pom.sites):
+            pass
+
+        class squatnet(pom.site):
+            pass
+
+
+        self.expect(AttributeError, squatnet)
+
+        class squatnet(pom.site):
+            Proprietor = object()
+
+        self.expect(TypeError, squatnet)
+
+        class squatnet(pom.site):
+            Proprietor = party.party()
+
+        self.expect(ValueError, squatnet)
+
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
