@@ -14,7 +14,7 @@ import apriori; apriori.model()
 
 from dbg import B
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
 import asset
 import base64
 import dom
@@ -64,7 +64,7 @@ class foonet(pom.site):
         self.host = 'foo.net'
         self.name = 'foo.net'
 
-class dom_file(tester.tester):
+class file_(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """

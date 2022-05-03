@@ -4568,7 +4568,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
                     else:
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        # Make sure the owner's id of the entiy matches
+                        # Make sure the owner's id of the entity matches
                         # that of the security singleton.
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         if self.orm.isnew:
@@ -7624,7 +7624,7 @@ def su(own):
 
 @contextmanager
 def override(v=True):
-    """ A contextmanager to change security().override is ``v``.  When
+    """ A contextmanager to change security().override to ``v``.  When
     the context manager exits, orm.override is reset to whatever it was
     before the contextmanager was entered.
 

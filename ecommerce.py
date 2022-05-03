@@ -77,7 +77,7 @@ class users(orm.entities):
                     'Could not find site foreign key'
                 )
                 
-            # XXX Explain this logic
+            # TODO Why are we not loading using the RootUserId?
             usrs = users(
                 f'name = %s and {map.name} is %s', 'root', None
             )

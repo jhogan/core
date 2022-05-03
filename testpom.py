@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 import apriori; apriori.model()
 
+
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4, UUID
-
 import auth
 import dom
 import ecommerce
