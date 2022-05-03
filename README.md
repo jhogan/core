@@ -1,19 +1,19 @@
 Carapacian Core
 ================
-Carapacian Core is a web framework. It is written and maintained to
+Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
 
-* An object-relational mapper (ORM)
-* A univeral object/data model for business objects
-* Robotic process automation (RPA)
-* Command-line administration
-* Database migration
-* Server-side DOM authoring
-* A web page object model (POM)
-* Logging
-* A automated unit/regression testing framework
-* Robust third-party API integration
+* An automated unit/regression [testing framework](#assets-test-scripts)
+* An [object-relational mapper](#assets-orm-module) ORM
+* A [univeral object/data model](#assets-gem) for business objects
+* Server-side [DOM authoring](#assets-dom-module)
+* A web [page object model](#assets-dom-module) (POM)
+* [Robotic process automation](#assets-robotic-process-automation) (RPA)
+* [Command-line administration](#assets-command-line-interface)
+* Database [migration](#assets-command-line-interface)
+* [Logging](#assets-logging)
+* Robust [third-party API integration](#assets-third-party)
 
 Environment
 -----------
@@ -110,6 +110,7 @@ Assets
 ------
 This section provides an overview of the various files in the framework.
 
+<a id="assets-test-scripts"></a>
 ## Test Scipts ##
 Most development begins with the test scripts. All test scripts are in
 the glob pattern `test*.py`, e.g., `testlogs.py`. Each test script
@@ -287,6 +288,7 @@ tables. For example, the `order.order` class above is subclassed by the
 `order.salesorder` class. If we create and save a `salesorder`, a record
 in its table, as well as the `order` table, are saved atomically.
 
+<a id="assets-dom-module"></a>
 ## DOM and POM modules ##
 The DOM module, `dom.py`, provides class that support DOM authoring and
 parsing - similar to the DOM objects provided to JavaScript through a
@@ -309,6 +311,7 @@ For example, in website modules, such as `carpacian_com.py`, the
 inherit from `pom.page` exist in that module to represent the website's
 pages.
 
+<a id="assets-robotic-process-automation"></a>
 ## Robotic process automation (RPA) ##
 The `bot.py` modules provides classes that inherit from the `bot.bot`
 class. These bot's are intended to be run as background process to
@@ -349,6 +352,7 @@ In addition to providing HTTP facilities, it also contains an
 server invokes thus providing an entry for HTTP requests into the
 framework's logic (see `www.application.__call__`).
 
+<a id="assets-command-line-interface"></a>
 ## Command line interface (crust) ##
 `crust` is the main command-line interface to the framework. 
 Currently,  `crust` is used to intactively perform database migrations.
@@ -397,6 +401,16 @@ multimedia uploads, and any other types of files they need to manage
 through a website provide by the framework. The framework can also use
 the file system for its own needs, though the database would probably
 make a better choice for most use cases.
+
+<a id="assets-third-party"></a>
+## Third party module ##
+
+    TODO
+
+<a id="assets-logging"></a>
+## Logging ##
+
+    TODO
 
 <a id="assets-configuration"></a>
 ## Configuration ##

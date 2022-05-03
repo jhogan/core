@@ -604,6 +604,8 @@ Variable names
   notation)
 * Multiple uses of a variable name should end with 1, then 2,
   etc.
+* Variable names that are the same as Python keywords should end with an
+  underscore
 
 ### Justification
 The most important attributes of variable names is the ability to easily
@@ -662,6 +664,10 @@ has obvious benefits for standardization.
     pers = persons()  # There is sort of an implied 0 suffix here
     pers1 = persons()
     pers2 = persons()
+
+    # Use a variable called `if` for interface (taken from the UNIX
+    # command `ifconfig`):
+    if_ = interface()
 
 ### Exceptions
 Occasionally, to reflect another standard, it's permissible to use
