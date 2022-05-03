@@ -54,6 +54,10 @@ def clean():
 
 class foonets(pom.sites): pass
 class foonet(pom.site):
+    Proprietor = party.company(
+        id = UUID(hex='5e4ce2b6-034d-473e-a731-bf66012f4989'),
+        name = 'Foonet, Inc'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
