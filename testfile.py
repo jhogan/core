@@ -90,6 +90,8 @@ class file_(tester.tester):
 
     def it_adds_js_files_to_site(self):
         ws = foonet()
+        with orm.su(ws.owner):
+            ws.save()
 
         ws.resources += file.resource(
             url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
