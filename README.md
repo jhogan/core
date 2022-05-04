@@ -404,16 +404,54 @@ make a better choice for most use cases.
 
 <a id="assets-third-party"></a>
 ## Third party module ##
-
-    TODO
+The `third.py` module contains classe related to the integration of the
+framework with third party systems such as external mail servers, credit
+card processing systems, etc. It contains facilities that perform,
+monitor and manager these interactions.
 
 <a id="assets-logging"></a>
 ## Logging ##
+The logging module, `log.py`, wraps calls to Pythons native logging
+library which is configured to send messages to a remote or local
+syslog.
 
-    TODO
+The logging parameters, such as the log level, is configured in the
+[config files](#assets-configuration). 
+
+Log messages are inteded to go to a local log file on the system.
+Most logging should be done using the GEM class (or subclass thereof) of
+`apriori.log`. This way, the log message is in the database which is
+ideal. However, the `log.py` module should be used to log locally
+(ususally to /var/log/syslog) for the following conditions:
+
+* Logging verbose debug messages to assist with problem diagnostics.
+* Logging informational log messages of interest to developer.
+* Logging exceptions that occur when connecting to the database: if
+  there is a problem connecting to the database, we use have to use
+  local file logging a last resort.
 
 <a id="assets-configuration"></a>
 ## Configuration ##
+Configuration of the enviroment is made in two files. The first,
+`configuration.py` is a versioned file which contains no secret
+information, such as database passwords, but does provide a default
+configuration through its `configuration` singleton. 
+
+The second file, `config.py` is an unversioned file which contains a
+class called `config` which inherits from `configuration`. This file
+overrides the default version and can contain secrete information and
+therefore **should never be commited to the Git repository**.  This file
+should also have restritive file permessions:
+
+    chmod 400 config.py
+
+In addition to storing secret information, `config` can also be used to
+override the default configuration of `configuration` to suite the needs
+of the given environment.
+
+Unlike most configuration files, these files are full-fledged Python
+libraries. This is a powerful approach to configuration because we can
+use the full power of Python to configure the environment.
 
 Hacking
 -------
