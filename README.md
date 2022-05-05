@@ -4,9 +4,9 @@ Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
 
-* An automated unit/regression [testing framework](#assets-test-scripts)
-* An [object-relational mapper](#assets-orm-module) ORM
-* A [univeral object/data model](#assets-gem) for business objects
+* An automated regression [testing framework](#assets-test-scripts)
+* An [object-relational mapper](#assets-orm-module) (ORM)
+* A [univeral data model](#assets-gem) for business objects
 * Server-side [DOM authoring](#assets-dom-module)
 * A web [page object model](#assets-dom-module) (POM)
 * [Robotic process automation](#assets-robotic-process-automation) (RPA)
@@ -15,97 +15,6 @@ It offers the following features:
 * [Logging](#assets-logging)
 * Robust [third-party API integration](#assets-third-party)
 
-Environment
------------
-
-<a href="environment-operating-system"></a>
-## Operating system ##
-The recommend operating system for Carapacian Core is Linux. The Ubuntu
-distribution of Linux is where the Core was developed and where it has
-received most of its testing, however, it should run on moste
-Debian-based distributions without much modification - if any. It's
-recommend that you use the latest LTS version of Ubuntu and use its
-native packages for the Python interpretor along with Green Unicorn. The
-version of Python shipped with the latest Ubuntu LTS version is
-considered the officially supported version.
-
-There is a `deb` file in the source directory that contains a list of
-Ubuntu/Debian packages that Carapacian Core depends on. Currently, the
-list contains the following:
-
-    python3-mistune
-    python3-inflect
-    python3-mysqldb
-    mysql-server
-    python-mysqldb
-    python3-dateutil
-
-Thus running the following command is enough to install the OS-level
-dependencies.
-
-    apt install `cat deb`
-
-Ubuntu packages are prefered over PIP packages because running updates
-on Ubuntu will capture updates to these packages:
-
-    apt update && apt dist-upgrade -y
-
-However, some dependencies are not available at the OS-level. They can,
-however, be obtain through PIP. Those packages can be found in the `pip`
-file. Listed are its current contents:
-    
-    pyyaml
-    ua-parser
-    user-agents
-    pytz
-
-We can install they using `pip3`:
-
-    pip3 install `cat pip`
-
-Adding the `-U` flag causes the packages to be update.
-
-    pip3 install -U `cat pip`
-
-## Database ##
-The RDBMS of choice is MySQL. The configuration for the database
-connection can set using the `config.accounts` property in the
-`config.py` file. Iteratate over the the accounts from the base class
-`configuration` and find the MySQL connection, then set its values to
-whatever you need. This will usually just be the password.
-
-See the [Configuration](#assets-configuration) section for more details
-on the configuration files.
-
-    class config(configuration):
-        @property
-        def accounts(self):
-            accts = super().accounts
-            for acct in accts:
-                if isinstance(acct, accounts.mysql):
-                    acct.password = 'MyP@ssw0rd'
-
-            return accts
-
-The framework's uses the database for persisting data and maintaining
-indexes for fast data retrival. It doesn't use the database to store
-code such as in the case of stored procedures, views, UDF's, etc. Thus,
-the SQL that it uses to interact with the RDBMS is fairly simple and
-standard. It could probably be easily ported to another RDBMS if that
-were somehow deemed desireable, that MySQL seems like an excellent
-choice for the framework's needs.
-
-The RDBMS is also expected to take care of it's on scalability and
-backup needs as well as provide network transparency. However, a
-database bot <!--TODO reference the bot section--> will be written to
-tend the administration of these functions.
-
-## Lower environments ##
-As of this writing, not much work has been done to determine how the
-production environment, as well as the lower enviroments, such as UAT,
-QA, and development will be managed. This section will be updated when
-concrete solutions to this problem domain have been devised.
-
 Assets
 ------
 This section provides an overview of the various files in the framework.
@@ -113,7 +22,7 @@ This section provides an overview of the various files in the framework.
 <a id="assets-test-scripts"></a>
 ## Test Scipts ##
 Most development begins with the test scripts. All test scripts are in
-the glob pattern `test*.py`, e.g., `testlogs.py`. Each test script
+the glob pattern `test*.py`, e.g., [testlogs.py](testlogs.py). Each test script
 corresponds to a module which is the subject of its tests. 
 
 Each test class in the test scripts inherits from the `tester` class.
@@ -125,45 +34,51 @@ tests](#hacking-running-tests).
 
 Below is a list of the current test scripts:
 
-* **testbot.py**        Test classes in bot.py
-* **testdom.py**        Test classes in dom.py
-* **testecommerce.py**  Test classes in ecommerce.py
-* **testentities.py**   Test classes in ecommerce.py
-* **testfile.py**       Test classes in file.py
-* **testlogs.py**       Test classes in logs.py
-* **testmessage.py**    Test classes in message.py
-* **testorder.py**      Test classes in order.py
-* **testparty.py**      Test classes in party.py
-* **testpom.py**        Test classes in pom.py
-* **testproduct.py**    Test classes in product.py
-* **test.py**           Test classes in orm.py
-* **testsec.py**        Test authorization related code.
-* **testthird.py**      Test classes in third.py
-* **testwww.py**        Test classes in www.py
+* [testbot.py](testbot.py)              Tests classes in [bot.py](bot.py)
+* [testdom.py](testdom.py)              Tests classes in [dom.py](dom.py)
+* [testecommerce.py](testecommerce.py)  Tests classes in [ecommerce.py](ecommerce.py)
+* [testentities.py](testentities.py)    Tests classes in [entities.py](entities.py)
+* [testfile.py](testfile.py)            Tests classes in [file.py](file.py)
+* [testlogs.py](testlogs.py)            Tests classes in [logs.py](logs.py)
+* [testmessage.py](testmessage.py)      Tests classes in [message.py](message.py)
+* [testorder.py](testorder.py)          Tests classes in [order.py](order.py)
+* [testparty.py](testparty.py)          Tests classes in [party.py](party.py)
+* [testpom.py](testpom.py)              Tests classes in [pom.py](pom.py)
+* [testproduct.py](testproduct.py)      Tests classes in [product.py](product.py)
+* [test.py](test.py)                    Tests classes in [orm.py](orm.py)
+* [testsec.py](testsec.py)              Tests authorization related code.
+* [testthird.py](testthird.py)          Tests classes in [third.py](third.py)
+* [testwww.py](testwww.py)              Tests classes in [www.py](www.py)
 
 <a id="assets-gem"></a>
 ## General Entity Model (GEM) ##
-The General Entity Model, sometimes called the universal data model, is
+The **General Entity Model**, sometimes called the universal data model, is
 a large collection of business objects designed to work together to
-persist business data in a robust and universal way. 
+manage and store business data in a robust and universal way. 
 
 The GEM is based on the data models provided by the book "The Data Model
 Resource Book, Vol.  1: A Library of Universal Data Models for All
 Enterprises" and its second volume "The Data Model Resource Book, Volume
 2: A Library of Universal Data Models by Industry Types". These books
-provide several hundred tables that form a single data model that span a
-number of business domains such as order entry, product management,
-human resource management, as wel as industry specific data models such
-manufacturing and professional services. The GEM is a collection of ORM
-entity classes that correspond to the data model from the books. Note
-that at the moment, only the data model from the first volume has been
-fully incorpated into the framework.
+provide several hundred tables that form a single data model that spans
+a number of business domains such as sales, product management, human
+resource management, as well as industry specific data models such as
+manufacturing and insurance. The GEM is a collection of ORM entity
+classes that correspond to the data models from the books.  
+
+Note that at the moment, only the data model from the first volume has
+been fully incorpated into the framework. Also note that the books don't
+provide a data model for every conceivable domain, for example, the book
+doesn't provide a data model that could support a blog on other literary
+data types. However, we can use the principles from the book to create
+extentions to its data model that integrate with the rest of its data
+model.
 
 The GEM is truly vast, and can be used to persist and retrieve
 virtually any business data in a highly normalized and robust way. The
 GEM classes, being ORM classes, each have persistence logic built in.
-Additionally, the contain the logic to ensure that the data they contain
-is valid and that the user retriving or persisting that data is
+Additionally, they contain the logic to ensure that the data they
+contain is valid and that the user retriving or persisting that data is
 authorized to do so. Note that though many GEM classes have been fully
 incorporated into the framework, validation and authorization is an
 ongoing effort.
@@ -174,23 +89,23 @@ endevoring to use or alter the GEM.
 
 Below is a list of the modules that currently contain GEM classes.
 
-* **account.py**    Contains class that manage accounting data
-* **apriori.py**    Contains GEMs that all GEM entities could use
-* **asset.py**      Contains class that manage the assets used by people and organizations
-* **budget.py**     Contains class that manage budgeting data
-* **ecommerce.py**  Contains class that manage web and user data
-* **effort.py**     Contains class that manage work effort data
-* **hr.py**         Contains class involved in human resource management
-* **invoice.py**    Contains classes related to invoicing
-* **message.py**    Contains classes involved in messages such as email,
+* **[account.py](account.py)**    Contains class that manage accounting data
+* **[apriori.py](apriori.py)**    Contains GEMs that all GEM entities could use
+* **[asset.py](asset.py)**      Contains class that manage the assets used by people and organizations
+* **[budget.py](budget.py)**     Contains class that manage budgeting data
+* **[ecommerce.py](ecommerce.py)**  Contains class that manage web and user data
+* **[effort.py](effort.py)**     Contains class that manage work effort data
+* **[hr.py](hr.py)**         Contains class involved in human resource management
+* **[invoice.py](invoice.py)**    Contains classes related to invoicing
+* **[message.py](message.py)**    Contains classes involved in messages such as email,
                     SMS, chat, etc.
-* **order.py**      Contains class involved in order entry
-* **party.py**      Contains classes that track people and organizations
-* **product.py**    Contains classes involved in product managemnts
-* **shipment.py**   Contains class involved in shipping
+* **[order.py](order.py)**      Contains class involved in order entry
+* **[party.py](party.py)**      Contains classes that track people and organizations
+* **[product.py](product.py)**    Contains classes involved in product managemnts
+* **[shipment.py](shipment.py)**   Contains class involved in shipping
 
 ## Entity modules ##
-The entity modules, `entities.py`, contains base classes that most of
+The entity modules, [entities.py](entities.py), contains base classes that most of
 the class in the framework ultimately inherit from. The most import of
 these are `entities` and `entity`. The classes contain many facilities
 that make working with collections of entity objects easy. 
@@ -290,7 +205,7 @@ in its table, as well as the `order` table, are saved atomically.
 
 <a id="assets-dom-module"></a>
 ## DOM and POM modules ##
-The DOM module, `dom.py`, provides class that support DOM authoring and
+The DOM module, [dom.py](dom.py), provides class that support DOM authoring and
 parsing - similar to the DOM objects provided to JavaScript through a
 browser - though the interface is easier and more Pythonic. 
 
@@ -313,7 +228,7 @@ pages.
 
 <a id="assets-robotic-process-automation"></a>
 ## Robotic process automation (RPA) ##
-The `bot.py` modules provides classes that inherit from the `bot.bot`
+The [bot.py](bot.py) modules provides classes that inherit from the `bot.bot`
 class. These bot's are intended to be run as background process to
 automate a number of routine tasks. 
 
@@ -334,7 +249,7 @@ servers.  These bots could be use for things like checking for spelling
 or testing performance on live websites. This will help improve the
 quality of service provided by these systems.
 
-Though the `bot.py` module is a collection of classes, it can be run as
+Though the [bot.py](bot.py) module is a collection of classes, it can be run as
 an executable. Each invocation would bring to life a certain bot:
 
     ./bot.py --iterations 1 --verbosity 5 sendbot
@@ -342,7 +257,7 @@ an executable. Each invocation would bring to life a certain bot:
 Init systems, like systemd, can be used to invoke the bots this way.
 
 ## HTTP and WSGI modules ##
-The `www.py` contains support for HTTP objects such as HTTP requests and
+The [www.py](www.py) contains support for HTTP objects such as HTTP requests and
 responses, HTTP exceptions and error. It also contains a `browser`
 object to make HTTP requests easier and more intuitive (for example, the
 `www.browser` can store cookies).
@@ -391,7 +306,7 @@ name that should be used for instances of the class.
 
 ## File module ##
 A file system for use by the framework and its users is provided by the
-`file.py` module. File metadata is stored in the database, while file
+[file.py](file.py) module. File metadata is stored in the database, while file
 contents are stored on the actual file system. Since the file classes
 (a.k.a. *inodes*) inherit from `orm.entity`, they enforce their own
 validation and authorization logic.
@@ -404,14 +319,14 @@ make a better choice for most use cases.
 
 <a id="assets-third-party"></a>
 ## Third party module ##
-The `third.py` module contains classe related to the integration of the
+The [third.py](third.py) module contains classe related to the integration of the
 framework with third party systems such as external mail servers, credit
 card processing systems, etc. It contains facilities that perform,
 monitor and manager these interactions.
 
 <a id="assets-logging"></a>
 ## Logging ##
-The logging module, `log.py`, wraps calls to Pythons native logging
+The logging module, [log.py](log.py), wraps calls to Pythons native logging
 library which is configured to send messages to a remote or local
 syslog.
 
@@ -421,7 +336,7 @@ The logging parameters, such as the log level, is configured in the
 Log messages are inteded to go to a local log file on the system.
 Most logging should be done using the GEM class (or subclass thereof) of
 `apriori.log`. This way, the log message is in the database which is
-ideal. However, the `log.py` module should be used to log locally
+ideal. However, the [log.py](log.py) module should be used to log locally
 (ususally to /var/log/syslog) for the following conditions:
 
 * Logging verbose debug messages to assist with problem diagnostics.
@@ -433,17 +348,17 @@ ideal. However, the `log.py` module should be used to log locally
 <a id="assets-configuration"></a>
 ## Configuration ##
 Configuration of the enviroment is made in two files. The first,
-`configuration.py` is a versioned file which contains no secret
+[configuration.py](configuration.py) is a versioned file which contains no secret
 information, such as database passwords, but does provide a default
 configuration through its `configuration` singleton. 
 
-The second file, `config.py` is an unversioned file which contains a
+The second file, [config.py](config.py) is an unversioned file which contains a
 class called `config` which inherits from `configuration`. This file
 overrides the default version and can contain secrete information and
 therefore **should never be commited to the Git repository**.  This file
 should also have restritive file permessions:
 
-    chmod 400 config.py
+    chmod 400 [config.py](config.py)
 
 In addition to storing secret information, `config` can also be used to
 override the default configuration of `configuration` to suite the needs
@@ -452,6 +367,97 @@ of the given environment.
 Unlike most configuration files, these files are full-fledged Python
 libraries. This is a powerful approach to configuration because we can
 use the full power of Python to configure the environment.
+
+Environment
+-----------
+
+<a href="environment-operating-system"></a>
+## Operating system ##
+The recommend operating system for Carapacian Core is Linux. The Ubuntu
+distribution of Linux is where the Core was developed and where it has
+received most of its testing, however, it should run on moste
+Debian-based distributions without much modification - if any. It's
+recommend that you use the latest LTS version of Ubuntu and use its
+native packages for the Python interpretor along with Green Unicorn. The
+version of Python shipped with the latest Ubuntu LTS version is
+considered the officially supported version.
+
+There is a `deb` file in the source directory that contains a list of
+Ubuntu/Debian packages that Carapacian Core depends on. Currently, the
+list contains the following:
+
+    python3-mistune
+    python3-inflect
+    python3-mysqldb
+    mysql-server
+    python-mysqldb
+    python3-dateutil
+
+Thus running the following command is enough to install the OS-level
+dependencies.
+
+    apt install `cat deb`
+
+Ubuntu packages are prefered over PIP packages because running updates
+on Ubuntu will capture updates to these packages:
+
+    apt update && apt dist-upgrade -y
+
+However, some dependencies are not available at the OS-level. They can,
+however, be obtain through PIP. Those packages can be found in the `pip`
+file. Listed are its current contents:
+    
+    pyyaml
+    ua-parser
+    user-agents
+    pytz
+
+We can install they using `pip3`:
+
+    pip3 install `cat pip`
+
+Adding the `-U` flag causes the packages to be update.
+
+    pip3 install -U `cat pip`
+
+## Database ##
+The RDBMS of choice is MySQL. The configuration for the database
+connection can set using the `config.accounts` property in the
+[config.py](config.py) file. Iteratate over the the accounts from the base class
+`configuration` and find the MySQL connection, then set its values to
+whatever you need. This will usually just be the password.
+
+See the [Configuration](#assets-configuration) section for more details
+on the configuration files.
+
+    class config(configuration):
+        @property
+        def accounts(self):
+            accts = super().accounts
+            for acct in accts:
+                if isinstance(acct, accounts.mysql):
+                    acct.password = 'MyP@ssw0rd'
+
+            return accts
+
+The framework's uses the database for persisting data and maintaining
+indexes for fast data retrival. It doesn't use the database to store
+code such as in the case of stored procedures, views, UDF's, etc. Thus,
+the SQL that it uses to interact with the RDBMS is fairly simple and
+standard. It could probably be easily ported to another RDBMS if that
+were somehow deemed desireable, that MySQL seems like an excellent
+choice for the framework's needs.
+
+The RDBMS is also expected to take care of it's on scalability and
+backup needs as well as provide network transparency. However, a
+database bot <!--TODO reference the bot section--> will be written to
+tend the administration of these functions.
+
+## Lower environments ##
+As of this writing, not much work has been done to determine how the
+production environment, as well as the lower enviroments, such as UAT,
+QA, and development will be managed. This section will be updated when
+concrete solutions to this problem domain have been devised.
 
 Hacking
 -------
@@ -462,8 +468,8 @@ Most feature development and bug fixes are done through the automated
 regration testing scripts. 
 
 Each module has, or should have, a corresponding test module. For
-example, the tests for the `product.py` module are located in
-`testproduct.py`. Within the test module, there are (or should be)
+example, the tests for the [product.py](product.py) module are located in
+[testproduct.py](testproduct.py). Within the test module, there are (or should be)
 *tester* classes which test classes in the corresponding module. 
 
 For example, to test the ability of the ORM class
@@ -473,7 +479,7 @@ For example, to test the ability of the ORM class
 methods start with the `it_` prefix, though this isn't a strict
 requirement of the tester framework. 
 
-To run all the tests, you can simply run the `test.py` script.
+To run all the tests, you can simply run the [test.py](test.py) script.
 
     ./test.py
 
@@ -481,7 +487,7 @@ This runs all the tests in that file as well as all the tests in files
 that match the pattern `test*.py`. 
 
 To narrow you tests down a little, you choose to run only the
-module-level tests. To run all the product tests, run the testproduct.py
+module-level tests. To run all the product tests, run the [testproduct.py](testproduct.py)
 script mentioned above:
 
     ./testproduct.py
@@ -681,7 +687,7 @@ blank line), the branch name is included as in standard code commits:
 
 		On branch perf
 
-	diff --git a/orm.py b/orm.py
+	diff --git a/orm.py b/[orm.py](orm.py)
 	index 39bfbec..14d62d1 100644
 	--- a/orm.py
 	+++ b/orm.py
@@ -710,14 +716,14 @@ Removing `--invert-grep` shows only the housekeeping commits.
 Current Memory Issues
 ---------------------
 
-At the moment, there is an unresolved issue with the way test.py
+At the moment, there is an unresolved issue with the way [test.py](test.py)
 accumulates memory as it runs: It never seems to free certain a large
 portion of the objects it creates, and ends up allocating for itself
 several hundred megabytes of memory before it has completed. 
 
 On the machine the framework is currently being developed, there is a
-total of 1GB of RAM. Occasionally, the test.py script will consume so
-much that that the operating system's oom\_reaper will cause MySQL to
+total of 1GB of RAM. Occasionally, the [test.py](test.py) script will consume so
+much that the operating system's oom\_reaper will cause MySQL to
 restart, which causes tests in the script to begin to fail. A convenient
 solution to this is to simply ensure that the following line is set in
 `/etc/mysql/my.cnf`:
