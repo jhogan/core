@@ -52,9 +52,9 @@ Below is a list of the current test scripts:
 
 <a id="assets-gem"></a>
 ## General Entity Model (GEM) ##
-The **General Entity Model**, sometimes called the universal data model, is
-a large collection of business objects designed to work together to
-manage and store business data in a robust and universal way. 
+The **General Entity Model**, sometimes called the universal data model,
+is a large collection of ORM objects designed to work together to manage
+and store business data in a robust and universal way. 
 
 The GEM is based on the data models provided by the book "The Data Model
 Resource Book, Vol.  1: A Library of Universal Data Models for All
@@ -67,16 +67,16 @@ manufacturing and insurance. The GEM is a collection of ORM entity
 classes that correspond to the data models from the books.  
 
 Note that at the moment, only the data model from the first volume has
-been fully incorpated into the framework. Also note that the books don't
+been fully incorporated into the framework. Also note that the books don't
 provide a data model for every conceivable domain, for example, the book
-doesn't provide a data model that could support a blog on other literary
+doesn't provide a data model that could support a blog or other literary
 data types. However, we can use the principles from the book to create
 extentions to its data model that integrate with the rest of its data
 model.
 
-The GEM is truly vast, and can be used to persist and retrieve
-virtually any business data in a highly normalized and robust way. The
-GEM classes, being ORM classes, each have persistence logic built in.
+The GEM is truly vast and can be used to store and retrieve virtually
+any business data in a highly normalized and robust way. The GEM
+classes, being ORM classes, each have persistence logic built in.
 Additionally, they contain the logic to ensure that the data they
 contain is valid and that the user retriving or persisting that data is
 authorized to do so. Note that though many GEM classes have been fully
@@ -89,26 +89,26 @@ endevoring to use or alter the GEM.
 
 Below is a list of the modules that currently contain GEM classes.
 
-* **[account.py](account.py)**    Contains class that manage accounting data
-* **[apriori.py](apriori.py)**    Contains GEMs that all GEM entities could use
-* **[asset.py](asset.py)**      Contains class that manage the assets used by people and organizations
-* **[budget.py](budget.py)**     Contains class that manage budgeting data
-* **[ecommerce.py](ecommerce.py)**  Contains class that manage web and user data
-* **[effort.py](effort.py)**     Contains class that manage work effort data
-* **[hr.py](hr.py)**         Contains class involved in human resource management
-* **[invoice.py](invoice.py)**    Contains classes related to invoicing
-* **[message.py](message.py)**    Contains classes involved in messages such as email,
-                    SMS, chat, etc.
-* **[order.py](order.py)**      Contains class involved in order entry
-* **[party.py](party.py)**      Contains classes that track people and organizations
-* **[product.py](product.py)**    Contains classes involved in product managemnts
-* **[shipment.py](shipment.py)**   Contains class involved in shipping
+* [account.py](account.py)        Contains classes that manage accounting data
+* [apriori.py](apriori.py)        Contains GEMs that all GEM entities could use
+* [asset.py](asset.py)            Contains classes that manage the assets used by people and organizations
+* [budget.py](budget.py)          Contains classes that manage budgeting data
+* [ecommerce.py](ecommerce.py)    Contains classes that manage web and user data
+* [effort.py](effort.py)          Contains classes that manage work effort data
+* [hr.py](hr.py)                  Contains classes involved in human resource management
+* [invoice.py](invoice.py)        Contains classes related to invoicing
+* [message.py](message.py)        Contains classes involved in messages such as email, SMS, chat, etc.
+* [order.py](order.py)            Contains classes involved in sales and purchase orders
+* [party.py](party.py)            Contains classes that track people and organizations
+* [product.py](product.py)        Contains classes involved in product managemnts
+* [shipment.py](shipment.py)      Contains classes involved in shipping
 
 ## Entity modules ##
-The entity modules, [entities.py](entities.py), contains base classes that most of
-the class in the framework ultimately inherit from. The most import of
-these are `entities` and `entity`. The classes contain many facilities
-that make working with collections of entity objects easy. 
+The entity modules, [entities.py](entities.py), contains base classes
+that most of the classes in the framework ultimately inherit from. The
+most import of these are `entities` and `entity`. The classes contain
+many facilities that make working with collections of entity objects
+easy. 
 
     import entities
 
@@ -136,10 +136,10 @@ that make working with collections of entity objects easy.
     assset prds.count == 2
 
 Here, the `products` class acts as a smart array or list for the
-`product` entity because we are free to add as much functionality to the
+`product` entity; we are free to add as much functionality to the
 `products` colllection class as we want.
 
-The entity system also supports a rebost event management system that
+The entity system also supports a robust event management system that
 allows us to subscribe one or more event handlers to events that happen
 to the `entities` object or the `entity` object, such as the event when
 an entity is added to the collection, or when an attribute of an entity
@@ -153,18 +153,18 @@ an `entities` colection (although, for OLTP applications, this is rarely
 needed.).
 
 The `entities` and `entity` class provide the base classes for ORM
-`entities` and `entity` classes. See [below](#assets-orm-module) for
-more on ORM classes.
+`entities` and `entity` classes. See the section on [object-relational
+mapping](#assets-orm-module) for more on ORM classes.
 
 <a id="assets-orm-module"></a>
 ## Object-relational mapper (ORM) module ##
-An important part part of the framework is the **object-relational mapper
+An important part of the framework is the **object-relational mapper
 (ORM)**. It provides the persistence layer for the [GEM](#assets-gem)
-classes as well as other data-driven classes. These classes are
-collectively refered to as "ORM classes"
+classes as well as other [active record](https://en.wikipedia.org/wiki/Active_record_pattern) 
+classes. These classes are collectively refered to as "ORM classes".
 
-Basic data mutation (creation, updating, and deletion) operations for
-ORM object is provided through the `save()` method, and data queriying
+Basic data mutation operations (e.g., creating, updating, and deleting)
+for ORM object are provided through the `save()` method.  Data queriying
 is provided through the constructors.
 
 The ORM protects data from invalid data through the ORM object's
@@ -185,7 +185,7 @@ objects:
     # Create order object
     ord = order.order()
 
-    # Add 10 order items to the order's `items` collection
+    # Add 10 new order items to the order's `items` collection
     for _ in range(10):
         ord.items += order.item()
 
@@ -193,15 +193,16 @@ objects:
     ord.save()
 
 Here, an order object is created and 10 child (constituent) items are
-added to the order. When `save()` is called, the order and it's items
-are saved atomically resulting in 11 records being saved in two
-different database tables. The cascading can go on indefinately.
+added to the order. When `save()` is called, the order and its items are
+saved atomically resulting in 11 records being saved in two different
+database tables. The cascading can go on indefinately.
 
 Database subclassing is also supported. That is to say, if an ORM class
-has a subclass, the subclass and the ORM class have corresponding
-tables. For example, the `order.order` class above is subclassed by the
-`order.salesorder` class. If we create and save a `salesorder`, a record
-in its table, as well as the `order` table, are saved atomically.
+has a subclass, the ORM class and its subclass each have corresponding
+tables. For example, the `order.order` class above from the
+[order](order.py) module is subclassed by the `order.salesorder` class.
+If we create and save a `salesorder`, a record in its table, as well as
+the `order` table, are saved atomically.
 
 <a id="assets-dom-module"></a>
 ## DOM and POM modules ##
@@ -452,6 +453,8 @@ The RDBMS is also expected to take care of it's on scalability and
 backup needs as well as provide network transparency. However, a
 database bot <!--TODO reference the bot section--> will be written to
 tend the administration of these functions.
+
+<!--TODO Recommend DBEXT -->
 
 ## Lower environments ##
 As of this writing, not much work has been done to determine how the
