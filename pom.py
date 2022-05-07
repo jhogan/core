@@ -53,73 +53,10 @@ class site(asset.asset):
         """
         super().__init__(*args, **kwargs)
 
+
+
+        # XXX Do we need this line?
         self._proprietor = None
-
-        def demand_proprietor():
-            """
-            XXX
-            """
-            try:
-                self.Proprietor
-            except AttributeError:
-                raise AttributeError(
-                    'Sites must have a Proprietor constant attribute'
-                )
-
-            if not isinstance(self.Proprietor, party.party):
-                raise TypeError(
-                    "Site's Proprietor constant is the wrong type"
-                )
-
-            if not self.Proprietor.name:
-                raise ValueError(
-                    "Site's Proprietor constant "
-                    'must have an id an and a name'
-                )
-
-        def associate_proprietor():
-            """
-            XXX
-            """
-            if type(self) is site:
-                return
-
-            demand_proprietor()
-
-            root = ecommerce.users.root
-            with orm.sudo(), orm.proprietor(self.Proprietor.id):
-                try:
-                    propr = self.Proprietor.orm.reloaded()
-                except db.RecordNotFoundError:
-                    propr = self.Proprietor
-                    with orm.proprietor(propr):
-                        sup = propr
-                        while sup:
-                            sup.owner = root
-                            sup = sup.orm.super
-                    
-                with orm.proprietor(propr):
-                    for ap in self.asset_parties:
-                        if ap.asset_partystatustype.name == 'proprietor':
-                            if ap.party.id == propr.id:
-                                break
-                    else:
-                        self.proprietor = propr
-
-                        apst = party.asset_partystatustype(name='proprietor')
-                        ap = party.asset_party(
-                            asset                  =  self,
-                            party                  =  propr,
-                            asset_partystatustype  =  apst,
-                        )
-                        self.asset_parties += ap
-
-                        sup = self
-                        while sup:
-                            sup.owner = root
-                            sup = sup.orm.super
-
-        associate_proprietor()
 
         self.index = None
         self._pages = None
@@ -146,6 +83,11 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+        ensuring = kwargs.get('_ensuring', False)
+
+        if not ensuring:
+            self._ensure()
+
     # Host name of the site
     host = str
 
@@ -159,6 +101,104 @@ class site(asset.asset):
     directory = file.directory
 
     _resources = None
+
+    def _ensure(self):
+        """ XXX
+        """
+
+        ''' Demand Constantants are set up '''
+        if type(self) is site:
+            return
+
+        try:
+            self.Proprietor
+        except AttributeError:
+            raise AttributeError(
+                'Sites must have a Proprietor constant attribute'
+            )
+
+        if not isinstance(self.Proprietor, party.party):
+            raise TypeError(
+                "Site's Proprietor constant is the wrong type"
+            )
+
+        if not self.Proprietor.name:
+            raise ValueError(
+                "Site's Proprietor constant "
+                'must have an id an and a name'
+            )
+
+        # XXX Write tests for these demands
+        try:
+            id = self.Id
+        except AttributeError:
+            raise AttributeError(
+                'Sites must have an Id constant attribute'
+            )
+
+        if not isinstance(id, UUID):
+            raise TypeError(
+                'Id must be a UUID'
+            )
+
+
+        root = ecommerce.users.root
+        with orm.sudo(), orm.proprietor(self.Proprietor.id):
+            
+            ''' Create or retrieve site record '''
+            try:
+                ws = type(self)(id)
+            except db.RecordNotFoundError:
+                ws = type(self)(
+                    id = id, _ensuring = True
+                )
+
+            for map in ws.orm.mappings:
+                if not isinstance(map, orm.fieldmapping):
+                    continue
+
+                setattr(self, map.name, map.value)
+
+            for map in ws.orm.mappings.supermappings:
+                if type(map) is not orm.fieldmapping:
+                    continue
+
+                setattr(self, map.name, getattr(ws, map.name))
+
+            ''' Associate the proprietor '''
+            try:
+                propr = self.Proprietor.orm.reloaded()
+            except db.RecordNotFoundError:
+                propr = self.Proprietor
+                with orm.proprietor(propr):
+                    sup = propr
+                    while sup:
+                        sup.owner = root
+                        sup = sup.orm.super
+                
+            with orm.proprietor(propr):
+                for ap in self.asset_parties:
+                    if ap.asset_partystatustype.name == 'proprietor':
+                        if ap.party.id == propr.id:
+                            break
+                else:
+                    self.proprietor = propr
+
+                    apst = party.asset_partystatustype(name='proprietor')
+                    ap = party.asset_party(
+                        asset                  =  self,
+                        party                  =  propr,
+                        asset_partystatustype  =  apst,
+                    )
+                    self.asset_parties += ap
+
+                    sup = self
+                    while sup:
+                        sup.owner = root
+                        sup = sup.orm.super
+
+            self.save()
+
 
     @orm.attr(file.directory)
     def directory(self):

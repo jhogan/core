@@ -23,6 +23,8 @@ class foonets(pom.sites):
     pass
 
 class foonet(pom.site):
+    Id = UUID(hex='68c92541-0940-4a70-8e94-55c6c58a45cc')
+
     Proprietor = party.company(
         id = UUID(hex='f00E37b406c4424ea351f8baf1f3500e'),
         name = 'Foonet, Inc'
@@ -530,6 +532,20 @@ class site(tester.tester):
             Proprietor = party.party()
 
         self.expect(ValueError, squatnet)
+
+    def it_ensures(self):
+        es = (
+            party.party,                  party.organization,
+            party.legalorganization,      party.company,
+            party.asset_partystatustype,  party.asset_party,
+            asset.asset,                  pom.site,
+            foonet,
+        )
+        for e in es:
+            e.orm.truncate()
+
+        ws = foonet()
+
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
