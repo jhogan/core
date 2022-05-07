@@ -7,6 +7,7 @@ from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import auth
+import asset
 import dom
 import ecommerce
 import logs
@@ -517,7 +518,6 @@ class site(tester.tester):
 
         class squatnet(pom.site):
             pass
-
 
         self.expect(AttributeError, squatnet)
 

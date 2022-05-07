@@ -10,6 +10,7 @@
 
 from contextlib import suppress
 from dbg import B
+from uuid import UUID, uuid4
 import asset, ecommerce
 import datetime
 import db

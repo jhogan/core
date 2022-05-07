@@ -113,6 +113,7 @@ Assets
 
 Hacking
 -------
+<!-- TODO: Add section discussing the use of print() -->
 ## Writing tests ##
 <!-- TODO -->
 
