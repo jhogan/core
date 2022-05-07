@@ -141,8 +141,8 @@ Here, the `products` class acts as a smart array or list for the
 
 The entity system also supports a robust event management system that
 allows us to subscribe one or more event handlers to events that happen
-to the `entities` object or the `entity` object, such as the event when
-an entity is added to the collection, or when an attribute of an entity
+to the `entities` and `entity` objects, such as the event when an
+`entity` is added to the collection, or when an attribute of an `entity`
 changes.
 
 `entities` and `entity` classes also support robust validation logic
@@ -189,7 +189,7 @@ objects:
     for _ in range(10):
         ord.items += order.item()
 
-    # Save the order and all it's line itmes
+    # Save the order and all its line itmes
     ord.save()
 
 Here, an order object is created and 10 child (constituent) items are
@@ -216,16 +216,16 @@ request management (through its subclassing of `entities.event`).
 The POM (Page Object Model) module provides an abstraction that sits on top
 of the DOM. It offers support for page-level objects such as page
 headers, footers, navigation menus, sidebars, forms, pages and websites.
-Many of it's classes inherit from the DOM objects. For example, since
+Many of its classes inherit from the DOM objects. For example, since
 `pom page`s are basically HTML pages, `pom.page` objects inherit from
-`dom.html`, while `pom.menu` represents an menu on a page, and therefore
+`dom.html`, while `pom.menu` represents a menu on a page, and therefore
 inherits from `dom.nav`.
 
 Entire websites are represented by classes that inherit from `pom.site`.
-For example, in website modules, such as `carpacian_com.py`, the
-`carapacian_com.site` class inherits from `pom.site`, while class that
-inherit from `pom.page` exist in that module to represent the website's
-pages.
+For example, in website modules, such as
+[carpacian_com.py](carapacian_com.py), the `carapacian_com.site` class
+inherits from `pom.site`, while classes that inherit from `pom.page`
+exist in that module to represent the website's pages.
 
 <a id="assets-robotic-process-automation"></a>
 ## Robotic process automation (RPA) ##
@@ -233,14 +233,14 @@ The [bot.py](bot.py) modules provides classes that inherit from the `bot.bot`
 class. These bot's are intended to be run as background process to
 automate a number of routine tasks. 
 
-Currently, there is only the `sendbot` class which send messages from
-the message queue to third-party system's such as SMTP servers. However,
-there are plans to develop a number of other bot's to manage routine
+Currently, there is only the `sendbot` class which sends messages from
+the message queue to third-party systems such as SMTP servers. However,
+there are plans to develop a number of other bots to manage routine
 administrative tasks such as an `adminbot` to monitor servers and a
 `cfgbot` (configuration management bot) to maintain Git repositories and
 automate running tests. 
 
-Bot's are intended to replace most tasks that are conventionally
+Bots are intended to replace most tasks that are conventionally
 performed by Bash scripts invoked by Crontabs. These bots will go a long
 way toward reducing the administrative burden conventionally put on
 software developers and will help to keep the systems secure. 
@@ -259,7 +259,7 @@ Init systems, like systemd, can be used to invoke the bots this way.
 
 ## HTTP and WSGI modules ##
 The [www.py](www.py) contains support for HTTP objects such as HTTP requests and
-responses, HTTP exceptions and error. It also contains a `browser`
+responses, HTTP exceptions and errors. It also contains a `browser`
 object to make HTTP requests easier and more intuitive (for example, the
 `www.browser` can store cookies).
 
@@ -277,33 +277,39 @@ environment as well as communicating with bots.
 
 ## Library dependency files ##
 A couple of simple text files exists to store the third-party libraries
-that the framework depends on. These files are `deb` and `pip`. The
-packages listed in deb should be installed using `apt` while the
-packages listed in `pip` should be installed with `pip`. See the
-[Operating system](#environment-operating-system) section for details on
-how and why to use these files.
+that the framework depends on. These files are [deb](deb) and
+[pip](pip). The packages listed in deb should be installed using `apt`
+while the packages listed in `pip` should be installed with `pip`. See
+the [Operating system](#environment-operating-system) section for
+details on how and why to use these files.
 
 ## Documentation files ##
 There are a few files, all in upppercase, used for various documentation
 purposes:
 
-* **ABBREVIATIONS.md** Contains a list of abbreviations to be used for
-common varibles (such as using `ls` for a variable representing some
-sort of list). Note that typically, a class will document the variable
-name that should be used for instances of the class.
+* [ABBREVIATIONS.md](ABBREVIATIONS.md) Contains a list of abbreviations
+to be used for common varibles (such as using `ls` for a variable
+representing some sort of list). Note that typically, a class will
+document the variable name that should be used for instances of the
+class.
 
-* **LICENCE_cssselect** The licence for code copied into the framework
-                         from Ian Bicking's 
-                         ['cssselect'](https://github.com/scrapy/cssselect)
-                         project to help with CSS selector tokenization.
-* **LICENSE**            The Carapacian Core licence.
-* **README.md**          The readme file that you are currently reading.
-* **STYLE.md**           The style guide to be followed when developing and
-                         maintaining code for the framework.
-* **VARIABLES**          Similar to **ABBREVIATIONS**, but documents the
-                         conventional names given to varibles in certain
-                         contexts.
-* **VERSION**            Contains the version number of Carapacian Core.
+* [LICENSE_cssselect](LICENSE_cssselect)  The licence for code copied
+    into the framework from Ian Bicking's
+    ['cssselect'](https://github.com/scrapy/cssselect) project to help
+    with CSS selector tokenization.
+
+* [LICENSE](LICENSE)      The Carapacian Core licence
+
+* [README.md](README.md)  The readme file that you are currently reading.
+
+* [STYLE.md](STYLE.md)    The style guide to be followed when developing and
+                          maintaining code for the framework.
+
+* [VARIABLES](VARIABLES) Similar to [ABBREVIATIONS](ABBREVIATIONS.md),
+                         but documents the conventional names given to
+                         varibles in certain contexts.
+
+* [VERSION](VERSION)     Contains the version number of Carapacian Core
 
 ## File module ##
 A file system for use by the framework and its users is provided by the
@@ -372,7 +378,7 @@ use the full power of Python to configure the environment.
 Environment
 -----------
 
-<a href="environment-operating-system"></a>
+<a id="environment-operating-system"></a>
 ## Operating system ##
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
@@ -449,7 +455,7 @@ standard. It could probably be easily ported to another RDBMS if that
 were somehow deemed desireable, that MySQL seems like an excellent
 choice for the framework's needs.
 
-The RDBMS is also expected to take care of it's on scalability and
+The RDBMS is also expected to take care of its on scalability and
 backup needs as well as provide network transparency. However, a
 database bot <!--TODO reference the bot section--> will be written to
 tend the administration of these functions.
@@ -734,7 +740,7 @@ solution to this is to simply ensure that the following line is set in
     [mysqld]
     performance_schema = 0
 
-Restart the mysqld and it's default memory consumption will reduce by
+Restart the mysqld and its default memory consumption will reduce by
 several hundred megabytes.
 
 Read this [Stack Overflow question](https://stackoverflow.com/questions/10676753/reducing-memory-consumption-of-mysql-on-ubuntuaws-micro-instance)
