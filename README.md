@@ -321,36 +321,36 @@ validation and authorization logic.
 The file module is intended to be used to store user's avatars, their
 multimedia uploads, and any other types of files they need to manage
 through a website provide by the framework. The framework can also use
-the file system for its own needs, though the database would probably
+the file module for its own needs, though the database would probably
 make a better choice for most use cases.
 
 <a id="assets-third-party"></a>
 ## Third party module ##
 The [third.py](third.py) module contains classe related to the integration of the
 framework with third party systems such as external mail servers, credit
-card processing systems, etc. It contains facilities that perform,
-monitor and manager these interactions.
+card processing systems, geocoding services etc. It contains facilities
+that perform, monitor and manager these interactions.
 
 <a id="assets-logging"></a>
 ## Logging ##
-The logging module, [log.py](log.py), wraps calls to Pythons native logging
-library which is configured to send messages to a remote or local
-syslog.
+The logging module, [log.py](log.py), wraps calls to Python's native
+logging library which can be configured to send messages to a remote or
+local syslog.
 
 The logging parameters, such as the log level, is configured in the
 [config files](#assets-configuration). 
 
 Log messages are inteded to go to a local log file on the system.
-Most logging should be done using the GEM class (or subclass thereof) of
+Most logging should be done using the GEM class (or subclass thereof)
 `apriori.log`. This way, the log message is in the database which is
 ideal. However, the [log.py](log.py) module should be used to log locally
 (ususally to /var/log/syslog) for the following conditions:
 
 * Logging verbose debug messages to assist with problem diagnostics.
 * Logging informational log messages of interest to developer.
-* Logging exceptions that occur when connecting to the database: if
-  there is a problem connecting to the database, we use have to use
-  local file logging a last resort.
+* Logging exceptions that occur when connecting to the database; if
+  there is a problem connecting to the database, we have to use local
+  file logging as a last resort.
 
 <a id="assets-configuration"></a>
 ## Configuration ##
@@ -365,7 +365,7 @@ overrides the default version and can contain secrete information and
 therefore **should never be commited to the Git repository**.  This file
 should also have restritive file permessions:
 
-    chmod 400 [config.py](config.py)
+    chmod 400 config.py
 
 In addition to storing secret information, `config` can also be used to
 override the default configuration of `configuration` to suite the needs
@@ -382,14 +382,14 @@ Environment
 ## Operating system ##
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
-received most of its testing, however, it should run on moste
+received most of its testing, however, it should run on most
 Debian-based distributions without much modification - if any. It's
 recommend that you use the latest LTS version of Ubuntu and use its
 native packages for the Python interpretor along with Green Unicorn. The
 version of Python shipped with the latest Ubuntu LTS version is
-considered the officially supported version.
+considered the framework's officially supported version.
 
-There is a `deb` file in the source directory that contains a list of
+There is a [deb](deb) file in the source directory that contains a list of
 Ubuntu/Debian packages that Carapacian Core depends on. Currently, the
 list contains the following:
 
@@ -400,7 +400,7 @@ list contains the following:
     python-mysqldb
     python3-dateutil
 
-Thus running the following command is enough to install the OS-level
+Thus running the following command is enough to install the OS level
 dependencies.
 
     apt install `cat deb`
@@ -410,26 +410,26 @@ on Ubuntu will capture updates to these packages:
 
     apt update && apt dist-upgrade -y
 
-However, some dependencies are not available at the OS-level. They can,
-however, be obtain through PIP. Those packages can be found in the `pip`
-file. Listed are its current contents:
+However, some dependencies are not available at the OS level. They can,
+however, be obtain through PIP. Those packages can be found in the
+[pip](pip) file. Its current contents are listed below:
     
     pyyaml
     ua-parser
     user-agents
     pytz
 
-We can install they using `pip3`:
+We can install them using `pip3`:
 
     pip3 install `cat pip`
 
-Adding the `-U` flag causes the packages to be update.
+Adding the `-U` flag causes the packages to be updated.
 
     pip3 install -U `cat pip`
 
 ## Database ##
 The RDBMS of choice is MySQL. The configuration for the database
-connection can set using the `config.accounts` property in the
+connections can set using the `config.accounts` property in the
 [config.py](config.py) file. Iteratate over the the accounts from the base class
 `configuration` and find the MySQL connection, then set its values to
 whatever you need. This will usually just be the password.
@@ -447,13 +447,13 @@ on the configuration files.
 
             return accts
 
-The framework's uses the database for persisting data and maintaining
+The framework uses the database for persisting data and maintaining
 indexes for fast data retrival. It doesn't use the database to store
 code such as in the case of stored procedures, views, UDF's, etc. Thus,
 the SQL that it uses to interact with the RDBMS is fairly simple and
 standard. It could probably be easily ported to another RDBMS if that
-were somehow deemed desireable, that MySQL seems like an excellent
-choice for the framework's needs.
+were somehow deemed desireable, however MySQL currently seems like an
+excellent choice for the framework's needs.
 
 The RDBMS is also expected to take care of its on scalability and
 backup needs as well as provide network transparency. However, a
