@@ -473,8 +473,8 @@ Hacking
 
 <a id="hacking-running-tests"></a>
 ## Running tests
-Most feature development and bug fixes are done through the automated
-regration testing scripts. 
+Most feature development and bug fixes are done by adding a number of
+tests to the [suite of regration testing scripts](#assets-test-scripts).
 
 Each module has, or should have, a corresponding test module. For
 example, the tests for the [product.py](product.py) module are located in
@@ -502,7 +502,7 @@ script mentioned above:
     ./testproduct.py
 
 
-To narrow things down even more, you can choose to run a tester module
+To narrow things down even more, you can choose to run a tester class
 specifically:
 
     ./testproduct.py test_product
@@ -512,7 +512,7 @@ This only runs the tests in the `test_product` class.
 During development, you will probably want to focus on one tester method
 at a time. If you were testing the updating capabilities of the
 `product` class, as described above, you could choose to run only the
-`it_updates` method like this.
+`it_updates` method like this:
 
     ./testproduct.py test_product.it_updates
 
@@ -526,19 +526,20 @@ process to skip this process with the `-T` flag.
 
 Now the test runs even faster.
 
+<a href="hacking-debugger"></a>
 ## Dropping into the debugger
-If the test reports exceptions, you can rerun the tests and cause test
-to break on those exceptions. This is an extremely important technique
-to know because it makes development so much faster. All you have to do
-is pass in the `-b` flag.
+If the test reports exceptions, you can rerun the tests and cause the
+test to break on those exceptions. This is an extremely important
+technique to know because it makes development so much faster. All you
+have to do is pass in the `-b` flag.
 
-    ./testproduct.py test_product.it_updates -T -b
+    ./testproduct.py test_product.it_updates -b
 
-If there is an exception, you will be dropped into the PDB debugger. At
-that point, you will be able to get the values of any variable, step in,
-out of, and over lines of code, print a stack trace, jump to different
-lines of code, etc. If you don't know how to use PDB you can find a
-reference
+When the exception is encountered, you will be dropped into the PDB
+debugger at the line that caused the exception. From there, you will be
+able to get the values of any variable, step in, out of, and over lines
+of code, print a stack trace, jump to different lines of code, etc. If
+you don't know how to use PDB you can find a reference
 [here](https://docs.python.org/3/library/pdb.html#debugger-commands).
 
 You can also set breakpoints in the code. This is typically done by
@@ -557,7 +558,9 @@ Run the code as you normally would:
 
 If the `B` function is encountered, you will be dropped into PDB.
 
-If an exception is raised an caught, you may find yourself in the
+### When exceptions are caught ###
+
+If an exception is raised and caught, you may find yourself in the
 `except` block not knowing where the exception was actually raised.
 Another function from `dbg` called `PM` is imported in most modules:
 
@@ -568,7 +571,7 @@ raised the exception.
 
     try:
         this_raises_an_exception_somewhere()
-    except AttributeError:
+    except Exception as ex:
         # This line will bring us to the actual line that raise the
         # exception.
         PM(ex)
@@ -576,49 +579,47 @@ raised the exception.
 
 The `B` and `PM` functions are added to the actual source code. They
 shouldn't be pushed into the Git repository, though. It's okay to push
-them into feature branches if that is conventient, but the should never
+them into feature branches if that is convenient, but they should never
 be pushed into 'main'.
-
-## Writing tests ##
-<!-- TODO -->
 
 ## Testing through Green Unicorn ##
 On the occasion that you need to debug an issue through the HTTP
-interface directory, you can run the Green Unicorn HTTP/WSGI server and
-hit the services from a browser of some other user agent like `curl`. To
+interface directly, you can run the Green Unicorn HTTP/WSGI server and
+hit the services from a browser or some other user agent like `curl`. To
 run the service, you can `cd` into the framework's source directory and
 run the command:
 
    gunicorn -b carapacian.com:8000 --reload --timeout 0 'www:application()' 
 
-The `-b` flag binds the above invokation to the `carapacian.com`
+The `-b` flag binds the above invocation to the `carapacian.com`
 interface on port 8000. 
 
-The ``--reload`` option is useful because it
-causes `gunicorn` to detect changes made to the source files. This way
-you don't have to rerun `gunicorn` everytime you make a change to the
-source. It uses **inotify** to monitor files. inotify should be
-installed by default in Ubuntu.
+The ``--reload`` option is useful because it causes `gunicorn` to detect
+changes made to the source files. This way you don't have to rerun
+`gunicorn` everytime you make a change to the source. It uses
+**inotify** to monitor files. inotify should be installed by default in
+Ubuntu.
 
 Setting `--timeout` to 0 means the worker classes will wait an
 indefinate amount of time for the request to complete. This is useful
-for step-by-step debugging described below.
+for step-by-step debugging described below because the time it takes to
+debug an issues will likely be longer than the timeout.
 
 the 'www.application()' instantiates the `application`` class in
 `www.py` and returns an instance to ``gunicorn``. This is where the
-framework code takes the request per the WSGI standard.
+framework code receives the HTTP request per the WSGI standard.
 
 The above service can then be invoked with `curl`:
 
     curl carapacian.com:8000
 
-You can set breakpoints in the code with the call `B()` described above.
-When the breakpoint is encounterd, the terminal that `gunicorn` is
-running in will display a PDB prompt giving you PDB`s full capacity to
-debug the code at the break point. When you are ready for the request to
-complete, just enter the command `c` into the PDB prompt to cause the
-code to continue. The request will complete and the `gunicorn` is ready
-for the next request.
+You can set breakpoints in the code with the call `B()` described
+[above](#hacking-debugger).  When the breakpoint is encounterd, the
+terminal that `gunicorn` is running in will display a PDB prompt giving
+you PDB`s full capacity to debug the code at the breakpoint. When you
+are ready for the request to complete, just enter the command `c` into
+the PDB prompt to cause the code to continue. The request will complete
+and the `gunicorn` daemon is ready for the next request.
 
 Git usage and conventions
 -------------------------
