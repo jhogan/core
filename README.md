@@ -457,8 +457,8 @@ excellent choice for the framework's needs.
 
 The RDBMS is also expected to take care of its on scalability and
 backup needs as well as provide network transparency. However, a
-database bot <!--TODO reference the bot section--> will be written to
-tend the administration of these functions.
+database bot will be written to tend the administration of these
+functions.
 
 <!--TODO Recommend DBEXT -->
 
@@ -559,7 +559,6 @@ Run the code as you normally would:
 If the `B` function is encountered, you will be dropped into PDB.
 
 ### When exceptions are caught ###
-
 If an exception is raised and caught, you may find yourself in the
 `except` block not knowing where the exception was actually raised.
 Another function from `dbg` called `PM` is imported in most modules:
@@ -585,7 +584,7 @@ be pushed into 'main'.
 ## Testing through Green Unicorn ##
 On the occasion that you need to debug an issue through the HTTP
 interface directly, you can run the Green Unicorn HTTP/WSGI server and
-hit the services from a browser or some other user agent like `curl`. To
+hit the services from a browser or some other user-agent like `curl`. To
 run the service, you can `cd` into the framework's source directory and
 run the command:
 
@@ -623,19 +622,20 @@ and the `gunicorn` daemon is ready for the next request.
 
 Git usage and conventions
 -------------------------
-The 'main' branch alwaws contains the latest, accepted code changes. Feature
-branches are created off the 'main' branch to add features or fix bugs to the
-framework. After the code has been peer reviewed, it can be merged back into
-the 'main' branch. Git tags **will** be used to mark specific points in 'main's
-history indicating release of the framework. The Git tags will use standard
-[semantic versioning](https://semver.org/).
+The 'main' branch always contains the latest, accepted code changes.
+Feature branches are created off the 'main' branch to add features or
+fix bugs.  After the code has been peer reviewed, it can be merged back
+into the 'main' branch. Git tags **will** be used to mark specific
+points in 'main's history indicating release of the framework. The Git
+tags will use standard [semantic versioning](https://semver.org/).
 
 ### Code commits ###
 Two main types of Git commits are used in the framework: standard code commits
 and "housekeeping" commits.  The distinguishing feature of a code commit is
-that it should only contain code changes. Any comments are whitespaces in these
+that it should only contain code changes. Any comments or whitespaces in these
 commits should be releated the code changes,  e.g.:
 
+    commit b76fa29ee3fc00efa86b75331b4e9cdecdb3bf9b
 	Author: Jesse Hogan <jhogan@carapacian.com>
 	Date:   Fri Mar 18 07:22:33 2022 +0000
 
@@ -667,11 +667,12 @@ The first line of the commit message starts with a verb in its infinitive
 (basic) form; in this case "Add". The first line should be 50 characters or
 less. This is called the summary line. 
 
-If more explanation for the commit should be document, add a blank line, then
-add as much explanation as you need. If you find yourself writing a long
-explanation of the commit, take a moment to consider whether or not the
-explanation would be better documented as comments in the code. Either way,
-always have a mind to posterity when writing commits messages.
+If more explanation for the commit should be documented, add a blank
+line, then add as much explanation as you need. If you find yourself
+writing a long explanation of the commit, take a moment to consider
+whether or not the explanation would be better documented as comments in
+the code. Either way, always have a mind toward posterity when writing
+commit messages.
 
 The comment should always end with the branch name. It should be prefaced with
 'On branch ':
@@ -685,7 +686,7 @@ commented area, so you can easily copy-and-paste it.
 Housekeeping commits mainly consist of post facto comments, whitespace
 changes, changes to documentation files, and other such changes that
 have very little to do with computer logic.  They typically have one
-word in their commit message: "Housekeeping" since most housekeeping
+word in their commit message: "Housekeeping", since most housekeeping
 changes don't require a lot of explanation.  On a second line (after the
 blank line), the branch name is included as in standard code commits:
 
@@ -697,7 +698,7 @@ blank line), the branch name is included as in standard code commits:
 
 		On branch perf
 
-	diff --git a/orm.py b/[orm.py](orm.py)
+	diff --git a/orm.py b/orm.py
 	index 39bfbec..14d62d1 100644
 	--- a/orm.py
 	+++ b/orm.py
@@ -712,7 +713,7 @@ blank line), the branch name is included as in standard code commits:
 			 # Iterate over the maps list. NOTE that iterating over the
 
 The purpose for distinguishing **housekeeping** commits from **standard
-code commits** is that analysis tool, such as `git log` can include or
+code commits** is that analysis tool, such as `git-log` can include or
 exclude housekeeping commits. Being able to exclude housekeeping commits
 is convenient for code analysis because the analist can focus on the
 code logic while excluding changes in comments, whitespace formatting,
@@ -723,28 +724,34 @@ use a command like this:
 
 Removing `--invert-grep` shows only the housekeeping commits.
 
-Current Memory Issues
----------------------
+### Atomic commits ###
+<!-- TODO -->
 
-At the moment, there is an unresolved issue with the way [test.py](test.py)
-accumulates memory as it runs: It never seems to free certain a large
-portion of the objects it creates, and ends up allocating for itself
-several hundred megabytes of memory before it has completed. 
+Current issues
+--------------
+
+### Memory issue ###
+At the moment, there is an unresolved issue with the way
+[test.py](test.py) accumulates memory as it runs: It never seems to free
+large portions of the objects it creates, and ends up allocating for
+itself several hundred megabytes of memory before it has completed. 
 
 On the machine the framework is currently being developed, there is a
-total of 1GB of RAM. Occasionally, the [test.py](test.py) script will consume so
-much that the operating system's oom\_reaper will cause MySQL to
-restart, which causes tests in the script to begin to fail. A convenient
-solution to this is to simply ensure that the following line is set in
+total of 1GB of RAM. Occasionally, the [test.py](test.py) script will
+consume so much that the operating system's oom\_reaper will cause MySQL
+to restart, which causes tests in the script to begin to fail. A
+convenient solution to this is to simply ensure that the following line
+is set in
 `/etc/mysql/my.cnf`:
     
     [mysqld]
     performance_schema = 0
 
-Restart the mysqld and its default memory consumption will reduce by
+Restart the mysqld and its default memory consumption will be reduce by
 several hundred megabytes.
 
-Read this [Stack Overflow question](https://stackoverflow.com/questions/10676753/reducing-memory-consumption-of-mysql-on-ubuntuaws-micro-instance)
+Read this 
+[Stack Overflow question](https://stackoverflow.com/questions/10676753/reducing-memory-consumption-of-mysql-on-ubuntuaws-micro-instance)
 for more details.
 
-TODO In the future, the `dba` bot should ensure this line is added.
+In the future, the `dba` bot should ensure this line is added.
