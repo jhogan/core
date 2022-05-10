@@ -55,8 +55,6 @@ class site(asset.asset):
         """
         super().__init__(*args, **kwargs)
 
-
-
         # XXX Do we need this line?
         self._proprietor = None
 
