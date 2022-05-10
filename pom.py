@@ -48,6 +48,8 @@ class site(asset.asset):
     Note that site objects ultimately inherit from orm.entity so they
     are persisted to the database along with their constituents.
     """
+
+    _ensuring = False
     def __init__(self, *args, **kwargs):
         """ Create a new web ``site`` object.
         """
@@ -83,10 +85,12 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
-        ensuring = kwargs.get('_ensuring', False)
-
-        if not ensuring:
-            self._ensure()
+        if not site._ensuring:
+            try:
+                site._ensuring = True
+                self._ensure()
+            finally:
+                site._ensuring = False
 
     # Host name of the site
     host = str
@@ -149,9 +153,7 @@ class site(asset.asset):
             try:
                 ws = type(self)(id)
             except db.RecordNotFoundError:
-                ws = type(self)(
-                    id = id, _ensuring = True
-                )
+                ws = type(self)(id=id)
 
             for map in ws.orm.mappings:
                 if not isinstance(map, orm.fieldmapping):

@@ -546,6 +546,36 @@ class site(tester.tester):
 
         ws = foonet()
 
+        # Test foonet
+        self.eq(ecommerce.users.RootUserId, ws.owner.id)
+        self.eq(foonet.Proprietor.id, ws.proprietor.id)
+
+        self.eq((False, False, False), ws.orm.persistencestate)
+        with orm.proprietor(ws.proprietor):
+            self.expect(None, ws.orm.reloaded)
+
+        # Test foonet's super: `site`
+        ws = ws.orm.super
+
+        assert type(ws) is pom.site
+        self.eq(ecommerce.users.RootUserId, ws.owner.id)
+        self.eq(foonet.Proprietor.id, ws.proprietor.id)
+
+        self.eq((False, False, False), ws.orm.persistencestate)
+        with orm.proprietor(ws.proprietor):
+            self.expect(None, ws.orm.reloaded)
+
+        # Test site's super: `asset`
+        ass = ws.orm.super
+
+        assert type(ass) is asset.asset
+        self.eq(ecommerce.users.RootUserId, ass.owner.id)
+        self.eq(foonet.Proprietor.id, ass.proprietor.id)
+
+        self.eq((False, False, False), ass.orm.persistencestate)
+        with orm.proprietor(ass.proprietor):
+            self.expect(None, ass.orm.reloaded)
+
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
