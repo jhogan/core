@@ -460,8 +460,6 @@ backup needs as well as provide network transparency. However, a
 database bot will be written to tend the administration of these
 functions.
 
-<!--TODO Recommend DBEXT -->
-
 ## Lower environments ##
 As of this writing, not much work has been done to determine how the
 production environment, as well as the lower enviroments, such as UAT,
@@ -527,7 +525,7 @@ process to skip this process with the `-T` flag.
 Now the test runs even faster.
 
 <a href="hacking-debugger"></a>
-## Dropping into the debugger
+### Dropping into the debugger ###
 If the test reports exceptions, you can rerun the tests and cause the
 test to break on those exceptions. This is an extremely important
 technique to know because it makes development so much faster. All you
@@ -581,7 +579,7 @@ shouldn't be pushed into the Git repository, though. It's okay to push
 them into feature branches if that is convenient, but they should never
 be pushed into 'main'.
 
-## Testing through Green Unicorn ##
+### Testing through Green Unicorn ###
 On the occasion that you need to debug an issue through the HTTP
 interface directly, you can run the Green Unicorn HTTP/WSGI server and
 hit the services from a browser or some other user-agent like `curl`. To
@@ -619,6 +617,36 @@ you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
 the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
+
+### Interacting with the database ###
+
+#### Using hex() ####
+Hopefully, you won't need to issue SQL queries directly to the database;
+you should be able see what's in the database through ORM objects.
+However, if you do find yourself needing to issue SQL directly to the
+database, you should get used to using the `hex()` function.
+
+The primary keys (and therefore the foreign keys) are UUIDs stored in
+the database as 16 byte binary strings. This does not render well by
+default. Instead of writing a query like:
+
+    select * from party_parties
+
+you will want to specify the columns and decode key fields with `hex()`:
+
+    select hex(id), id(proprietor__partyid), name from party_parties;
+
+This provides you with hex representations of the binary strings.
+
+#### Interacting with MySQL ####
+While the `mysql` command line is a powerful tool to interact directly
+with the database, you will probably want something more interactive. It
+is recommend that you install
+[dbext](https://github.com/vim-scripts/dbext.vim) into your Vim
+environment (if you are using Vim). dbext allows you to write queries in
+a Vim window, then issue those queries to the server. The result of the
+queries appear in a seperate Vim window. If you use Emacs or another
+editor, it is recommend that you finds something similar to dbext.
 
 Git usage and conventions
 -------------------------
@@ -725,7 +753,12 @@ use a command like this:
 Removing `--invert-grep` shows only the housekeeping commits.
 
 ### Atomic commits ###
-<!-- TODO -->
+To make the git-log more useful, strive to make commits as automic as
+possible. Automic commits are commits that contain changes to the source
+code that address a single, specific issue. Atomic commits are easier to
+work with and analyze. To create atomic commits, you can use the
+`--patch` (`-p`) flag with `git-add` to select which portions of your
+changes to stage.
 
 Current issues
 --------------
