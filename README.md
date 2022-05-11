@@ -113,6 +113,8 @@ Assets
 
 Hacking
 -------
+<!-- TODO: Add section on issuing debug commands. Give attention to the
+use of hex() with UUIDs. -->
 <!-- TODO: Add section discussing the use of print() -->
 ## Writing tests ##
 <!-- TODO -->

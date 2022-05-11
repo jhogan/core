@@ -113,6 +113,18 @@ class site(asset.asset):
             return
 
         try:
+            self.Id
+        except AttributeError:
+            raise AttributeError(
+                'Sites must have an Id constant attribute'
+            )
+
+        if not isinstance(self.Id, UUID):
+            raise TypeError(
+                "Site's Id constant is the wrong type"
+            )
+
+        try:
             self.Proprietor
         except AttributeError:
             raise AttributeError(
@@ -130,28 +142,17 @@ class site(asset.asset):
                 'must have an id an and a name'
             )
 
-        # XXX Write tests for these demands
-        try:
-            id = self.Id
-        except AttributeError:
-            raise AttributeError(
-                'Sites must have an Id constant attribute'
-            )
-
-        if not isinstance(id, UUID):
-            raise TypeError(
-                'Id must be a UUID'
-            )
-
-
+        ''' Save self '''
         root = ecommerce.users.root
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
             
             ''' Create or retrieve site record '''
             try:
-                ws = type(self)(id)
+                B()
+                ws = type(self)(self.Id)
             except db.RecordNotFoundError:
-                ws = type(self)(id=id)
+                ws = type(self)(id=self.Id)
+                ws.save()
 
             for map in ws.orm.mappings:
                 if not isinstance(map, orm.fieldmapping):
@@ -197,6 +198,12 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
+            sup = self
+            while sup:
+                sup.orm.persistencestate = False, False, False
+                sup = sup.orm._super
+
+            self.orm.persistencestate = False, False, False
             self.save()
 
 

@@ -524,11 +524,24 @@ class site(tester.tester):
         self.expect(AttributeError, squatnet)
 
         class squatnet(pom.site):
+            Id = 'not-a-uuid-type-literal'
+
+        self.expect(TypeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+
+        # No Proprietor
+        self.expect(AttributeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
             Proprietor = object()
 
         self.expect(TypeError, squatnet)
 
         class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
             Proprietor = party.party()
 
         self.expect(ValueError, squatnet)
@@ -554,10 +567,18 @@ class site(tester.tester):
         with orm.proprietor(ws.proprietor):
             self.expect(None, ws.orm.reloaded)
 
+        aps = ws.asset_parties
+        self.populated(aps)
+        aps = aps.where(
+            lambda x: x.asset_partystatustype.name == 'proprietor'
+        )
+        self.one(aps)
+
         # Test foonet's super: `site`
+        ws1 = ws
         ws = ws.orm.super
 
-        assert type(ws) is pom.site
+        self.type(pom.site, ws)
         self.eq(ecommerce.users.RootUserId, ws.owner.id)
         self.eq(foonet.Proprietor.id, ws.proprietor.id)
 
@@ -568,7 +589,7 @@ class site(tester.tester):
         # Test site's super: `asset`
         ass = ws.orm.super
 
-        assert type(ass) is asset.asset
+        self.type(asset.asset, ass)
         self.eq(ecommerce.users.RootUserId, ass.owner.id)
         self.eq(foonet.Proprietor.id, ass.proprietor.id)
 
