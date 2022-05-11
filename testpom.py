@@ -514,13 +514,14 @@ class site(tester.tester):
         )
         self.one(aps)
 
-    def it_demands_propritor_is_setup_on_site(self):
+    def it_demands_contants_are_setup_on_site(self):
         class squatnets(pom.sites):
             pass
 
         class squatnet(pom.site):
             pass
 
+        # No Id constant
         self.expect(AttributeError, squatnet)
 
         class squatnet(pom.site):
@@ -596,7 +597,6 @@ class site(tester.tester):
         self.eq((False, False, False), ass.orm.persistencestate)
         with orm.proprietor(ass.proprietor):
             self.expect(None, ass.orm.reloaded)
-
 
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):

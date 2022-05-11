@@ -185,7 +185,10 @@ class site(asset.asset):
                 else:
                     self.proprietor = propr
 
-                    apst = party.asset_partystatustype(name='proprietor')
+                    apst = party.asset_partystatustype(
+                        name = 'proprietor'
+                    )
+
                     ap = party.asset_party(
                         asset                  =  self,
                         party                  =  propr,
