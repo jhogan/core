@@ -6,7 +6,7 @@ It offers the following features:
 
 * An automated regression [testing framework](#assets-test-scripts)
 * An [object-relational mapper](#assets-orm-module) (ORM)
-* A [univeral data model](#assets-gem) for business objects
+* A [universal data model](#assets-gem) for business objects
 * Server-side [DOM authoring](#assets-dom-module)
 * A web [page object model](#assets-dom-module) (POM)
 * [Robotic process automation](#assets-robotic-process-automation) (RPA)
@@ -20,14 +20,14 @@ Assets
 This section provides an overview of the various files in the framework.
 
 <a id="assets-test-scripts"></a>
-## Test Scipts ##
+## Test Scripts ##
 Most development begins with the test scripts. All test scripts are in
 the glob pattern `test*.py`, e.g., [testlogs.py](testlogs.py). Each test script
 corresponds to a module which is the subject of its tests. 
 
 Each test class in the test scripts inherits from the `tester` class.
 This class provides basic assert methods that you may be familiar with
-from other testing framworks.
+from other testing frameworks.
 
 For more information on test scripts, see the section [Running
 tests](#hacking-running-tests).
@@ -71,21 +71,21 @@ been fully incorporated into the framework. Also note that the books don't
 provide a data model for every conceivable domain, for example, the book
 doesn't provide a data model that could support a blog or other literary
 data types. However, we can use the principles from the book to create
-extentions to its data model that integrate with the rest of its data
+extensions to its data model that integrate with the rest of its data
 model.
 
 The GEM is truly vast and can be used to store and retrieve virtually
 any business data in a highly normalized and robust way. The GEM
 classes, being ORM classes, each have persistence logic built in.
 Additionally, they contain the logic to ensure that the data they
-contain is valid and that the user retriving or persisting that data is
+contain is valid and that the user retrieving or persisting that data is
 authorized to do so. Note that though many GEM classes have been fully
 incorporated into the framework, validation and authorization is an
 ongoing effort.
 
 It is highly recommend that developers obtain these two books and
 absorb the data modeling and business ontology concepts in them before
-endevoring to use or alter the GEM.
+endeavoring to use or alter the GEM.
 
 Below is a list of the modules that currently contain GEM classes.
 
@@ -100,7 +100,7 @@ Below is a list of the modules that currently contain GEM classes.
 * [message.py](message.py)        Contains classes involved in messages such as email, SMS, chat, etc.
 * [order.py](order.py)            Contains classes involved in sales and purchase orders
 * [party.py](party.py)            Contains classes that track people and organizations
-* [product.py](product.py)        Contains classes involved in product managemnts
+* [product.py](product.py)        Contains classes involved in product management
 * [shipment.py](shipment.py)      Contains classes involved in shipping
 
 ## Entity modules ##
@@ -137,7 +137,7 @@ easy.
 
 Here, the `products` class acts as a smart array or list for the
 `product` entity; we are free to add as much functionality to the
-`products` colllection class as we want.
+`products` collection class as we want.
 
 The entity system also supports a robust event management system that
 allows us to subscribe one or more event handlers to events that happen
@@ -149,7 +149,7 @@ changes.
 through their `brokenrule` properties.
 
 Indexing is provided, as well, for fast lookup of `entity` objects within
-an `entities` colection (although, for OLTP applications, this is rarely
+an `entities` collection (although, for OLTP applications, this is rarely
 needed.).
 
 The `entities` and `entity` class provide the base classes for ORM
@@ -161,10 +161,10 @@ mapping](#assets-orm-module) for more on ORM classes.
 An important part of the framework is the **object-relational mapper
 (ORM)**. It provides the persistence layer for the [GEM](#assets-gem)
 classes as well as other [active record](https://en.wikipedia.org/wiki/Active_record_pattern) 
-classes. These classes are collectively refered to as "ORM classes".
+classes. These classes are collectively referred to as "ORM classes".
 
 Basic data mutation operations (e.g., creating, updating, and deleting)
-for ORM object are provided through the `save()` method.  Data queriying
+for ORM object are provided through the `save()` method.  Data querying
 is provided through the constructors.
 
 The ORM protects data from invalid data through the ORM object's
@@ -195,7 +195,7 @@ objects:
 Here, an order object is created and 10 child (constituent) items are
 added to the order. When `save()` is called, the order and its items are
 saved atomically resulting in 11 records being saved in two different
-database tables. The cascading can go on indefinately.
+database tables. The cascading can go on indefinitely.
 
 Database subclassing is also supported. That is to say, if an ORM class
 has a subclass, the ORM class and its subclass each have corresponding
@@ -271,7 +271,7 @@ framework's logic (see `www.application.__call__`).
 <a id="assets-command-line-interface"></a>
 ## Command line interface (crust) ##
 `crust` is the main command-line interface to the framework. 
-Currently,  `crust` is used to intactively perform database migrations.
+Currently,  `crust` is used to inactively perform database migrations.
 Future uses would include issuing queries to learn about the framework's
 environment as well as communicating with bots.
 
@@ -284,21 +284,21 @@ the [Operating system](#environment-operating-system) section for
 details on how and why to use these files.
 
 ## Documentation files ##
-There are a few files, all in upppercase, used for various documentation
+There are a few files, all in uppercase, used for various documentation
 purposes:
 
 * [ABBREVIATIONS.md](ABBREVIATIONS.md) Contains a list of abbreviations
-to be used for common varibles (such as using `ls` for a variable
+to be used for common variables (such as using `ls` for a variable
 representing some sort of list). Note that typically, a class will
 document the variable name that should be used for instances of the
 class.
 
-* [LICENSE_cssselect](LICENSE_cssselect)  The licence for code copied
+* [LICENSE_cssselect](LICENSE_cssselect)  The license for code copied
     into the framework from Ian Bicking's
     ['cssselect'](https://github.com/scrapy/cssselect) project to help
     with CSS selector tokenization.
 
-* [LICENSE](LICENSE)      The Carapacian Core licence
+* [LICENSE](LICENSE)      The Carapacian Core license
 
 * [README.md](README.md)  The readme file that you are currently reading.
 
@@ -307,7 +307,7 @@ class.
 
 * [VARIABLES](VARIABLES) Similar to [ABBREVIATIONS](ABBREVIATIONS.md),
                          but documents the conventional names given to
-                         varibles in certain contexts.
+                         variables in certain contexts.
 
 * [VERSION](VERSION)     Contains the version number of Carapacian Core
 
@@ -326,7 +326,7 @@ make a better choice for most use cases.
 
 <a id="assets-third-party"></a>
 ## Third party module ##
-The [third.py](third.py) module contains classe related to the integration of the
+The [third.py](third.py) module contains classes related to the integration of the
 framework with third party systems such as external mail servers, credit
 card processing systems, geocoding services etc. It contains facilities
 that perform, monitor and manager these interactions.
@@ -340,11 +340,11 @@ local syslog.
 The logging parameters, such as the log level, is configured in the
 [config files](#assets-configuration). 
 
-Log messages are inteded to go to a local log file on the system.
+Log messages are intended to go to a local log file on the system.
 Most logging should be done using the GEM class (or subclass thereof)
 `apriori.log`. This way, the log message is in the database which is
 ideal. However, the [log.py](log.py) module should be used to log locally
-(ususally to /var/log/syslog) for the following conditions:
+(usually to /var/log/syslog) for the following conditions:
 
 * Logging verbose debug messages to assist with problem diagnostics.
 * Logging informational log messages of interest to developer.
@@ -354,7 +354,7 @@ ideal. However, the [log.py](log.py) module should be used to log locally
 
 <a id="assets-configuration"></a>
 ## Configuration ##
-Configuration of the enviroment is made in two files. The first,
+Configuration of the environment is made in two files. The first,
 [configuration.py](configuration.py) is a versioned file which contains no secret
 information, such as database passwords, but does provide a default
 configuration through its `configuration` singleton. 
@@ -362,8 +362,8 @@ configuration through its `configuration` singleton.
 The second file, [config.py](config.py) is an unversioned file which contains a
 class called `config` which inherits from `configuration`. This file
 overrides the default version and can contain secrete information and
-therefore **should never be commited to the Git repository**.  This file
-should also have restritive file permessions:
+therefore **should never be committed to the Git repository**.  This file
+should also have restrictive file permissions:
 
     chmod 400 config.py
 
@@ -385,7 +385,7 @@ distribution of Linux is where the Core was developed and where it has
 received most of its testing, however, it should run on most
 Debian-based distributions without much modification - if any. It's
 recommend that you use the latest LTS version of Ubuntu and use its
-native packages for the Python interpretor along with Green Unicorn. The
+native packages for the Python interpreter along with Green Unicorn. The
 version of Python shipped with the latest Ubuntu LTS version is
 considered the framework's officially supported version.
 
@@ -405,7 +405,7 @@ dependencies.
 
     apt install `cat deb`
 
-Ubuntu packages are prefered over PIP packages because running updates
+Ubuntu packages are preferred over PIP packages because running updates
 on Ubuntu will capture updates to these packages:
 
     apt update && apt dist-upgrade -y
@@ -430,7 +430,7 @@ Adding the `-U` flag causes the packages to be updated.
 ## Database ##
 The RDBMS of choice is MySQL. The configuration for the database
 connections can set using the `config.accounts` property in the
-[config.py](config.py) file. Iteratate over the the accounts from the base class
+[config.py](config.py) file. Iterate over the the accounts from the base class
 `configuration` and find the MySQL connection, then set its values to
 whatever you need. This will usually just be the password.
 
@@ -448,11 +448,11 @@ on the configuration files.
             return accts
 
 The framework uses the database for persisting data and maintaining
-indexes for fast data retrival. It doesn't use the database to store
+indexes for fast data retrieval. It doesn't use the database to store
 code such as in the case of stored procedures, views, UDF's, etc. Thus,
 the SQL that it uses to interact with the RDBMS is fairly simple and
 standard. It could probably be easily ported to another RDBMS if that
-were somehow deemed desireable, however MySQL currently seems like an
+were somehow deemed desirable, however MySQL currently seems like an
 excellent choice for the framework's needs.
 
 The RDBMS is also expected to take care of its on scalability and
@@ -462,7 +462,7 @@ functions.
 
 ## Lower environments ##
 As of this writing, not much work has been done to determine how the
-production environment, as well as the lower enviroments, such as UAT,
+production environment, as well as the lower environments, such as UAT,
 QA, and development will be managed. This section will be updated when
 concrete solutions to this problem domain have been devised.
 
@@ -472,7 +472,7 @@ Hacking
 <a id="hacking-running-tests"></a>
 ## Running tests
 Most feature development and bug fixes are done by adding a number of
-tests to the [suite of regration testing scripts](#assets-test-scripts).
+tests to the [suite of regression testing scripts](#assets-test-scripts).
 
 Each module has, or should have, a corresponding test module. For
 example, the tests for the [product.py](product.py) module are located in
@@ -593,12 +593,12 @@ interface on port 8000.
 
 The ``--reload`` option is useful because it causes `gunicorn` to detect
 changes made to the source files. This way you don't have to rerun
-`gunicorn` everytime you make a change to the source. It uses
+`gunicorn` every time you make a change to the source. It uses
 **inotify** to monitor files. inotify should be installed by default in
 Ubuntu.
 
 Setting `--timeout` to 0 means the worker classes will wait an
-indefinate amount of time for the request to complete. This is useful
+indefinite amount of time for the request to complete. This is useful
 for step-by-step debugging described below because the time it takes to
 debug an issues will likely be longer than the timeout.
 
@@ -611,7 +611,7 @@ The above service can then be invoked with `curl`:
     curl carapacian.com:8000
 
 You can set breakpoints in the code with the call `B()` described
-[above](#hacking-debugger).  When the breakpoint is encounterd, the
+[above](#hacking-debugger).  When the breakpoint is encountered, the
 terminal that `gunicorn` is running in will display a PDB prompt giving
 you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
@@ -645,7 +645,7 @@ is recommend that you install
 [dbext](https://github.com/vim-scripts/dbext.vim) into your Vim
 environment (if you are using Vim). dbext allows you to write queries in
 a Vim window, then issue those queries to the server. The result of the
-queries appear in a seperate Vim window. If you use Emacs or another
+queries appear in a separate Vim window. If you use Emacs or another
 editor, it is recommend that you finds something similar to dbext.
 
 Git usage and conventions
@@ -660,8 +660,8 @@ tags will use standard [semantic versioning](https://semver.org/).
 ### Code commits ###
 Two main types of Git commits are used in the framework: standard code commits
 and "housekeeping" commits.  The distinguishing feature of a code commit is
-that it should only contain code changes. Any comments or whitespaces in these
-commits should be releated the code changes,  e.g.:
+that it should only contain code changes. Any comments or whitespace in these
+commits should be related the code changes,  e.g.:
 
     commit b76fa29ee3fc00efa86b75331b4e9cdecdb3bf9b
 	Author: Jesse Hogan <jhogan@carapacian.com>
@@ -743,7 +743,7 @@ blank line), the branch name is included as in standard code commits:
 The purpose for distinguishing **housekeeping** commits from **standard
 code commits** is that analysis tool, such as `git-log` can include or
 exclude housekeeping commits. Being able to exclude housekeeping commits
-is convenient for code analysis because the analist can focus on the
+is convenient for code analysis because the analyst can focus on the
 code logic while excluding changes in comments, whitespace formatting,
 etc. To view code change while excluding housekeeping changes, you can
 use a command like this:
@@ -753,8 +753,8 @@ use a command like this:
 Removing `--invert-grep` shows only the housekeeping commits.
 
 ### Atomic commits ###
-To make the git-log more useful, strive to make commits as automic as
-possible. Automic commits are commits that contain changes to the source
+To make the git-log more useful, strive to make commits as atomic as
+possible. Atomic commits are commits that contain changes to the source
 code that address a single, specific issue. Atomic commits are easier to
 work with and analyze. To create atomic commits, you can use the
 `--patch` (`-p`) flag with `git-add` to select which portions of your
