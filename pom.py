@@ -165,6 +165,11 @@ class site(asset.asset):
 
                 setattr(self, map.name, getattr(ws, map.name))
 
+            sup = self
+            while sup:
+                sup.orm.persistencestate = False, False, False
+                sup = sup.orm._super
+
             ''' Associate the proprietor '''
             try:
                 propr = self.Proprietor.orm.reloaded()
@@ -200,12 +205,7 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
-            sup = self
-            while sup:
-                sup.orm.persistencestate = False, False, False
-                sup = sup.orm._super
 
-            self.orm.persistencestate = False, False, False
             self.save()
 
 

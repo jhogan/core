@@ -3342,6 +3342,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     import party
                     if isinstance(propr, party.party):
                         self.proprietor = propr
+                    elif isinstance(propr, UUID):
+                        self.proprietor__partyid = propr
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
