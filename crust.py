@@ -5,7 +5,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
 from MySQLdb.constants.CR import COMMANDS_OUT_OF_SYNC
 from config import config
