@@ -524,6 +524,20 @@ process to skip this process with the `-T` flag.
 
 Now the test runs even faster.
 
+### Viewing SQL being issued to MySQL ###
+For debugging purposes, you will occasionally take an interest in what
+SQL the ORM is actually sending to the database. This is done by using
+the snapshot context manager:
+
+    import db, party
+
+    par = party.company(name="Acme")
+    with db.chronicler.snapshot():
+        par.save()
+
+The above should print out the `INSERT` statements used to create the
+new company in the database.
+
 <a href="hacking-debugger"></a>
 ### Dropping into the debugger ###
 If the test reports exceptions, you can rerun the tests and cause the
