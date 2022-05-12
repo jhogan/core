@@ -113,12 +113,6 @@ Assets
 
 Hacking
 -------
-<!-- TODO: Add section on issuing debug commands. Give attention to the
-use of hex() with UUIDs. -->
-<!-- TODO: Add section discussing the use of print() -->
-## Writing tests ##
-<!-- TODO -->
-
 ## Testing through Green Unicorn ##
 On the occasion that you need to debug an issue through the HTTP
 interface directory, you can run the Green Unicorn HTTP/WSGI server and
