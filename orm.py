@@ -3335,6 +3335,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # This is for unusual circumstances, such as when
                     # setting up principles and trying to avoid
                     # catch-22's.
+                    #
+                    # XXX The alternative block below is new, change the
+                    # above comment to cover it
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     import party
                     if isinstance(propr, party.party):

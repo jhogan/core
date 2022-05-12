@@ -613,6 +613,8 @@ class operationeventargs(entitiesmod.eventargs):
         self._cancel = v
 
 class chronicler(entitiesmod.entity):
+    """ XXX
+    """
     _instance = None
 
     def __init__(self):

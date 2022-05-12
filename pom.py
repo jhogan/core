@@ -148,7 +148,6 @@ class site(asset.asset):
             
             ''' Create or retrieve site record '''
             try:
-                B()
                 ws = type(self)(self.Id)
             except db.RecordNotFoundError:
                 ws = type(self)(id=self.Id)

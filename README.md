@@ -284,3 +284,9 @@ Read this [Stack Overflow question](https://stackoverflow.com/questions/10676753
 for more details.
 
 TODO In the future, the `dba` bot should ensure this line is added.
+
+TODO Explain how to view the SQL being sent to MySQL using the snapshot
+context manager:
+    with db.chronicler.snapshot():
+        B()
+        print(self.asset_parties)
