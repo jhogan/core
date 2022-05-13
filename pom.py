@@ -170,17 +170,20 @@ class site(asset.asset):
                 sup.orm.persistencestate = False, False, False
                 sup = sup.orm._super
 
-            ''' Associate the proprietor '''
+            ''' Ensure proprietor '''
             try:
                 propr = self.Proprietor.orm.reloaded()
             except db.RecordNotFoundError:
                 propr = self.Proprietor
-                with orm.proprietor(propr):
-                    sup = propr
-                    while sup:
-                        sup.owner = root
-                        sup = sup.orm.super
+                sup = propr
+                while sup:
+                    sup.owner = root
+                    sup.proprietor = propr
+                    sup.orm.isnew = True
+                    sup = sup.orm.super
+                propr.save()
                 
+            ''' Associate the proprietor '''
             with orm.proprietor(propr):
                 for ap in self.asset_parties:
                     if ap.asset_partystatustype.name == 'proprietor':
@@ -204,6 +207,8 @@ class site(asset.asset):
                     while sup:
                         sup.owner = root
                         sup = sup.orm.super
+
+                self.orm.mappings['proprietor']._value = propr
 
 
             self.save()

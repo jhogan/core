@@ -495,7 +495,7 @@ class site(tester.tester):
             # reason.
             self.eq(root.id, ws.owner__userid)
 
-            self.eq(ws.Proprietor.id, ws.proprietor.proprietor.id)
+            self.eq(ws.Proprietor.id, ws.proprietor.proprietor__partyid)
             self.eq(root.id, ws.proprietor.owner__userid)
 
         test_principles(ws)
@@ -566,6 +566,7 @@ class site(tester.tester):
 
         self.eq((False, False, False), ws.orm.persistencestate)
         with orm.proprietor(ws.proprietor):
+            ws.orm.reloaded()
             self.expect(None, ws.orm.reloaded)
 
         aps = ws.asset_parties
