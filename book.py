@@ -6,18 +6,39 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
-with book(name='Hacking Carapacian Core'):
+with book('Hacking Carapacian Core'):
   with chapter("Introduction"):
-    with section(no=0, name="Introduction") as sec:
-      
+    with section('What is Carapacian Core') as sec:
       sec('''
-      It was the best of times, it was the worst of times.
+        Carapacian core is a framework written and maintained to
+        facilitate the creation of web application that deal with
+        business data.
       ''')
 
-    with section(no=1, name="Testing") as sec:
-      
-      sec('''
-      Testing is a boring part of the developer's journey.
-      ''')
+  with chapter("Writing tests") as sec:
+    ...
+
+  with chapter("Using the Object-relational Mapper") as sec:
+    ...
+
+  with chapter('The General Entity Model') as sec:
+    ...
+
+  with chapter("Authoring DOM objects") as sec:
+    ...
+
+  with chapter("Robotic process automation") as sec:
+    ...
+
+  with chapter("Crust") as sec:
+    with section('Running migrations') as sec:
+      ...
+
+  with chapter("Logging") as sec:
+    ..
+
+  with chapter("Third-party integration") as sec:
+    ..
+
     
     
