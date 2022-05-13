@@ -1360,6 +1360,9 @@ class tester(entities.entity):
         if len(ls) != len(set(ls)): self._failures += failure()
 
     def expect(self, expect, fn, msg=None):
+        # NOTE expect swallows exceptions, so passing -b flag to tester
+        # won't cause a break where fn() raises an exception (assuming
+        # it does).
         try:
             if not callable(fn):
                 raise NotCallableError((
