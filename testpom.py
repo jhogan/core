@@ -599,7 +599,7 @@ class site(tester.tester):
         with orm.proprietor(ass.proprietor):
             self.expect(None, ass.orm.reloaded)
 
-class pom_page(tester.tester):
+class page(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
         super().__init__(mods=mods, *args, **kwargs)
