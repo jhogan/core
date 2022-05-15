@@ -18,15 +18,41 @@ with book('Hacking Carapacian Core'):
   with chapter("Writing tests"):
     with section("Introduction"):
       print('''
+        Carapacian Core is a complicated system with a lot of
+        interconnected parts. Without an exhaustive battery of automated
+        tests, the framework would likely be unmaintainable.  Virtually
+        everything gets tested in the framework including:
+
+        * **Feature enhancements** Any feature added to carapacian
+          core should have exhaustive tests written for it.
+
+        * **Bugs** When a bug is discovered and fixed, a test should
+          be written to ensure that the same bug doesn't reoccure.
+
+        * **Third-party integration** When writing code that interfaces
+          with a third party system, test code should be written against
+          a test version of that system. If a test version of the system
+          doesn't exist, it should be created. This approach is favored
+          over the more conventional technique of mocking because test
+          systems more accurately represent the real thing. See the
+          section, 'Test systems vs mocking' for more.
+        
+        * **DOM testing** Test should be written to ensure the validity
+          of HTML pages as well as their AJAX interactions to ensure the
+          user interface behaves as expected. See the section DOM
+          Testing for more.
+
         Whether you're adding a feature to the ORM, creating a nwe web
         page, or writing backend code to interact with a third-party
         service, everything in the framework begins and ends with a
         battery of automated tests.
-
-        Virtually everything gets a test in the framework from the
-        simple to the complex, so it makes sense to start with a
-        discussion on writting tests. 
       ''')
+
+    with section('Test systems vs mocking'):
+      ...
+
+    with section('DOM Testing'):
+      ...
 
     with section("tester"):
       print("""
