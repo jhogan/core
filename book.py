@@ -20,8 +20,8 @@ with book('Hacking Carapacian Core'):
       print('''
         Carapacian Core is a complicated system with a lot of
         interconnected parts. Without an exhaustive battery of automated
-        tests, the framework would likely be unmaintainable.  Virtually
-        everything gets tested in the framework including:
+        integration tests, the framework would likely be unmaintainable.
+        Virtually everything gets tested in the framework including:
 
         * **Feature enhancements** Any feature added to carapacian
           core should have exhaustive tests written for it.
@@ -48,12 +48,6 @@ with book('Hacking Carapacian Core'):
         battery of automated tests.
       ''')
 
-    with section('Test systems vs mocking'):
-      ...
-
-    with section('DOM Testing'):
-      ...
-
     with section("tester"):
       print("""
         Included with the framework is a module called, simply enough,
@@ -64,6 +58,52 @@ with book('Hacking Carapacian Core'):
         websites, a `benchmark` subclass for performance testing, and
         other useful, framework specific features.
       """)
+
+      class int_tester(tester.tester):
+        def it_assigns(self):
+          # It assigns 0 to a number 
+          x = int()
+          self.eq(0, x, 'x was not correctly assigned')
+
+          # Test chain assigments
+          x = y = int()
+          self.eq(0, x, 'x was not correctly assigned')
+          self.eq(0, y, 'y was not correctly assigned')
+
+          # Test type
+          self.type(x, int)
+
+      print(int_tester)
+
+      print('''
+        In the above example, we have a rather contrived `tester` class called
+        `int_tester` designed to test the behavior of Python `int`
+        objects. Within this class, we have a test method called
+        `it_assigns`. It's job is to ensure that integer assignments
+        work.
+
+        Since `int_tester` inherits from `tester`, we can use `self` to
+        call its assert methods. The assert method `eq` is testing
+        whether or not `x` and `y` are equal to 0. If they don't equal 0, a
+        note will be taken by the the tester system when the tests are
+        run.  After all the tests have been run, these notes, called
+        `failures`, will be presented to the user. The third argument to
+        the `eq()` method is an optional informational message that will
+        be displayed to the user as well. After the equality tests, we
+        check to make sure `x` is of type `int`.
+
+        In most of the framework tests, objects are set up in a number
+        of ways, then a number of assertion methods are run on the
+        various properties of the objects.  Writing thourough tests like
+        this is fairly easy and is very much encouraged.
+      '''
+
+    with section('Test systems vs mocking'):
+      ...
+
+    with section('DOM Testing'):
+      ...
+
 
   with chapter("Using the Object-relational Mapper") as sec:
     ...
