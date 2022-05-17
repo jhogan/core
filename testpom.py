@@ -604,6 +604,10 @@ class page(tester.tester):
         mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
         super().__init__(mods=mods, *args, **kwargs)
 
+        # XXX We should probably send the proprietor to tester.__init__
+        # to be set
+        orm.security().proprietor = foonet.Proprietor
+
         if self.rebuildtables:
             fastnets.orm.recreate()
 

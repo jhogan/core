@@ -151,8 +151,6 @@ class site(asset.asset):
                 ws = type(self)(self.Id)
             except db.RecordNotFoundError:
                 ws = type(self)(id=self.Id)
-                ws.directory
-                B()
                 ws.save()
 
             for map in ws.orm.mappings:
