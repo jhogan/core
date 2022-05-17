@@ -850,7 +850,6 @@ class page(tester.tester):
                 m += dom.h2('Time')
                 m += dom.i('Timezone: ' + tz)
 
-
                 if len(kwargs):
                     m += dom.dl()
                     dl = m.last
@@ -863,6 +862,7 @@ class page(tester.tester):
                 m += dom.time(primative.datetime.utcnow())
 
         ws = foonet()
+
         pg = time()
         ws.pages += pg
 
@@ -1144,7 +1144,6 @@ class page(tester.tester):
         self.one(textarea)
         self.eq(comment, textarea.first.text)
 
-
     def it_raises_im_a_teapot(self):
         ws = foonet()
 
@@ -1182,9 +1181,18 @@ class page(tester.tester):
             pass
 
         class derpnet(pom.site):
+            Id = UUID(hex='4ef54e9e-2f7d-45bc-861c-3f82bd662938')
+
+            Proprietor = party.company(
+                id = UUID(hex='d20088e6-a99a-4e0e-9948-b944242e1206'),
+                name = 'Derpnet, Inc'
+            )
+
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
+
+        derpnet.orm.recreate()
 
         try:
             ws = derpnet()
@@ -1192,7 +1200,7 @@ class page(tester.tester):
             res = tab.get('/en' + '/index', ws)
             self.eq(404, res.status)
 
-            # A site will by defalut use the generic 404 page (at the
+            # A site will, by default, use the generic 404 page (at the
             # pom.site level). It happens to not have an h2.apology
             # element (unlike foonet; see below).
             self.zero(res['h2.apology'])
@@ -1203,8 +1211,8 @@ class page(tester.tester):
             res = tab.get('/en/' + 'intheix.html', ws)
             self.eq(404, res.status)
             
-            # foonet has its own 404 page has an h2.apology element
-            # distinguishing it from the generic 404 page at the
+            # foonet has its own 404 page which has an h2.apology
+            # element distinguishing it from the generic 404 page at the
             # pom.site level.
             self.one(res['h2.apology'])
             self.one(res['main[data-path="/error/404"]'])
