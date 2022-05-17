@@ -85,18 +85,81 @@ with book('Hacking Carapacian Core'):
         Since `int_tester` inherits from `tester`, we can use `self` to
         call its assert methods. The assert method `eq` is testing
         whether or not `x` and `y` are equal to 0. If they don't equal 0, a
-        note will be taken by the the tester system when the tests are
+        note will be taken by the the tester system as the tests 
         run.  After all the tests have been run, these notes, called
         `failures`, will be presented to the user. The third argument to
-        the `eq()` method is an optional informational message that will
+        the `eq()` method is an optional informational string that will
         be displayed to the user as well. After the equality tests, we
         check to make sure `x` is of type `int`.
 
-        In most of the framework tests, objects are set up in a number
+        In most of the framework's tests, objects are set up in a number
         of ways, then a number of assertion methods are run on the
         various properties of the objects.  Writing thourough tests like
         this is fairly easy and is very much encouraged.
       '''
+      with section("Assertion methods"):
+        print('''
+          The name of assert methods tend to be short and/or
+          abbreviated which differs from most other unit testing
+          frameworks. For example, The equivalenet assertion methods for
+          for `eq()` in Python's `unittest` is `assertEquals()'. This is
+          because, when you are in a test method, shorter/abbreviated
+          assertion methods are easy to spot since they are used so
+          frequently. It also make writting exhaustive batteries of
+          tests easier since less time is spent typing assertion method
+          names.
+
+          <aside>
+            As of this writting, there are still methods that are named
+            using the old, more verbose convention which are prefixed
+            with the string 'assert'. For example, there is an
+            `assertEq()` method that does the same thing as `eq()`.
+            These methods are slated to be removed and should not be
+            used in future test code.
+          <aside>
+
+          Below is a list of currently supported assertion methods:
+
+          * **all**          Fails if not all(actual)
+          * **full**         Fails if actual.strip() == ''
+          * **empty**         
+          * **fail**         
+          * **uuid**
+          * **true**         Fails if not actual
+          * **false**        Fails if actual
+          * **isinstance**   Fails if not isinstance(expect, actual)
+          * **type**         Fails if type(actual) is not expect
+          * **eq**           Fails if expect != actual
+          * **startswith**   Fails if not actual.startswith(expect)
+          * **endswith**     Fails if not actual.endswith(expect)
+          * **ne**           Fails if not (expect != actual)
+          * **gt**           Fails if not (expect > actual)
+          * **ge**           Fails if not (expect >= actual)
+          * **lt****         Fails if not (expect < actual)
+          * **le**           Fails if not (expect <= actual)
+          * **is_**          Fails if not (expect is actual)
+          * **isnot**        Fails if not (expect is not actual)
+          * **zero**         Fails if len(actual) != 0
+          * **multiple**     Fails if len(actual) == 0
+          * **one**          Fails if len(actual) != 1
+          * **two**          Fails if len(actual) != 2
+          * **three**        Fails if len(actual) != 3
+          * **four**         Fails if len(actual) != 4
+          * **five**         Fails if len(actual) != 5
+          * **six**          Fails if len(actual) != 6
+          * **seven**        Fails if len(actual) != 7
+          * **eight**        Fails if len(actual) != 8
+          * **nine**         Fails if len(actual) != 9
+          * **ten**          Fails if len(actual) != 10
+          * **eleven**       Fails if len(actual) != 11
+          * **twelve**       Fails if len(actual) != 12
+          * **count**        Fails if expet != len(actual)
+          * **valid**        
+          * **invalid**        
+          * **broken**        
+          * **unique**        
+          * **expect**        
+        ''')
 
     with section('Test systems vs mocking'):
       ...
