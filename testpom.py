@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import apriori; apriori.model()
 
-
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
@@ -33,6 +32,8 @@ class foonet(pom.site):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
+
+        # XXX This is redundand. It's part of self.Proprietor
         self.name = 'foo.net'
 
         ''' Pages '''
