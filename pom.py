@@ -150,7 +150,10 @@ class site(asset.asset):
             try:
                 ws = type(self)(self.Id)
             except db.RecordNotFoundError:
-                ws = type(self)(id=self.Id)
+                ws = type(self)(
+                    id = self.Id, 
+                    name = self.Proprietor.name, 
+                )
                 ws.save()
 
             for map in ws.orm.mappings:

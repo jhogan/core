@@ -606,6 +606,11 @@ class page(tester.tester):
 
         # XXX We should probably send the proprietor to tester.__init__
         # to be set
+
+        propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            propr.owner = ecommerce.users.root
+            
         orm.security().proprietor = foonet.Proprietor
 
         if self.rebuildtables:
@@ -1200,26 +1205,27 @@ class page(tester.tester):
 
         try:
             ws = derpnet()
-            tab = self.browser().tab()
-            res = tab.get('/en' + '/index', ws)
-            self.eq(404, res.status)
+            with orm.proprietor(ws.proprietor):
+                tab = self.browser().tab()
+                res = tab.get('/en' + '/index', ws)
+                self.eq(404, res.status)
 
-            # A site will, by default, use the generic 404 page (at the
-            # pom.site level). It happens to not have an h2.apology
-            # element (unlike foonet; see below).
-            self.zero(res['h2.apology'])
+                # A site will, by default, use the generic 404 page (at the
+                # pom.site level). It happens to not have an h2.apology
+                # element (unlike foonet; see below).
+                self.zero(res['h2.apology'])
 
-            ws = foonet()
+                ws = foonet()
 
-            tab = self.browser().tab()
-            res = tab.get('/en/' + 'intheix.html', ws)
-            self.eq(404, res.status)
-            
-            # foonet has its own 404 page which has an h2.apology
-            # element distinguishing it from the generic 404 page at the
-            # pom.site level.
-            self.one(res['h2.apology'])
-            self.one(res['main[data-path="/error/404"]'])
+                tab = self.browser().tab()
+                res = tab.get('/en/' + 'intheix.html', ws)
+                self.eq(404, res.status)
+                
+                # foonet has its own 404 page which has an h2.apology
+                # element distinguishing it from the generic 404 page at the
+                # pom.site level.
+                self.one(res['h2.apology'])
+                self.one(res['main[data-path="/error/404"]'])
         finally:
             orm.forget(derpnet)
 

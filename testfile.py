@@ -52,8 +52,12 @@ def clean():
     if ret != 0:
         raise PermissionError(f'Cannot delete {store}. Check access.')
 
-class foonets(pom.sites): pass
+class foonets(pom.sites):
+    pass
+
 class foonet(pom.site):
+    Id = UUID(hex='2343dc33-1317-4164-96d3-bdd261c68e74')
+
     Proprietor = party.company(
         id = UUID(hex='5e4ce2b6-034d-473e-a731-bf66012f4989'),
         name = 'Foonet, Inc'
@@ -90,8 +94,6 @@ class file_(tester.tester):
 
     def it_adds_js_files_to_site(self):
         ws = foonet()
-        with orm.su(ws.owner):
-            ws.save()
 
         ws.resources += file.resource(
             url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',

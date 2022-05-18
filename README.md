@@ -1,5 +1,10 @@
 Carapacian Core
 ================
+
+<!-- TODOs
+    * Add section on how to do performance testing
+-->
+
 Carapacian Core is a web framework. It is written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
