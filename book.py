@@ -118,13 +118,27 @@ with book('Hacking Carapacian Core'):
             used in future test code.
           <aside>
 
-          Below is a list of currently supported assertion methods:
+          Assertion methods typically come in the following form:
+            
+            def assertion(expected, actual, msg=''):
+              ...
+
+          The `expected` parameter is the value you expect `actual` to
+          be. For example, here is the implementation of `eq()`:
+
+            def eq(self, expect, actual, msg=None):
+                if expect != actual:
+                  self._failures += failure()
+
+          Below is a rough list of currently supported assertion
+          methods. See the assertion method's implementation for more
+          details.
 
           * **all**          Fails if not all(actual)
           * **full**         Fails if actual.strip() == ''
-          * **empty**         
-          * **fail**         
-          * **uuid**
+          * **empty**        Fails if actual != ''         
+          * **fail**         Causes an unconditional failure
+          * **uuid**         Fails if actual is not a UUID
           * **true**         Fails if not actual
           * **false**        Fails if actual
           * **isinstance**   Fails if not isinstance(expect, actual)
@@ -153,20 +167,40 @@ with book('Hacking Carapacian Core'):
           * **ten**          Fails if len(actual) != 10
           * **eleven**       Fails if len(actual) != 11
           * **twelve**       Fails if len(actual) != 12
-          * **count**        Fails if expet != len(actual)
-          * **valid**        
-          * **invalid**        
-          * **broken**        
-          * **unique**        
-          * **expect**        
+          * **count**        Fails if expect != len(actual)
+          * **valid**        Fails if not actual.isvalid
+          * **invalid**      Falis if actual.isvalid  
+          * **broken**       Fails if the give rule is broken for the give property 
+          * **unique**       Fails if actual contains duplicates 
+          * **expect**       Fails if the give exception is not raised 
         ''')
 
-    with section('Test systems vs mocking'):
-      ...
+    with section('Mocks, Stubs, Fakes and Dummy Objects'):
+      print('''
+        Framework tests try to be as realistic as possible. One key
+        example database interaction: When you test a persistence
+        operations, such as call the `save()` method on an ORM entity, a
+        connection to a real MySQL database is used to issue a real
+        query (assuming your environment's configurations is correctly
+        set up). This is in constrast to the technique, sometimes
+        employed of using a **fake**, in-memory database for testing.
+        Using the same database configuration that the production
+        environment uses is necessary for catching any database issue
+        testing before they are deployed to production.
+
+        End-to-end testing is employed when testing web pages. When web `page`
+        objects are created which contains persistence logic, automated
+        tests are written to invoke the page. These tests can ensure
+        that the page responds correctly and that its interactions with
+        the database are correct as well.
+      ''')
+      
 
     with section('DOM Testing'):
       ...
 
+  with chapter("Configuration") as sec:
+    ...
 
   with chapter("Using the Object-relational Mapper") as sec:
     ...
