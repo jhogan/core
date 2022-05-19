@@ -95,40 +95,41 @@ class file_(tester.tester):
     def it_adds_js_files_to_site(self):
         ws = foonet()
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
-            integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
-            local = True,
-        )
+        with orm.proprietor(ws.proprietor):
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
+                integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
+                local = True,
+            )
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
-            integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
-            local = True,
-        )
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
+                integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
+                local = True,
+            )
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
-            integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
-            local = True,
-        )
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
+                integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
+                local = True,
+            )
 
-        ws.save()
+            ws.save()
 
-        ws1 = ws.orm.reloaded()
+            ws1 = ws.orm.reloaded()
 
-        self.eq(ws.id, ws1.id)
+            self.eq(ws.id, ws1.id)
 
-        ress = ws.resources.inodes.sorted()
-        ress1 = ws1.resources.inodes.sorted()
+            ress = ws.resources.inodes.sorted()
+            ress1 = ws1.resources.inodes.sorted()
 
-        self.three(ress)
-        self.three(ress1)
+            self.three(ress)
+            self.three(ress1)
 
-        for res, res1 in zip(ress, ress1):
-            self.eq(res.id, res1.id)
-            self.eq(str(res.url), str(res1.url))
-            self.eq(res.integrity, res1.integrity)
+            for res, res1 in zip(ress, ress1):
+                self.eq(res.id, res1.id)
+                self.eq(str(res.url), str(res1.url))
+                self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
         class index(pom.page):
