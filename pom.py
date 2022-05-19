@@ -167,6 +167,7 @@ class site(asset.asset):
                     setattr(self, map.name, getattr(wssup, map.name))
 
                 sup.orm.persistencestate = False, False, False
+
                 sup = sup.orm._super
                 wssup = wssup.orm._super
 
