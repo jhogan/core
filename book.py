@@ -177,22 +177,42 @@ with book('Hacking Carapacian Core'):
 
     with section('Mocks, Stubs, Fakes and Dummy Objects'):
       print('''
-        Framework tests try to be as realistic as possible. One key
-        example database interaction: When you test a persistence
-        operations, such as call the `save()` method on an ORM entity, a
+        Tests in Carapacian Core try to be as realistic as possible. One key
+        example of this is database interaction: When you test a persistence
+        operations, such as a call to the `save()` method of an ORM entity, a
         connection to a real MySQL database is used to issue a real
         query (assuming your environment's configurations is correctly
         set up). This is in constrast to the technique, sometimes
         employed of using a **fake**, in-memory database for testing.
-        Using the same database configuration that the production
-        environment uses is necessary for catching any database issue
-        testing before they are deployed to production.
+        Using the a database environment for testing that is equivelent
+        to the production environment uses is necessary for catching 
+        database issue during testing before deploying to production.
 
-        End-to-end testing is employed when testing web pages. When web `page`
-        objects are created which contains persistence logic, automated
-        tests are written to invoke the page. These tests can ensure
-        that the page responds correctly and that its interactions with
-        the database are correct as well.
+        End-to-end testing is employed when testing web pages. When
+        developers create web `page` objects which contains persistence
+        logic, they will also create tests written to invoke the page.
+        These tests ensure that the page responds correctly, and that its
+        interactions with the database are correct as well. Thus, it can
+        be said that tests for the UI in the framework are fully
+        integrated with backend database operations.
+
+        This can also be said of backend operations involving third
+        party services. When selecting a third party services, such as
+        an email delivery service, a credit card processing service, or
+        a geocoding service, an ernest effort should be made to choose a
+        service that provides a test enviroment that mimicks its
+        production enviroment. For example, the `third.postmark` class
+        uses the Postmark email delivery service. Postmark provides a
+        way to use their service in a testing mode. This makes it
+        possible to write automated tests against their service without
+        those tests inadvertently sending emails. This is very useful
+        because it means we can write automated tests to ensure that the
+        framework code will interact correctly with the Postmark when in
+        production. If an acceptable third party services can't be found
+        that provides a test environment, a web site should be created
+        within the framework that behaves in a way that the production
+        services is understood to behave. Tests should interact with
+        that website to ensure framework logic is behaving correctly.
       ''')
       
 
