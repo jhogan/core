@@ -154,24 +154,21 @@ class site(asset.asset):
                     id = self.Id, 
                     name = self.Proprietor.name, 
                 )
+                ws.directory
                 ws.save()
 
-            for map in ws.orm.mappings:
-                if not isinstance(map, orm.fieldmapping):
-                    continue
-
-                setattr(self, map.name, map.value)
-
-            for map in ws.orm.mappings.supermappings:
-                if type(map) is not orm.fieldmapping:
-                    continue
-
-                setattr(self, map.name, getattr(ws, map.name))
-
             sup = self
+            wssup = ws
             while sup:
+                for map in wssup.orm.mappings:
+                    if not isinstance(map, orm.fieldmapping):
+                        continue
+
+                    setattr(self, map.name, getattr(wssup, map.name))
+
                 sup.orm.persistencestate = False, False, False
                 sup = sup.orm._super
+                wssup = wssup.orm._super
 
             ''' Ensure proprietor '''
             try:
