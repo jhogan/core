@@ -2780,7 +2780,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     p1 += f'{map.name} = _binary %s'
-                    args.append(security().proprietor.id.bytes)
+                    args.append(security().proprietorid.bytes)
                     break
 
         if p1:
@@ -7667,6 +7667,15 @@ class security:
 
         return cls._instance
 
+    @property
+    def proprietorid(self):
+        """ XXX
+        """
+        propr = self.proprietor
+        if isinstance(propr, UUID):
+            return propr
+
+        return propr.id
     @property
     def proprietor(self):
         """ Return the proprietor entity currently set.
