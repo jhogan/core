@@ -154,64 +154,70 @@ class file_(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += index()
+        with orm.proprietor(ws.proprietor):
 
-        # Add site-wide resources
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
-            integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
-        )
+            # Add site-wide resources
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
+                integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
+            )
 
-        # GET the /en/files page
-        tab = self.browser().tab()
-        res = tab.get('/en/index', ws)
+            # GET the /en/files page
+            tab = self.browser().tab()
+            B()
+            res = tab.get('/en/index', ws)
 
-        self.status(200, res)
+            self.status(200, res)
 
-        scripts = res['html head script']
-        self.four(scripts)
+            scripts = res['html head script']
+            scripts = scripts.tail(4)
 
-        # Test site-level resource
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
-            scripts.first.src
-        )
-        self.eq(
-            'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
-            scripts.first.integrity
-        )
-        self.eq('anonymous', scripts.first.crossorigin)
+            self.count(4, scripts)
 
-        # Test page-level resources
-        self.eq(
-            'https://code.jquery.com/jquery-3.5.1.js',
-            scripts.second.src
-        )
-        self.eq(None, scripts.second.integrity)
-        self.eq('anonymous', scripts.second.crossorigin)
+            # Test site-level resource
+            self.eq(
+                'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
+                scripts.first.src
+            )
+            self.eq(
+                'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
+                scripts.first.integrity
+            )
+            self.eq('anonymous', scripts.first.crossorigin)
 
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-            scripts.third.src
-        )
-        self.eq(
-            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-            scripts.third.integrity
-        )
-        self.eq('anonymous', scripts.third.crossorigin)
+            # Test page-level resources
+            self.eq(
+                'https://code.jquery.com/jquery-3.5.1.js',
+                scripts.second.src
+            )
+            self.eq(None, scripts.second.integrity)
+            self.eq('anonymous', scripts.second.crossorigin)
+            
+            self.eq(
+                'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                scripts.third.src
+            )
+            self.eq(
+                'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                scripts.third.integrity
+            )
+            self.eq('anonymous', scripts.third.crossorigin)
 
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-            scripts.fourth.src
-        )
 
-        self.eq(None, scripts.fourth.integrity)
-        self.eq('use-credentials', scripts.fourth.crossorigin)
+            self.eq(
+                'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+                scripts.ultimate.src
+            )
 
-        for script in scripts:
-            # We aren't caching these resources (`local is True`) so we
-            # shouldn't expect any to be in the database
-            url = ecommerce.url(address=script.src)
-            self.zero(url.resources)
+            self.eq(None, scripts.ultimate.integrity)
+            self.eq('use-credentials', scripts.ultimate.crossorigin)
+            B()
+
+            for script in scripts:
+                # We aren't caching these resources (`local is True`) so we
+                # shouldn't expect any to be in the database
+                url = ecommerce.url(address=script.src)
+                self.zero(url.resources)
 
     def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
@@ -240,33 +246,33 @@ class file_(tester.tester):
 
         # Set up site
         ws = foonet()
-        ws.pages += avatar()
-        ws.save()
-        
+        with orm.proprietor(ws.proprietor):
+            ws.pages += avatar()
+            ws.save()
+            
+            # Get a browser tab
+            tab = self.browser().tab()
 
-        # Get a browser tab
-        tab = self.browser().tab()
+            # Create a file called my-avatar to POST to server
+            f = file.file(name='my-avatar.gif')
 
-        # Create a file called my-avatar to POST to server
-        f = file.file(name='my-avatar.gif')
+            # Assign 1x1 pixel GIF to the file's body property
+            f.body = base64.b64decode(
+                'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+            )
 
-        # Assign 1x1 pixel GIF to the file's body property
-        f.body = base64.b64decode(
-            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-        )
+            # Create a save a user
+            usr = ecommerce.user(name='luser')
+            usr.save()
 
-        # Create a save a user
-        usr = ecommerce.user(name='luser')
-        usr.save()
+            # Post the file. Reference the user's id in the URL.
+            res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+            self.status(201, res1)
 
-        # Post the file. Reference the user's id in the URL.
-        res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
-        self.status(201, res1)
+            usr = usr.orm.reloaded()
+            f1 = usr.directory['var/avatars/default.gif']
 
-        usr = usr.orm.reloaded()
-        f1 = usr.directory['var/avatars/default.gif']
-
-        self.eq(f.body, f1.body)
+            self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
         class index(pom.page):
