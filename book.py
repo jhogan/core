@@ -184,17 +184,18 @@ with book('Hacking Carapacian Core'):
         query (assuming your environment's configurations is correctly
         set up). This is in constrast to the technique, sometimes
         employed of using a **fake**, in-memory database for testing.
-        Using the a database environment for testing that is equivelent
-        to the production environment uses is necessary for catching 
-        database issue during testing before deploying to production.
+        Using a database environment for testing that is equivelent to
+        the production environment is necessary for catching database
+        issue during testing before deploying to production.
 
-        End-to-end testing is employed when testing web pages. When
+        End-to-end testing is employed when for user interfaces. When
         developers create web `page` objects which contains persistence
-        logic, they will also create tests written to invoke the page.
-        These tests ensure that the page responds correctly, and that its
+        logic, they will also create tests to invoke the page.  These
+        tests ensure that the page responds correctly, and that its
         interactions with the database are correct as well. Thus, it can
         be said that tests for the UI in the framework are fully
-        integrated with backend database operations.
+        integrated with backend database operations. See the section
+        called <a href="8f60ca73">Page Testing</a> for more.
 
         This can also be said of backend operations involving third
         party services. When selecting a third party services, such as
@@ -215,9 +216,50 @@ with book('Hacking Carapacian Core'):
         that website to ensure framework logic is behaving correctly.
       ''')
       
+    with section('Page Testing', 0x8f60ca73):
+      print('''
+        The tester framework provides a ``browser`` class that makes it
+        possible to run tests againsts web pages. The browse class has a
+        collection of tabs just like a real browser. You can use the
+        `get`, `post`, `patch` methods of a tab to make requests to
+        a page with the corresponding HTTP verb. You can also use the
+        `post` method to test XHR requests.
 
-    with section('DOM Testing'):
-      ...
+        Let's say we created a website in the framework called
+        "gooble.com". This website allows users to search the web. To
+        write a test for a basic search, we could do something like
+        this:
+      ''')
+
+      def it_searches(self):
+        # Import the website module
+        import gooble
+
+        # Get an instance of the website
+        ws = gooble.site()
+
+        # Instantiate a new browser
+        brw = self.browser()
+
+        # Instantiate a new tab
+        tab = brw.tab()
+
+        # Peform a search for the string "gooble" using a GET request to
+        # gooble.com/search
+        res = tab.get('/search?q=gobble')
+
+        # Test the status of the respons
+        self.status(200, res)
+
+        # Ensure the tab contains within its internal DOM an HTML page
+        # has a link the Wikipedia article for "Freaks"
+        as_ = tab['div#results a']
+
+        for a in as_:
+          if a.text == 'Freaks (1932 film) - Wikipedia':
+            break
+        else:
+          self.fail(msg="Couldn't find 'Freaks'")
 
   with chapter("Configuration") as sec:
     ...
