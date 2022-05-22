@@ -221,22 +221,23 @@ with book('Hacking Carapacian Core'):
         The tester framework provides a ``browser`` class that makes it
         possible to run tests againsts web pages. The browse class has a
         collection of tabs just like a real browser. You can use the
-        `get`, `post`, `patch` methods of a tab to make requests to
+        `get` and `post`  methods of a tab to make requests to
         a page with the corresponding HTTP verb. You can also use the
-        `post` method to test XHR requests.
+        `xhr` method to issue XHR requests (which are actually a special
+        type of POST request).
 
         Let's say we created a website in the framework called
-        "gooble.com". This website allows users to search the web. To
+        "searchr.com". This website allows users to search the web. To
         write a test for a basic search, we could do something like
         this:
       ''')
 
       def it_searches(self):
         # Import the website module
-        import gooble
+        import searchr
 
         # Get an instance of the website
-        ws = gooble.site()
+        ws = searchr.site()
 
         # Instantiate a new browser
         brw = self.browser()
@@ -244,22 +245,33 @@ with book('Hacking Carapacian Core'):
         # Instantiate a new tab
         tab = brw.tab()
 
-        # Peform a search for the string "gooble" using a GET request to
-        # gooble.com/search
-        res = tab.get('/search?q=gobble')
+        # Peform a search for the string "gooble gobble" using a GET request to
+        # searchr.com/search
+        res = tab.get('/search?q=gooble+gobble')
 
         # Test the status of the respons
         self.status(200, res)
 
-        # Ensure the tab contains within its internal DOM an HTML page
-        # has a link the Wikipedia article for "Freaks"
+        # Ensure the tab contains within its internal DOM
+        # a link to the Wikipedia article for "Freaks"
         as_ = tab['div#results a']
 
+        # Iterate ove anchor tags
         for a in as_:
           if a.text == 'Freaks (1932 film) - Wikipedia':
             break
         else:
+          # Fail if we can't find the anchor tag pointing to Freaks.
           self.fail(msg="Couldn't find 'Freaks'")
+
+      print('''
+        For more examples of testing websites, see the 
+        <a href="testpom.py">
+          testpom.py
+        </a> module.
+      ''')
+
+    with section('How the Framework uses Tests'):
 
   with chapter("Configuration") as sec:
     ...
