@@ -264,6 +264,8 @@ with book('Hacking Carapacian Core'):
           # Fail if we can't find the anchor tag pointing to Freaks.
           self.fail(msg="Couldn't find 'Freaks'")
 
+      print(it_searches)
+
       print('''
         For more examples of testing websites, see the 
         <a href="testpom.py">
@@ -271,7 +273,31 @@ with book('Hacking Carapacian Core'):
         </a> module.
       ''')
 
+    with section('Test Setup and Teardown'):
+      ...
+
     with section('How the Framework uses Tests'):
+      print('''
+        The general pattern for creating tests in the framework is to
+        create a test module for each module, then a `tester` class for
+        each class. For example, the <a href="order.py">order.py</a>
+        contains the logic to manage sales orders, purchase orders,
+        etc. It has a corresponding test module called 
+        <a href="testorder.py">testorder.py</a>. Within this module, are
+        classes that inherit from `tester.tester`. Each of these classes
+        is devoted to testing the logic in a corresponding class in the
+        order.py module. For example, the class `testorder.order`
+        contains test methods which make assertions about the
+        behavior of classes in `order.order`.
+
+        <aside>
+          Note that this pattern evolved over time and there are many
+          exceptions to it. Going forward, we should strive to conform
+          our tests to this pattern.
+        </aside>
+      ''')
+
+      with section('Benchmarking')
 
   with chapter("Configuration") as sec:
     ...
