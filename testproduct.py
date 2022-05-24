@@ -46,7 +46,7 @@ def getvalidregion():
         ('85281',                     party.region.Postal)
     )
 
-class test_product(tester.tester):
+class product_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True

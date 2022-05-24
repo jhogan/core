@@ -491,7 +491,8 @@ To run all the tests, you can simply run the [test.py](test.py) script.
     ./test.py
 
 This runs all the tests in that file as well as all the tests in files
-that match the pattern `test*.py`. 
+that match the pattern `test*.py`. Note that `test.py` should complete
+with no failures on a feature branch before it is merged into 'main'.
 
 To narrow you tests down a little, you choose to run only the
 module-level tests. To run all the product tests, run the [testproduct.py](testproduct.py)
