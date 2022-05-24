@@ -627,15 +627,16 @@ Variable names
 ### Justification
 The most important attributes of variable names is the ability to easily
 type, read and remember them. Short, one word or abbreviated names are
-easiest to use. Being free from having to consider uppercase characters
-and underscores further contribute to ease of use. Type information,
-such as in Hungarian notation, adds unnecessary clutter when methods are
-discrete, well written and properly documented. Using *scriptio
-continua* case has the added benefit of encouraging single word
-variables since compound variables written in *scriptio continua* are a
-little difficult to read. Standard abbreviations also aids in usability.
-Documenting the abbreviation in the class or an abbreviation glossary
-has obvious benefits for standardization.
+easiest to use in text editors and debuggers allowing for faster
+development time with less fatigue. Being free from having to consider
+uppercase characters and underscores further contribute to ease of use.
+Type information, such as in Hungarian notation, adds unnecessary
+clutter when methods are discrete, well written and properly documented.
+Using *scriptio continua* case has the added benefit of encouraging
+single word variables since compound variables written in *scriptio
+continua* are a little difficult to read. Standard abbreviations also
+aids in usability.  Documenting the abbreviation in the class or an
+abbreviation glossary has obvious benefits for standardization.
 
 ### Examples
 

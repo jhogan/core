@@ -164,7 +164,6 @@ class file_(tester.tester):
 
             # GET the /en/files page
             tab = self.browser().tab()
-            B()
             res = tab.get('/en/index', ws)
 
             self.status(200, res)
@@ -211,7 +210,6 @@ class file_(tester.tester):
 
             self.eq(None, scripts.ultimate.integrity)
             self.eq('use-credentials', scripts.ultimate.crossorigin)
-            B()
 
             for script in scripts:
                 # We aren't caching these resources (`local is True`) so we
