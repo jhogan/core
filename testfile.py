@@ -160,6 +160,7 @@ class file_(tester.tester):
             ws.resources += file.resource(
                 url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
                 integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
+                local = True
             )
 
             # GET the /en/files page
@@ -279,64 +280,65 @@ class file_(tester.tester):
 
         # Set up site
         ws = foonet()
-        ws.pages += index()
+        with orm.proprietor(ws.proprietor):
+            ws.pages += index()
 
-        resx = file.resource(
-            url = 'https://code.jquery.com/jquery-3.5.1.js',
-            local = True
-        )
-
-        ws.resources += resx
-
-        def f():
-            ws.pages.last.resources += file.resource(
-                url        =  'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-                integrity  =  'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-                local      =  True
+            resx = file.resource(
+                url = 'https://code.jquery.com/jquery-3.5.1.js',
+                local = True
             )
 
-        # We should be forbidden from setting local=True when creating
-        # file.resources and appending them to pages. A page does not
-        # need a seperate directory for its own JS, CSS, etc files.
-        # That would lead to clutter and duplication. If a page needs
-        # its own resources that are unique from other pages, we can add
-        # a non-local resource.
-        self.expect(ValueError, f)
+            ws.resources += resx
 
-        ws.save()
+            def f():
+                ws.pages.last.resources += file.resource(
+                    url        =  'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                    integrity  =  'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                    local      =  True
+                )
 
-        # GET the /en/files page
-        tab = self.browser().tab()
-        res = tab.get('/en/index', ws)
+            # We should be forbidden from setting local=True when
+            # creating file.resources and appending them to pages. A
+            # page does not need a seperate directory for its own JS,
+            # CSS, etc files.  That would lead to clutter and
+            # duplication. If a page needs its own resources that are
+            # unique from other pages, we can add a non-local resource.
+            self.expect(ValueError, f)
 
-        self.status(200, res)
+            ws.save()
 
-        scripts = res['html head script']
-        self.one(scripts)
+            # GET the /en/files page
+            tab = self.browser().tab()
+            res = tab.get('/en/index', ws)
 
-        self.eq(
-            (
-                f'/{file.directory.radix.name}'
-                f'/pom/site/{ws.id.hex}/resources/jquery-3.5.1.js'
-            ),
-            scripts.first.src
-        )
-        self.eq(None, scripts.first.integrity)
-        self.eq('anonymous', scripts.first.crossorigin)
+            self.status(200, res)
 
-        resxs = file.resources('name', resx.name)
-        self.one(resxs)
+            scripts = res['html head script']
+            self.one(scripts)
 
-        # Load and test first: jquery
-        resx1s = ecommerce.urls(
-            'address', 'https://code.jquery.com/jquery-3.5.1.js'
-        ).first.resources
+            self.eq(
+                (
+                    f'/{file.directory.radix.name}'
+                    f'/pom/site/{ws.id.hex}/resources/jquery-3.5.1.js'
+                ),
+                scripts.first.src
+            )
+            self.eq(None, scripts.first.integrity)
+            self.eq('anonymous', scripts.first.crossorigin)
 
-        for resx2s in (resxs, resx1s):
-            self.one(resx2s)
-            self.none(resx2s.first.integrity)
-            self.eq(resxs.first.id, resx2s.first.id)
-            self.eq('anonymous', resx2s.first.crossorigin)
+            resxs = file.resources('name', resx.name)
+            self.one(resxs)
+
+            # Load and test first: jquery
+            resx1s = ecommerce.urls(
+                'address', 'https://code.jquery.com/jquery-3.5.1.js'
+            ).first.resources
+
+            for resx2s in (resxs, resx1s):
+                self.one(resx2s)
+                self.none(resx2s.first.integrity)
+                self.eq(resxs.first.id, resx2s.first.id)
+                self.eq('anonymous', resx2s.first.crossorigin)
 
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
