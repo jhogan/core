@@ -279,22 +279,67 @@ with book('Hacking Carapacian Core'):
     with section('How the Framework uses Tests'):
       print('''
         The general pattern for creating tests in the framework is to
-        create a test module for each module, then a `tester` class for
-        each class. For example, the <a href="order.py">order.py</a>
-        contains the logic to manage sales orders, purchase orders,
-        etc. It has a corresponding test module called 
-        <a href="testorder.py">testorder.py</a>. Within this module, are
+        create a test module for each module. In the test module, a
+        `tester` class should be created for each class in in the
+        regular module. 
+
+        For example, the <a href="order.py">order.py</a> module contains
+        the logic to manage sales orders, purchase orders, and the like.
+        It has a corresponding test module called <a
+        href="testorder.py">testorder.py</a>. Within this module, are
         classes that inherit from `tester.tester`. Each of these classes
         is devoted to testing the logic in a corresponding class in the
         order.py module. For example, the class `testorder.order`
-        contains test methods which make assertions about the
-        behavior of classes in `order.order`.
+        contains test methods which make assertions about the behavior
+        of classes in `order.order`.
 
         <aside>
           Note that this pattern evolved over time and there are many
           exceptions to it. Going forward, we should strive to conform
           our tests to this pattern.
         </aside>
+
+        The naming pattern is to take the regular module and prefix the
+        string 'test' to it. Thus, `order.py` is tested by
+        `testorder.py`, `product.py` is tested by `testproduct.py`, and
+        so on.
+      ''')
+
+      with section('Running the tests'):
+        print('''
+        To run these test modules, simply invoke them from the command
+        line:
+
+          ./testproduct.py
+
+        This will run all the tests in that module and print out any
+        failures. To run only a particular class in a module, simply
+        specify the class:
+
+          ./testproduct.py product_
+
+        This only runs the test class `product_` within the
+        `testproduct.py` module.
+
+        You can narrow it down further by specifying a test method:
+
+          ./testproduct.py product_.it_creates
+
+        This will only run the `it_creates` test method. This level of
+        specifecity is ideal during developing. Reducing the specificity
+        to varying degrees is useful for making sure your logic changes
+        don't introduce butterfly side-effects in the code. The less
+        specific, the longer the tests will take to run though.
+
+        A master test module, called `test.py`, is used to run all the
+        tests. It does this simply by importing the tests. To run all
+        the tests, simply run `test.py` from command line:
+
+          ./test.py
+
+        Before merging your feature branch back into 'main', you will
+        need to make sure `./test.py` completes all tests without
+        failures.
       ''')
 
       with section('Benchmarking')
