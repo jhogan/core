@@ -320,7 +320,8 @@ class file_(tester.tester):
             self.status(200, res)
 
             scripts = res['html head script']
-            self.one(scripts)
+
+            scripts = scripts[-1:]
 
             self.eq(
                 (

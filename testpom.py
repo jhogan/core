@@ -137,6 +137,16 @@ class _404(pom.page):
         return type(self).__name__.replace('_', '')
 
 class pom_menu_items(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
+        super().__init__(mods=mods, *args, **kwargs)
+
+        propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            propr.owner = ecommerce.users.root
+            
+        orm.security().proprietor = foonet.Proprietor
+
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
         mnu.items.pretty, etc. were returning the same HTML but with
