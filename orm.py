@@ -4102,16 +4102,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.onbeforesave(self, eargs)
 
-                # XXX This is a bad bug. If onbeforesave is called (see
-                # above) and eargs.cancel is set to True, the entity is
-                # not saved to the database. However, this does not
-                # prevent its supers from being saved. So it's only half
-                # canceled, which will lead to bad bugs down the road.
-                # Additionally, mutations to constituents and composites
-                # are not canceled. Maybe we should have a hard return
-                # if eargs.cancel. `file.resource` is an example of an
-                # object that can be canceled but whose supers are
-                # saved regardless. See
+                # XXX:07d7cdb8 This is a bad bug. If onbeforesave is
+                # called (see above) and eargs.cancel is set to True,
+                # the entity is not saved to the database. However, this
+                # does not prevent its supers from being saved. So it's
+                # only half canceled, which will lead to bad bugs down
+                # the road.  Additionally, mutations to constituents and
+                # composites are not canceled. Maybe we should have a
+                # hard return if eargs.cancel. `file.resource` is an
+                # example of an object that can be canceled but whose
+                # supers are saved regardless. See
                 # file.resource._entity_onbeforesave.
 
                 # If an event handler subscribing to onbeforesave didn't

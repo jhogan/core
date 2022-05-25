@@ -51,7 +51,7 @@ def getvalidperson(first=None, last=None):
     per.dun            =  None
     return per
 
-class order(tester.tester):
+class order_(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'order', 'party', 'product', 'third'
         super().__init__(mods=mods, *args, **kwargs)
