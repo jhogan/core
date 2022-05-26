@@ -89,7 +89,6 @@ class testers(entities.entities):
         if config().inproduction:
             raise Exception("Won't run in production environment.")
 
-
         logs.info('Getting tester subclasses ...')
         clss = self.subclasses
 

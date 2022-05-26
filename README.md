@@ -14,6 +14,7 @@ It offers the following features:
 * Database [migration](#assets-command-line-interface)
 * [Logging](#assets-logging)
 * Robust [third-party API integration](#assets-third-party)
+* Web-based [file system](#assets-file-module)
 
 Assets
 ------
@@ -311,6 +312,7 @@ class.
 
 * [VERSION](VERSION)     Contains the version number of Carapacian Core
 
+<a id="assets-file-module"></a>
 ## File module ##
 A file system for use by the framework and its users is provided by the
 [file.py](file.py) module. File metadata is stored in the database, while file
