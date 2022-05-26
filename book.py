@@ -326,14 +326,13 @@ with book('Hacking Carapacian Core'):
           ./testproduct.py product_.it_creates
 
         This will only run the `it_creates` test method. This level of
-        specifecity is ideal during developing. Reducing the specificity
+        specificity is ideal during developing. Reducing the specificity
         to varying degrees is useful for making sure your logic changes
-        don't introduce butterfly side-effects in the code. The less
-        specific, the longer the tests will take to run though.
+        don't introduce butterfly effects in the code. 
 
         A master test module, called `test.py`, is used to run all the
-        tests. It does this simply by importing the tests. To run all
-        the tests, simply run `test.py` from command line:
+        tests. To run all the tests, simply run `test.py` from the
+        command line:
 
           ./test.py
 
@@ -342,13 +341,79 @@ with book('Hacking Carapacian Core'):
         failures.
       ''')
 
+        with section('Breaking into debug mode')
+          with section('Setting breakpoints')
+            print('''
+              When creating tests, you will inevitably want to set a
+              breakpoint somewhere in the code to take a look around. This
+              is actually quit easy with the framework. Simply go to the
+              line where you want the code to break and add a call to the
+              `B` function:
+
+                def some_method(self):
+                  B()
+                  dubious_logic()
+
+                Now you can run the tests.
+
+                  ./test.py
+
+              When and if `some_method` is called, you will be dropped
+              into the 
+              <a href="https://docs.python.org/3/library/pdb.html">
+                PDB debugger
+              </a>. 
+              At this point you can read the value of local and global
+              variables, explore the call stack, invoke arbitrary
+              functions, etc. If you are not familiar with the PDB
+              debugger, it is more than worth you time learning its
+              simple command-line interface.
+
+              The `B` method is available in virtually any module in the
+              framework. It is imported from the `dbg` module:
+
+                from dbg import B
+
+              It's a simple wrapper to PDB's `set_trace` method.
+            ''')
+
+            with section('Conditional breakpoints')
+              print('''
+                If the first argument to `B` is falsy, Python won't
+                break into the debugger. If it's truthy, it will. This
+                means you can use `B` to set a conditional breakpoint.
+                Consider:
+
+                  for x in range(10):
+                    B(x > 5)
+
+                This breakpoint will only break when x is greater than
+                5.  Despite this contrived example, conditional
+                breakpoints are a powerful technique for breaking into
+                the debugger only when the code is in a certain state.
+              ''')
+
       with section('Benchmarking')
+        ...
 
   with chapter("Configuration") as sec:
     ...
 
   with chapter("Using the Object-relational Mapper") as sec:
-    ...
+
+    with section('Security'):
+
+      with section('Authorization'):
+        ...
+
+      with section('Authentication'):
+        ...
+
+    with section('Validation'):
+      ...
+
+    with section('Security'):
+      ...
 
   with chapter('The General Entity Model') as sec:
     ...
@@ -367,6 +432,9 @@ with book('Hacking Carapacian Core'):
     ..
 
   with chapter("Third-party integration") as sec:
+    ..
+
+  with chapter("File system") as sec:
     ..
 
     
