@@ -1658,5 +1658,11 @@ class file_resource(tester.tester):
             self.type(file.directory, nd.inode)
             self.true(nd in file.directory.radix)
 
+
+        # Save radix and all inodes created underneath. Failing to do
+        # this will cause permission issues as other tests try to
+        # presist the radix cache.
+        file.directory.radix.save()
+
 if __name__ == '__main__':
     tester.cli().run()
