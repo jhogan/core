@@ -4043,6 +4043,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # once because the imperitive brokenrules properties that
             # ORM users write can potentially be slow (such as when they
             # need to make a database calls).
+
             isvalid = self.getbrokenrules(
                 ascend=False, recurse=False
             ).isempty
