@@ -320,38 +320,40 @@ class site(tester.tester):
         vp = 'width=device-width, initial-scale=1, shrink-to-fit=no'
 
         ws = foonet()
-        hd = ws.head
-        self.one(hd.children['meta[charset=iso-8859-1]'])
-        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq('foonet', titles.first.text)
+        with orm.proprietor(ws.proprietor):
+            hd = ws.head
+            self.one(hd.children['meta[charset=iso-8859-1]'])
+            self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        # Mutate ws properties to ensure they show up in .head 
-        charset = uuid4().hex
-        vp = uuid4().hex
-        title = uuid4().hex
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq('foonet', titles.first.text)
 
-        ws.charset = charset
-        ws.viewport = vp
-        ws.title = title
+            # Mutate ws properties to ensure they show up in .head 
+            charset = uuid4().hex
+            vp = uuid4().hex
+            title = uuid4().hex
 
-        hd = ws.head
-        self.one(hd.children['meta[charset="%s"]' % charset])
-        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+            ws.charset = charset
+            ws.viewport = vp
+            ws.title = title
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq(title, titles.first.text)
+            hd = ws.head
+            self.one(hd.children['meta[charset="%s"]' % charset])
+            self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        ws = pom.site()
-        hd = ws.head
-        self.one(hd.children['meta[charset=utf-8]'])
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq(title, titles.first.text)
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq('site', titles.first.text)
+            ws = pom.site()
+            hd = ws.head
+            self.one(hd.children['meta[charset=utf-8]'])
+
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq('site', titles.first.text)
 
     def it_calls_header(self):
         ws = foonet()
@@ -627,9 +629,15 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-        orm.security().override = True
+        # XXX Clean this stuff up
         foonet.orm.recreate()
+        pom.site.orm.recreate()
+        asset.asset.orm.recreate()
+        import file
+        del file.directory._radix
 
+        orm.security().override = True
+        
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
