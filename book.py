@@ -97,6 +97,7 @@ with book('Hacking Carapacian Core'):
         various properties of the objects.  Writing thourough tests like
         this is fairly easy and is very much encouraged.
       '''
+
       with section("Assertion methods"):
         print('''
           The name of assert methods tend to be short and/or
@@ -216,6 +217,47 @@ with book('Hacking Carapacian Core'):
         that website to ensure framework logic is behaving correctly.
       ''')
       
+    with section('Integration, regression or unit tests'):
+      print('''
+        The goal of automated testing in the framework is to ensure that
+        the feature that the framework purports to have work. In
+        addition to testing features, we also ensure that when a bug
+        surfaces, tests are written to ensure that the bug will never
+        resurface. The framework is able to provide a rich feature-set
+        due to the extensive automated testing it receives. 
+
+        A question may arise regarding whether these are unit tests. A
+        unit tests is an automated test that sections (units) of source
+        behave as expected. However, as stated above, we are interested
+        in ensuring that features work as expected; not sections, thus
+        the term "unit test" would be inappropriate for these tests.
+
+        However, the phase "automated integration tests" would be
+        appropriate because, as stated elsewhere, the features are
+        tested in an end-to-end manor, that is to say: starting with the
+        subject of the test (such as a user-interface, or an ORM object)
+        and allowing those module to interact with external systems,
+        such as databases and third party API's (or simulations only
+        when necessary).
+
+        Additionally, the phrase "automated regression tests" may be
+        appropriate as well. Regression testing is defined by Wikipedia
+        as the:
+
+        > [R]e-running functional and non-functional tests to ensure that
+        > previously developed and tested software still performs after
+        > a change. If not, that would be called a regression.
+
+        As stated, the Goal of the framework's tests is to ensure
+        features continue to work, and that bugs are not allowed to
+        resurface. Given that, we can also call the tests regression
+        tests. 
+
+        For the most part, there is no need to be specific, though. The
+        tests can usually just be refered to as "automated tests" with
+        out qualification.
+      ''')
+
     with section('Page Testing', 0x8f60ca73):
       print('''
         The tester framework provides a ``browser`` class that makes it
@@ -338,17 +380,18 @@ with book('Hacking Carapacian Core'):
 
         Before merging your feature branch back into 'main', you will
         need to make sure `./test.py` completes all tests without
-        failures.
+        failures. The 'main' branch, by definition, should always pass
+        all tests.
       ''')
 
         with section('Breaking into debug mode')
           with section('Setting breakpoints')
             print('''
               When creating tests, you will inevitably want to set a
-              breakpoint somewhere in the code to take a look around. This
-              is actually quit easy with the framework. Simply go to the
-              line where you want the code to break and add a call to the
-              `B` function:
+              breakpoint somewhere in the code for debugging purposes.
+              This is actually quit easy with the framework. Simply go
+              to the line where you want the code to break and add a
+              call to the `B` function:
 
                 def some_method(self):
                   B()
@@ -365,12 +408,13 @@ with book('Hacking Carapacian Core'):
               </a>. 
               At this point you can read the value of local and global
               variables, explore the call stack, invoke arbitrary
-              functions, etc. If you are not familiar with the PDB
+              functions, and so on. If you are not familiar with the PDB
               debugger, it is more than worth you time learning its
               simple command-line interface.
 
               The `B` method is available in virtually any module in the
-              framework. It is imported from the `dbg` module:
+              framework. It is imported n moste modules from the 
+              <a href="dbg.py">dbg.py</a> module:
 
                 from dbg import B
 
@@ -391,6 +435,24 @@ with book('Hacking Carapacian Core'):
                 5.  Despite this contrived example, conditional
                 breakpoints are a powerful technique for breaking into
                 the debugger only when the code is in a certain state.
+
+              ''')
+
+              print('''
+                <aside>
+                  Note that PDB also has the ability to set breakpoints,
+                  conditional and otherwise. PDB's breakpoints can be
+                  used along side `B()`.  Normally, it is more
+                  convenient to use the `B` function. however, PDB's
+                  breakpoints are useful in certain situations.
+                </aside>
+
+                As you develop code in the framework, try to avoid
+                commiting calls to `B()` to the Git source code
+                repository. Sometimes, this is inevitable when working
+                in a feature branch, but never merge a feature branch
+                with a call to `B()` back into 'main'. You wouldn't want
+                a production server entering into a breakpoint.
               ''')
 
       with section('Benchmarking')
