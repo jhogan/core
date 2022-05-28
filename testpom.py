@@ -635,7 +635,9 @@ class page(tester.tester):
         pom.site.orm.recreate()
         asset.asset.orm.recreate()
         import file
-        del file.directory._radix
+        with suppress(AttributeError):
+            del file.directory._radix
+
 
         orm.security().override = True
         
