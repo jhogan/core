@@ -2,6 +2,7 @@
 import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
+from contextlib import suppress
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4, UUID
@@ -1220,6 +1221,7 @@ class page(tester.tester):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
+        # XXX Clean up
         derpnet.orm.recreate()
 
         try:
@@ -1229,9 +1231,9 @@ class page(tester.tester):
                 res = tab.get('/en' + '/index', ws)
                 self.eq(404, res.status)
 
-                # A site will, by default, use the generic 404 page (at the
-                # pom.site level). It happens to not have an h2.apology
-                # element (unlike foonet; see below).
+                # A site will, by default, use the generic 404 page (at
+                # the pom.site level). It happens to not have an
+                # h2.apology element (unlike foonet; see below).
                 self.zero(res['h2.apology'])
 
                 ws = foonet()

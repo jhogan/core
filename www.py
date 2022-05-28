@@ -1126,7 +1126,7 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        # If the site associated with the reuest doesn't have a page in
+        # If the site associated with the request doesn't have a page in
         # its index, raise a 404
         if not request.page:
             raise NotFoundError(self.path)
