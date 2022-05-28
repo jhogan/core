@@ -1225,6 +1225,8 @@ class page(tester.tester):
 
         # XXX Clean up
         derpnet.orm.recreate()
+        pom.site.orm.recreate()
+        asset.asset.orm.recreate()
 
         try:
             ws = derpnet()
@@ -1241,7 +1243,10 @@ class page(tester.tester):
                 ws = foonet()
 
                 tab = self.browser().tab()
-                res = tab.get('/en/' + 'intheix.html', ws)
+
+                with orm.proprietor(ws.proprietor):
+                    res = tab.get('/en/' + 'intheix.html', ws)
+
                 self.eq(404, res.status)
                 
                 # foonet has its own 404 page which has an h2.apology
