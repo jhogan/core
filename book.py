@@ -220,42 +220,45 @@ with book('Hacking Carapacian Core'):
     with section('Integration, regression or unit tests'):
       print('''
         The goal of automated testing in the framework is to ensure that
-        the feature that the framework purports to have work. In
+        the features provided by the frameword do, in fact, work. In
         addition to testing features, we also ensure that when a bug
         surfaces, tests are written to ensure that the bug will never
         resurface. The framework is able to provide a rich feature-set
         due to the extensive automated testing it receives. 
 
-        A question may arise regarding whether these are unit tests. A
-        unit tests is an automated test that sections (units) of source
-        behave as expected. However, as stated above, we are interested
-        in ensuring that features work as expected; not sections, thus
-        the term "unit test" would be inappropriate for these tests.
+        A question may arise regarding whether these tests are proprely
+        refered to as "unit tests". A unit tests is an automated test
+        where sections, or *units*, of source code are tested for
+        correct behavior.  However, as stated above, we are interested
+        in ensuring that *features* work as expected; not sections, thus
+        the term "unit test" would not be appropriate here.
 
-        However, the phase "automated integration tests" would be
-        appropriate because, as stated elsewhere, the features are
-        tested in an end-to-end manor, that is to say: starting with the
-        subject of the test (such as a user-interface, or an ORM object)
-        and allowing those module to interact with external systems,
-        such as databases and third party API's (or simulations only
-        when necessary).
-
-        Additionally, the phrase "automated regression tests" may be
-        appropriate as well. Regression testing is defined by Wikipedia
-        as the:
+        However, the phrase **automated regression tests** may be
+        appropriate since regression testing is defined by Wikipedia
+        as:
 
         > [R]e-running functional and non-functional tests to ensure that
         > previously developed and tested software still performs after
         > a change. If not, that would be called a regression.
 
-        As stated, the Goal of the framework's tests is to ensure
+        As stated, the goal of the framework's tests is to ensure that
         features continue to work, and that bugs are not allowed to
-        resurface. Given that, we can also call the tests regression
-        tests. 
+        resurface. Given that, we can call the tests regression tests. 
 
-        For the most part, there is no need to be specific, though. The
-        tests can usually just be refered to as "automated tests" with
-        out qualification.
+        Additionally, the phase "automated integration tests" would be
+        appropriate because, as stated elsewhere, the features are
+        tested in an end-to-end manor, that is to say: starting with the
+        subject of the test (such as a user-interface, or an ORM object)
+        and allowing those module to interact with external systems,
+        such as databases and third party API's (or simulations thereof
+        when necessary).
+
+        Knowing the nature and goals of the framework's testing efforts
+        is important. However, for day-to-day use, there is no need to
+        qualify the type of tests that are being performed. The only
+        exception to this is the case of **benchmark** testing refered
+        to <a href="d89c06c2">below</a>.
+
       ''')
 
     with section('Page Testing', 0x8f60ca73):
@@ -454,9 +457,64 @@ with book('Hacking Carapacian Core'):
                 with a call to `B()` back into 'main'. You wouldn't want
                 a production server entering into a breakpoint.
               ''')
+        with section('Invoking Tests with the pdb Command')
+          print('''
+            Setting breakpoints with the `B()` function will cause you
+            to be dropped into the PDB debugger when a test script is
+            run.  However, the test scrips can also be run using the
+            `pdb` command:
 
-      with section('Benchmarking')
-        ...
+              pdb ./test.py
+
+            This will drop you into the PDB debugger before any lines
+            have been executed. From here, you will probably want to set
+            breakpoints using PDB. 
+
+            There's really no magic here; you are just running the test
+            scripts with the `pdb` command just as you would run any
+            other Python script with the `pdb` command. Normally, you
+            will not need to invoke `pdb` directly like this. However,
+            circumstances will occasionally arise in which this is the
+            best course of action.
+
+          ''')
+
+      with section('Benchmarking', id=0xd89c06c2)
+        print('''
+          A special class of tests, called benchmarks, are built into
+          the testing framework which measure the amount of time that
+          cirtain operations run. These tests are useful when efforts
+          are made to improve the performance of the framework's code.
+          They can also inform you when a change to the source code
+          negatively (or positively) impacts performance.
+
+          These tests are not normally run, however. You must supply
+          the `--performance` (`-p`) flag to the test script:
+
+            ./test.py -p
+
+          In this invocation, only the performance tests will be run.
+
+          The performance tests themselves are like regular, feature
+          tests, except the only assertions they make are with the
+          `tester.time` method. First, a callable is created whose
+          execution is to be timed. Then the `tester.time` method runs
+          the callable and asserts that the callable runs within a
+          certain number of milliseconds:
+
+          class benchmark_product(tester.benchmark):
+            def it_instantiates_entity_without_arguments(self):
+                def f():
+                    product.product()
+
+                self.time(.5, .7, f, 1_000)
+          
+          The above test asserts that the `f` function, which
+          instantiates a `product.product` class, will complete between
+          .5 and .7 milliseconds. The function is called 1,000 times and
+          an average is calculated. If the average does not fall within
+          the allowable duration, the user is informed.
+        ''')
 
   with chapter("Configuration") as sec:
     ...
