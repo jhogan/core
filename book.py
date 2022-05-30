@@ -319,7 +319,43 @@ with book('Hacking Carapacian Core'):
       ''')
 
     with section('Test Setup and Teardown'):
-      ...
+      print('''
+        Unlike other testing frameworks, there are no setup or teardown
+        methods that can be created to run before or after the test
+        methods are run. However, there is some setup that happens in a
+        tester class's `__init__`` method. 
+
+        The reason no setup or teardown methods exists is that they've
+        never been needed. This may be because the tests aren't  really
+        "unit tests", but rather feature tests. When writting feature
+        tests, there is a lot of unique setup that needs to be done in
+        the test method itself - then, afterwards, a lot of assertions
+        are made about the effects the setup had.
+
+        Note that adding the ability to create setup and teardown
+        methods would easiy if the need ever arose. 
+      ''')
+
+    with section('Private methods in Tester Classes'):
+      print('''
+        Like most Python code, private methods are denoted by prefacing
+        their names with an underscore:
+
+          def _im_a_private_method(self):
+            ...
+
+          def im_a_public_method(self):
+            ...
+
+        Private methods are not run as test methods in a class. Feel free
+        to create private methods in tester classes if they are useful
+        to encapsulate reusuable test logic. 
+
+        Note that currently, however, assertions within private methods,
+        as well as inner functions, can't deal with the stack offset of
+        a these methods thus tests will report the wrong line number for
+        failures. See HACK:42decc38 for a workaround to this problem.
+      ''')
 
     with section('How the Framework uses Tests'):
       print('''
@@ -515,6 +551,9 @@ with book('Hacking Carapacian Core'):
           an average is calculated. If the average does not fall within
           the allowable duration, the user is informed.
         ''')
+
+  with chapter("Entity and Entities Objects"):
+    ...
 
   with chapter("Configuration") as sec:
     ...
