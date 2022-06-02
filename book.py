@@ -23,8 +23,8 @@ with book('Hacking Carapacian Core'):
         integration tests, the framework would likely be unmaintainable.
         Virtually everything gets tested in the framework including:
 
-        * **Feature enhancements** Any feature added to carapacian
-          core should have exhaustive tests written for it.
+        * **Feature enhancements** Any feature added to Carapacian
+          Core should have exhaustive tests written for it.
 
         * **Bugs** When a bug is discovered and fixed, a test should
           be written to ensure that the same bug doesn't reoccure.
@@ -32,31 +32,35 @@ with book('Hacking Carapacian Core'):
         * **Third-party integration** When writing code that interfaces
           with a third party system, test code should be written against
           a test version of that system. If a test version of the system
-          doesn't exist, it should be created. This approach is favored
-          over the more conventional technique of mocking because test
-          systems more accurately represent the real thing. See the
-          section, 'Test systems vs mocking' for more.
+          doesn't exist, it should be created within the framework. This
+          approach is favored over the more conventional technique of
+          creating ad hoc mocking because test systems more accurately
+          represent the real thing. See the section, 
+          <a href="5e773c12">Mocks, Stubs, Fakes and Dummy Objects</a>
+          for more information on this subject.
         
         * **DOM testing** Test should be written to ensure the validity
           of HTML pages as well as their AJAX interactions to ensure the
-          user interface behaves as expected. See the section DOM
-          Testing for more.
+          user interface behaves as expected. See the section 
+          <a href="8f60ca73">Page Testing</a> for more.
 
-        Whether you're adding a feature to the ORM, creating a nwe web
+        Whether you're adding a feature to the ORM, creating a new web
         page, or writing backend code to interact with a third-party
         service, everything in the framework begins and ends with a
         battery of automated tests.
       ''')
 
-    with section("tester"):
+    with section("The tester.py Module"):
       print("""
         Included with the framework is a module called, simply enough,
         `tester.py`. It has most of the features that you may be familiar
-        with from other test framworks, such as Python's builtin
-        `unittest`. In addition to the standard assert methods, it
+        with from other test framworks (e.g., Python's builtin
+        `unittest`). In addition to the standard assert methods, it
         includes a `browser` for the purpose of running tests against
         websites, a `benchmark` subclass for performance testing, and
         other useful, framework specific features.
+
+        Let's take a look at an actual test:
       """)
 
       class int_tester(tester.tester):
@@ -76,10 +80,10 @@ with book('Hacking Carapacian Core'):
       print(int_tester)
 
       print('''
-        In the above example, we have a rather contrived `tester` class called
-        `int_tester` designed to test the behavior of Python `int`
-        objects. Within this class, we have a test method called
-        `it_assigns`. It's job is to ensure that integer assignments
+        In the above example, we have a rather contrived `tester` class
+        called `int_tester` designed to test the behavior of Python's
+        `int` objects. Within this class, we have a test method called
+        `it_assigns`. Its job is to ensure that integer assignments
         work.
 
         Since `int_tester` inherits from `tester`, we can use `self` to
@@ -103,17 +107,16 @@ with book('Hacking Carapacian Core'):
           The name of assert methods tend to be short and/or
           abbreviated which differs from most other unit testing
           frameworks. For example, The equivalenet assertion methods for
-          for `eq()` in Python's `unittest` is `assertEquals()'. This is
-          because, when you are in a test method, shorter/abbreviated
-          assertion methods are easy to spot since they are used so
-          frequently. It also make writting exhaustive batteries of
-          tests easier since less time is spent typing assertion method
-          names.
+          for `eq()` in Python's `unittest` is `assertEqual()'. Assert
+          method names are short because, when you are in a test method,
+          shorter, abbreviated assertion method names are easy to spot since
+          they are used so frequently. It also make writting exhaustive
+          batteries of tests easier since less typing is required.
 
           <aside>
             As of this writting, there are still methods that are named
-            using the old, more verbose convention which are prefixed
-            with the string 'assert'. For example, there is an
+            using a conventional, more verbose convention which are
+            prefixed with the string 'assert'. For example, there is an
             `assertEq()` method that does the same thing as `eq()`.
             These methods are slated to be removed and should not be
             used in future test code.
@@ -134,62 +137,67 @@ with book('Hacking Carapacian Core'):
           Below is a rough list of currently supported assertion
           methods. See the assertion method's implementation for more
           details.
-
-          * **all**          Fails if not all(actual)
-          * **full**         Fails if actual.strip() == ''
-          * **empty**        Fails if actual != ''         
-          * **fail**         Causes an unconditional failure
-          * **uuid**         Fails if actual is not a UUID
-          * **true**         Fails if not actual
-          * **false**        Fails if actual
-          * **isinstance**   Fails if not isinstance(expect, actual)
-          * **type**         Fails if type(actual) is not expect
-          * **eq**           Fails if expect != actual
-          * **startswith**   Fails if not actual.startswith(expect)
-          * **endswith**     Fails if not actual.endswith(expect)
-          * **ne**           Fails if not (expect != actual)
-          * **gt**           Fails if not (expect > actual)
-          * **ge**           Fails if not (expect >= actual)
-          * **lt****         Fails if not (expect < actual)
-          * **le**           Fails if not (expect <= actual)
-          * **is_**          Fails if not (expect is actual)
-          * **isnot**        Fails if not (expect is not actual)
-          * **zero**         Fails if len(actual) != 0
-          * **multiple**     Fails if len(actual) == 0
-          * **one**          Fails if len(actual) != 1
-          * **two**          Fails if len(actual) != 2
-          * **three**        Fails if len(actual) != 3
-          * **four**         Fails if len(actual) != 4
-          * **five**         Fails if len(actual) != 5
-          * **six**          Fails if len(actual) != 6
-          * **seven**        Fails if len(actual) != 7
-          * **eight**        Fails if len(actual) != 8
-          * **nine**         Fails if len(actual) != 9
-          * **ten**          Fails if len(actual) != 10
-          * **eleven**       Fails if len(actual) != 11
-          * **twelve**       Fails if len(actual) != 12
-          * **count**        Fails if expect != len(actual)
-          * **valid**        Fails if not actual.isvalid
-          * **invalid**      Falis if actual.isvalid  
-          * **broken**       Fails if the give rule is broken for the give property 
-          * **unique**       Fails if actual contains duplicates 
-          * **expect**       Fails if the give exception is not raised 
         ''')
 
-    with section('Mocks, Stubs, Fakes and Dummy Objects'):
-      print('''
-        Tests in Carapacian Core try to be as realistic as possible. One key
-        example of this is database interaction: When you test a persistence
-        operations, such as a call to the `save()` method of an ORM entity, a
-        connection to a real MySQL database is used to issue a real
-        query (assuming your environment's configurations is correctly
-        set up). This is in constrast to the technique, sometimes
-        employed of using a **fake**, in-memory database for testing.
-        Using a database environment for testing that is equivelent to
-        the production environment is necessary for catching database
-        issue during testing before deploying to production.
+        with listing(name='Assertion methods and their behavior')
+          print('''
+            * **all**          Fails if not all(actual)
+            * **full**         Fails if actual.strip() == ''
+            * **empty**        Fails if actual != ''         
+            * **fail**         Causes an unconditional failure
+            * **uuid**         Fails if actual is not a UUID
+            * **true**         Fails if not actual
+            * **false**        Fails if actual
+            * **isinstance**   Fails if not isinstance(expect, actual)
+            * **type**         Fails if type(actual) is not expect
+            * **eq**           Fails if expect != actual
+            * **startswith**   Fails if not actual.startswith(expect)
+            * **endswith**     Fails if not actual.endswith(expect)
+            * **ne**           Fails if not (expect != actual)
+            * **gt**           Fails if not (expect > actual)
+            * **ge**           Fails if not (expect >= actual)
+            * **lt****         Fails if not (expect < actual)
+            * **le**           Fails if not (expect <= actual)
+            * **is_**          Fails if not (expect is actual)
+            * **isnot**        Fails if not (expect is not actual)
+            * **zero**         Fails if len(actual) != 0
+            * **multiple**     Fails if len(actual) == 0
+            * **one**          Fails if len(actual) != 1
+            * **two**          Fails if len(actual) != 2
+            * **three**        Fails if len(actual) != 3
+            * **four**         Fails if len(actual) != 4
+            * **five**         Fails if len(actual) != 5
+            * **six**          Fails if len(actual) != 6
+            * **seven**        Fails if len(actual) != 7
+            * **eight**        Fails if len(actual) != 8
+            * **nine**         Fails if len(actual) != 9
+            * **ten**          Fails if len(actual) != 10
+            * **eleven**       Fails if len(actual) != 11
+            * **twelve**       Fails if len(actual) != 12
+            * **count**        Fails if expect != len(actual)
+            * **valid**        Fails if not actual.isvalid
+            * **invalid**      Falis if actual.isvalid  
+            * **broken**       Fails if the give rule is broken for the give property 
+            * **unique**       Fails if actual contains duplicates 
+            * **expect**       Fails if the give exception is not raised 
+          ''')
 
-        End-to-end testing is employed when for user interfaces. When
+    with section('Mocks, Stubs, Fakes and Dummy Objects', id='5e773c12'):
+      print('''
+
+        Tests in Carapacian Core try to be as realistic as possible. One
+        key example of this is database interaction: When you test a
+        persistence operations, such as a call to the `save()` method of
+        an ORM entity, a connection to a real MySQL database is used to
+        issue a real query (assuming your environment's configurations
+        is correctly set up). This is in constrast to the technique,
+        often employed, of using a **fake**, in-memory database for
+        testing.  Using a database environment for testing that is
+        equivelent to the production environment is necessary for
+        catching database issue during testing before deploying to
+        production.
+
+        End-to-end testing is employed for user interfaces. When
         developers create web `page` objects which contains persistence
         logic, they will also create tests to invoke the page.  These
         tests ensure that the page responds correctly, and that its
@@ -198,8 +206,8 @@ with book('Hacking Carapacian Core'):
         integrated with backend database operations. See the section
         called <a href="8f60ca73">Page Testing</a> for more.
 
-        This can also be said of backend operations involving third
-        party services. When selecting a third party services, such as
+        The same can also be said of backend operations involving third
+        party data services. When selecting a third party services, such as
         an email delivery service, a credit card processing service, or
         a geocoding service, an ernest effort should be made to choose a
         service that provides a test enviroment that mimicks its
@@ -211,10 +219,11 @@ with book('Hacking Carapacian Core'):
         because it means we can write automated tests to ensure that the
         framework code will interact correctly with the Postmark when in
         production. If an acceptable third party services can't be found
-        that provides a test environment, a web site should be created
+        that provides a test environment, a website should be created
         within the framework that behaves in a way that the production
-        services is understood to behave. Tests should interact with
-        that website to ensure framework logic is behaving correctly.
+        services is understood to behave (assuming the services is
+        delivered over HTTP). Tests should interact with that website to
+        ensure framework logic is behaving correctly.
       ''')
       
     with section('Integration, regression or unit tests'):
@@ -226,7 +235,7 @@ with book('Hacking Carapacian Core'):
         resurface. The framework is able to provide a rich feature-set
         due to the extensive automated testing it receives. 
 
-        A question may arise regarding whether these tests are proprely
+        A question may arise regarding whether these tests are properly
         refered to as "unit tests". A unit tests is an automated test
         where sections, or *units*, of source code are tested for
         correct behavior.  However, as stated above, we are interested
@@ -261,7 +270,7 @@ with book('Hacking Carapacian Core'):
 
       ''')
 
-    with section('Page Testing', 0x8f60ca73):
+    with section('Page Testing', id="8f60ca73"):
       print('''
         The tester framework provides a ``browser`` class that makes it
         possible to run tests againsts web pages. The browse class has a
@@ -269,7 +278,7 @@ with book('Hacking Carapacian Core'):
         `get` and `post`  methods of a tab to make requests to
         a page with the corresponding HTTP verb. You can also use the
         `xhr` method to issue XHR requests (which are actually a special
-        type of POST request).
+        type of POST request) to websites.
 
         Let's say we created a website in the framework called
         "searchr.com". This website allows users to search the web. To
@@ -294,11 +303,11 @@ with book('Hacking Carapacian Core'):
         # searchr.com/search
         res = tab.get('/search?q=gooble+gobble')
 
-        # Test the status of the respons
+        # Test the status of the response
         self.status(200, res)
 
-        # Ensure the tab contains within its internal DOM
-        # a link to the Wikipedia article for "Freaks"
+        # Ensure the tab contained within its internal DOM link to the
+        # Wikipedia article for "Freaks"
         as_ = tab['div#results a']
 
         # Iterate ove anchor tags
@@ -306,7 +315,7 @@ with book('Hacking Carapacian Core'):
           if a.text == 'Freaks (1932 film) - Wikipedia':
             break
         else:
-          # Fail if we can't find the anchor tag pointing to Freaks.
+          # Fail if we can't find the anchor tag pointing to "Freaks"
           self.fail(msg="Couldn't find 'Freaks'")
 
       print(it_searches)
@@ -333,7 +342,7 @@ with book('Hacking Carapacian Core'):
         are made about the effects the setup had.
 
         Note that adding the ability to create setup and teardown
-        methods would easiy if the need ever arose. 
+        methods would be easy if the need ever arose. 
       ''')
 
     with section('Private methods in Tester Classes'):
@@ -347,9 +356,10 @@ with book('Hacking Carapacian Core'):
           def im_a_public_method(self):
             ...
 
-        Private methods are not run as test methods in a class. Feel free
-        to create private methods in tester classes if they are useful
-        to encapsulate reusuable test logic. 
+        Private methods are not run as test methods in a class. They are
+        pretty much the only methods that aren't assumed to be test
+        methods so feel free to create private methods in tester classes
+        if they are useful in encapsulate reusuable test logic. 
 
         Note that currently, however, assertions within private methods,
         as well as inner functions, can't deal with the stack offset of
@@ -361,13 +371,13 @@ with book('Hacking Carapacian Core'):
       print('''
         The general pattern for creating tests in the framework is to
         create a test module for each module. In the test module, a
-        `tester` class should be created for each class in in the
-        regular module. 
+        `tester` class should be created for each class in the regular
+        module. 
 
         For example, the <a href="order.py">order.py</a> module contains
         the logic to manage sales orders, purchase orders, and the like.
-        It has a corresponding test module called <a
-        href="testorder.py">testorder.py</a>. Within this module, are
+        It has a corresponding test module called 
+        <a href="testorder.py">testorder.py</a>. Within this module, are
         classes that inherit from `tester.tester`. Each of these classes
         is devoted to testing the logic in a corresponding class in the
         order.py module. For example, the class `testorder.order`
@@ -389,13 +399,14 @@ with book('Hacking Carapacian Core'):
       with section('Running the tests'):
         print('''
         To run these test modules, simply invoke them from the command
-        line:
+        line. For example, if we want to run all the tests in
+        `testproduct.py we can just run:
 
           ./testproduct.py
 
         This will run all the tests in that module and print out any
-        failures. To run only a particular class in a module, simply
-        specify the class:
+        failures. To run only a particular tester class in a module,
+        simply specify the class:
 
           ./testproduct.py product_
 
@@ -408,8 +419,8 @@ with book('Hacking Carapacian Core'):
 
         This will only run the `it_creates` test method. This level of
         specificity is ideal during developing. Reducing the specificity
-        to varying degrees is useful for making sure your logic changes
-        don't introduce butterfly effects in the code. 
+        to varying degrees occasionanlly is useful for making sure your
+        logic changes don't introduce butterfly effects in the code. 
 
         A master test module, called `test.py`, is used to run all the
         tests. To run all the tests, simply run `test.py` from the
@@ -448,16 +459,16 @@ with book('Hacking Carapacian Core'):
               At this point you can read the value of local and global
               variables, explore the call stack, invoke arbitrary
               functions, and so on. If you are not familiar with the PDB
-              debugger, it is more than worth you time learning its
+              debugger, it is more than worth you time to learn its
               simple command-line interface.
 
               The `B` method is available in virtually any module in the
-              framework. It is imported n moste modules from the 
+              framework. It is imported in most modules from the 
               <a href="dbg.py">dbg.py</a> module:
 
                 from dbg import B
 
-              It's a simple wrapper to PDB's `set_trace` method.
+              Its a simple wrapper to PDB's `set_trace` method.
             ''')
 
             with section('Conditional breakpoints')
@@ -474,13 +485,12 @@ with book('Hacking Carapacian Core'):
                 5.  Despite this contrived example, conditional
                 breakpoints are a powerful technique for breaking into
                 the debugger only when the code is in a certain state.
-
               ''')
 
               print('''
                 <aside>
                   Note that PDB also has the ability to set breakpoints,
-                  conditional and otherwise. PDB's breakpoints can be
+                  conditional or otherwise. PDB's breakpoints can be
                   used along side `B()`.  Normally, it is more
                   convenient to use the `B` function. however, PDB's
                   breakpoints are useful in certain situations.
@@ -493,6 +503,7 @@ with book('Hacking Carapacian Core'):
                 with a call to `B()` back into 'main'. You wouldn't want
                 a production server entering into a breakpoint.
               ''')
+
         with section('Invoking Tests with the pdb Command')
           print('''
             Setting breakpoints with the `B()` function will cause you
@@ -512,17 +523,17 @@ with book('Hacking Carapacian Core'):
             will not need to invoke `pdb` directly like this. However,
             circumstances will occasionally arise in which this is the
             best course of action.
-
           ''')
 
       with section('Benchmarking', id=0xd89c06c2)
         print('''
           A special class of tests, called benchmarks, are built into
           the testing framework which measure the amount of time that
-          cirtain operations run. These tests are useful when efforts
-          are made to improve the performance of the framework's code.
-          They can also inform you when a change to the source code
-          negatively (or positively) impacts performance.
+          certain operations take to complete. These tests are useful
+          when efforts are made to improve the performance of the
+          framework's code.  They can also inform you when a change to
+          the source code negatively (or positively) impacts
+          performance.
 
           These tests are not normally run, however. You must supply
           the `--performance` (`-p`) flag to the test script:
@@ -538,12 +549,14 @@ with book('Hacking Carapacian Core'):
           the callable and asserts that the callable runs within a
           certain number of milliseconds:
 
-          class benchmark_product(tester.benchmark):
-            def it_instantiates_entity_without_arguments(self):
-                def f():
-                    product.product()
+            # Note here that we are inheriting from tester.benchmark, not
+            # tester.tester as with conventional tests
+            class benchmark_product(tester.benchmark):
+              def it_instantiates_entity_without_arguments(self):
+                  def f():
+                      product.product()
 
-                self.time(.5, .7, f, 1_000)
+                  self.time(.5, .7, f, 1_000)
           
           The above test asserts that the `f` function, which
           instantiates a `product.product` class, will complete between
