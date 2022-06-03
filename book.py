@@ -566,7 +566,48 @@ with book('Hacking Carapacian Core'):
         ''')
 
   with chapter("Entity and Entities Objects"):
-    ...
+    print('''
+      Almost all classes in the framework inherit directly or indirectly
+      from the `entity` class or the `entities` classes located in the 
+      <a href="entities.py">entities.py</a> module.
+
+      The `entities` class (or subclasses thereof) acts as a container
+      for objects - usually objects that inherit from the `entity`
+      class. The `entities` class is similar to a Python `list` in that
+      it can collect an arbitrary number of objects. In fact, `entities`
+      offers most the methods that that `list`s do including the ability
+      to iterate over them. 
+
+      Normally you don't use these classes directly. Instead, you create
+      classes that inherit from them. Consider that we are writting
+      software for a dog sitting company and we need to track the
+      dogs that they take care of:
+    ''')
+
+    def f():
+      import entities
+
+      class dogs(entities.entities):
+        pass
+
+      class dog(entities.entity):
+        def __init__(name, dob):
+          self.name = name
+          self.dob  = dob
+
+    print(f)
+
+    print('''
+      Above, we have created the classe that can track individual dogs
+      as well track dogs as collection (at least in memory). Let's now
+      use those classes to track the dogs that are currently being cared
+      for:
+    ''')
+
+      
+
+
+
 
   with chapter("Configuration") as sec:
     ...
