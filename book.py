@@ -565,6 +565,9 @@ with book('Hacking Carapacian Core'):
           the allowable duration, the user is informed.
         ''')
 
+      with section('Tests as Effort Statements', id=0xd89c06c2)
+        ...
+
   with chapter("Entity and Entities Objects"):
     print('''
       Almost all classes in the framework inherit directly or indirectly
@@ -577,14 +580,17 @@ with book('Hacking Carapacian Core'):
       it can collect an arbitrary number of objects. In fact, `entities`
       offers most the methods that that `list`s do including the ability
       to iterate over them. 
-
-      Normally you don't use these classes directly. Instead, you create
-      classes that inherit from them. Consider that we are writting
-      software for a dog sitting company and we need to track the
-      dogs that they take care of:
     ''')
 
-    def f():
+    with section('Using entities classes'):
+      print('''
+        Normally you don't use these classes directly. Instead, you
+        create classes that inherit from them. Consider that we are
+        writting software for a dog sitting company and we need to track
+        the dogs that they take care of:
+     ''')
+
+
       import entities
 
       class dogs(entities.entities):
@@ -595,19 +601,90 @@ with book('Hacking Carapacian Core'):
           self.name = name
           self.dob  = dob
 
-    print(f)
+      print('''
+        Above, we have created the classe that can track individual dogs
+        as well track dogs as collection (at least in memory). Let's now
+        use those classes to track the dogs that the dog sitting company
+        cares for:
+      ''')
 
-    print('''
-      Above, we have created the classe that can track individual dogs
-      as well track dogs as collection (at least in memory). Let's now
-      use those classes to track the dogs that are currently being cared
-      for:
-    ''')
+      # Create a `dogs` collection 
+      dgs = dogs()
 
+      # Create a few dog objects
+      rover = dog(name='Rover', dob='2015-05-12')
+      spot = dog(name='Spot', dob='2014-09-23')
+
+      # Add rover and spot to the dogs collection
+      dgs += rover
+      dgs += spot
+
+      print('''
+        Now two dogs, Rover and Spot, are in the `dgs` collection. We
+        can use the `dgs` in a similar way to using a list to make a
+        number of assertions about the collection
+      ''')
       
+      # Assert that dgs contains two dogs
+      self.eq(2, dgs.count)
 
 
+      with section('Sorting collections'):
+        ...
 
+      with section('Removing items'):
+        ...
+
+      with section('Removing items'):
+        ...
+
+      with section('Moving items'):
+        ...
+
+      with section('Querying collections'):
+        # .where(), __contains__, .getcount()
+        ...
+
+      with section('Testing count'):
+        # .count, .isempty. issingular, isplurality, ispopulated
+        ...
+
+      with section('Iteration'):
+        ...
+
+      with section('Indexing with Integers and Slices'):
+        # __setitem__, __getitem__, __call__
+        ...
+
+      with section('Miscellaneous'):
+        # getindex, getprevious, only,
+        ...
+
+      with section('Numeric'):
+        # first, second, last, antepenultimate, etc
+        ...
+
+      with section("When entities collections aren't Quite like list")
+        ...
+
+        with section("When entities Classes are Truthy")
+          ...
+
+    with section('Persistence'):
+      ...
+
+    with section('Events'):
+      ...
+
+    with section('Validation'):
+      ...
+
+    with section('Indexes'):
+      ...
+
+    with section('Entity classse'):
+      # Go over the small amount of functionality in entities.entity
+      ...
 
   with chapter("Configuration") as sec:
     ...
