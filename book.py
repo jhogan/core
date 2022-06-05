@@ -626,8 +626,51 @@ with book('Hacking Carapacian Core'):
       ''')
       
       # Assert that dgs contains two dogs
-      self.eq(2, dgs.count)
+      eq(2, dgs.count)
 
+      # Assert that rover and spot are the first and second entries in
+      # the collection respectively
+      is_(rover, dgs.first)
+      is_(spot, dgs.second)
+
+      # Iterate over the collection:
+      for i, dg in enumerate(dgs):
+        if i == 0:
+          eq('Rover', dg.name)
+        elif i == 1:
+          eq('Spot', dg.name)
+        
+      # Pop `spot` of the top of the collection
+      spot = dgs.pop()
+
+      # Now there is one dog in the collection
+      eq(1, dgs.count)
+
+      print('''
+        As you can see in the example, the `dgs` collections behaves in
+        ways similar to a Python list: we can get the number of
+        elements, access entries by their position within the
+        collection, iterate over the collection, and remove items from
+        the collection. 
+
+        You will notice that the API for doing these things is slightly
+        different from the Python list. For example, to get the count of a
+        Python `list`, we would use the `len()` function &mdash; there is
+        no `.count` property for a list. To get the first and second
+        element of a list, we would use numeric indexing, i.e., `dgs[0]`
+        and `dgs[1]` respectively.
+
+        Actually, both `len()` and numeric indexing would work on
+        entities collections. However, using the `count`, `first` and
+        `second` properties are prefered within the framework. We will
+        talk more about the distinctions between entities and lists
+        <a href="042d62d4">later in this chapter</a>.
+
+        As you progress thorough this chapter, you will learn more about
+        the capabilities of entity and entities objects. Virtually all
+        classes in the framework derive frome these two classes so it
+        will be well worth your time to get to know these two classes.
+      ''')
 
       with section('Sorting collections'):
         ...
@@ -657,7 +700,7 @@ with book('Hacking Carapacian Core'):
         ...
 
       with section('Miscellaneous'):
-        # getindex, getprevious, only,
+        # getindex, getprevious, only, pluck
         ...
 
       with section('Numeric'):
@@ -682,9 +725,13 @@ with book('Hacking Carapacian Core'):
     with section('Indexes'):
       ...
 
+    with section('Distinctions with the list interface', id='042d62d4'):
+      # count/len(), es[0]/es.first, sort, sorted, enumerate
+
     with section('Entity classse'):
       # Go over the small amount of functionality in entities.entity
       ...
+
 
   with chapter("Configuration") as sec:
     ...
