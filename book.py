@@ -614,24 +614,27 @@ with book('Hacking Carapacian Core'):
       # Create a few dog objects
       rover = dog(name='Rover', dob='2015-05-12')
       spot = dog(name='Spot', dob='2014-09-23')
+      ace = dog(name='Ace', dob='2013-12-22')
 
       # Add rover and spot to the dogs collection
       dgs += rover
       dgs += spot
+      dgs += ace
 
       print('''
-        Now two dogs, Rover and Spot, are in the `dgs` collection. We
+        Now three dogs, Rover and Spot, are in the `dgs` collection. We
         can use the `dgs` in a similar way to using a list to make a
         number of assertions about the collection
       ''')
       
-      # Assert that dgs contains two dogs
-      eq(2, dgs.count)
+      # Assert that dgs contains three dogs
+      eq(3, dgs.count)
 
-      # Assert that rover and spot are the first and second entries in
-      # the collection respectively
+      # Assert that rover, spot and ace are the first and second and
+      # third entries in the collection respectively
       is_(rover, dgs.first)
       is_(spot, dgs.second)
+      is_(ace, dgs.third)
 
       # Iterate over the collection:
       for i, dg in enumerate(dgs):
@@ -639,12 +642,14 @@ with book('Hacking Carapacian Core'):
           eq('Rover', dg.name)
         elif i == 1:
           eq('Spot', dg.name)
+        elif i == 2:
+          eq('Ace', dg.name)
         
-      # Pop `spot` of the top of the collection
-      spot = dgs.pop()
+      # Pop `ace` of the top of the collection
+      ace = dgs.pop()
 
       # Now there is one dog in the collection
-      eq(1, dgs.count)
+      eq(2, dgs.count)
 
       print('''
         As you can see in the example, the `dgs` collections behaves in
@@ -653,27 +658,52 @@ with book('Hacking Carapacian Core'):
         collection, iterate over the collection, and remove items from
         the collection. 
 
-        You will notice that the API for doing these things is slightly
-        different from the Python list. For example, to get the count of a
-        Python `list`, we would use the `len()` function &mdash; there is
-        no `.count` property for a list. To get the first and second
-        element of a list, we would use numeric indexing, i.e., `dgs[0]`
-        and `dgs[1]` respectively.
-
-        Actually, both `len()` and numeric indexing would work on
-        entities collections. However, using the `count`, `first` and
-        `second` properties are prefered within the framework. We will
-        talk more about the distinctions between entities and lists
-        <a href="042d62d4">later in this chapter</a>.
+        The entities' `count` property is used to get the number of
+        elements in the collecton. The `first` and `second` properties
+        are used to get the first and second elements of the collection.
+        The `.pop()` method removes the last element that was appended
+        to the list and returns it.
 
         As you progress thorough this chapter, you will learn more about
         the capabilities of entity and entities objects. Virtually all
-        classes in the framework derive frome these two classes so it
-        will be well worth your time to get to know these two classes.
+        classes in the framework derive from these two classes so it
+        will be well worth your time to get to know them well.
       ''')
 
       with section('Sorting collections'):
-        ...
+        print('''
+          Like lists, we can sort the collection in place or return a
+          new sorted collection without alterting the original
+          collection. Let's get a new, sorted collection of `dgs`.
+        ''')
+
+        dgs1 = dgs.sorted('name')
+
+        # The new collection, `dgs1` is sorted
+        is_(ace,    dgs1.first)
+        is_(rover,  dgs1.second)
+        is_(spot,   dgs1.third)
+
+        # ... but the original collection has not been altered
+        is_(rover,  dgs.first)
+        is_(spot,   dgs.second)
+        is_(ace,    dgs.third)
+
+        print('''
+          Above, we use the `sorted()` to return a new collection. We
+          sort one the key `name` which is an attribute of the `dog`
+          class. The original collection. is unaltered. 
+
+          Note, by using the `reverse` parameter of `sorted()`, we can
+          sort in descending order:
+        ''')
+
+        dgs1 = dgs.sorted('name', reverse=True)
+
+        # The new collection, `dgs1` is sorted
+        is_(spot,   dgs1.first)
+        is_(rover,  dgs1.second)
+        is_(ace,    dgs1.third)
 
       with section('Removing items'):
         ...
