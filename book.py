@@ -672,12 +672,16 @@ with book('Hacking Carapacian Core'):
 
       with section('Sorting collections'):
         print('''
-          Like lists, we can sort the collection in place or return a
-          new sorted collection without alterting the original
-          collection. Let's get a new, sorted collection of `dgs`.
+          Like Python lists, we can sort the entities collection *in
+          place*. Alternatively, we can obtain a new sorted collection
+          without alterting the original . Let's get a new, sorted
+          collection of `dgs`:
         ''')
 
         dgs1 = dgs.sorted('name')
+
+        # The new collection is of type `dogs`
+        type(dogs, dgs1)
 
         # The new collection, `dgs1` is sorted
         is_(ace,    dgs1.first)
@@ -690,9 +694,10 @@ with book('Hacking Carapacian Core'):
         is_(ace,    dgs.third)
 
         print('''
-          Above, we use the `sorted()` to return a new collection. We
-          sort one the key `name` which is an attribute of the `dog`
-          class. The original collection. is unaltered. 
+          Above, we use the `sorted()` method to return a new
+          `dogs` collection. We sort one the key `name` which is an
+          attribute of the `dog` class. The original collection is
+          unaltered. 
 
           Note, by using the `reverse` parameter of `sorted()`, we can
           sort in descending order:
@@ -705,7 +710,42 @@ with book('Hacking Carapacian Core'):
         is_(rover,  dgs1.second)
         is_(ace,    dgs1.third)
 
-      with section('Removing items'):
+        print('''
+          Sorting on a property name is convenient and typically what
+          you want to do. However, if you need more complex sorting
+          logic, you can pass in a callable. For example, if you wanted
+          to sort by name, but ensure that the sort is done without
+          regard to case, you could do the following:
+        ''')
+
+          dgs1 = dgs1.sorted(lambda x: x.name.lower())
+
+        print('''
+          In place sorting alters the internal order of the collection.
+          To sort in place, we use the `sort()` method. Like the
+          `sorted()` method, the `sort()` method tries to mimick the
+          behavior of Python's list `sort()` method:
+
+          To sort the dogs collection in place, we could have written
+          the above example like so:
+        ''')
+
+        # Sort in place
+        dgs.sort('name')
+
+        # The original collection is sorted
+        is_(ace,    dgs1.first)
+        is_(rover,  dgs1.second)
+        is_(spot,   dgs1.third)
+
+        print('''
+          As with the `sorted()` method, we can also use a callable.
+        ''')
+
+        # Sort in place
+        dgs.sort(lambda x: x.name.lower())
+
+      with section('Appending items'):
         ...
 
       with section('Removing items'):
