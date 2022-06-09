@@ -670,6 +670,55 @@ with book('Hacking Carapacian Core'):
         will be well worth your time to get to know them well.
       ''')
 
+      with section('Adding items to entities collections'):
+        print('''
+          In the above example, we used the `+=` operator to add new
+          items to the collection. This *appends* the item to the end of
+          collection. We could have used the `append()` method to do
+          the same thing as the `+=` operator, e.g.:
+
+            dgs.append(spot)
+
+          The `append()` method is made available because sometimes its
+          useful for entities collections to behave like Python lists.
+          However, under normal circumstances, the `+=` operate should
+          be used for appending since it requires fewer characters to
+          type and read.
+
+          To support stack semantics, the `push()` can be used as a
+          synonym for `append()`.
+
+            dgs.push(spot)
+
+          Again, this is only for when we want an entities collection to
+          behave like a stack, which is pretty rare.
+
+          The `append()` method also supports the `uniq` flag. This
+          flag, when `True`, will only allow an append to occure if the
+          entity is not already in the collection:
+        ''')
+
+        # Nothing will happen here because spot is already in the
+        # collection
+        dgs.append(spot, uniq=True)
+
+        # We still only have 3 dogs
+        three(dgs)
+
+        print('''
+          However, in keeping with the framework's convention of using
+          operators for append operations, the above should have been
+          written as:
+
+            # Nothing will happen here because spot is already in the
+            # collection
+            dgs |= spot
+
+          The `|=` operator will only allow appends if the item is not
+          already in the collection.
+        ''')
+
+
       with section('Sorting collections'):
         print('''
           Like Python lists, we can sort the entities collection *in
@@ -739,14 +788,17 @@ with book('Hacking Carapacian Core'):
         is_(spot,   dgs1.third)
 
         print('''
-          As with the `sorted()` method, we can also use a callable.
+          As with the `sorted()` method, we can also use a callable. The
+          `reverse` flag works as well. Let's combine them:
         ''')
 
-        # Sort in place
-        dgs.sort(lambda x: x.name.lower())
+        # Sort in place using callable
+        dgs.sort(lambda x: x.name.lower(), reverse=True)
 
-      with section('Appending items'):
-        ...
+        # Assert that `dgs` has been sorted in descending order
+        is_(spot,   dgs.first)
+        is_(rover,  dgs.second)
+        is_(ace,    dgs.third)
 
       with section('Removing items'):
         ...

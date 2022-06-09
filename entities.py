@@ -854,7 +854,7 @@ class entities:
                 return min if v is None else v
         elif callable(str):
             # TODO:2fff5b9e This is wrong even though it works. We are
-            # testing if the str bulitin is callable, which it is, so as
+            # testing if the str builtin is callable, which it is, so as
             # long as key is not str, key will be assaigned to key1. The
             # above should be changed to `elif callable(key)` and their
             # should be an `else` that raises a TypeError.
