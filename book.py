@@ -671,52 +671,121 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with section('Adding items to entities collections'):
-        print('''
-          In the above example, we used the `+=` operator to add new
-          items to the collection. This *appends* the item to the end of
-          collection. We could have used the `append()` method to do
-          the same thing as the `+=` operator, e.g.:
+        with section('Appending'):
+          print('''
 
-            dgs.append(spot)
+            In the above example, we used the `+=` operator to add new
+            items to the collection. This *appends* the item to the end
+            of collection. We could have used the `append()` method to
+            do the same thing as the `+=` operator, e.g.:
 
-          The `append()` method is made available because sometimes its
-          useful for entities collections to behave like Python lists.
-          However, under normal circumstances, the `+=` operate should
-          be used for appending since it requires fewer characters to
-          type and read.
+              dgs.append(spot)
 
-          To support stack semantics, the `push()` can be used as a
-          synonym for `append()`.
+            The `append()` method is made available because sometimes
+            its useful for entities collections to behave like Python
+            lists.  However, under normal circumstances, the `+=`
+            operator should be used for appending since it requires
+            fewer characters to type and read.
 
-            dgs.push(spot)
+            To support stack semantics, the `push()` can be used as a
+            synonym for `append()`.
 
-          Again, this is only for when we want an entities collection to
-          behave like a stack, which is pretty rare.
+              dgs.push(spot)
 
-          The `append()` method also supports the `uniq` flag. This
-          flag, when `True`, will only allow an append to occure if the
-          entity is not already in the collection:
-        ''')
+            Again, `push()` is only for when we want an entities
+            collection to behave like a stack, which is pretty rare.
 
-        # Nothing will happen here because spot is already in the
-        # collection
-        dgs.append(spot, uniq=True)
+            The `append()` method also supports the `uniq` flag. This
+            flag, when `True`, will only allow an append to occure if
+            the entity is not already in the collection:
+          ''')
 
-        # We still only have 3 dogs
-        three(dgs)
+          # Nothing will happen here because spot is already in the
+          # collection
+          dgs.append(spot, uniq=True)
 
-        print('''
-          However, in keeping with the framework's convention of using
-          operators for append operations, the above should have been
-          written as:
+          # We still only have 3 dogs
+          three(dgs)
 
-            # Nothing will happen here because spot is already in the
-            # collection
-            dgs |= spot
+          print('''
+            However, in keeping with the framework's convention of using
+            operators for append operations, the above should have been
+            written as:
 
-          The `|=` operator will only allow appends if the item is not
-          already in the collection.
-        ''')
+              # Nothing will happen here because spot is already in the
+              # collection
+              dgs |= spot
+
+            The `|=` operator will only allow appends if the item is not
+            already in the collection.
+          ''')
+
+        with section('Unshifting'):
+          print('''
+            Appending items to the end of a collection is 
+            typically the best way to add the item. However, sometimes
+            you will want to **unshift** an item. "unshifting" just
+            means inserting the item at the begining of the collection.
+            For example, lets add `fluffy` to the begining of the `dgs`
+            collection:
+          ''')
+
+          with listing('Push item onto the begining of a collection'):
+            fluffy = dog(name='Fluffy', date='2016-03-02')
+            dgs << fluffy
+            is_(fluffy, dgs.first)
+            four(dgs)
+
+          print('''
+            Now there are four dogs in the collection and the first is
+            `fluffy`. The `<<` operator is used, though we could have
+            used the `unshift()` method if we want to treat the
+            collection like a stack:
+
+              dgs.unshift(fluffy)
+
+            As with appends, the operator version is preferred in the
+            framework.
+          ''')
+
+        with section('Inserting'):
+          print('''
+            So far we covered adding to the begining and end of a
+            collection, but what if you want to insert an item at an
+            arbitrary place in the collection. For that, we can use the
+            `insert()` method. 
+
+            Lets insert a new dog, `fido`, after `fluffy`. `fluffy` is
+            the first item in the collection, so its index value is 0.
+            To insert after fluffy, we will need to insert at the index
+            1:
+          ''')
+
+          with listing('Inserting item into a collection'):
+            fido = dog(name='Fido', date='2015-02-23')
+            dgs.insert(1, fido)
+            is_(fido, dgs.second)
+            five(dgs)
+
+          print('''
+            `fido` is now the second element in the colection bringing
+            the collection's count to 5.
+
+            For added clarity, we could have used the method
+            `insertbefore()`, which has the exact same behaviour:
+
+              dgs.insertbefore(1, fido)
+
+            Alternatively, we can use the `insertafter()`. We would need
+            to decrement the index argument by one to imply we are
+            inserting *after* `fluffy` which is at index 0:
+
+              dgs.insertafter(0, fido)
+
+            This invocation will also behave exactly as the original
+            `dgs.insert(1, fido)` behaved.
+          ''')
+
 
 
       with section('Sorting collections'):
