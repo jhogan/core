@@ -1166,6 +1166,9 @@ class entities:
         self.remove(e)
         self.insertafter(ix, e)
 
+    # NOTE We could support the @= operator for inserts by overridding
+    # the __rmatmul__ method. See
+    # https://stackoverflow.com/questions/27385633/what-is-the-symbol-for-in-python
     def insert(self, ix, e):
         """ Insert the entity ``e`` into the collection before the
         element at index `ix`. This method is identical to
