@@ -673,7 +673,6 @@ with book('Hacking Carapacian Core'):
       with section('Adding items to entities collections'):
         with section('Appending'):
           print('''
-
             In the above example, we used the `+=` operator to add new
             items to the collection. This *appends* the item to the end
             of collection. We could have used the `append()` method to
@@ -723,7 +722,9 @@ with book('Hacking Carapacian Core'):
         with section('Unshifting'):
           print('''
             Appending items to the end of a collection is 
-            typically the best way to add the item. However, sometimes
+            typically the best way to add the item. Like Python lists,
+            its faster to append to a collection. It's also the
+            conventional, standard way to add to a list. However, sometimes
             you will want to **unshift** an item. "unshifting" just
             means inserting the item at the begining of the collection.
             For example, lets add `fluffy` to the begining of the `dgs`
@@ -739,13 +740,13 @@ with book('Hacking Carapacian Core'):
           print('''
             Now there are four dogs in the collection and the first is
             `fluffy`. The `<<` operator is used, though we could have
-            used the `unshift()` method if we want to treat the
+            used the `unshift()` method if we wanted to treat the
             collection like a stack:
 
               dgs.unshift(fluffy)
 
             As with appends, the operator version is preferred in the
-            framework.
+            framework's source code.
           ''')
 
         with section('Inserting'):
@@ -758,7 +759,7 @@ with book('Hacking Carapacian Core'):
             Lets insert a new dog, `fido`, after `fluffy`. `fluffy` is
             the first item in the collection, so its index value is 0.
             To insert after fluffy, we will need to insert at the index
-            1:
+            number 1:
           ''')
 
           with listing('Inserting item into a collection'):
@@ -768,8 +769,8 @@ with book('Hacking Carapacian Core'):
             five(dgs)
 
           print('''
-            `fido` is now the second element in the colection bringing
-            the collection's count to 5.
+            `fido` is now the second element in the colection. This
+            brings the collection's count to 5.
 
             For added clarity, we could have used the method
             `insertbefore()`, which has the exact same behaviour:
@@ -777,16 +778,14 @@ with book('Hacking Carapacian Core'):
               dgs.insertbefore(1, fido)
 
             Alternatively, we can use the `insertafter()`. We would need
-            to decrement the index argument by one to imply we are
-            inserting *after* `fluffy` which is at index 0:
+            to decrement the index argument by one to indicate that we
+            are inserting *after* `fluffy` which is at index 0:
 
               dgs.insertafter(0, fido)
 
-            This invocation will also behave exactly as the original
-            `dgs.insert(1, fido)` behaved.
+            Each of the three inserts above will accomplish the same
+            thing.
           ''')
-
-
 
       with section('Sorting collections'):
         print('''
@@ -869,7 +868,48 @@ with book('Hacking Carapacian Core'):
         is_(rover,  dgs.second)
         is_(ace,    dgs.third)
 
+      with section('Ordinal properties'):
+        print('''
+          Before we go any further, let's discuss the ordinal properties
+          that we have been using. Ordinal properties are those with
+          names like `first`, `second`, `third`, etc. These properties
+          allow you to access the items it the collection by their
+          position within the collection. 
+        ''')
+
+        with listing('Retrieving elements using ordinal properties'):
+          # Get the first element from the collection
+          dg = dgs.first
+          is_(dg, spot)
+
+        print('''
+          `spot` is the first dog in the collection so we can use
+          `first` to retrieve it.
+
+          The properties available are `first` through `seventh`. So far
+          we've never needed a property greater than `seventh` though it
+          would be easy to add.
+        ''')
+
+        with section('Comparison to index notation'):
+          print('''
+            In Python lists, this is done
+            by passing an index number via square brackets.
+
+              ls = [1, 2, 3]
+              one = ls[0]
+
+            Actually, collections support the bracket syntax as well.
+            However, it is felt that by using property names instead of
+            special characters, the framework's source code is more
+            readable, so we use the ordinal properties. Eitherway, we
+            can use the index notation to demonstrate the way the
+            properties work:
+          ''')
+
+
       with section('Removing items'):
+        # __delitem__
         ...
 
       with section('Moving items'):
@@ -892,10 +932,6 @@ with book('Hacking Carapacian Core'):
 
       with section('Miscellaneous'):
         # getindex, getprevious, only, pluck
-        ...
-
-      with section('Numeric'):
-        # first, second, last, antepenultimate, etc
         ...
 
       with section("When entities collections aren't Quite like list")
