@@ -873,8 +873,8 @@ with book('Hacking Carapacian Core'):
           Before we go any further, let's discuss the ordinal properties
           that we have been using. Ordinal properties are those with
           names like `first`, `second`, `third`, etc. These properties
-          allow you to access the items it the collection by their
-          position within the collection. 
+          allow you to access the items by their position within the
+          collection. 
         ''')
 
         with listing('Retrieving elements using ordinal properties'):
@@ -883,28 +883,79 @@ with book('Hacking Carapacian Core'):
           is_(dg, spot)
 
         print('''
-          `spot` is the first dog in the collection so we can use
+          `spot` is the first dog in the `dgs` collection so we can use
           `first` to retrieve it.
 
-          The properties available are `first` through `seventh`. So far
-          we've never needed a property greater than `seventh` though it
-          would be easy to add.
+          The ordinal properties available are `first`, `second`,
+          `third`, `fourth`, `fifth`, `sixth` and 
+          `seventh`. (So far we've never needed a property greater than
+          `seventh`, though one would be easy to add). Additionally,
+          there are ordinal properties for accessing the last elements
+          such as `last`, `penultimate`, `antepenultimate` and
+          `preantepenultimate`.
         ''')
+
+        with section('Ordinal properties as setters'):
+          print('''
+            In the above examples, we've been using ordinal properties
+            to get items, but we can also use the ordinal properties
+            to set items within a collection as well. Let's say we want
+            to swtich the position of spot and rover:
+          ''')
+
+          with listing('Using ordinal properties as setters')
+            spot        =  dgs.first
+            rover       =  dgs.second
+            dgs.first   =  rover
+            dgs.second  =  spot
+
+          print('''
+            Note that if there is no item currently in a position, an
+            IndexError would be raised.
+          ''')
+
+          with listing(
+            "Setting an item to a position that currently dosen't exist"
+          ):
+            expect(
+              IndexError, 
+              lambda: dgs.fourth = dog('Derp', '1969-01-01')
+            )
+
+          print('''
+            If we want to grow the collection, we should use the append
+            (`+=`) operator instead.
+          ''')
 
         with section('Comparison to index notation'):
           print('''
-            In Python lists, this is done
-            by passing an index number via square brackets.
+            In Python lists, accessing and setting elements by position
+            is done by passing an index number via square brackets.
 
               ls = [1, 2, 3]
-              one = ls[0]
+              first   =  ls[0]
+              second  =  ls[1]
+              third   =  ls[2]
 
             Actually, collections support the bracket syntax as well.
             However, it is felt that by using property names instead of
-            special characters, the framework's source code is more
-            readable, so we use the ordinal properties. Eitherway, we
-            can use the index notation to demonstrate the way the
-            properties work:
+            special characters (i.e., brackets), the framework's source
+            code is more readable, so we use the ordinal properties. The
+            below listing demonstrates the use of index notation in
+            collections:
+          ''')
+
+          with listing('Using index notation with collections'):
+            is_(dgs[0], dgs.first)
+            is_(dgs[1], dgs.second)
+            is_(dgs[2], dgs.third)
+
+          print('''
+            The ability to use index is yet another one of those
+            features that are useful when you want an entities
+            collection to behave like a list, such as when passing the
+            collection to a function that expects a list or an entities
+            collection.
           ''')
 
 
