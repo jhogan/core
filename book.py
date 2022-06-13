@@ -873,7 +873,7 @@ with book('Hacking Carapacian Core'):
           Before we go any further, let's discuss the ordinal properties
           that we have been using. Ordinal properties are those with
           names like `first`, `second`, `third`, etc. These properties
-          allow you to access the items by their position within the
+          allow you to access items by their position within the
           collection. 
         ''')
 
@@ -889,7 +889,7 @@ with book('Hacking Carapacian Core'):
           The ordinal properties available are `first`, `second`,
           `third`, `fourth`, `fifth`, `sixth` and 
           `seventh`. (So far we've never needed a property greater than
-          `seventh`, though one would be easy to add). Additionally,
+          `seventh`, though adding one would be easy). Additionally,
           there are ordinal properties for accessing the last elements
           such as `last`, `penultimate`, `antepenultimate` and
           `preantepenultimate`.
@@ -904,8 +904,11 @@ with book('Hacking Carapacian Core'):
           ''')
 
           with listing('Using ordinal properties as setters')
+            # Get spot and rover from existing locations
             spot        =  dgs.first
             rover       =  dgs.second
+
+            # Set spot and rover to switch their positions
             dgs.first   =  rover
             dgs.second  =  spot
 
@@ -938,11 +941,8 @@ with book('Hacking Carapacian Core'):
               third   =  ls[2]
 
             Actually, collections support the bracket syntax as well.
-            However, it is felt that by using property names instead of
-            special characters (i.e., brackets), the framework's source
-            code is more readable, so we use the ordinal properties. The
-            below listing demonstrates the use of index notation in
-            collections:
+            This is useful for when a collection needs to behave like a
+            list.  
           ''')
 
           with listing('Using index notation with collections'):
@@ -951,13 +951,57 @@ with book('Hacking Carapacian Core'):
             is_(dgs[2], dgs.third)
 
           print('''
-            The ability to use index is yet another one of those
-            features that are useful when you want an entities
-            collection to behave like a list, such as when passing the
-            collection to a function that expects a list or an entities
-            collection.
+            We can also set items using index notation. Let's switch the
+            order of spot and rover again.
           ''')
 
+          with listing('Using index notation to set items')
+            # Get spot and rover from existing locations
+            rover  =  dgs[0]
+            spot   =  dgs[1]
+
+            # Set spot and rover to switch their positions
+            dgs[0] = spot
+            dgs[1] = rover
+
+        with section('Using call notation'):
+          print('''
+            If an item doesn't exists at a give location, you will get
+            a `None` from a ordinal property. Although, when using index
+            notation, an `IndexError` will be raised.
+          ''')
+
+          with listing('Return values when there is no item')
+            # No item exists at the fourth postition 
+
+            # Using ordinal properties, we get None
+            is_(None, dgs.fourth)
+
+            # Using index notation
+            expect(IndexError, lambda: dgs[3])
+
+          print('''
+            If you would prefer to get a `None` using indexes, you can
+            uses call notation instead. Call notation simply means
+            passing the index number to parentheses as if you were
+            calling a function:
+          ''')
+
+          with listing(
+            'Return values when there is no item using call notation'
+          )
+            # No item exists at the fourth postition 
+
+            # Using ordinal properties, we get None
+            is_(None, dgs(3))
+
+          print('''
+            Call notation works exactly like bracket-based index
+            notation, with this minor exception.
+          ''')
+
+      with section('Using slice notation'):
+        ...
 
       with section('Removing items'):
         # __delitem__
