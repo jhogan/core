@@ -957,9 +957,9 @@ class artist_artist(orm.association):
     def processing(self, v):
         self._processing = v
 
-class test_orm(tester):
+class orm_(tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'apriori'
+        mods = 'party', 'apriori', 'file',
         super().__init__(mods=mods, *args, **kwargs)
         orm.security().override = True
         self.chronicles = db.chronicles()

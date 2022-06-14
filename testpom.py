@@ -1224,6 +1224,7 @@ class page(tester.tester):
                 self.host = 'derp.net'
 
         # XXX Clean up
+        foonet.orm.recreate()
         derpnet.orm.recreate()
         pom.site.orm.recreate()
         asset.asset.orm.recreate()
