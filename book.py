@@ -868,140 +868,262 @@ with book('Hacking Carapacian Core'):
         is_(rover,  dgs.second)
         is_(ace,    dgs.third)
 
-      with section('Ordinal properties'):
+      with section('Getting and setting items'):
         print('''
-          Before we go any further, let's discuss the ordinal properties
-          that we have been using. Ordinal properties are those with
-          names like `first`, `second`, `third`, etc. These properties
-          allow you to access items by their position within the
-          collection. 
+          Once we have items in the collection, there are a number of
+          ways of getting and setting the items by their position within
+          the collection. For the most part, you will want to use
+          **ordinal properties** (described below). However, **index
+          notation**, **call notatation** and **slice notation** are
+          supported as well.
         ''')
 
-        with listing('Retrieving elements using ordinal properties'):
-          # Get the first element from the collection
-          dg = dgs.first
-          is_(dg, spot)
-
-        print('''
-          `spot` is the first dog in the `dgs` collection so we can use
-          `first` to retrieve it.
-
-          The ordinal properties available are `first`, `second`,
-          `third`, `fourth`, `fifth`, `sixth` and 
-          `seventh`. (So far we've never needed a property greater than
-          `seventh`, though adding one would be easy). Additionally,
-          there are ordinal properties for accessing the last elements
-          such as `last`, `penultimate`, `antepenultimate` and
-          `preantepenultimate`.
-        ''')
-
-        with section('Ordinal properties as setters'):
+        with section('Using ordinal properties'):
           print('''
-            In the above examples, we've been using ordinal properties
-            to get items, but we can also use the ordinal properties
-            to set items within a collection as well. Let's say we want
-            to swtich the position of spot and rover:
+            Before we go any further, let's discuss the ordinal properties
+            that we have been using. Ordinal properties are those with
+            names like `first`, `second`, `third`, etc. These properties
+            allow you to access items by their position within the
+            collection. 
           ''')
 
-          with listing('Using ordinal properties as setters')
-            # Get spot and rover from existing locations
-            spot        =  dgs.first
-            rover       =  dgs.second
-
-            # Set spot and rover to switch their positions
-            dgs.first   =  rover
-            dgs.second  =  spot
+          with listing('Retrieving elements using ordinal properties'):
+            # Get the first element from the collection
+            dg = dgs.first
+            is_(dg, spot)
 
           print('''
-            Note that if there is no item currently in a position, an
-            IndexError would be raised.
+            `spot` is the first dog in the `dgs` collection so we can use
+            `first` to retrieve it.
+
+            The ordinal properties available are `first`, `second`,
+            `third`, `fourth`, `fifth`, `sixth` and 
+            `seventh`. (So far we've never needed a property greater than
+            `seventh`, though adding one would be easy). Additionally,
+            there are ordinal properties for accessing the last elements
+            such as `last`, `penultimate`, `antepenultimate` and
+            `preantepenultimate`.
           ''')
 
-          with listing(
-            "Setting an item to a position that currently dosen't exist"
-          ):
-            expect(
-              IndexError, 
-              lambda: dgs.fourth = dog('Derp', '1969-01-01')
+          with section('Ordinal properties as setters'):
+            print('''
+              In the above examples, we've been using ordinal properties
+              to get items, but we can also use the ordinal properties
+              to set items within a collection as well. Let's say we want
+              to swtich the position of spot and rover:
+            ''')
+
+            with listing('Using ordinal properties as setters')
+              # Get spot and rover from existing locations
+              spot        =  dgs.first
+              rover       =  dgs.second
+
+              # Set spot and rover to switch their positions
+              dgs.first   =  rover
+              dgs.second  =  spot
+
+            print('''
+              Note that if there is no item currently in a position, an
+              IndexError would be raised.
+            ''')
+
+            with listing(
+              "Setting an item to a position that currently dosen't exist"
+            ):
+              expect(
+                IndexError, 
+                lambda: dgs.fourth = dog('Derp', '1969-01-01')
+              )
+
+            print('''
+              If we want to grow the collection, we should use the append
+              (`+=`) operator instead.
+            ''')
+
+          with section('Comparison to index notation'):
+            print('''
+              In Python lists, accessing and setting elements by position
+              is done by passing an index number via square brackets.
+
+                ls = [1, 2, 3]
+                first   =  ls[0]
+                second  =  ls[1]
+                third   =  ls[2]
+
+              Actually, collections support the bracket syntax as well.
+              This is useful for when a collection needs to behave like a
+              list.  
+            ''')
+
+            with listing('Using index notation with collections'):
+              is_(dgs[0], dgs.first)
+              is_(dgs[1], dgs.second)
+              is_(dgs[2], dgs.third)
+
+            print('''
+              We can also set items using index notation. Let's switch the
+              order of spot and rover again.
+            ''')
+
+            with listing('Using index notation to set items')
+              # Get spot and rover from existing locations
+              rover  =  dgs[0]
+              spot   =  dgs[1]
+
+              # Set spot and rover to switch their positions
+              dgs[0] = spot
+              dgs[1] = rover
+
+          with section('Using call notation'):
+            print('''
+              If an item doesn't exists at a give location, you will get
+              a `None` from a ordinal property. Although, when using index
+              notation, an `IndexError` will be raised.
+            ''')
+
+            with listing('Return values when there is no item')
+              # No item exists at the fourth postition 
+
+              # Using ordinal properties, we get None
+              is_(None, dgs.fourth)
+
+              # Using index notation
+              expect(IndexError, lambda: dgs[3])
+
+            print('''
+              If you would prefer to get a `None` using indexes, you can
+              uses *call notation* instead. Call notation simply means
+              passing the index number in parentheses as if you were
+              calling a function:
+            ''')
+
+            with listing(
+              'Return values when there is no item using call notation'
             )
+              # No item exists at the fourth postition 
 
+              # Using ordinal properties, we get None
+              is_(None, dgs(3))
+
+            print('''
+              Using call notation, we get none at index 3 instead of an
+              IndexError. This can be preferable in some situations.
+            ''')
+
+        with section('Using slice notation'):
           print('''
-            If we want to grow the collection, we should use the append
-            (`+=`) operator instead.
+            **Slice notation** in entities collections works the same as
+            in Python lists. For example, we know that the first and
+            second elements of the `dgs` collection contain spot and
+            rover. Let's use slice notation to obtain these `dog`s.
           ''')
 
-        with section('Comparison to index notation'):
-          print('''
-            In Python lists, accessing and setting elements by position
-            is done by passing an index number via square brackets.
+          with list('Using slice notation to obtain elements'):
+            # Use slice notation to get the first and second elements
+            spot, rover = dgs[:2]
 
-              ls = [1, 2, 3]
-              first   =  ls[0]
-              second  =  ls[1]
-              third   =  ls[2]
-
-            Actually, collections support the bracket syntax as well.
-            This is useful for when a collection needs to behave like a
-            list.  
-          ''')
-
-          with listing('Using index notation with collections'):
-            is_(dgs[0], dgs.first)
-            is_(dgs[1], dgs.second)
-            is_(dgs[2], dgs.third)
+            # Assert that we have obtained the first and second element
+            is_(spot, dgs.first)
+            is_(rover, dgs.second)
 
           print('''
-            We can also set items using index notation. Let's switch the
-            order of spot and rover again.
+            We can also use slice notation to set elements. Lets switch
+            `spot` and `rover`'s place again:
           ''')
 
-          with listing('Using index notation to set items')
-            # Get spot and rover from existing locations
-            rover  =  dgs[0]
-            spot   =  dgs[1]
+          with list('Using slice notation to set elements'):
+            # Get spot and rover
+            spot, rover = dgs[:2]
 
-            # Set spot and rover to switch their positions
-            dgs[0] = spot
-            dgs[1] = rover
+            # Swith the position of spot and rover
+            dgs[:2] = rover, spot
 
-        with section('Using call notation'):
-          print('''
-            If an item doesn't exists at a give location, you will get
-            a `None` from a ordinal property. Although, when using index
-            notation, an `IndexError` will be raised.
-          ''')
-
-          with listing('Return values when there is no item')
-            # No item exists at the fourth postition 
-
-            # Using ordinal properties, we get None
-            is_(None, dgs.fourth)
-
-            # Using index notation
-            expect(IndexError, lambda: dgs[3])
+            # Assert that we have obtained the first and second element
+            is_(rover, dgs.first)
+            is_(spot, dgs.second)
 
           print('''
-            If you would prefer to get a `None` using indexes, you can
-            uses call notation instead. Call notation simply means
-            passing the index number to parentheses as if you were
-            calling a function:
+            In the above examples, we unpacked the elements as we obtained
+            them. We could use slice notation to obtain another `dogs`
+            collection:
           ''')
 
-          with listing(
-            'Return values when there is no item using call notation'
-          )
-            # No item exists at the fourth postition 
+          with list('Using slice notation to obtain new collection'):
+            # Get subset of dgs
+            dgs1 = dgs[:2]
 
-            # Using ordinal properties, we get None
-            is_(None, dgs(3))
+            # The returned type is another `dogs` collection
+            type(dogs, dgs1)
+
+            # Assert that we have obtained the first and second element
+            is_(rover, dgs1.first)
+            is_(spot, dgs1.second)
 
           print('''
-            Call notation works exactly like bracket-based index
-            notation, with this minor exception.
+            Note that what we get back is another `dogs` collection. The
+            colection looks at its own data types and builds a new
+            collection of that type for the return values.  However,
+            the `dog` elements in both collections reference the same
+            `dog` objects, which is why the `is_()` assertion works.
+
+            Though we've only used one example of slice notation, `[:2]',
+            any slice notation supported by Python lists is supported. See
+            the reference material on 
+            (Python lists}[https://docs.python.org/3/tutorial/introduction.html#lists]
+            for more.
           ''')
 
-      with section('Using slice notation'):
-        ...
+          with section('Slicing with strides'):
+            print('''
+              In case you're interested, strides are supported as well.
+              Strides are the third argument (so to speak) in index
+              notation.  For example, if we wanted to get every other
+              `dog` in the collection starting with the first `dog`, we
+              could write:
+            ''')
+
+            with listing('Using strides with slice notation'):
+              # Get first and third dog
+              rover, ace = dgs[::2]
+
+              # Assert what we've gotten
+              is_(rover, dgs1.first)
+              is_(ace, dgs1.third)
+
+          with section('Getting by the name or id property'):
+            print('''
+              A pattern that emerges often with `entity` objects is that
+              they have either an `id` or a `name` property. In or case,
+              each `dog` object has a `name` property. If we pass the
+              name of the dog as an index, the `dgs` collection will
+              return the first dog that matches the name:
+            ''')
+
+            with listing('Retriving item by name property'):
+              spot = dgs['spot']
+              eq('spot', spot)
+
+            print('''
+              This feature can be very convenient. However, we did say
+              that `id` and `name` could be used. So what if `dog`
+              objects had both `id and `name`? Well then both would
+              work:
+            ''')
+
+            with listing('Retriving item by id property'):
+              try:
+                # Get spot
+                spot = dgs['spot']
+
+                # Monkey-patch an id
+                spot.id = '123456'
+
+                # Now we can obtain `spot` by name or by id
+                is_(spot, dgs['spot'])
+                is_(spot, dgs['123456'])
+              finally:
+                # Remove the monkey-patched id
+                del spot.id
 
       with section('Removing items'):
         # __delitem__
@@ -1026,7 +1148,7 @@ with book('Hacking Carapacian Core'):
         ...
 
       with section('Miscellaneous'):
-        # getindex, getprevious, only, pluck
+        # getindex, getprevious, only, pluck, __contains__, getindex
         ...
 
       with section("When entities collections aren't Quite like list")
