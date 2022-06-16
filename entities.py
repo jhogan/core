@@ -935,7 +935,7 @@ class entities:
 
             if entity:
                 If e is an entity, it will simply be removed, if it
-                exists in the collection, and the onremove event will be
+                exists in the collection, the onremove event will be
                 raised.
 
                     # Remove gerp
@@ -960,7 +960,7 @@ class entities:
                     es.remove(lambda x: x.startswith('d'))
 
             if int:
-                if e is an int, e will be passed to the indexor. The
+                if e is an int, e will be passed to the indexer. The
                 resulting entity will be removed and onremove will be
                 raised.
 
