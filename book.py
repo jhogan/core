@@ -1093,7 +1093,7 @@ with book('Hacking Carapacian Core'):
           with section('Getting by the name or id property'):
             print('''
               A pattern that emerges often with `entity` objects is that
-              they have either an `id` or a `name` property. In or case,
+              they have either an `id` or a `name` property. In our case,
               each `dog` object has a `name` property. If we pass the
               name of the dog as an index, the `dgs` collection will
               return the first dog that matches the name:
@@ -1125,9 +1125,117 @@ with book('Hacking Carapacian Core'):
                 # Remove the monkey-patched id
                 del spot.id
 
+            print('''
+              Note that when searching by `name` or `id`, we must pass a
+              a value of type `str`. Had we sought the `id` above with
+              the value `123456`, the indexer would have assumed we are
+              trying to get the element at that position, not the
+              element with that value as its id.
+            ''')
+
       with section('Removing items'):
         # __delitem__
-        ...
+        print('''
+          There are a number of ways to remove items from a collection.
+          Perhaps the most straightforward way is by using the remove
+          method.
+        ''')
+
+        with listing('Remove item using remove()')
+          # Get ace
+          ace = dgs['ace']
+
+          # Assert we have three dogs to start out with
+          three(dgs)
+
+          try:
+            # Now remove ace
+            dgs.remove(ace)
+
+            # Assert we have one fewer dogs
+            two(dgs)
+          finally:
+            # Append ace back into the collection
+            dgs += ace
+
+        print('''
+          The above simply removes `ace` from the `dgs` collection. Note
+          that the `ace` object continues to exist in memory ; just not
+          in the `dgs` collection. The `remove()` method looks for any
+          element that `is` the arument passed to it (in this case
+          `ace`) and removes them from itself.
+
+          The `remove()` method can take several types of arguments to
+          perform remove elements. The below listing illustrates some
+          alternative uses of `remove()`.
+        ''')
+
+        with listing('Using remove() with different data types'):
+
+          ''' Remove a collection of dogs '''
+
+          # Get a subset dogs collection
+          dgs1 = dgs[:2]
+          try:
+            # Remove the subset
+            dgs.remove(dgs1)
+
+            # Now we have two fewer dogs
+            one(dgs)
+          finally:
+            # Append those dogs back
+            dgs += dgs1
+
+          ''' Remove all dogs where a callable returns True '''
+          try:
+            # Remove all dogs whos name is ace
+            rms = dgs.remove(lambda x: x.name == 'ace')
+
+            # Now we have one fewer dogs
+            two(dgs)
+          finally:
+            # Append ace back on
+            dgs += rms
+
+          try:
+            # Remove all dogs using 
+            rms = dgs.remove(lambda x: x.name == 'ace')
+
+            # Now we have one fewer dogs
+            two(dgs)
+          finally:
+            # Append ace back on
+            dgs += rms
+
+          ''' Remove dogs by index using an int '''
+          try:
+            # Remove the last dog in the collection
+            rms = dgs.remove(-1)
+
+            # Now we have one fewer dogs
+            two(dgs)
+          finally:
+            # Append the last dog back on
+            dgs += rms
+
+          ''' Remove a dog by name (or id) by using a str'''
+          try:
+            # Remove ace
+            rms = dgs.remove('ace')
+
+            # Now we have one fewer dogs
+            two(dgs)
+          finally:
+            # Append the ace back on
+            dgs += rms
+
+        print('''
+          Note that we were able to re-append the dogs that were removed
+          by `remove()`'s return value which we called `rms`. The
+          `remove()` method returns a collection of whatever was
+          actually removed.
+        ''')
+
 
       with section('Moving items'):
         ...
