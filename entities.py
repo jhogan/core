@@ -1040,7 +1040,7 @@ class entities:
         Note that the onremove event will be raised if an element is
         removed. 
 
-        :param: ix NoneType|int|str: The index or a why of describing
+        :param: ix NoneType|int|str: The index or a way of describing
         what will be remove.
             
             if int:
@@ -1058,6 +1058,12 @@ class entities:
                 the element by index. The element is then removed from
                 the collection and returned.
         """
+
+        # TODO Supporting an int as an argument makes sense since Python
+        # lists support this, however, it seems like the implementation
+        # for the str version shouldn't be supported since it equivalent
+        # to es.remove(str). This implementation isn't implied by the
+        # work "pop".
 
         # TODO I think that None should be returned if no element is
         # found. For example, if ix is an int that doesn't
