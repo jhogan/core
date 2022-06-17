@@ -1134,107 +1134,136 @@ with book('Hacking Carapacian Core'):
             ''')
 
       with section('Removing items'):
-        # __delitem__
-        print('''
-          There are a number of ways to remove items from a collection.
-          Perhaps the most straightforward way is by using the remove
-          method.
-        ''')
+        with section('Using the remove() method'):
+          print('''
+            There are a number of ways to remove items from a collection.
+            Perhaps the most straightforward way is by using the remove
+            method.
+          ''')
 
-        with listing('Remove item using remove()')
-          # Get ace
-          ace = dgs['ace']
+          with listing('Remove item using remove()')
+            # Get ace
+            ace = dgs['ace']
 
-          # Assert we have three dogs to start out with
-          three(dgs)
+            # Assert we have three dogs to start out with
+            three(dgs)
 
-          try:
-            # Now remove ace
-            dgs.remove(ace)
+            try:
+              # Now remove ace
+              dgs.remove(ace)
 
-            # Assert we have one fewer dogs
-            two(dgs)
-          finally:
-            # Append ace back into the collection
-            dgs += ace
+              # Assert we have one fewer dogs
+              two(dgs)
+            finally:
+              # Append ace back into the collection
+              dgs += ace
 
-        print('''
-          The above simply removes `ace` from the `dgs` collection. Note
-          that the `ace` object continues to exist in memory ; just not
-          in the `dgs` collection. The `remove()` method looks for any
-          element that `is` the arument passed to it (in this case
-          `ace`) and removes them from itself.
+          print('''
+            The above simply removes `ace` from the `dgs` collection. Note
+            that the `ace` object continues to exist in memory; just not
+            in the `dgs` collection. The `remove()` method looks for any
+            element that `is` the argument passed to it (in this case
+            `ace`) and removes them from itself.
 
-          The `remove()` method can take several types of arguments to
-          perform remove elements. The below listing illustrates some
-          alternative uses of `remove()`.
-        ''')
+            The `remove()` method can take several types of arguments to
+            to perform removal operations. The below listing illustrates
+            some alternative uses of `remove()`.
+          ''')
 
-        with listing('Using remove() with different data types'):
+          with listing('Using remove() with different argument types'):
 
-          ''' Remove a collection of dogs '''
+            ''' Remove a collection of dogs '''
 
-          # Get a subset dogs collection
-          dgs1 = dgs[:2]
-          try:
-            # Remove the subset
-            dgs.remove(dgs1)
+            # Get a subset dogs collection
+            dgs1 = dgs[:2]
+            try:
+              # Remove the subset
+              dgs.remove(dgs1)
 
-            # Now we have two fewer dogs
-            one(dgs)
-          finally:
-            # Append those dogs back
-            dgs += dgs1
+              # Now we have two fewer dogs
+              one(dgs)
+            finally:
+              # Append those dogs back
+              dgs += dgs1
 
-          ''' Remove all dogs where a callable returns True '''
-          try:
-            # Remove all dogs whos name is ace
-            rms = dgs.remove(lambda x: x.name == 'ace')
+            ''' Remove all dogs where a callable returns True '''
+            try:
+              # Remove all dogs whose name is ace
+              rms = dgs.remove(lambda x: x.name == 'ace')
 
-            # Now we have one fewer dogs
-            two(dgs)
-          finally:
-            # Append ace back on
-            dgs += rms
+              # Now we have one fewer dogs
+              two(dgs)
+            finally:
+              # Append ace back on
+              dgs += rms
 
-          try:
-            # Remove all dogs using 
-            rms = dgs.remove(lambda x: x.name == 'ace')
+            ''' Remove dogs by index using an int '''
+            try:
+              # Remove the last dog in the collection
+              rms = dgs.remove(-1)
 
-            # Now we have one fewer dogs
-            two(dgs)
-          finally:
-            # Append ace back on
-            dgs += rms
+              # Now we have one fewer dogs
+              two(dgs)
+            finally:
+              # Append the last dog back onto the collection
+              dgs += rms
 
-          ''' Remove dogs by index using an int '''
-          try:
-            # Remove the last dog in the collection
-            rms = dgs.remove(-1)
+            ''' Remove a dog by name (or id) by using a str'''
+            try:
+              # Remove ace
+              rms = dgs.remove('ace')
 
-            # Now we have one fewer dogs
-            two(dgs)
-          finally:
-            # Append the last dog back on
-            dgs += rms
+              # Now we have one fewer dogs
+              two(dgs)
+            finally:
+              # Append the ace back on
+              dgs += rms
 
-          ''' Remove a dog by name (or id) by using a str'''
-          try:
-            # Remove ace
-            rms = dgs.remove('ace')
+          print('''
+            Note that we were able to re-append the dogs that were removed
+            by using `remove()`'s return value which we assigned to the
+            varialbe `rms`. The remove method collects whatever objects it
+            removes and returns them to us in a colllection.
+          ''')
 
-            # Now we have one fewer dogs
-            two(dgs)
-          finally:
-            # Append the ace back on
-            dgs += rms
+        with section('Using pop() and shift()'):
+          print("""
+            To remove the last element from a stack, you can use a
+            collection's `pop()` method. 
+          """)
 
-        print('''
-          Note that we were able to re-append the dogs that were removed
-          by `remove()`'s return value which we called `rms`. The
-          `remove()` method returns a collection of whatever was
-          actually removed.
-        ''')
+          with listing('Using the pop() method'):
+            # Get the last dog
+            ace = dgs.last
+
+            # Assert that ace is currently in the `dgs` collection
+            true(ace in dgs)
+
+            try:
+              # Pop the last element off the collection
+              ace1 = dgs.pop()
+
+              # Assert that the return from pop is the last element
+              is_(ace, ace1)
+
+              # Assert that ace is no longer in the collection
+              false(ace in dgs)
+            finally:
+              # Append ace back onto the collection
+              dgs += ace
+
+          print('''
+            Note that the return value of `pop()` is the element that
+            was removed. If no elements are in the list, `pop()` will
+            return `None`.
+
+            Like Python lists, we can pass in an optional index value
+            which is used to find and remove an item. This makes
+            entities behave more like lists, though this feature is
+            redundant with the way the `remove()` method works when
+            paseed an `int`.
+          ''')
+
 
 
       with section('Moving items'):
