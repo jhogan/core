@@ -1090,7 +1090,7 @@ with book('Hacking Carapacian Core'):
               is_(rover, dgs1.first)
               is_(ace, dgs1.third)
 
-          with section('Getting by the name or id property'):
+          with section('Getting by the name or id property', id='0282d70a'):
             print('''
               A pattern that emerges often with `entity` objects is that
               they have either an `id` or a `name` property. In our case,
@@ -1257,13 +1257,62 @@ with book('Hacking Carapacian Core'):
             was removed. If no elements are in the list, `pop()` will
             return `None`.
 
-            Like Python lists, we can pass in an optional index value
-            which is used to find and remove an item. This makes
-            entities behave more like lists, though this feature is
-            redundant with the way the `remove()` method works when
+            Like Python lists, we can pass in an optional index value to
+            `pop()`, which is used to find and remove an item. This
+            makes entities behave more like lists, though this feature
+            is redundant with the way the `remove()` method works when
             paseed an `int`.
+
+            The opposite of `pop()` is `shift()`. `shift()` removes the
+            first item in the collection and returns it. 
           ''')
 
+        with section('Using the del operator'):
+          print('''
+            You can use the `del` operator using index notation. For
+            example, to remove the second element of the `dgs`
+            collection, you could write:
+          ''')
+            
+            with listing('Removing an element using the del operator'):
+              # Get second dog
+              spot = dgs.second
+
+              try:
+                # Remove second element
+                del dgs[1]
+
+                # Assert spot is no longer in the collection
+                false(spot in dgs)
+              finally:
+                # Insert spot back into the collection
+                dgs.insert(1, spot)
+          
+          print('''
+            `del` is implemented mainly so collections are conformant
+            with Python lists. However, since we are working with the
+            framework's index notation, we could do interesting things
+            like delete by the `name` property (see the section 
+            <a href="0282d70a">Getting by the name or id property</a>
+            for more on this technique).
+          ''')
+
+            with listing('Removing an element by name using the del operator'):
+              # Get second dog
+              spot = dgs.second
+
+              try:
+                # Remove second element by name
+                del dgs['spot']
+
+                # Assert spot is no longer in the collection
+                false(spot in dgs)
+              finally:
+                # Insert spot back into the collection
+                dgs.insert(1, spot)
+
+        with section('Using the -= operator'):
+          ...
 
 
       with section('Moving items'):
