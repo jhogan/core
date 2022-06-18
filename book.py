@@ -6,6 +6,8 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
+https://stackoverflow.com/questions/36815410/is-there-any-way-to-get-source-code-inside-context-manager-as-string
+
 with book('Hacking Carapacian Core'):
   with chapter("Introduction"):
     with section('What is Carapacian Core'):
