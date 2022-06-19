@@ -580,78 +580,79 @@ with book('Hacking Carapacian Core'):
       for objects - usually objects that inherit from the `entity`
       class. The `entities` class is similar to a Python `list` in that
       it can collect an arbitrary number of objects. In fact, `entities`
-      offers most the methods that that `list`s do including the ability
-      to iterate over them. 
+      offers most of the methods that the `list`s do &mdash; including
+      the ability to iterate over them. 
     ''')
 
     with section('Using entities classes'):
       print('''
-        Normally you don't use these classes directly. Instead, you
-        create classes that inherit from them. Consider that we are
-        writting software for a dog sitting company and we need to track
-        the dogs that they take care of:
+        Normally you don't use `entities` and `entity` classes directly.
+        Instead, you create classes that inherit from them. Consider
+        that we are writting software for a dog sitting company and we
+        need to track the dogs that they take care of:
      ''')
 
+      with listing('Implement subclasses of entities and entity'):
+        import entities
 
-      import entities
+        class dogs(entities.entities):
+          pass
 
-      class dogs(entities.entities):
-        pass
-
-      class dog(entities.entity):
-        def __init__(name, dob):
-          self.name = name
-          self.dob  = dob
+        class dog(entities.entity):
+          def __init__(name, dob):
+            self.name = name
+            self.dob  = dob
 
       print('''
         Above, we have created the classe that can track individual dogs
-        as well track dogs as collection (at least in memory). Let's now
-        use those classes to track the dogs that the dog sitting company
-        cares for:
+        as well as track dogs as collection. Let's now use those classes
+        to track the dogs that the dog sitting company cares for:
       ''')
 
-      # Create a `dogs` collection 
-      dgs = dogs()
+      with listing('Add entity objects to entities collections'):
+        # Create a `dogs` collection 
+        dgs = dogs()
 
-      # Create a few dog objects
-      rover = dog(name='Rover', dob='2015-05-12')
-      spot = dog(name='Spot', dob='2014-09-23')
-      ace = dog(name='Ace', dob='2013-12-22')
+        # Create a few dog objects
+        rover = dog(name='Rover', dob='2015-05-12')
+        spot = dog(name='Spot', dob='2014-09-23')
+        ace = dog(name='Ace', dob='2013-12-22')
 
-      # Add rover and spot to the dogs collection
-      dgs += rover
-      dgs += spot
-      dgs += ace
+        # Add rover and spot to the dogs collection
+        dgs += rover
+        dgs += spot
+        dgs += ace
 
       print('''
-        Now three dogs, Rover and Spot, are in the `dgs` collection. We
-        can use the `dgs` in a similar way to using a list to make a
-        number of assertions about the collection
+        Now three dogs, Rover, Spot and Ace, are in the `dgs`
+        collection. We can use the `dgs` in a similar way to using a
+        list to make a number of assertions about the collection
       ''')
       
-      # Assert that dgs contains three dogs
-      eq(3, dgs.count)
+      with listing('Perform basic operation on entities collection'):
+        # Assert that dgs contains three dogs
+        eq(3, dgs.count)
 
-      # Assert that rover, spot and ace are the first and second and
-      # third entries in the collection respectively
-      is_(rover, dgs.first)
-      is_(spot, dgs.second)
-      is_(ace, dgs.third)
+        # Assert that rover, spot and ace are the first and second and
+        # third entries in the collection respectively
+        is_(rover, dgs.first)
+        is_(spot, dgs.second)
+        is_(ace, dgs.third)
 
-      # Iterate over the collection:
-      for i, dg in enumerate(dgs):
-        if i == 0:
-          eq('Rover', dg.name)
-        elif i == 1:
-          eq('Spot', dg.name)
-        elif i == 2:
-          eq('Ace', dg.name)
-        
-      # Pop `ace` of the top of the collection
-      ace = dgs.pop()
+        # Iterate over the collection:
+        for i, dg in enumerate(dgs):
+          if i == 0:
+            eq('Rover', dg.name)
+          elif i == 1:
+            eq('Spot', dg.name)
+          elif i == 2:
+            eq('Ace', dg.name)
+          
+        # Pop `ace` of the top of the collection
+        ace = dgs.pop()
 
-      # Now there is one dog in the collection
-      eq(2, dgs.count)
+        # Now there is one dog in the collection
+        eq(2, dgs.count)
 
       print('''
         As you can see in the example, the `dgs` collections behaves in
@@ -667,8 +668,8 @@ with book('Hacking Carapacian Core'):
         to the list and returns it.
 
         As you progress thorough this chapter, you will learn more about
-        the capabilities of entity and entities objects. Virtually all
-        classes in the framework derive from these two classes so it
+        the capabilities of `entity` and `entities` objects. Virtually
+        all classes in the framework derive from these two classes so it
         will be well worth your time to get to know them well.
       ''')
 
@@ -701,12 +702,13 @@ with book('Hacking Carapacian Core'):
             the entity is not already in the collection:
           ''')
 
-          # Nothing will happen here because spot is already in the
-          # collection
-          dgs.append(spot, uniq=True)
+          with section('Appending with the uniq flag'):
+            # Nothing will happen here because spot is already in the
+            # collection
+            dgs.append(spot, uniq=True)
 
-          # We still only have 3 dogs
-          three(dgs)
+            # We still only have 3 dogs
+            three(dgs)
 
           print('''
             However, in keeping with the framework's convention of using
@@ -733,7 +735,7 @@ with book('Hacking Carapacian Core'):
             collection:
           ''')
 
-          with listing('Push item onto the begining of a collection'):
+          with listing('Unshif item onto the begining of a collection'):
             fluffy = dog(name='Fluffy', date='2016-03-02')
             dgs << fluffy
             is_(fluffy, dgs.first)
@@ -797,24 +799,25 @@ with book('Hacking Carapacian Core'):
           collection of `dgs`:
         ''')
 
-        dgs1 = dgs.sorted('name')
+        with listing('Obtain a sorted instance of a collection'):
+          dgs1 = dgs.sorted('name')
 
-        # The new collection is of type `dogs`
-        type(dogs, dgs1)
+          # The new collection is of type `dogs`
+          type(dogs, dgs1)
 
-        # The new collection, `dgs1` is sorted
-        is_(ace,    dgs1.first)
-        is_(rover,  dgs1.second)
-        is_(spot,   dgs1.third)
+          # The new collection, `dgs1` is sorted
+          is_(ace,    dgs1.first)
+          is_(rover,  dgs1.second)
+          is_(spot,   dgs1.third)
 
-        # ... but the original collection has not been altered
-        is_(rover,  dgs.first)
-        is_(spot,   dgs.second)
-        is_(ace,    dgs.third)
+          # ... but the original collection has not been altered
+          is_(rover,  dgs.first)
+          is_(spot,   dgs.second)
+          is_(ace,    dgs.third)
 
         print('''
           Above, we use the `sorted()` method to return a new
-          `dogs` collection. We sort one the key `name` which is an
+          `dogs` collection. We sort on the key `name` which is an
           attribute of the `dog` class. The original collection is
           unaltered. 
 
@@ -1136,11 +1139,42 @@ with book('Hacking Carapacian Core'):
             ''')
 
       with section('Removing items'):
+        with section('Using the -= operator'):
+          print('''
+            To remove an item from a collection, we can use the '-='
+            operator. 
+          ''')
+
+          with listing('Remove item using the -= operator')
+            # Get ace
+            ace = dgs['ace']
+
+            # Assert we have three dogs to start out with
+            three(dgs)
+
+            try:
+              # Now remove ace
+              dgs -= ace
+
+              # Assert we have one fewer dogs
+              two(dgs)
+            finally:
+              # Append ace back into the collection
+              dgs += ace
+
+          print('''
+            The above simply removes `ace` from the `dgs` collection. Note
+            that the `ace` object continues to exist in memory; just not
+            in the `dgs` collection. The `-=` operator looks for any
+            element that `is` the argument passed to it (in this case
+            `ace`) and removes those elements from itself.
+          ''')
+
         with section('Using the remove() method'):
           print('''
-            There are a number of ways to remove items from a collection.
-            Perhaps the most straightforward way is by using the remove
-            method.
+            The `-=` is basically a wrapper around the `remove()`
+            method. Let's remove `ace` with the `remove()` method
+            instead.
           ''')
 
           with listing('Remove item using remove()')
@@ -1161,14 +1195,8 @@ with book('Hacking Carapacian Core'):
               dgs += ace
 
           print('''
-            The above simply removes `ace` from the `dgs` collection. Note
-            that the `ace` object continues to exist in memory; just not
-            in the `dgs` collection. The `remove()` method looks for any
-            element that `is` the argument passed to it (in this case
-            `ace`) and removes them from itself.
-
             The `remove()` method can take several types of arguments to
-            to perform removal operations. The below listing illustrates
+            perform removal operations. The below listing illustrates
             some alternative uses of `remove()`.
           ''')
 
@@ -1312,9 +1340,6 @@ with book('Hacking Carapacian Core'):
               finally:
                 # Insert spot back into the collection
                 dgs.insert(1, spot)
-
-        with section('Using the -= operator'):
-          ...
 
 
       with section('Moving items'):
