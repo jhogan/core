@@ -1341,16 +1341,115 @@ with book('Hacking Carapacian Core'):
                 # Insert spot back into the collection
                 dgs.insert(1, spot)
 
-
-      with section('Moving items'):
-        ...
-
       with section('Querying collections'):
-        # .where(), __contains__, .getcount()
-        ...
+        print('''
+          We can also use the `where()` method to obtain a subset of the
+          collection by providing a callable. For example, 'lets say we
+          want to get all the `dog` objects where the dog's `name`
+          starts with "f":
+        ''')
 
-      with section('Testing count'):
-        # .count, .isempty. issingular, isplurality, ispopulated
+        with listing('Use the `where` method with a callable')
+          # Get all dogs that start with "F"
+          dgs1 = dgs.where(lambda x: x.name.startswith('F')
+
+          # The collection that is returned is of type `dogs`
+          type(dogs, dgs1)
+
+          # Two dogs start with "F": Fido and Fluffy
+          two(dgs1)
+
+          # Sort the collection just to make sure that the assertions
+          # below will work
+          dgs1.sort('name')
+
+          # The first dog in the collection is Fido and the second is
+          # Fluffy
+          eq('fido', dgs1.first.name)
+          eq('fluffy', dgs1.second.name)
+
+        print('''
+          If we pass in two `str`'s to where, we can query by an
+          attributes exact value. For example, let's say we want to get
+          all the dogs in the collection whose name is "Fido". We can do
+          this:
+        ''')
+
+        with listing(
+          'Using the `where` method to query by attribute value'
+        )
+
+          # Get all the dog objects whose name equals "Fido"
+          dgs1 = dgs.where('name', 'Fido')
+
+          # Only one dog in our collection is named Fido
+          one(dgs1)
+
+          # Let's assert that the first item in the collection is Fido
+          eq('Fido', dgs1.first.name)
+
+        print('''
+          There is one more way to query with `where()`. We can pass in
+          a `type` object. This will cause `where()` to only return
+          object of that type. We only have `dog` objects in our
+          collection at the moment, so this for of the `where()` method
+          want do much good. Let's create a `wolf` class and add a
+          `wolf` object to the `dgs` collection so we can demonstrate
+          this type of query.
+        ''')
+
+        with listing('Use `where` method to select by type'):
+          # Create the wold entity type
+          class wolf(entities.entity):
+            pass
+
+          # Append the wolf to the dogs collection
+          dgs += wolf()
+
+          # Get only the dog objects
+          dgs1 = dgs.where(dog)
+
+          # Get only the wolf object
+          wfs = dgs.where(wolf)
+
+          # We only have one wold
+          one(wfs)
+
+          # We have all the dogs
+          four(dgs1)
+          eq(dgs.count - 1, dgs1.count)
+
+          # The one object in wfs is of type `wolf`
+          for wf in wfs:
+            type(wolf, wf)
+
+          # All objects in dgs is of type `dog`
+          for dg in dgs:
+            type(dog, dg)
+
+        print('''
+          One thing to note is that nothing prevented us from assigning
+          a `wolf` to a `dogs` collection. There is no type checking for
+          entities collections.
+
+          Another thing to note is that the `where(type)` only returns
+          the object that match the exact type of the `type` argument.
+          For example, if `wolf` and `dog` both inherited from some
+          other type, such as `canis` (genus of both dogs and wolves),
+          then the following would produce an an emtpy collection
+            
+            zero(dgs.where(canis))
+
+          The above query would only produce results if there were
+          `canis` objects in `dgs`, not subclasses of `canis`.
+        ''')
+
+        with section('Testing count'):
+          # .count, .isempty. issingular, isplurality, ispopulated
+          ...
+
+
+      with section('Truthyness'):
         ...
 
       with section('Iteration'):
@@ -1361,7 +1460,8 @@ with book('Hacking Carapacian Core'):
         ...
 
       with section('Miscellaneous'):
-        # getindex, getprevious, only, pluck, __contains__, getindex
+        # getindex, getprevious, only, pluck, __contains__, getindex.
+        # moveafter
         ...
 
       with section("When entities collections aren't Quite like list")
