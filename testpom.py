@@ -2393,6 +2393,12 @@ class fastnets(pom.sites):
     pass
 
 class fastnet(pom.site):
+    Id = UUID(hex='44327b84-5fe2-4247-a5c7-601e2a763e7b')
+
+    Proprietor = party.company(
+        id = UUID(hex='5257ee0f-305a-4b37-a52d-a366aca76bf9'),
+        name = 'Fastnet, Inc'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'fast.net'
