@@ -2717,7 +2717,7 @@ class orm_(tester):
         for i in range(cnt):
             artist.getvalid().save()
 
-        self.ge(artists.count, cnt)
+        self.ge(cnt, artists.count)
 
         arts = artists()
         arts += artist.getvalid()
@@ -4135,7 +4135,7 @@ class orm_(tester):
 
         arts1 = artists.orm.all
         self.true(arts1.orm.isstreaming)
-        self.ge(arts1.count, cnt)
+        self.ge(cnt, arts1.count)
 
         arts = [x for x in arts1 if x.firstname == firstname]
         self.count(cnt, arts)
