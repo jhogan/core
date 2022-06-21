@@ -1344,7 +1344,7 @@ with book('Hacking Carapacian Core'):
       with section('Querying collections'):
         print('''
           We can also use the `where()` method to obtain a subset of the
-          collection by providing a callable. For example, 'lets say we
+          collection by providing a callable. For example, letss say we
           want to get all the `dog` objects where the dog's `name`
           starts with "f":
         ''')
@@ -1369,37 +1369,37 @@ with book('Hacking Carapacian Core'):
           eq('fluffy', dgs1.second.name)
 
         print('''
-          If we pass in two `str`'s to where, we can query by an
-          attributes exact value. For example, let's say we want to get
-          all the dogs in the collection whose name is "Fido". We can do
-          this:
+          If, instead of a callable, we pass in two `str`'s to
+          `where()`, we can query by an attribute's exact value. For
+          example, let's say we want to get all the dogs in the
+          collection whose name is "Fido". We can do this:
         ''')
 
         with listing(
           'Using the `where` method to query by attribute value'
         )
 
-          # Get all the dog objects whose name equals "Fido"
+          # Get all the dog objects whose `name` equals "Fido"
           dgs1 = dgs.where('name', 'Fido')
 
-          # Only one dog in our collection is named Fido
+          # Assert that only one dog in our collection is named Fido
           one(dgs1)
 
-          # Let's assert that the first item in the collection is Fido
+          # Assert that the first item in the collection is Fido
           eq('Fido', dgs1.first.name)
 
         print('''
           There is one more way to query with `where()`. We can pass in
           a `type` object. This will cause `where()` to only return
-          object of that type. We only have `dog` objects in our
-          collection at the moment, so this for of the `where()` method
+          objects of that type. We only have `dog` objects in our
+          collection at the moment, so this form of the `where()` method
           want do much good. Let's create a `wolf` class and add a
           `wolf` object to the `dgs` collection so we can demonstrate
           this type of query.
         ''')
 
         with listing('Use `where` method to select by type'):
-          # Create the wold entity type
+          # Create the wolf entity type
           class wolf(entities.entity):
             pass
 
@@ -1412,10 +1412,10 @@ with book('Hacking Carapacian Core'):
           # Get only the wolf object
           wfs = dgs.where(wolf)
 
-          # We only have one wold
+          # Assert wfs only has one wolf
           one(wfs)
 
-          # We have all the dogs
+          # Assert dgs1 has all the dogs
           four(dgs1)
           eq(dgs.count - 1, dgs1.count)
 
@@ -1423,8 +1423,8 @@ with book('Hacking Carapacian Core'):
           for wf in wfs:
             type(wolf, wf)
 
-          # All objects in dgs is of type `dog`
-          for dg in dgs:
+          # All objects in dgs1 is of type `dog`
+          for dg in dgs1:
             type(dog, dg)
 
         print('''
@@ -1433,10 +1433,10 @@ with book('Hacking Carapacian Core'):
           entities collections.
 
           Another thing to note is that the `where(type)` only returns
-          the object that match the exact type of the `type` argument.
+          the object that is of the exact type of the `type` argument.
           For example, if `wolf` and `dog` both inherited from some
           other type, such as `canis` (genus of both dogs and wolves),
-          then the following would produce an an emtpy collection
+          then the following would produce an an empty collection:
             
             zero(dgs.where(canis))
 
@@ -1445,9 +1445,56 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with section('Testing count'):
-          # .count, .isempty. issingular, isplurality, ispopulated
-          ...
+          print('''
+            We've already seen that the `count` property will tell us
+            the number of items in the collection.
+          ''')
 
+          with listing('Obtaining the number of items in a collection'):
+            # Assert we have 4 dogs in `dgs`
+            eq(4, dgs.count)
+
+            # To support list semantics, the Core allows us to use
+            # the builtin len() function for the same purpose
+            eq(4, len(dgs))
+
+          print('''
+            As you can see, we can use the `len()` function as well to
+            obtain the number of items in the collection. However, this
+            support is provided only to make collections conformant with
+            the Python `list` API. Under normal circumstances, you
+            should use `.count`.
+
+            Count returns an `int` indicating the number of elements in
+            a collection. However, there are a number of Booleans
+            properties that tell information about the count of items
+            using different verbiage:
+          ''')
+
+          with listing('Using Boolean count properties'):
+            # Since dgs contains elements, `isempty` is False. If the
+            # collection had zero elements, `isempty` would be True.
+            false(dgs.isempty)
+
+            # Since dgs contains more than one element, `issingular` is
+            # False. If the collection had exactly one elements,
+            # `issingular` would be True.
+            false(dgs.issingular)
+
+            # Since dgs contains more than one element, `isplurality` is
+            # True.
+            true(dgs.isplurality)
+
+            # Since dgs contains more than zero element, `ispopulated` is
+            # True. `isempty` and `ispopulated` are antonyms
+            true(dgs.ispopulated)
+
+          print('''
+            Though the Boolean count propreties may seem redundant with
+            `.count`, they can be useful in making your code more
+            expressive and verbal, and thus easier to read and
+            understand.
+          ''')
 
       with section('Truthyness'):
         ...
