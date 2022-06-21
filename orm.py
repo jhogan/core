@@ -4089,6 +4089,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         raise ProprietorError(propr)
 
         try:
+            cancel = False
+
             # Take snapshot of before state
             st = self.orm.persistencestate
 
@@ -4103,21 +4105,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.onbeforesave(self, eargs)
 
-                # XXX:07d7cdb8 This is a bad bug. If onbeforesave is
-                # called (see above) and eargs.cancel is set to True,
-                # the entity is not saved to the database. However, this
-                # does not prevent its supers from being saved. So it's
-                # only half canceled, which will lead to bad bugs down
-                # the road.  Additionally, mutations to constituents and
-                # composites are not canceled. Maybe we should have a
-                # hard return if eargs.cancel. `file.resource` is an
-                # example of an object that can be canceled but whose
-                # supers are saved regardless. See
-                # file.resource._entity_onbeforesave.
-
                 # If an event handler subscribing to onbeforesave didn't
-                # cancel the save...
-                if not eargs.cancel:
+                # cancel the save, then execute the mutation.
+                if not (cancel := eargs.cancel):
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     # Unless override is True, test the creatability,
                     # updatability or deletability of the entity given
@@ -4159,6 +4149,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Raise event
                     eargs.preposition = 'after'
                     self.onaftersave(self, eargs)
+
+            # If the onbeforesave event handler above canceled the save,
+            # then return. If self`s save was canceled, we don't want to
+            # persist any of its constituents or composites.
+            if cancel:
+                return
 
             # For each of the constituent entities classes mapped to
             # self, set the foreignkeyfieldmapping to the id of self,

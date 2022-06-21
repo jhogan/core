@@ -96,24 +96,20 @@ class file_(tester.tester):
         ws = foonet()
 
         with orm.proprietor(ws.proprietor):
-            # XXX:07d7cdb8 `local = True` can be removed here when
-            # 07d7cdb8 has been fixed
             ws.resources += file.resource(
                 url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
                 integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
-                local = True,
             )
 
             ws.resources += file.resource(
                 url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
                 integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
-                local = True,
             )
 
             ws.resources += file.resource(
                 url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
                 integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
-                local = True,
+                local = True
             )
 
             ws.save()
@@ -122,16 +118,21 @@ class file_(tester.tester):
 
             self.eq(ws.id, ws1.id)
 
-            ress = ws.resources.inodes.sorted()
-            ress1 = ws1.resources.inodes.sorted()
+            ress = ws.resources.inodes
+            ress1 = ws1.resources.inodes
 
             self.three(ress)
-            self.three(ress1)
 
-            for res, res1 in zip(ress, ress1):
-                self.eq(res.id, res1.id)
-                self.eq(str(res.url), str(res1.url))
-                self.eq(res.integrity, res1.integrity)
+            # The only resource that would have been saved would be
+            # attach.min.js (since we used `local = True`). 
+            self.one(ress1)
+
+            res = ress.last
+            res1 = ress1.only
+
+            self.eq(res.id, res1.id)
+            self.eq(str(res.url), str(res1.url))
+            self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
         class index(pom.page):
@@ -177,13 +178,11 @@ class file_(tester.tester):
             self.count(4, scripts)
 
             # Test site-level resource
-            ''' We should be able to uncomment this when 07d7cdb8 has
-            been fixed.
             self.eq(
-                'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
+                f'/radix/pom/site/{ws.id.hex}/resources/unicorn.min.js',
                 scripts.first.src
             )
-            '''
+
 
             self.eq(
                 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
