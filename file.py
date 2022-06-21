@@ -885,7 +885,7 @@ class resource(file):
         the database.
         """
         # Cancel saving resource to database if local is False. See the
-        # comments for the ``local`` paramenter in the docstring for
+        # comments for the ``local`` parameter in the docstring for
         # resource.__init__.
         eargs.cancel = not self.local
 
