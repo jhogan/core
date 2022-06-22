@@ -182,7 +182,7 @@ class entities:
     def __bool__(self):
         """ Returns True.
 
-        An entities class will always return True. Unlike a list, you
+        An entities object will always return True. Unlike a list, you
         should not test if an entities collection has elements by seeing
         if it's truthy. Rather, you should call its `isplurality`
         property:
