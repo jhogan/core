@@ -475,7 +475,7 @@ with book('Hacking Carapacian Core'):
 
             with section('Conditional breakpoints')
               print('''
-                If the first argument to `B` is falsy, Python won't
+                If the first argument to `B` is falsey, Python won't
                 break into the debugger. If it's truthy, it will. This
                 means you can use `B` to set a conditional breakpoint.
                 Consider:
@@ -1496,8 +1496,46 @@ with book('Hacking Carapacian Core'):
             understand.
           ''')
 
-      with section('Truthyness'):
-        ...
+      with section('On truthiness'):
+        print('''
+          One area where `entities` collections are nonconformant with
+          Python list is when they are evaluated as Booleans. A Python
+          list is considered "true", or **truthy**, if it has more than
+          zero elements.
+
+        ''')
+
+        with listing('Truthiness in Python list')
+            # An empty list is falsey
+            ls = list()
+            falsey(ls)
+
+            # A list with one or more elements is truthy
+            ls.append('some truthiness')
+            truthy(ls)
+
+        print('''
+          Entities collection, on the other hand, are always truthy. 
+        ''')
+
+        with listing('Truthiness in entities collections')
+            # An empty list is truthy
+            ents = entities.entities()
+            truthy(ents)
+
+            # A non-empty list is also truthy
+            ents.append(entities.entity())
+            truthy(ents)
+
+        print('''
+          This feature means that when testing a collection object with
+          a conditional in a Boolean context, we are only asking whether
+          or not it is None. This reduces confusion because, when
+          testing lists this way, we could be testing if the list has a
+          value of None or if it's empty. Usually when we are writting
+          logic, we are only interested in testing one of these two
+          states.
+        ''')
 
       with section('Iteration'):
         ...
