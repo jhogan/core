@@ -81,9 +81,13 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+        # Is the _ensure method being run. This prevents infinite
+        # recursion
         if not site._ensuring:
             try:
                 site._ensuring = True
+
+                # Ensure the site is stored in the database
                 self._ensure()
             finally:
                 site._ensuring = False
@@ -103,12 +107,19 @@ class site(asset.asset):
     _resources = None
 
     def _ensure(self):
-        """ XXX
+        """ Ensure that the site object is stored in the database as
+        well as it's proprietor and its association with its proprietor.
+        Normaly, these data will need to be saved once.
+
+        This method is called by the constructor to ensure that every
+        time a site is instantiated, it's data is saved in the database.
         """
 
-        ''' Demand Constantants are set up '''
+        # Only _ensure subtypes of `site`
         if type(self) is site:
             return
+
+        ''' Demand Constants are set up '''
 
         try:
             self.Id
@@ -141,7 +152,11 @@ class site(asset.asset):
             )
 
         ''' Save self '''
+
+        # Get the root user
         root = ecommerce.users.root
+
+        # Ensure as root and use the site's proprietor
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
             
             ''' Create or retrieve site record '''
@@ -157,6 +172,7 @@ class site(asset.asset):
                 ws.directory
                 ws.save()
 
+            # Take the data in ws and copy it self
             sup = self
             wssup = ws
             while sup:
@@ -166,12 +182,17 @@ class site(asset.asset):
 
                     setattr(self, map.name, getattr(wssup, map.name))
 
+                # Make sure that self and its supers aren't flag as new
+                # dirty are markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
                 sup = sup.orm._super
                 wssup = wssup.orm._super
 
             ''' Ensure proprietor '''
+
+            # Ensure that the site's proprietor exists in the database
+            # as well
             try:
                 propr = self.Proprietor.orm.reloaded()
             except db.RecordNotFoundError:
@@ -185,6 +206,9 @@ class site(asset.asset):
                 propr.save()
                 
             ''' Associate the proprietor '''
+
+            # Associate the site (self) to its proprietor in the
+            # database via the asset_party association
             with orm.proprietor(propr):
                 for ap in self.asset_parties:
                     if ap.asset_partystatustype.name == 'proprietor':
@@ -211,9 +235,8 @@ class site(asset.asset):
 
                 self.orm.mappings['proprietor']._value = propr
 
-
+            # Save the association between the site and its proprietor
             self.save()
-
 
     @orm.attr(file.directory)
     def directory(self):
