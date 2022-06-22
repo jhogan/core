@@ -49,14 +49,12 @@ class site(asset.asset):
     are persisted to the database along with their constituents.
     """
 
+    # Indicates whether or not the _ensuring method is being run
     _ensuring = False
     def __init__(self, *args, **kwargs):
         """ Create a new web ``site`` object.
         """
         super().__init__(*args, **kwargs)
-
-        # XXX Do we need this line?
-        self._proprietor = None
 
         self.index = None
         self._pages = None
