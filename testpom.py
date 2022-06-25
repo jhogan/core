@@ -148,6 +148,10 @@ class pom_menu_items(tester.tester):
             
         orm.security().proprietor = foonet.Proprietor
 
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
+
+
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
         mnu.items.pretty, etc. were returning the same HTML but with
@@ -630,11 +634,10 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-        # XXX Clean this stuff up
-        foonet.orm.recreate()
-        pom.site.orm.recreate()
-        asset.asset.orm.recreate()
-        import file
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
+
+        # Clear radix cache
         with suppress(AttributeError):
             del file.directory._radix
 
@@ -1222,11 +1225,9 @@ class page(tester.tester):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
-        # XXX Clean up
-        foonet.orm.recreate()
-        derpnet.orm.recreate()
-        pom.site.orm.recreate()
-        asset.asset.orm.recreate()
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
+        derpnet.orm.recreate(ascend=True)
 
         try:
             ws = derpnet()

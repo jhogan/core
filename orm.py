@@ -9000,7 +9000,9 @@ class orm:
             # Delegate to the instance version of ``recreate``
             e.orm.recreate()
             
-    def _recreate(self, cur=None, recursive=False, guestbook=None):
+    def _recreate(self, 
+        cur=None, recursive=False, ascend=False, guestbook=None
+    ):
         """ Drop and recreate the table for the orm ``self``. 
 
         :param: cur: The MySQLdb cursor used by this and all subsequent
@@ -9009,6 +9011,9 @@ class orm:
         :param: recursive: If True, the constituents and subentities of
         ``self`` will be recursively discovered and their tables
         recreated. Used internally.
+
+        :param: ascend: If True, the composites (i.e., `super`s of self)
+        will have their tables recreated as well. Cf. `recursive`.
 
         :param: guestbook: A list to keep track of which classes' tables
         have been recreated. Used internally to prevent infinite
@@ -9047,19 +9052,35 @@ class orm:
             if recursive:
                 for map in self.mappings.entitiesmappings:
                     map.entities.orm.recreate(
-                        cur, True, guestbook
+                        cur, recursive=True, guestbook=guestbook
                     )
 
                 for ass in self.associations:
-                    ass.entity.orm.recreate(cur, True, guestbook)
+                    ass.entity.orm.recreate(
+                        cur, 
+                        recursive = True, 
+                        guestbook = guestbook
+                    )
 
                     for map in ass.orm.mappings.entitymappings:
                         map.entity.orm.recreate(
-                            cur, recursive, guestbook
+                            cur, 
+                            recursive = recursive, 
+                            guestbook = guestbook
                         )
 
                 for sub in self.subentities:
-                    sub.orm.recreate(cur, True, guestbook)
+                    sub.orm.recreate(
+                        cur, 
+                        recursive = True, 
+                        guestbook = guestbook
+                    )
+
+            if ascend:
+                if sup := self.super:
+                    sup.orm.recreate(
+                        cur=cur, ascend=True, guestbook=guestbook
+                    )
                             
         except Exception as ex:
             # Rollback unless conn and cur weren't successfully
