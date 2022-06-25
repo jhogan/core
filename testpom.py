@@ -638,7 +638,6 @@ class page(tester.tester):
         with suppress(AttributeError):
             del file.directory._radix
 
-
         orm.security().override = True
         
     def it_calls__init__(self):

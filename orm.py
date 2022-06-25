@@ -3331,10 +3331,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     import party
                     if isinstance(propr, party.party):
-
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         # Assign the current proprietor to self's
                         # proprietor property
+
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         self.proprietor = propr
 
