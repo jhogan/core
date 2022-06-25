@@ -587,6 +587,15 @@ class site(tester.tester):
             ws.orm.reloaded()
             self.expect(None, ws.orm.reloaded)
 
+            dir = ws.directory
+            self.expect(None, dir.orm.reloaded)
+            self.eq(ws.id.hex, dir.name)
+            self.eq(
+                f'{file.directory.radix.path}/pom/site/{ws.id.hex}',
+                dir.path
+            )
+            self.eq((False, False, False), dir.orm.persistencestate);
+
         aps = ws.asset_parties
         self.populated(aps)
         aps = aps.where(

@@ -168,7 +168,6 @@ class site(asset.asset):
                     name = self.Proprietor.name, 
                 )
 
-                # XXX Extend tests to ensure a directory is created
                 ws.directory
                 ws.save()
 
