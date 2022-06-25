@@ -525,6 +525,8 @@ with book('Hacking Carapacian Core'):
             will not need to invoke `pdb` directly like this. However,
             circumstances will occasionally arise in which this is the
             best course of action.
+            <!-- TODO Note that this is particularly useful when wokring
+            with with overrides of tester.__init__. -->
           ''')
 
       with section('Benchmarking', id=0xd89c06c2)
@@ -571,6 +573,8 @@ with book('Hacking Carapacian Core'):
         ...
 
   with chapter("Entity and Entities Objects"):
+    # TODO Add section on nomenclature, e.g., entities, collections,
+    # entity objects, etc.
     print('''
       Almost all classes in the framework inherit directly or indirectly
       from the `entity` class or the `entities` classes located in the 
@@ -1139,6 +1143,7 @@ with book('Hacking Carapacian Core'):
             ''')
 
       with section('Removing items'):
+        # TODO Docmunet es.clear()
         with section('Using the -= operator'):
           print('''
             To remove an item from a collection, we can use the '-='
@@ -1538,7 +1543,83 @@ with book('Hacking Carapacian Core'):
         ''')
 
       with section('Iteration'):
-        ...
+        print('''
+          As we have seen, iteration is easy &mdash; its not much
+          different from iterating over a list.
+        ''')
+
+        with listing('Iterating over a collection'):
+          # Print the names of each dog
+          for dg in dgs:
+            print(dg.name)
+
+        print('''
+          In the above listing, the first dog in the collection will be
+          printed first, the second will be printed next, and so on.
+        ''')
+
+        with section('Enumeration'):
+          print('''
+            We can use Python's builtin function `enumerate()` with
+            collections as well.
+          ''')
+
+          with listing(
+            (
+              'Iterating over a collection using the `enumerate()` '
+              'function'
+            )
+          ):
+            # Iterate over each dog
+            for i, dg in enumerate(dgs):
+              
+              # Assert the first dog
+              if i == 0:
+                is_(dgs.first, dg)
+
+              # Assert the second dog
+              elif i == 1:
+                is_(dgs.second, dg)
+
+              # Assert the last dog
+              elif i == dgs.count - 1:
+                is_(dgs.last, dg)
+
+          print('''
+            Collections have their own `enumerate()` method that may
+            offer a slight advantange over the builtin `enumerate()`
+            function. The `enumerate()` method causes the iteration to
+            behave exactly as if you used the `enumerate()` builtin
+            function, however the index variable (i.e., `i`) is a
+            subclass if `int` which can tell you a little more
+            information about where you are in the iteration. For
+            example, the above listing could have been written:
+          ''')
+
+          with listing(
+            'Using the index variable from the `enumerate()` method'
+          ):
+            # Print the names of each dog
+            for i, dg in enumerate(dgs):
+              if i.first:
+                is_(dgs.first, dg)
+                true(i.even)
+
+              elif i.second:
+                is_(dgs.second, dg)
+                true(i.odd)
+
+              elif i.last
+                is_(dgs.last, dg)
+
+          print('''
+            As you can see, the `i` variable acts like an object with
+            properties that can tell you where it is in the loop (first,
+            second, or last). It also will tell you if it is an odd or
+            even number. Using these properties can make you code easier
+            to read because their are less numbers and operators for the
+            eyes to parse.
+          ''')
 
       with section('Indexing with Integers and Slices'):
         # __setitem__, __getitem__, __call__
