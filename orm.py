@@ -3329,20 +3329,25 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 if propr := security().proprietor:
 
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # If self.proprietor is not an instance of party,
-                    # e.g., it's a UUID, we can't assign, so ignore.
-                    # This is for unusual circumstances, such as when
-                    # setting up principles and trying to avoid
-                    # catch-22's.
-                    #
-                    # XXX The alternative block below is new, change the
-                    # above comment to cover it
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     import party
                     if isinstance(propr, party.party):
+
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Assign the current proprietor to self's
+                        # proprietor property
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         self.proprietor = propr
+
                     elif isinstance(propr, UUID):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # If self.proprietor is not an instance of party
+                        # then it's a UUID.  This will happen in
+                        # unusual circumstances, such as when setting up
+                        # principles. We can at least assign the id to
+                        # the proprietor__partyid property so once the
+                        # proprietor has been created, it can be
+                        # lazy-loaded by this entity.
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         self.proprietor__partyid = propr
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣

@@ -1003,6 +1003,15 @@ class directories(inodes):
 
 class directory(inode):
     """ Represents a directory in a file system.
+
+    Gotchas
+    -------
+    Creating a `directory` and saving it will save the directory to the
+    database. But it won't necessarily be created in the file system.
+    Directories are only created when needed by to store `files`. The
+    _self_onaftersave override creates files and resources in the file
+    systems, but the `directory` class does not override this event
+    handler to create actual directories.
     """
 
     # The primary key for the radix directory
