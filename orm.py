@@ -3349,6 +3349,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # lazy-loaded by this entity.
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         self.proprietor__partyid = propr
+                    else:
+                        raise TypeError(
+                            'Invalid value for proprietor'
+                        )
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
