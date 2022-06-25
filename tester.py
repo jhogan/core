@@ -349,7 +349,7 @@ class principle(entities.entity):
         return self._company
 
 class tester(entities.entity):
-    def __init__(self, testers, mods=None):
+    def __init__(self, testers, mods=None, user=None, propr=None):
         """ Create the tester abstract object.
 
         :param: testers testers: A reference to the testers collection
@@ -377,9 +377,10 @@ class tester(entities.entity):
                     e.orm.recreate()
 
         # Create and set principles at ORM level for testing
-        orm.security().owner = self.user
-        orm.security().proprietor = self.company
-
+        sec = orm.security()
+        sec.user       = user  if user  else self.user
+        sec.proprietor = propr if propr else self.company
+            
     def recreateprinciples(self):
         principle().recreate()
 

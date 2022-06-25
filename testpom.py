@@ -628,17 +628,15 @@ class site(tester.tester):
 
 class page(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
-        super().__init__(mods=mods, *args, **kwargs)
-
-        # XXX We should probably send the proprietor to tester.__init__
-        # to be set
-
+        # We will be testing with foonet so set it as the ORM's
+        # proprietor
         propr = foonet.Proprietor
         with orm.sudo(), orm.proprietor(propr):
             propr.owner = ecommerce.users.root
             
-        orm.security().proprietor = foonet.Proprietor
+        # Now we can call the constructor
+        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
             fastnets.orm.recreate()
