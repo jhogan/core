@@ -69,7 +69,7 @@ class users(orm.entities):
     def root(cls):
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
-            for map in users.orm.mappings.foreignkeymappings:
+            for map in user.orm.mappings.foreignkeymappings:
                 if map.entity is site:
                     break
             else:
