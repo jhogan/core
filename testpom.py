@@ -11,6 +11,8 @@ import asset
 import dom
 import ecommerce
 import logs
+import os
+import file
 import orm
 import party
 import pom
@@ -34,7 +36,7 @@ class foonet(pom.site):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
 
-        # XXX This is redundand. It's part of self.Proprietor
+        # Assign the site's name (as an asset)
         self.name = 'foo.net'
 
         ''' Pages '''
@@ -139,7 +141,7 @@ class _404(pom.page):
 
 class pom_menu_items(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
+        mods = 'party', 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
         super().__init__(mods=mods, *args, **kwargs)
 
         propr = foonet.Proprietor
