@@ -1591,7 +1591,7 @@ with book('Hacking Carapacian Core'):
             function. The `enumerate()` method causes the iteration to
             behave exactly as if you used the `enumerate()` builtin
             function, however the index variable (i.e., `i`) is a
-            subclass if `int` which can tell you a little more
+            subclass if `int` which can give you a little more
             information about where you are in the iteration. For
             example, the above listing could have been written:
           ''')
@@ -1600,7 +1600,7 @@ with book('Hacking Carapacian Core'):
             'Using the index variable from the `enumerate()` method'
           ):
             # Print the names of each dog
-            for i, dg in enumerate(dgs):
+            for i, dg in dgs.emumerate():
               if i.first:
                 is_(dgs.first, dg)
                 true(i.even)
@@ -1617,15 +1617,66 @@ with book('Hacking Carapacian Core'):
             properties that can tell you where it is in the loop (first,
             second, or last). It also will tell you if it is an odd or
             even number. Using these properties can make you code easier
-            to read because their are less numbers and operators for the
+            to read because there are less numbers and operators for the
             eyes to parse.
+
+            Note also that the `enumerator()` is a thin wrapper around
+            the `func.enumerate*(` function. This function can be used
+            for collections and lists (or any other iterable) and may be
+            useful in many situation because it will yield the
+            interation-aware `i` variable as seen in the above example.
+            In fact, it is imported in most of Core's modules, so you
+            may be using it without even realizing it.
+          '''
+
+      with section('Miscellaneous methods'):
+        print('''
+          Entities collections have a number of methods that don't fit
+          neatly into each category. In this section, we will go over
+          each of them.
+        ''')
+
+        with section('The `getindex()` method'):
+          print('''
+            The `entities.getindex()` method returns the numeric index
+            of an element within the collection.
           ''')
 
-      with section('Indexing with Integers and Slices'):
-        # __setitem__, __getitem__, __call__
-        ...
+          with listing('Using the `getindex()` method'):
+            # Get the first element
+            fido = dgs.first
 
-      with section('Miscellaneous'):
+            # Get the index number of the first element
+            ix = dgs.getindex(fido)
+
+            # Assert that the index is 0
+            eq(0, ix)
+
+          print('''
+            In the above example, we know that `fido` is the first
+            element in the collection. Thus it's index value is 0 as
+            demonstrated by the assertion.
+
+            If `fido` happened to be in the collection more than once,
+            we would still have gotten 0 since `getindex()` will return
+            the index value of the first matching item. 
+
+            Note that `getindex()` uses the `is` operator, not the
+            equality (`==`), when searching for a match.
+
+            You may remember that we can use the `name` or `id` property
+            of an entity can be used for indexing 
+
+              fido is dgs['fido']
+
+            We can also get the index of an object by `name` or `id` if
+            we pass in a str. For example, we could have gotten the
+            index of `fido` by name:
+          ''')
+
+          with listing('Using the `getindex()` with a str argument'):
+            eq(0, dgs.getindex('fido'))
+
         # getindex, getprevious, only, pluck, __contains__, getindex.
         # moveafter
         ...
