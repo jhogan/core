@@ -1632,8 +1632,8 @@ with book('Hacking Carapacian Core'):
       with section('Miscellaneous methods'):
         print('''
           Entities collections have a number of methods that don't fit
-          neatly into each category. In this section, we will go over
-          each of them.
+          neatly into any of the above categories. In this section, we
+          will go over each of them.
         ''')
 
         with section('The `getindex()` method'):
@@ -1677,7 +1677,44 @@ with book('Hacking Carapacian Core'):
           with listing('Using the `getindex()` with a str argument'):
             eq(0, dgs.getindex('fido'))
 
-        # getindex, getprevious, only, pluck, __contains__, getindex.
+        with section('The `only` property'):
+          print('''
+            Often times we find ourselves working with collections, or
+            any type of iterable for that matter, which we know should
+            have only one possible element. To get that value in a
+            collection, we will normally call the `first` method and
+            assume that the collection does indeed have only one method.
+            However, it is possible that there is a bug in our code that
+            causes the collection to have multiple elements. If that is
+            the case, we would like an exception to be raise to let us
+            know that there was an issue.
+          ''')
+
+          with listing('Using the `only` property'):
+            # Get a new collections that contains only the first dog
+            # element.
+            dgs1 = dgs[0:1]
+
+            # Now let's get the first element of dgs1
+            fido = dgs1.first
+
+            # Now let's get the first element while making sure the dgs1
+            # element has only one element
+            fido = dgs1.only
+
+            # This should work since we got the slice notation correct
+            # above. It's equivalenet to writing the following:
+            fido = dgs1.first
+            if not fido:
+              raise ValueError()
+
+          print('''
+            Another reason to use `only` is that we are being more
+            explicit in our code. We are communicating to future readers
+            that the collection is expected to have exactly one element.
+          ''')
+            
+        # getprevious, pluck, __contains__, getindex.
         # moveafter
         ...
 
