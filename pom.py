@@ -10,10 +10,13 @@
 
 from contextlib import suppress
 from dbg import B
+from uuid import UUID, uuid4
 import asset, ecommerce
 import datetime
+import db
 import dom
 import entities
+import ecommerce
 import exc
 import file
 import inspect
@@ -21,6 +24,7 @@ import itertools
 import orm
 import primative
 import textwrap
+import party
 import www
 
 # References:
@@ -44,10 +48,14 @@ class site(asset.asset):
     Note that site objects ultimately inherit from orm.entity so they
     are persisted to the database along with their constituents.
     """
+
+    # Indicates whether or not the _ensuring method is being run
+    _ensuring = False
     def __init__(self, *args, **kwargs):
         """ Create a new web ``site`` object.
         """
         super().__init__(*args, **kwargs)
+
         self.index = None
         self._pages = None
         self._html = None
@@ -73,6 +81,17 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+        # Is the _ensure method being run. This prevents infinite
+        # recursion
+        if not site._ensuring:
+            try:
+                site._ensuring = True
+
+                # Ensure the site is stored in the database
+                self._ensure()
+            finally:
+                site._ensuring = False
+
     # Host name of the site
     host = str
 
@@ -86,6 +105,137 @@ class site(asset.asset):
     directory = file.directory
 
     _resources = None
+
+    def _ensure(self):
+        """ Ensure that the site object is stored in the database as
+        well as it's proprietor and its association with its proprietor.
+        Normaly, these data will need to be saved once.
+
+        This method is called by the constructor to ensure that every
+        time a site is instantiated, it's data is saved in the database.
+        """
+
+        # Only _ensure subtypes of `site`
+        if type(self) is site:
+            return
+
+        ''' Demand Constants are set up '''
+
+        try:
+            self.Id
+        except AttributeError:
+            raise AttributeError(
+                'Sites must have an Id constant attribute'
+            )
+
+        if not isinstance(self.Id, UUID):
+            raise TypeError(
+                "Site's Id constant is the wrong type"
+            )
+
+        try:
+            self.Proprietor
+        except AttributeError:
+            raise AttributeError(
+                'Sites must have a Proprietor constant attribute'
+            )
+
+        if not isinstance(self.Proprietor, party.party):
+            raise TypeError(
+                "Site's Proprietor constant is the wrong type"
+            )
+
+        if not self.Proprietor.name:
+            raise ValueError(
+                "Site's Proprietor constant "
+                'must have an id an and a name'
+            )
+
+        ''' Save self '''
+
+        # Get the root user
+        root = ecommerce.users.root
+
+        # Ensure as root and use the site's proprietor
+        with orm.sudo(), orm.proprietor(self.Proprietor.id):
+            
+            ''' Create or retrieve site record '''
+            try:
+                ws = type(self)(self.Id)
+            except db.RecordNotFoundError:
+                ws = type(self)(
+                    id = self.Id, 
+                    name = self.Proprietor.name, 
+                )
+
+                ws.directory
+                ws.save()
+
+            # Take the data in ws and copy it self
+            sup = self
+            wssup = ws
+            while sup:
+                for map in wssup.orm.mappings:
+                    if not isinstance(map, orm.fieldmapping):
+                        continue
+
+                    setattr(self, map.name, getattr(wssup, map.name))
+
+                # Make sure that self and its supers aren't flag as new
+                # dirty are markedfordeletion
+                sup.orm.persistencestate = False, False, False
+
+                sup = sup.orm._super
+                wssup = wssup.orm._super
+
+            ''' Ensure proprietor '''
+
+            # Ensure that the site's proprietor exists in the database
+            # as well
+            try:
+                propr = self.Proprietor.orm.reloaded()
+            except db.RecordNotFoundError:
+                propr = self.Proprietor
+                sup = propr
+                while sup:
+                    sup.owner = root
+                    sup.proprietor = propr
+                    sup.orm.isnew = True
+                    sup = sup.orm.super
+                propr.save()
+                
+            ''' Associate the proprietor '''
+
+            # Associate the site (self) to its proprietor in the
+            # database via the asset_party association
+            with orm.proprietor(propr):
+                for ap in self.asset_parties:
+                    if ap.asset_partystatustype.name == 'proprietor':
+                        if ap.party.id == propr.id:
+                            break
+                else:
+                    self.proprietor = propr
+
+                    apst = party.asset_partystatustype(
+                        name = 'proprietor'
+                    )
+
+                    ap = party.asset_party(
+                        asset                  =  self,
+                        party                  =  propr,
+                        asset_partystatustype  =  apst,
+                    )
+                    self.asset_parties += ap
+
+                    sup = self
+                    while sup:
+                        sup.owner = root
+                        sup = sup.orm.super
+
+                self.orm.mappings['proprietor']._value = propr
+
+            # Save the association between the site and its proprietor
+            self.save()
 
     @orm.attr(file.directory)
     def directory(self):

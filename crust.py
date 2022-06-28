@@ -5,7 +5,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
 from MySQLdb.constants.CR import COMMANDS_OUT_OF_SYNC
 from config import config
@@ -45,7 +45,8 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
-class undef: pass
+class undef: 
+    pass
 
 class command:
     class onaskeventargs(entities.eventargs):
@@ -76,7 +77,8 @@ class command:
             self._mysqllexer = pygments.lexers.MySqlLexer()
         return self._mysqllexer
 
-    class Abort(Exception): pass
+    class Abort(Exception):
+        pass
 
     def print(self, msg='', lang=None, end='\n'):
         if lang:

@@ -1,9 +1,10 @@
-index         ix
-list          ls
-parent        rent
-tuple         tup
-handler       hnd
-object        obj
-return-value  r
-key           k
-carapacian    car   cara
+carapacian:    car   cara
+key:           k
+handler:       hnd
+index:         ix
+list:          ls
+object:        obj
+parent:        rent
+proprietor:    propr
+return-value:  r
+tuple:         tup

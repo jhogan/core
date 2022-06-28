@@ -134,8 +134,9 @@ class application:
             extension variables, named according to a convention that
             will be described below."
 
-        :param: start_response callable: A callable as defined by the
-        WSGI standard.
+        :param: start_response callable: A callable defined by the
+        WSGI standard to invoke in order to return a response to the
+        WSGI server and ultimately the user agent.
         """
         global request, response
         res = _response(self.request)
@@ -960,7 +961,7 @@ class _request:
             except ValueError:
                 return 0
 
-        # NOTE This appears to be ambigous. In the WSGI version,
+        # NOTE This appears to be ambiguous. In the WSGI version,
         # shouldn't we also be returning the size of the body.
 
         return len(self.body)
@@ -1164,7 +1165,7 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        # If the site associated with the reuest doesn't have a page in
+        # If the site associated with the request doesn't have a page in
         # its index, raise a 404
         if not request.page:
             raise NotFoundError(self.path)
@@ -2250,8 +2251,8 @@ class browser(entities.entity):
     The ``request`` method returns a ``response`` object.
 
     The ``browser`` itself contains a ``cookies`` collections which,
-    amoung othre things, can cause the ``browser`` to be authenticated
-    to a give web site, by storing a JWT issued by the web site open
+    among other things, can cause the ``browser`` to be authenticated
+    to a give web site, by storing a JWT issued by the web site upon
     login.
     """
     class _tabs(entities.entities):

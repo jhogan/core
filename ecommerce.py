@@ -32,6 +32,7 @@ from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, timespan, datespan
 import apriori
+import db
 import entities
 import file
 import hashlib
@@ -61,7 +62,8 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    RootUserId = uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+    AnonymousUserId  =  uuid.UUID('616e6f6e-7573-6572-8a2e-882b3978ef54')
+    RootUserId       =  uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
 
     @classproperty
     def root(cls):
@@ -76,7 +78,7 @@ class users(orm.entities):
 
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
-            for map in users.orm.mappings.foreignkeymappings:
+            for map in user.orm.mappings.foreignkeymappings:
                 if map.entity is site:
                     break
             else:
@@ -84,6 +86,7 @@ class users(orm.entities):
                     'Could not find site foreign key'
                 )
                 
+            # TODO Why are we not loading using the RootUserId?
             usrs = users(
                 f'name = %s and {map.name} is %s', 'root', None
             )
@@ -101,6 +104,25 @@ class users(orm.entities):
                     cls._root.save()
 
         return cls._root
+
+    @classproperty
+    def anonymous(cls):
+        if not hasattr(cls, '_anon') or not cls._anon:
+            cara = party.company.carapacian
+            with orm.sudo(), orm.proprietor(cara):
+                try:
+                    cls._anon = user(cls.AnonymousUserId)
+                except db.RecordNotFoundError:
+                    cls._anon = user(
+                        id = cls.AnonymousUserId,
+                        name = 'anonymous',
+                    )
+
+                    cls._anon.party = party.party.anonymous
+                    cls._anon.save()
+
+
+        return cls._anon
         
 class histories(orm.entities):                                pass
 class preferences(orm.entities):                              pass

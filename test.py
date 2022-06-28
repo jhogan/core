@@ -482,7 +482,7 @@ class artist(orm.entity):
     locations      =  locations
     presentations  =  presentations
 
-    # title here to be ambigous with artifact.title. It's purpose is to ensure
+    # title here to be ambiguous with artifact.title. It's purpose is to ensure
     # against ambiguity problems that may arise
     title          =  str, 0, 1
     phone2         =  str, 0, 1
@@ -957,9 +957,9 @@ class artist_artist(orm.association):
     def processing(self, v):
         self._processing = v
 
-class test_orm(tester):
+class orm_(tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'apriori'
+        mods = 'party', 'apriori', 'file',
         super().__init__(mods=mods, *args, **kwargs)
         orm.security().override = True
         self.chronicles = db.chronicles()
@@ -2717,7 +2717,7 @@ class test_orm(tester):
         for i in range(cnt):
             artist.getvalid().save()
 
-        self.ge(artists.count, cnt)
+        self.ge(cnt, artists.count)
 
         arts = artists()
         arts += artist.getvalid()
@@ -4135,7 +4135,7 @@ class test_orm(tester):
 
         arts1 = artists.orm.all
         self.true(arts1.orm.isstreaming)
-        self.ge(arts1.count, cnt)
+        self.ge(cnt, arts1.count)
 
         arts = [x for x in arts1 if x.firstname == firstname]
         self.count(cnt, arts)
@@ -17022,7 +17022,7 @@ class gem_hr(tester):
         # TODO We should be able to create a position in any
         # party.legalorganization such as a non-profit.
         postyp = self.getvalidpositiontype()
-        com = testparty.test_party.getvalidcompany()
+        com = testparty.party_.getvalidcompany()
 
         # Create positions based on the job
         poss = hr.positions()
@@ -17068,7 +17068,7 @@ class gem_hr(tester):
         self.two(com1.departments.first.divisions.first.positions)
 
     def it_fulfills_postition(self):
-        per = testparty.test_party.getvalid(first='Mike', last='Johnson')
+        per = testparty.party_.getvalid(first='Mike', last='Johnson')
 
         postype = hr.positiontype(name='Mail Clerk', description=None)
         clerk = hr.position()

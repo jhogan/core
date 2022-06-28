@@ -7,13 +7,17 @@
 import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
+from contextlib import suppress
 from dbg import B
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
 import auth
+import asset
 import dom
 import ecommerce
 import logs
+import os
+import file
 import orm
 import party
 import pom
@@ -26,9 +30,18 @@ class foonets(pom.sites):
     pass
 
 class foonet(pom.site):
+    Id = UUID(hex='68c92541-0940-4a70-8e94-55c6c58a45cc')
+
+    Proprietor = party.company(
+        id = UUID(hex='f00E37b406c4424ea351f8baf1f3500e'),
+        name = 'Foonet, Inc'
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
+
+        # Assign the site's name (as an asset)
         self.name = 'foo.net'
 
         ''' Pages '''
@@ -132,6 +145,20 @@ class _404(pom.page):
         return type(self).__name__.replace('_', '')
 
 class pom_menu_items(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party', 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
+        super().__init__(mods=mods, *args, **kwargs)
+
+        propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            propr.owner = ecommerce.users.root
+            
+        orm.security().proprietor = foonet.Proprietor
+
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
+
+
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
         mnu.items.pretty, etc. were returning the same HTML but with
@@ -245,9 +272,11 @@ class pom_menu_items(tester.tester):
         )
         self.eq(expect, itms.html)
 
-class pom_site(tester.tester):
+class site(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'party', 'apriori'
+        super().__init__(mods=mods, *args, **kwargs)
+
         orm.security().override = True
     
     def it_calls__init__(self):
@@ -303,38 +332,40 @@ class pom_site(tester.tester):
         vp = 'width=device-width, initial-scale=1, shrink-to-fit=no'
 
         ws = foonet()
-        hd = ws.head
-        self.one(hd.children['meta[charset=iso-8859-1]'])
-        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq('foonet', titles.first.text)
+        with orm.proprietor(ws.proprietor):
+            hd = ws.head
+            self.one(hd.children['meta[charset=iso-8859-1]'])
+            self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        # Mutate ws properties to ensure they show up in .head 
-        charset = uuid4().hex
-        vp = uuid4().hex
-        title = uuid4().hex
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq('foonet', titles.first.text)
 
-        ws.charset = charset
-        ws.viewport = vp
-        ws.title = title
+            # Mutate ws properties to ensure they show up in .head 
+            charset = uuid4().hex
+            vp = uuid4().hex
+            title = uuid4().hex
 
-        hd = ws.head
-        self.one(hd.children['meta[charset="%s"]' % charset])
-        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+            ws.charset = charset
+            ws.viewport = vp
+            ws.title = title
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq(title, titles.first.text)
+            hd = ws.head
+            self.one(hd.children['meta[charset="%s"]' % charset])
+            self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
 
-        ws = pom.site()
-        hd = ws.head
-        self.one(hd.children['meta[charset=utf-8]'])
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq(title, titles.first.text)
 
-        titles = hd.children['title']
-        self.one(titles)
-        self.eq('site', titles.first.text)
+            ws = pom.site()
+            hd = ws.head
+            self.one(hd.children['meta[charset=utf-8]'])
+
+            titles = hd.children['title']
+            self.one(titles)
+            self.eq('site', titles.first.text)
 
     def it_calls_header(self):
         ws = foonet()
@@ -472,17 +503,160 @@ class pom_site(tester.tester):
         self.zero(ws.header[sels])
         self.zero(mnu[sels])
 
-class pom_page(tester.tester):
+    def it_assigns_principles(self):
+        # Get root user
+        root = ecommerce.users.root
+        ws = foonet()
+
+        def test_principles(ws):
+            """ Test the id's of ws's proprietor and owner
+            """
+            self.eq(ws.Proprietor.id, ws.proprietor.id)
+
+            # Assert the owner of the website is root
+            # FIXME Calling ws.owner.id dosen't work here the second
+            # time test_principles (after ws has been reloaded) because
+            # the owner is root, and root can't be reloaded for some
+            # reason.
+            self.eq(root.id, ws.owner__userid)
+
+            self.eq(ws.Proprietor.id, ws.proprietor.proprietor__partyid)
+            self.eq(root.id, ws.proprietor.owner__userid)
+
+        test_principles(ws)
+
+        # Save website as root
+        with orm.proprietor(ws.proprietor), orm.sudo():
+            ws.save()
+
+            ws = ws.orm.reloaded()
+            test_principles(ws)
+
+        aps = ws.asset_parties
+        self.populated(aps)
+        aps = aps.where(
+            lambda x: x.asset_partystatustype.name == 'proprietor'
+        )
+        self.one(aps)
+
+    def it_demands_contants_are_setup_on_site(self):
+        class squatnets(pom.sites):
+            pass
+
+        class squatnet(pom.site):
+            pass
+
+        # No Id constant
+        self.expect(AttributeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = 'not-a-uuid-type-literal'
+
+        self.expect(TypeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+
+        # No Proprietor
+        self.expect(AttributeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+            Proprietor = object()
+
+        self.expect(TypeError, squatnet)
+
+        class squatnet(pom.site):
+            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+            Proprietor = party.party()
+
+        self.expect(ValueError, squatnet)
+
+    def it_ensures(self):
+        es = (
+            party.party,                  party.organization,
+            party.legalorganization,      party.company,
+            party.asset_partystatustype,  party.asset_party,
+            asset.asset,                  pom.site,
+            foonet,
+        )
+        for e in es:
+            e.orm.truncate()
+
+        ws = foonet()
+
+        # Test foonet
+        self.eq(ecommerce.users.RootUserId, ws.owner.id)
+        self.eq(foonet.Proprietor.id, ws.proprietor.id)
+
+        self.eq((False, False, False), ws.orm.persistencestate)
+        with orm.proprietor(ws.proprietor):
+            ws.orm.reloaded()
+            self.expect(None, ws.orm.reloaded)
+
+            dir = ws.directory
+            self.expect(None, dir.orm.reloaded)
+            self.eq(ws.id.hex, dir.name)
+            self.eq(
+                f'{file.directory.radix.path}/pom/site/{ws.id.hex}',
+                dir.path
+            )
+            self.eq((False, False, False), dir.orm.persistencestate);
+
+        aps = ws.asset_parties
+        self.populated(aps)
+        aps = aps.where(
+            lambda x: x.asset_partystatustype.name == 'proprietor'
+        )
+        self.one(aps)
+
+        # Test foonet's super: `site`
+        ws1 = ws
+        ws = ws.orm.super
+
+        self.type(pom.site, ws)
+        self.eq(ecommerce.users.RootUserId, ws.owner.id)
+        self.eq(foonet.Proprietor.id, ws.proprietor.id)
+
+        self.eq((False, False, False), ws.orm.persistencestate)
+        with orm.proprietor(ws.proprietor):
+            self.expect(None, ws.orm.reloaded)
+
+        # Test site's super: `asset`
+        ass = ws.orm.super
+
+        self.type(asset.asset, ass)
+        self.eq(ecommerce.users.RootUserId, ass.owner.id)
+        self.eq(foonet.Proprietor.id, ass.proprietor.id)
+
+        self.eq((False, False, False), ass.orm.persistencestate)
+        with orm.proprietor(ass.proprietor):
+            self.expect(None, ass.orm.reloaded)
+
+class page(tester.tester):
     def __init__(self, *args, **kwargs):
+        # We will be testing with foonet so set it as the ORM's
+        # proprietor
+        propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            propr.owner = ecommerce.users.root
+            
+        # Now we can call the constructor
         mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
-        super().__init__(mods=mods, *args, **kwargs)
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-        orm.security().override = True
-        foonet.orm.recreate()
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
 
+        # Clear radix cache
+        with suppress(AttributeError):
+            del file.directory._radix
+
+        orm.security().override = True
+        
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -723,7 +897,6 @@ class pom_page(tester.tester):
                 m += dom.h2('Time')
                 m += dom.i('Timezone: ' + tz)
 
-
                 if len(kwargs):
                     m += dom.dl()
                     dl = m.last
@@ -736,6 +909,7 @@ class pom_page(tester.tester):
                 m += dom.time(primative.datetime.utcnow())
 
         ws = foonet()
+
         pg = time()
         ws.pages += pg
 
@@ -1017,7 +1191,6 @@ class pom_page(tester.tester):
         self.one(textarea)
         self.eq(comment, textarea.first.text)
 
-
     def it_raises_im_a_teapot(self):
         ws = foonet()
 
@@ -1055,32 +1228,47 @@ class pom_page(tester.tester):
             pass
 
         class derpnet(pom.site):
+            Id = UUID(hex='4ef54e9e-2f7d-45bc-861c-3f82bd662938')
+
+            Proprietor = party.company(
+                id = UUID(hex='d20088e6-a99a-4e0e-9948-b944242e1206'),
+                name = 'Derpnet, Inc'
+            )
+
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
+        # Unconditionally recreate foonet's tables and supers
+        foonet.orm.recreate(ascend=True)
+        derpnet.orm.recreate(ascend=True)
+
         try:
             ws = derpnet()
-            tab = self.browser().tab()
-            res = tab.get('/en' + '/index', ws)
-            self.eq(404, res.status)
+            with orm.proprietor(ws.proprietor):
+                tab = self.browser().tab()
+                res = tab.get('/en' + '/index', ws)
+                self.eq(404, res.status)
 
-            # A site will by defalut use the generic 404 page (at the
-            # pom.site level). It happens to not have an h2.apology
-            # element (unlike foonet; see below).
-            self.zero(res['h2.apology'])
+                # A site will, by default, use the generic 404 page (at
+                # the pom.site level). It happens to not have an
+                # h2.apology element (unlike foonet; see below).
+                self.zero(res['h2.apology'])
 
-            ws = foonet()
+                ws = foonet()
 
-            tab = self.browser().tab()
-            res = tab.get('/en/' + 'intheix.html', ws)
-            self.eq(404, res.status)
-            
-            # foonet has its own 404 page has an h2.apology element
-            # distinguishing it from the generic 404 page at the
-            # pom.site level.
-            self.one(res['h2.apology'])
-            self.one(res['main[data-path="/error/404"]'])
+                tab = self.browser().tab()
+
+                with orm.proprietor(ws.proprietor):
+                    res = tab.get('/en/' + 'intheix.html', ws)
+
+                self.eq(404, res.status)
+                
+                # foonet has its own 404 page which has an h2.apology
+                # element distinguishing it from the generic 404 page at the
+                # pom.site level.
+                self.one(res['h2.apology'])
+                self.one(res['main[data-path="/error/404"]'])
         finally:
             orm.forget(derpnet)
 
@@ -2219,6 +2407,12 @@ class fastnets(pom.sites):
     pass
 
 class fastnet(pom.site):
+    Id = UUID(hex='44327b84-5fe2-4247-a5c7-601e2a763e7b')
+
+    Proprietor = party.company(
+        id = UUID(hex='5257ee0f-305a-4b37-a52d-a366aca76bf9'),
+        name = 'Fastnet, Inc'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'fast.net'
