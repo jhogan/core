@@ -26,6 +26,8 @@ import warnings
 # so they won't go unnoticed. The below code does just that.
 warnings.filterwarnings('error', category=MySQLdb.Warning)
 
+# TODO Add docstrings 
+
 class connections(entitiesmod.entities):
     _instance = None
     def __init__(self):
@@ -368,8 +370,6 @@ class operationeventargs(entitiesmod.eventargs):
         self._cancel = v
 
 class chronicler(entitiesmod.entity):
-    """ XXX
-    """
     _instance = None
 
     def __init__(self):
