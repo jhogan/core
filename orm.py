@@ -11179,8 +11179,6 @@ class associations(entities):
         msg %= self.__class__.__name__, attr
         raise builtins.AttributeError(msg)
             
-
-
 class association(entity):
     """ An entity that holds a reference to two other entity objects.
 

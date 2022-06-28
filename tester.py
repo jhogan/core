@@ -572,6 +572,9 @@ class tester(entities.entity):
                     for i, id in enumerate(ids):
                         replace(id, res.html[i])
 
+            # TODO The ability for a tab to maintain it's own internal
+            # DOM should exist in the browser.tab base class in `www.py`
+            # as well as here.
             @property
             def html(self):
                 """ Returns the `tab`'s DOM object.

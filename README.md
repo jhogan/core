@@ -7,6 +7,22 @@ We may want a section on the development process to encourage a certain
 mode of development.
 
 * Add section on how to do performance testing
+
+TODO In the future, the `dba` bot should ensure this line is added.
+
+TODO Explain how to view the SQL being sent to MySQL using the snapshot
+context manager:
+    with db.chronicler.snapshot():
+        B()
+        print(self.asset_parties)
+
+TODO In hacking/debugging, explain how to set the
+self.tester.breakonexception = True. This is useful for debuging
+testpom.py
+
+TODO In Environment section, declare Ubuntu's default terminal as the
+officially supported terminal for the source code. Indicate that any
+terminal that can handle support as well as this terminal is acceptable.
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
@@ -373,35 +389,31 @@ overrides the default version and can contain secrete information and
 therefore **should never be committed to the Git repository**.  This file
 should also have restrictive file permissions:
 
-Carapacian Core is a web framework. It is written and maintained to
-facilitate the creation of web application that deal with business data.
-It offers the following features:
+    chmod 400 config.py
 
-* An object-relational mapper (ORM)
-* A univeral object/data model for business objects
-* Robotic process automation (RPA)
-* Command-line administration
-* Database migration
-* Server-side DOM authoring
-* A web page object model (POM)
-* Logging
-* A automated unit/regression testing framework
-* Robust third-party API integration
+In addition to storing secret information, `config` can also be used to
+override the default configuration of `configuration` to suite the needs
+of the given environment.
+
+Unlike most configuration files, these files are full-fledged Python
+libraries. This is a powerful approach to configuration because we can
+use the full power of Python to configure the environment.
 
 Environment
 -----------
 
+<a id="environment-operating-system"></a>
 ## Operating system ##
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
-received most of its testing, however, it should run on moste
+received most of its testing, however, it should run on most
 Debian-based distributions without much modification - if any. It's
 recommend that you use the latest LTS version of Ubuntu and use its
-native packages for the Python interpretor along with Green Unicorn. The
+native packages for the Python interpreter along with Green Unicorn. The
 version of Python shipped with the latest Ubuntu LTS version is
-considered the officially supported version.
+considered the framework's officially supported version.
 
-There is a `deb` file in the source directory that contains a list of
+There is a [deb](deb) file in the source directory that contains a list of
 Ubuntu/Debian packages that Carapacian Core depends on. Currently, the
 list contains the following:
 
@@ -412,37 +424,37 @@ list contains the following:
     python-mysqldb
     python3-dateutil
 
-Thus running the following command is enough to install the OS-level
+Thus running the following command is enough to install the OS level
 dependencies.
 
     apt install `cat deb`
 
-Ubuntu packages are prefered over PIP packages because running updates
+Ubuntu packages are preferred over PIP packages because running updates
 on Ubuntu will capture updates to these packages:
 
     apt update && apt dist-upgrade -y
 
-However, some dependencies are not available at the OS-level. They can,
-however, be obtain through PIP. Those packages can be found in the `pip`
-file. Listed are its current contents:
+However, some dependencies are not available at the OS level. They can,
+however, be obtain through PIP. Those packages can be found in the
+[pip](pip) file. Its current contents are listed below:
     
     pyyaml
     ua-parser
     user-agents
     pytz
 
-We can install they using `pip3`:
+We can install them using `pip3`:
 
     pip3 install `cat pip`
 
-Adding the `-U` flag causes the packages to be update.
+Adding the `-U` flag causes the packages to be updated.
 
     pip3 install -U `cat pip`
 
 ## Database ##
 The RDBMS of choice is MySQL. The configuration for the database
-connection can set using the `config.accounts` property in the
-`config.py` file. Iteratate over the the accounts from the base class
+connections can set using the `config.accounts` property in the
+[config.py](config.py) file. Iterate over the the accounts from the base class
 `configuration` and find the MySQL connection, then set its values to
 whatever you need. This will usually just be the password.
 
@@ -459,15 +471,15 @@ on the configuration files.
 
             return accts
 
-The framework's uses the database for persisting data and maintaining
-indexes for fast data retrival. It doesn't use the database to store
+The framework uses the database for persisting data and maintaining
+indexes for fast data retrieval. It doesn't use the database to store
 code such as in the case of stored procedures, views, UDF's, etc. Thus,
 the SQL that it uses to interact with the RDBMS is fairly simple and
 standard. It could probably be easily ported to another RDBMS if that
-were somehow deemed desireable, that MySQL seems like an excellent
-choice for the framework's needs.
+were somehow deemed desirable, however MySQL currently seems like an
+excellent choice for the framework's needs.
 
-The RDBMS is also expected to take care of it's on scalability and
+The RDBMS is also expected to take care of its on scalability and
 backup needs as well as provide network transparency. However, a
 database bot <!--TODO reference the bot section--> will be written to
 tend the administration of these functions.
@@ -478,67 +490,218 @@ production environment, as well as the lower enviroments, such as UAT,
 QA, and development will be managed. This section will be updated when
 concrete solutions to this problem domain have been devised.
 
-Assets
-------
-
-<a id="assets-configuration"></a>
-## Configuration ##
-
 Hacking
 -------
-## Testing through Green Unicorn ##
+
+<a id="hacking-running-tests"></a>
+## Running tests
+Most feature development and bug fixes are done by adding a number of
+tests to the [suite of regression testing scripts](#assets-test-scripts).
+
+Each module has, or should have, a corresponding test module. For
+example, the tests for the [product.py](product.py) module are located in
+[testproduct.py](testproduct.py). Within the test module, there are (or should be)
+*tester* classes which test classes in the corresponding module. 
+
+For example, to test the ability of the ORM class
+`product.product` to update itself, a tester method called
+`testproduct.test_product.it_updates` contains code to update a
+`product` and assert that the update works. Conventionally, tester
+methods start with the `it_` prefix, though this isn't a strict
+requirement of the tester framework. 
+
+To run all the tests, you can simply run the [test.py](test.py) script.
+
+    ./test.py
+
+This runs all the tests in that file as well as all the tests in files
+that match the pattern `test*.py`. 
+
+To narrow you tests down a little, you choose to run only the
+module-level tests. To run all the product tests, run the [testproduct.py](testproduct.py)
+script mentioned above:
+
+    ./testproduct.py
+
+
+To narrow things down even more, you can choose to run a tester class
+specifically:
+
+    ./testproduct.py test_product
+
+This only runs the tests in the `test_product` class.
+
+During development, you will probably want to focus on one tester method
+at a time. If you were testing the updating capabilities of the
+`product` class, as described above, you could choose to run only the
+`it_updates` method like this:
+
+    ./testproduct.py test_product.it_updates
+
+This is much faster. 
+
+By default, tests rebuild database tables that are needed for the tests.
+This takes some time and is often unnecessary. You can cause the test
+process to skip this process with the `-T` flag.
+
+    ./testproduct.py test_product.it_updates -T
+
+Now the test runs even faster.
+
+### Viewing SQL being issued to MySQL ###
+For debugging purposes, you will occasionally take an interest in what
+SQL the ORM is actually sending to the database. This is done by using
+the snapshot context manager:
+
+    import db, party
+
+    par = party.company(name="Acme")
+    with db.chronicler.snapshot():
+        par.save()
+
+The above should print out the `INSERT` statements used to create the
+new company in the database.
+
+<a href="hacking-debugger"></a>
+### Dropping into the debugger ###
+If the test reports exceptions, you can rerun the tests and cause the
+test to break on those exceptions. This is an extremely important
+technique to know because it makes development so much faster. All you
+have to do is pass in the `-b` flag.
+
+    ./testproduct.py test_product.it_updates -b
+
+When the exception is encountered, you will be dropped into the PDB
+debugger at the line that caused the exception. From there, you will be
+able to get the values of any variable, step in, out of, and over lines
+of code, print a stack trace, jump to different lines of code, etc. If
+you don't know how to use PDB you can find a reference
+[here](https://docs.python.org/3/library/pdb.html#debugger-commands).
+
+You can also set breakpoints in the code. This is typically done by
+calling the `B` function (the `B` function is imported in each module
+with the line `from dbg import B`). For example, if you want to be
+dropped in the debugger when the below method is called, just call `B`
+on the first line:
+
+    def some_dubious_logic(self):
+        B()
+        ...
+
+Run the code as you normally would:
+
+    ./test.py
+
+If the `B` function is encountered, you will be dropped into PDB.
+
+### When exceptions are caught ###
+If an exception is raised and caught, you may find yourself in the
+`except` block not knowing where the exception was actually raised.
+Another function from `dbg` called `PM` is imported in most modules:
+
+    from dbg import B, PM
+
+You can use this to bring the PDB debugger to the actual line that
+raised the exception.
+
+    try:
+        this_raises_an_exception_somewhere()
+    except Exception as ex:
+        # This line will bring us to the actual line that raise the
+        # exception.
+        PM(ex)
+        ...
+
+The `B` and `PM` functions are added to the actual source code. They
+shouldn't be pushed into the Git repository, though. It's okay to push
+them into feature branches if that is convenient, but they should never
+be pushed into 'main'.
+
+### Testing through Green Unicorn ###
 On the occasion that you need to debug an issue through the HTTP
-interface directory, you can run the Green Unicorn HTTP/WSGI server and
-hit the services from a browser of some other user agent like `curl`. To
+interface directly, you can run the Green Unicorn HTTP/WSGI server and
+hit the services from a browser or some other user-agent like `curl`. To
 run the service, you can `cd` into the framework's source directory and
 run the command:
 
    gunicorn -b carapacian.com:8000 --reload --timeout 0 'www:application()' 
 
-The `-b` flag binds the above invokation to the `carapacian.com`
+The `-b` flag binds the above invocation to the `carapacian.com`
 interface on port 8000. 
 
-The ``--reload`` option is useful because it
-causes `gunicorn` to detect changes made to the source files. This way
-you don't have to rerun `gunicorn` everytime you make a change to the
-source. It uses **inotify** to monitor files. inotify should be
-installed by default in Ubuntu.
+The ``--reload`` option is useful because it causes `gunicorn` to detect
+changes made to the source files. This way you don't have to rerun
+`gunicorn` every time you make a change to the source. It uses
+**inotify** to monitor files. inotify should be installed by default in
+Ubuntu.
 
 Setting `--timeout` to 0 means the worker classes will wait an
-indefinate amount of time for the request to complete. This is useful
-for step-by-step debugging described below.
+indefinite amount of time for the request to complete. This is useful
+for step-by-step debugging described below because the time it takes to
+debug an issues will likely be longer than the timeout.
 
 the 'www.application()' instantiates the `application`` class in
 `www.py` and returns an instance to ``gunicorn``. This is where the
-framework code takes the request per the WSGI standard.
+framework code receives the HTTP request per the WSGI standard.
 
 The above service can then be invoked with `curl`:
 
     curl carapacian.com:8000
 
-You can set breakpoints in the code with the call `B()` described above.
-When the breakpoint is encounterd, the terminal that `gunicorn` is
-running in will display a PDB prompt giving you PDB`s full capacity to
-debug the code at the break point. When you are ready for the request to
-complete, just enter the command `c` into the PDB prompt to cause the
-code to continue. The request will complete and the `gunicorn` is ready
-for the next request.
+You can set breakpoints in the code with the call `B()` described
+[above](#hacking-debugger).  When the breakpoint is encountered, the
+terminal that `gunicorn` is running in will display a PDB prompt giving
+you PDB`s full capacity to debug the code at the breakpoint. When you
+are ready for the request to complete, just enter the command `c` into
+the PDB prompt to cause the code to continue. The request will complete
+and the `gunicorn` daemon is ready for the next request.
+
+### Interacting with the database ###
+
+#### Using hex() ####
+Hopefully, you won't need to issue SQL queries directly to the database;
+you should be able see what's in the database through ORM objects.
+However, if you do find yourself needing to issue SQL directly to the
+database, you should get used to using the `hex()` function.
+
+The primary keys (and therefore the foreign keys) are UUIDs stored in
+the database as 16 byte binary strings. This does not render well by
+default. Instead of writing a query like:
+
+    select * from party_parties
+
+you will want to specify the columns and decode key fields with `hex()`:
+
+    select hex(id), id(proprietor__partyid), name from party_parties;
+
+This provides you with hex representations of the binary strings.
+
+#### Interacting with MySQL ####
+While the `mysql` command line is a powerful tool to interact directly
+with the database, you will probably want something more interactive. It
+is recommend that you install
+[dbext](https://github.com/vim-scripts/dbext.vim) into your Vim
+environment (if you are using Vim). dbext allows you to write queries in
+a Vim window, then issue those queries to the server. The result of the
+queries appear in a separate Vim window. If you use Emacs or another
+editor, it is recommend that you finds something similar to dbext.
 
 Git usage and conventions
 -------------------------
-The 'main' branch alwaws contains the latest, accepted code changes. Feature
-branches are created off the 'main' branch to add features or fix bugs to the
-framework. After the code has been peer reviewed, it can be merged back into
-the 'main' branch. Git tags **will** be used to mark specific points in 'main's
-history indicating release of the framework. The Git tags will use standard
-[semantic versioning](https://semver.org/).
+The 'main' branch always contains the latest, accepted code changes.
+Feature branches are created off the 'main' branch to add features or
+fix bugs.  After the code has been peer reviewed, it can be merged back
+into the 'main' branch. Git tags **will** be used to mark specific
+points in 'main's history indicating release of the framework. The Git
+tags will use standard [semantic versioning](https://semver.org/).
 
 ### Code commits ###
 Two main types of Git commits are used in the framework: standard code commits
 and "housekeeping" commits.  The distinguishing feature of a code commit is
-that it should only contain code changes. Any comments are whitespaces in these
-commits should be releated the code changes,  e.g.:
+that it should only contain code changes. Any comments or whitespace in these
+commits should be related the code changes,  e.g.:
 
+    commit b76fa29ee3fc00efa86b75331b4e9cdecdb3bf9b
 	Author: Jesse Hogan <jhogan@carapacian.com>
 	Date:   Fri Mar 18 07:22:33 2022 +0000
 
@@ -570,11 +733,12 @@ The first line of the commit message starts with a verb in its infinitive
 (basic) form; in this case "Add". The first line should be 50 characters or
 less. This is called the summary line. 
 
-If more explanation for the commit should be document, add a blank line, then
-add as much explanation as you need. If you find yourself writing a long
-explanation of the commit, take a moment to consider whether or not the
-explanation would be better documented as comments in the code. Either way,
-always have a mind to posterity when writing commits messages.
+If more explanation for the commit should be documented, add a blank
+line, then add as much explanation as you need. If you find yourself
+writing a long explanation of the commit, take a moment to consider
+whether or not the explanation would be better documented as comments in
+the code. Either way, always have a mind toward posterity when writing
+commit messages.
 
 The comment should always end with the branch name. It should be prefaced with
 'On branch ':
@@ -588,7 +752,7 @@ commented area, so you can easily copy-and-paste it.
 Housekeeping commits mainly consist of post facto comments, whitespace
 changes, changes to documentation files, and other such changes that
 have very little to do with computer logic.  They typically have one
-word in their commit message: "Housekeeping" since most housekeeping
+word in their commit message: "Housekeeping", since most housekeeping
 changes don't require a lot of explanation.  On a second line (after the
 blank line), the branch name is included as in standard code commits:
 
@@ -615,9 +779,9 @@ blank line), the branch name is included as in standard code commits:
 			 # Iterate over the maps list. NOTE that iterating over the
 
 The purpose for distinguishing **housekeeping** commits from **standard
-code commits** is that analysis tool, such as `git log` can include or
+code commits** is that analysis tool, such as `git-log` can include or
 exclude housekeeping commits. Being able to exclude housekeeping commits
-is convenient for code analysis because the analist can focus on the
+is convenient for code analysis because the analyst can focus on the
 code logic while excluding changes in comments, whitespace formatting,
 etc. To view code change while excluding housekeeping changes, you can
 use a command like this:
@@ -626,42 +790,39 @@ use a command like this:
 
 Removing `--invert-grep` shows only the housekeeping commits.
 
-Current Memory Issues
----------------------
+### Atomic commits ###
+To make the git-log more useful, strive to make commits as atomic as
+possible. Atomic commits are commits that contain changes to the source
+code that address a single, specific issue. Atomic commits are easier to
+work with and analyze. To create atomic commits, you can use the
+`--patch` (`-p`) flag with `git-add` to select which portions of your
+changes to stage.
 
-At the moment, there is an unresolved issue with the way test.py
-accumulates memory as it runs: It never seems to free certain a large
-portion of the objects it creates, and ends up allocating for itself
-several hundred megabytes of memory before it has completed. 
+Current issues
+--------------
+
+### Memory issue ###
+At the moment, there is an unresolved issue with the way
+[test.py](test.py) accumulates memory as it runs: It never seems to free
+large portions of the objects it creates, and ends up allocating for
+itself several hundred megabytes of memory before it has completed. 
 
 On the machine the framework is currently being developed, there is a
-total of 1GB of RAM. Occasionally, the test.py script will consume so
-much that that the operating system's oom\_reaper will cause MySQL to
-restart, which causes tests in the script to begin to fail. A convenient
-solution to this is to simply ensure that the following line is set in
+total of 1GB of RAM. Occasionally, the [test.py](test.py) script will
+consume so much that the operating system's oom\_reaper will cause MySQL
+to restart, which causes tests in the script to begin to fail. A
+convenient solution to this is to simply ensure that the following line
+is set in
 `/etc/mysql/my.cnf`:
     
     [mysqld]
     performance_schema = 0
 
-Restart the mysqld and it's default memory consumption will reduce by
+Restart the mysqld and its default memory consumption will be reduce by
 several hundred megabytes.
 
-Read this [Stack Overflow question](https://stackoverflow.com/questions/10676753/reducing-memory-consumption-of-mysql-on-ubuntuaws-micro-instance)
+Read this 
+[Stack Overflow question](https://stackoverflow.com/questions/10676753/reducing-memory-consumption-of-mysql-on-ubuntuaws-micro-instance)
 for more details.
 
-TODO In the future, the `dba` bot should ensure this line is added.
-
-TODO Explain how to view the SQL being sent to MySQL using the snapshot
-context manager:
-    with db.chronicler.snapshot():
-        B()
-        print(self.asset_parties)
-
-TODO In hacking/debugging, explain how to set the
-self.tester.breakonexception = True. This is useful for debuging
-testpom.py
-
-TODO In Environment section, declare Ubuntu's default terminal as the
-officially supported terminal for the source code. Indicate that any
-terminal that can handle support as well as this terminal is acceptable.
+In the future, the `dba` bot should ensure this line is added.
