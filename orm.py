@@ -7687,7 +7687,12 @@ class security:
 
     @property
     def proprietorid(self):
-        """ XXX
+        """ Returns the id of the `proprietor` property.
+
+        The `proprietor` property normally returns a `proprietor`
+        object. However, in rare circumstances, it will only return the
+        proprietor's id. `proprietorid` exists to deal with the ambigous
+        nature of the `proprietor` by always returning the id.
         """
         propr = self.proprietor
         if isinstance(propr, UUID):
@@ -7697,6 +7702,14 @@ class security:
     @property
     def proprietor(self):
         """ Return the proprietor entity currently set.
+
+        Note that the return value will usually be a proprietor object
+        (a subclass of `party.party`).  However, in some catch-22-like
+        situations, such as when the proprietor does not yet exist fully
+        as an object, the proprietor's id (UUID) be returned. Note also
+        that if you are only interested in getting the proprietor's id,
+        regardless of what this property returns, you can use the
+        `proprietorid` property.
         """
         return self._proprietor
 
