@@ -7691,7 +7691,7 @@ class security:
 
         The `proprietor` property normally returns a `proprietor`
         object. However, in rare circumstances, it will only return the
-        proprietor's id. `proprietorid` exists to deal with the ambigous
+        proprietor's id. `proprietorid` exists to deal with the ambiguous
         nature of the `proprietor` by always returning the id.
         """
         propr = self.proprietor

@@ -482,7 +482,7 @@ class artist(orm.entity):
     locations      =  locations
     presentations  =  presentations
 
-    # title here to be ambigous with artifact.title. It's purpose is to ensure
+    # title here to be ambiguous with artifact.title. It's purpose is to ensure
     # against ambiguity problems that may arise
     title          =  str, 0, 1
     phone2         =  str, 0, 1

@@ -925,7 +925,7 @@ class _request:
             except ValueError:
                 return 0
 
-        # NOTE This appears to be ambigous. In the WSGI version,
+        # NOTE This appears to be ambiguous. In the WSGI version,
         # shouldn't we also be returning the size of the body.
 
         return len(self.body)
