@@ -559,7 +559,7 @@ class entities:
         # sng.artist_artists.pluck('object').pluck('orm.super')
         #
         # However, list()s should continue to be returned if any of the
-        # elements are not entitiy objects. On the other hand, we could
+        # elements are not entity objects. On the other hand, we could
         # have a `primativeentity` class that can wrap a primative
         # value. This would make it possible to always return an
         # entities collection, i.e.:
@@ -573,7 +573,7 @@ class entities:
         # us to create an entities collection object that is the most
         # specialized for the given list of entities as possible.
         #
-        # Also, for the above line to work, I think would should make
+        # Also, for the above line to work, I think we should make
         # sure we are using rgetattr() instead of getattr. 
         class formatter(string.Formatter):
             def convert_field(self, v, conv):
