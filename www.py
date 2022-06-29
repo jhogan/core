@@ -148,7 +148,6 @@ class application:
         break_ = False
 
         try:
-
             import orm
 
             # HACK:f6c7d0f1 Calling `party.anonymous` calls

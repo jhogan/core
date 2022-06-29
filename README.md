@@ -640,9 +640,10 @@ indefinite amount of time for the request to complete. This is useful
 for step-by-step debugging described below because the time it takes to
 debug an issues will likely be longer than the timeout.
 
-the 'www.application()' instantiates the `application`` class in
-`www.py` and returns an instance to ``gunicorn``. This is where the
-framework code receives the HTTP request per the WSGI standard.
+The 'www.application()' argument at the end of the command causes
+`gunicorn` to instantiate the `application`` class in `www.py` and
+returns the instance to ``gunicorn``. This is where the framework code
+receives the HTTP request per the WSGI standard.
 
 The above service can then be invoked with `curl`:
 
