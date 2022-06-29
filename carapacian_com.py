@@ -16,7 +16,12 @@ class sites(pom.sites):
     pass
 
 class site(pom.site):
+    Id = UUID(hex='c0784fca-3fe7-45e6-87f8-e2ebbc4e7bf4')
+
+    B()
+    Proprietor = party.company.carapacian
     def __init__(self, *args, **kwargs):
+        B()
         super().__init__(*args, **kwargs)
         
         self.pages += home()
