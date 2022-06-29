@@ -740,7 +740,7 @@ with book('Hacking Carapacian Core'):
           ''')
 
           with listing('Unshif item onto the begining of a collection'):
-            fluffy = dog(name='Fluffy', date='2016-03-02')
+            fluffy = dog(name='Fluffy', dob='2016-03-02')
             dgs << fluffy
             is_(fluffy, dgs.first)
             four(dgs)
@@ -1716,7 +1716,92 @@ with book('Hacking Carapacian Core'):
             
         # getprevious, pluck, __contains__, getindex.
         # moveafter
-        ...
+        with section('The pluck()` method'):
+          print('''
+            The ``entities.pluck()` method returns a Python list
+            containing the value of the given properties for each object
+            in the collection. Let's say we wanted a list of the `dog`'s
+            names from the `dgs` collection:
+          ''')
+
+          with listing('Using the `pluck()` method'):
+            # Pluck the names from the dgs collection
+            names = dgs.pluck('name')
+
+            # Assert that we got a list of names
+            eq(['Ace', 'Rover', 'Spot', 'Fluffy'], names)
+
+          print('''
+            We simply give the `pluck()` method the name of the property
+            we want the values of &mdash; in this case "name" &mdash;
+            then it returns a Python list that contains each of their
+            names.
+
+            As you can imagine, this can be useful for a number of use
+            cases. However, we've only scratched the surface of
+            `pluck()'s capabilities.
+
+            In the abov example, we gave a single argument and got a
+            simple, one-dimentional list. However, let's say we wanted
+            to get a list which itself contained a list of `dog` names
+            and `dob`s. We could do the following:
+          ''')
+
+          with listing('Using the `pluck()` with multiple arguments'):
+            # Pluck the names and dob from the dgs collection
+            dgs1 = dgs.pluck('name', 'dob')
+
+            # Create a list of lists indicating what we expect the above
+            # pluck to produce
+            expect = [
+              ['Ace',     '2015-05-12'],
+              ['Rover',   '2014-09-23'],
+              ['Spot',    '2013-12-22'],
+              ['Fluffy',  '2016-03-02'],
+            ]
+
+            # Assert our expectation
+            eq(expect, dgs1)
+
+          print('''
+            By using more than one argument to our `pluck()` invocation,
+            we were able to produce a list of lists &mdash; one for each
+            dog, contaning value for both properties. We can specify
+            as many properties as we need and their values would be
+            added to the nested lists.
+
+            `pluck()` can also use Python's `str.format` substitutions
+            to create more expressive strings. For example, instead of
+            the above list of list, we wanted to have the same data in a
+            simple list of `str`'s formatted a certain way, we could
+            have writtent
+          ''')
+
+          with listing(
+            'Using formatted string literals with `pluck()`'
+          ):
+            # Pluck the names and dob from the dgs collection using
+            # a formatted string literal
+            dgs1 = dgs.pluck('Dog: {name} ({date})')
+
+            # Create a list indicating what we expect the above
+            # pluck to produce
+            expect = [
+              'Ace (born 2015-05-12)',
+              'Rover (born 2015-09-23)',
+              'Spot (born 2015-12-22)',
+              'Fluffy (born 2016-03-03)',
+            ]
+
+            # Assert our expectation
+            eq(expect, dgs1)
+
+          print('''
+            In the above listing, `pluck()` notices the `{` and `}`
+            marks and creates a list of `str`'s based on the string
+            literal passed in with the name of the properties
+            substituted with their values.
+          ''')
 
       with section("When entities collections aren't Quite like list")
         ...
