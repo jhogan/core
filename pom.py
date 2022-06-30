@@ -26,6 +26,7 @@ import primative
 import textwrap
 import party
 import www
+import MySQLdb
 
 # References:
 #
@@ -160,9 +161,19 @@ class site(asset.asset):
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
             
             ''' Create or retrieve site record '''
+            insert = False
             try:
                 ws = type(self)(self.Id)
             except db.RecordNotFoundError:
+                insert = True
+            except MySQLdb._exceptions.ProgrammingError as ex:
+                if ex.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
+                    self.orm.create()
+                    insert = True
+                else:
+                    raise
+
+            if insert:
                 ws = type(self)(
                     id = self.Id, 
                     name = self.Proprietor.name, 
