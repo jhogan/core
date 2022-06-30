@@ -1801,7 +1801,57 @@ with book('Hacking Carapacian Core'):
             marks and creates a list of `str`'s based on the string
             literal passed in with the name of the properties
             substituted with their values.
+
+            Substitutions like this are nice but what if we wanted the
+            dog names above to be uppercased, lowercase, or have some
+            other common conversion performed on them. For that, we have
+            **conversion flags**. You may have used 
+            <a href="https://docs.python.org/3/library/string.html#format-string-syntax">
+              conversion flags
+            </a>
+            when using Python's `str.format` function. They are
+            characters appendend after a `!` to indicate a type of
+            conversion to be performed. For example, we could have used
+            the `u` conversion flag to produces a list of dog names with
+            all uppercased characters:
           ''')
+
+          with listing(
+            'Using conversion flags with `pluck()`'
+          ):
+            # Pluck the names and dob from the dgs collection using
+            # a formatted string literal. Note the !u appended to the
+            # property name.
+            dgs1 = dgs.pluck('Dog: {name!u} ({date})')
+
+            # Create a list indicating what we expect the above
+            # pluck to produce. Note the uppercased names.
+            expect = [
+              'ACE (born 2015-05-12)',
+              'ROVER (born 2015-09-23)',
+              'SPOT (born 2015-12-22)',
+              'FLUFFY (born 2016-03-03)',
+            ]
+
+            # Assert our expectation
+            eq(expect, dgs1)
+
+          print('''
+            There are a few other character conversion flags that can be
+            used:
+          ''')
+
+          with table('Supported character conversion flags'):
+            '''
+              flag  performs
+              ----  --------
+              u     Converts the string to all uppercase letters
+              l     Converts the string to all lowercase letters
+              c     Converts the string using str.capitalize
+              t     Converts the string using str.title
+              s     Converts the string using str.strip
+              r     Reverses the string
+            '''
 
       with section("When entities collections aren't Quite like list")
         ...
