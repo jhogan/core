@@ -149,25 +149,21 @@ class application:
         break_ = False
 
         try:
+            # Set the WSGI environ dict
+            self.environment = env
+
             import orm
-
-            # HACK:f6c7d0f1 Calling `party.anonymous` calls
-            # `ecommerce.root`. In that property, `ecommerce.users.orm`
-            # is called. Due to a design flaw in `orm.entities`, `.orm`
-            # does no exist on `ecommerce.users` until we call the below
-            # line first. See FIXME:f6c7d0f1
-            ecommerce.user.orm.entities
-
             # Set the owner to anonymous. XXX This doesn't address how
             # an authenticated user would be set.
-            orm.security.owner = party.party.anonymous
+            orm.security.owner = ecommerce.users.anonymous
+
+            ws = self.request.site
+
+            propr = ws.proprietor
 
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
-
-            # Set the WSGI environ dict
-            self.environment = env
 
             # Get a reference to the application HTTP request object
             req = self.request
