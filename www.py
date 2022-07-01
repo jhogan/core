@@ -366,6 +366,7 @@ class _request:
         self._url        =  url
         self._method     =  None
         self._useragent  =  None
+        self._site       =  None
 
     def __repr__(self):
         """ A string representation of the HTTP request.
@@ -656,45 +657,45 @@ class _request:
     def site(self):
         """ Get the single site (``pom.site``) for this instance.
         """
-        # Prevent circular importing by importing pom here instead
-        # of at the top
-        import pom
-        # NOTE 'server_site' is a contrived, non-HTTP environment
-        # variable used by test scripts to pass in instances of site
-        # objects to use.
+        if not self._site:
+            # Prevent circular importing by importing pom here instead
+            # of at the top
+            import pom
 
-        ws = None
-        try:
-            ws = self.environment['HTTP_HOST']
-        except KeyError:
-            if config().indevelopment:
-                try:
-                    ws = self.environment['SERVER_SITE']
-                except KeyError:
-                    pass
+            # NOTE 'server_site' is a contrived, non-HTTP environment
+            # variable used by test scripts to pass in instances of site
+            # objects to use.
+            ws = None
+            try:
+                ws = self.environment['HTTP_HOST']
+            except KeyError:
+                if config().indevelopment:
+                    try:
+                        ws = self.environment['SERVER_SITE']
+                    except KeyError:
+                        pass
 
-        # If ws is a string, look for the website module that matches
-        # the string. The website module will have the `site` class, so
-        # get that class and use it to instantiate a site object.
+            # If ws is a string, look for the website module that matches
+            # the string. The website module will have the `site` class, so
+            # get that class and use it to instantiate a site object.
 
-        # XXX With the below changes, it's obvious we should be
-        # memoizing the return value
+            # XXX Correct this so we can load website modules that have
+            # corresponding file names with dots in them, i.e.,
+            # s/carapacian_com.py/carapacian.com.py/
+            if isinstance(ws, str):
+                # XXX Try without a port
+                host, port = ws.split(':')
+                host = host.replace('.', '_')
+                mod = __import__(host,  globals(), locals())
+                ws = getattr(mod, 'site')()
 
-        # XXX Corret this so we can load website modules that have
-        # corresponding file names with dots in them, i.e.,
-        # s/carapacian_com.py/carapacian.com.py/
-        if isinstance(ws, str):
-            # XXX Try without a port
-            host, port = ws.split(':')
-            host = host.replace('.', '_')
-            mod = __import__(host,  globals(), locals())
-            ws = getattr(mod, 'site')()
+            if isinstance(ws, pom.site):
+                self._site =  ws
+            else:
+                # Set the site reference as set in the config logic
+                self._site = pom.site.getinstance()
 
-        if isinstance(ws, pom.site):
-            return ws
-
-        # Return the site object as set in the config logic
-        return pom.site.getinstance()
+        return self._site
 
     @property
     def page(self):
