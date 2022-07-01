@@ -531,7 +531,8 @@ class entities:
 
         You can also nest field names::
 
-            assert ents.pluck('name.__class__') == [str, str]
+            assert ents.pluck('name.__class__') == \
+              ["<class 'str'>", "<class 'str'>"]
 
         Here, we are just plucking the __class__ property of the str
         object, which of course is str. You can use as many dots as
