@@ -1849,9 +1849,98 @@ with book('Hacking Carapacian Core'):
               l     Converts the string to all lowercase letters
               c     Converts the string using str.capitalize
               t     Converts the string using str.title
-              s     Converts the string using str.strip
+              s     Strip the string of trailing whitespace
               r     Reverses the string
             '''
+
+          print('''
+            In addition to the above list, numbers can also be used to
+            truncate fields:
+          ''')
+
+          with listing(
+            'Using a numeric conversion flag to truncate fields '
+            'with `pluck()`'
+          ):
+            # Pluck the names and dob from the dgs collection using
+            # a formatted string literal. Note the !1 appended to the
+            # property name.
+            dgs1 = dgs.pluck('Dog: {name!1} ({date})')
+
+            # Create a list indicating what we expect the above
+            # pluck to produce. Note we are only getting the first
+            # letter of the name because we used !1.
+            expect = [
+              'A (born 2015-05-12)',
+              'R (born 2015-09-23)',
+              'S (born 2015-12-22)',
+              'F (born 2016-03-03)',
+            ]
+
+            # Assert our expectation
+            eq(expect, dgs1)
+
+          print('''
+            A useful feature of the `pluck()` method is its ability
+            to handle nested properties. The following is a contrived
+            example of this feature:
+          ''')
+
+          with listing('Using nested properties with `pluck()`'):
+            # Use a literal string to pluck the data type of the
+            # property "name". The data type is available via the
+            # __class__ dunder property.
+            dgs1 = dgs.pluck(
+              'Property: name; Type: {name.__class__}'
+            );
+
+            # We expect to get a str representation of the `str` class.
+            expect = [
+              "Property: name; Type: <class 'str'>",
+              "Property: name; Type: <class 'str'>",
+              "Property: name; Type: <class 'str'>",
+              "Property: name; Type: <class 'str'>",
+            ]
+
+            # Assert our expectation
+            eq(expect, dgs1)
+
+          print('''
+            Above, we are able to get the value of `name.__class__` for
+            each of the `dog` objects in the collection. Since `name`
+            would get substituted for an actual string, the `__class__`
+            attribute would natually be the the `str` class. 
+
+            Obviously this isn't a very good example of using nested
+            properties with `pluck()`. This is because our `dogs` object
+            model is very simple. We could imagine expanding the
+            object-model such that we assign a `caretaker` entity to
+            each dog.  In that case, we could use `pluck()` to obtain the
+            `caretaker`'s name. For example:
+
+              # Create a caretaker
+              ct = caretaker()
+              ct.name = 'Jerry'
+
+              # Assign Jerry the caretaker to each dog
+              for dg in dgs:
+                dg.caretaker = ct
+
+              # Get a list of string showing the dog and their
+              # respective caretaker. In this example, they will all be
+              # `jerry`.
+              dgs1 = dgs.pluck(
+                'Dog: {name}; Caretaker: {caretaker.name}
+              );
+
+            In this exmple, we create a `caretaker` named "Jerry" and
+            assign him as the caretaker for each of the dogs. Using the
+            nested property name is useful since the caretaker is an
+            object, and we need the value of one of its properties. Note
+            that there is no limit how deeply needed these property
+            expressions can be.
+          ''')
+
 
       with section("When entities collections aren't Quite like list")
         ...
