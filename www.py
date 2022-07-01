@@ -113,6 +113,7 @@ class application:
             # likes to use its own data structure for this, so make sure
             # it always gives us a dict.
             raise TypeError('Environment must be of type "dict"')
+
         self.request.demand()
            
     def __call__(self, env, start_response):
@@ -298,6 +299,7 @@ class application:
                         p += dom.text('Error: ')
                         p += dom.span(type(ex).__name__, class_='type')
                         p += dom.text(' ')
+
                         p += dom.span(str(ex), class_='message')
                         req.page.flash(p)
                         res.body = req.page.html
@@ -1189,7 +1191,6 @@ class _request:
 
             # The remaining demands will be for non-event XHR requests
             # only
-            
             if self.isevent:
                 return
 

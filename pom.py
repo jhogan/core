@@ -380,6 +380,9 @@ class site(asset.asset):
         """
         # TODO The site's host will be derived from a configuration file
         # setting.
+
+        # XXX:4eb7385e Evaluate whether this method is still needed
+
         return cls('foo.net')
 
     def __repr__(self):
