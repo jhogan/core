@@ -159,7 +159,6 @@ class site(asset.asset):
 
         # Ensure as root and use the site's proprietor
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
-            
             ''' Create or retrieve site record '''
             insert = False
             try:
