@@ -83,6 +83,9 @@ class inodes(orm.entities):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # XXX:fae234dd This forces a premature (non-deferred) load of
+        # inodes. We should create a onbeforeadd property instead.
         self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
@@ -598,21 +601,25 @@ class inode(orm.entity):
 
         id = self.inode.id if self.inode else None
         op = '=' if id else 'is'
-        nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
-        # Make sure we don't create an inode with the same name as an
-        # existing one under the same inode. I don't think this can
-        # happen because we try to load inodes whenever we reference
-        # them. Hovever, obviously we will want to prevent this at
-        # the validation level.
-        for nd in nds:
-            if self.id != nd.id and nd.name == self.name:
-                brs += entities.brokenrule(
-                    msg   =  f'Cannot create "{self.name}": inode exist',
-                    prop  =  'name', 
-                    type  =  'unique', 
-                    e     =  self
-                )
-                break
+
+        # XXX:fae234dd We only need to run the interation as root. Grep
+        # fae234dd for more.
+        with orm.sudo():
+            nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
+            # Make sure we don't create an inode with the same name as an
+            # existing one under the same inode. I don't think this can
+            # happen because we try to load inodes whenever we reference
+            # them. Hovever, obviously we will want to prevent this at
+            # the validation level.
+            for nd in nds:
+                if self.id != nd.id and nd.name == self.name:
+                    brs += entities.brokenrule(
+                        msg   =  f'Cannot create "{self.name}": inode exist',
+                        prop  =  'name', 
+                        type  =  'unique', 
+                        e     =  self
+                    )
+                    break
 
         # Can't save floaters. Floaters are temporary inodes which must
         # be moved to the radix cached before being saved.
