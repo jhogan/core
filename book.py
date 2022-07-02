@@ -1941,18 +1941,77 @@ with book('Hacking Carapacian Core'):
             expressions can be.
           ''')
 
-
-      with section("When entities collections aren't Quite like list")
-        ...
-
-        with section("When entities Classes are Truthy")
-          ...
-
-    with section('Persistence'):
-      ...
-
     with section('Events'):
-      ...
+      print('''
+        **Events** are actions that happen to an `entity` or `entities`
+        object. Callables, such as methods and functions, can be
+        *subscribed* to these events. This causes the callable to be
+        invoked when the event occurs. When a callable is subscribed to
+        an event, it is called an **event handler**.
+
+        All `entity` and `entities` objects have a certain number of
+        builtin events. For example, the ``entities`` class has an event
+        called `onadd`. We can write an event handler to capture the
+        moment after a `dog` gets added to the `dgs` collection.
+      ''')
+
+      with listing('Writing an event handler'):
+        # Create a simple list to store the any new dogs added
+        added = list()
+
+        # Create an event handler to capture the onadd event of dgs
+        def dgs_onadd(src, eargs):
+          # Append the dog object that was added
+          added.append(eargs.entity)
+
+        # Subscribe the dgs_onadd function to the dgs.onadd event. The
+        # `onadd` event is available to the `dgs` collection because it
+        # inherints from `entities`.
+        dgs.onadd += dgs_onadd
+
+        # Create a new dog `buddy`
+        buddy = dog(name='Buddy', dob='2021-05-07') 
+
+        # Add (append) buddy to the dgs collection. This will cause the
+        # onadd event to be raised. Consequently, the dgs_onadd function
+        # will be called since it is subscribed to that event.
+        dgs += buddy
+
+        # We can now prove that the dgs_onadd was called by asserting
+        # that one item was added to it
+        one(added)
+
+        # We will go further to assert that `buddy` was added
+        is_(added[0], buddy)
+
+      print('''
+        Reading the comments in the listing, you can probably see what's
+        happening. Basically, the `dgs_onadd` is being called when
+        `buddy` is appended to the `dgs` collection.
+
+        You may be wondering what the `src` and `eargs` parameters are
+        doing in the event handler. These are standard parameters that
+        all event handlers have. The `src` paramterer is a reference to
+        the object that raise the event. In this case, `src` would be a
+        reference to the `dgs` collection since it was the object that
+        raised the event.
+
+        More import, however is the `eargs` parameter. *eargs* stands
+        for *event arguments*. It is an object that contains data
+        specific to the event being raised. In the above example,
+        `eargs` would have been of type `entities.entityaddeventargs`.
+        This class contains a property called `entity` which is a
+        reference to the entity being added to the collection (i.e.,
+        `buddy`). `entityaddeventargs`, like all event arguments
+        classes, inherits from `entities.eventargs`.
+
+        Another thing to point out is that we used the `+=` operater to
+        subscribe the callable `dgs_onadd` to the event `dgs.onadd`.
+        This is noteworthy because a subscription is an *append*
+        operation. This is beause we can subscribe more than one event
+        handler to a given event. The event handlers are invoked in the
+        order in which they are subscribed.
+      ''')
 
     with section('Validation'):
       ...
