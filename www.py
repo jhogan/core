@@ -157,6 +157,9 @@ class application:
             # an authenticated user would be set.
             orm.security.owner = ecommerce.users.anonymous
 
+            # Get a reference to the application HTTP request object
+            req = self.request
+
             ws = self.request.site
 
             propr = ws.proprietor
@@ -164,9 +167,6 @@ class application:
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
-
-            # Get a reference to the application HTTP request object
-            req = self.request
 
             # Set the global request object
             request = self.request
