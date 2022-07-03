@@ -1993,8 +1993,8 @@ with book('Hacking Carapacian Core'):
         doing in the event handler. These are standard parameters that
         all event handlers have. The `src` paramterer is a reference to
         the object that raise the event. In this case, `src` would be a
-        reference to the `dgs` collection since it was the object that
-        raised the event.
+        reference to the `dgs` collection since `dgs` was the object
+        that raised the event.
 
         More import, however is the `eargs` parameter. *eargs* stands
         for *event arguments*. It is an object that contains data
@@ -2008,10 +2008,54 @@ with book('Hacking Carapacian Core'):
         Another thing to point out is that we used the `+=` operater to
         subscribe the callable `dgs_onadd` to the event `dgs.onadd`.
         This is noteworthy because a subscription is an *append*
-        operation. This is beause we can subscribe more than one event
-        handler to a given event. The event handlers are invoked in the
-        order in which they are subscribed.
+        operation: We are appending the callable `dgs_onadd` to the
+        collection of callables that will be invoked whenever an item is
+        added to `dgs`. We could create another event handler and append
+        it to the `dgs.onadd` event and it would also be invoked when an
+        item was added.
+
+        `entities` and `entity` objects have a number of builtin events
+        that may be useful to create event handlers for in your code.
       ''')
+
+      with table('List of events in the entities class'):
+        '''
+        **onadd** Fired when an item is added to the collection.
+
+        **onaftervaluechange** Fired after a change is made to any
+        attribute of any item in the collection.
+
+        **onbeforeadd** Fired before an item is added to the collection.
+
+        **onbeforevaluechange** Fired before a change is made to any
+        attribute of any item in the collection.
+
+        **oncountchange** Fire when the number of items in the
+        collection changes.
+
+        **onremove** Fired when an item is removed from the collection.
+      ''')
+
+      with table('List of events in the entity class'):
+        '''
+        **onaftervaluechange** Fired after a change is made to any
+        attribute of the entity.
+
+        **onbeforevaluechange** Fired before a change is made to any
+        attribute of the entity.
+      ''')
+
+      print('''
+        An effort is currently underway to standardize the naming of
+        events such that there is always a **before** and **after**
+        version of any event if needed. For example, the `onadd` event
+        mentioned above should be named `onafteradd` to complement
+        `onbeforeadd`. This distinction usually needs to be made with
+        events, however, in some events, such as `oncountchange`, this
+        would probably not be necessary.
+      ''')
+
+
 
     with section('Validation'):
       ...
