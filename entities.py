@@ -2578,14 +2578,14 @@ class event(entities):
         es += entity()
 
     Notably, multiple event handlers can subscribe to an event. In the
-    above code could we could have had multiple event handler invoked
+    above code, could we could have had multiple event handler invoked
     simply by adding more subscriptions::
 
         def main_onadd1(self, src, eargs):
             print(f'Hello')
 
         # Subscribe main_onadd1 to es.onadd. 
-        es.onadd += main_onadd
+        es.onadd += main_onadd1
 
         # Append a new entity. Now, main_onadd and main_onadd1 will be
         # called in that order.
@@ -2601,7 +2601,7 @@ class event(entities):
 
     The src parameter is a reference to the object that fired the event.
     The eargs parameter is an instance of a subclass of ``eventargs``.
-    ``eventarg`` subclasses contain the information needed by a specific
+    ``eventargs`` subclasses contain the information needed by a specific
     event. For example, the eventargs that onadd uses is called
     ``entityaddeventargs``. This object contains the ``entity`` attribute
     used above in the handler.
@@ -2613,7 +2613,7 @@ class event(entities):
         :param: src object: The source of the event. This is usually a
         reference to the object that fired the event.
 
-        :param: e eventarg: An instance of a subtype of eventargs. This
+        :param: e eventargs: An instance of a subtype of eventargs. This
         contains the specific arguments needed to be passed to the event
         handlers for any given event.
         """
@@ -2723,7 +2723,7 @@ class entityaddeventargs(eventargs):
         es += e
     """
     def __init__(self, e):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity being appended.
         """
@@ -2734,7 +2734,7 @@ class entityremoveeventargs(eventargs):
     removed from an entities collection::
     """
     def __init__(self, e):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity being removed.
         """
@@ -2746,7 +2746,7 @@ class entityvaluechangeeventargs(eventargs):
     onaftervaluechange.
     """
     def __init__(self, e, prop):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity whose attribute is being assigned a
         new value.
