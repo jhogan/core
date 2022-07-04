@@ -1956,7 +1956,7 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with listing('Writing an event handler'):
-        # Create a simple list to store the any new dogs added
+        # Create a simple list to store any new dogs added
         added = list()
 
         # Create an event handler to capture the onadd event of dgs
@@ -1966,7 +1966,7 @@ with book('Hacking Carapacian Core'):
 
         # Subscribe the dgs_onadd function to the dgs.onadd event. The
         # `onadd` event is available to the `dgs` collection because it
-        # inherints from `entities`.
+        # inherits from `entities`.
         dgs.onadd += dgs_onadd
 
         # Create a new dog `buddy`
@@ -1977,8 +1977,8 @@ with book('Hacking Carapacian Core'):
         # will be called since it is subscribed to that event.
         dgs += buddy
 
-        # We can now prove that the dgs_onadd was called by asserting
-        # that one item was added to it
+        # We can now prove that the dgs_onadd function was called by
+        # asserting that one item was added to it
         one(added)
 
         # We will go further to assert that `buddy` was added
@@ -1991,10 +1991,10 @@ with book('Hacking Carapacian Core'):
 
         You may be wondering what the `src` and `eargs` parameters are
         doing in the event handler. These are standard parameters that
-        all event handlers have. The `src` paramterer is a reference to
-        the object that raise the event. In this case, `src` would be a
-        reference to the `dgs` collection since `dgs` was the object
-        that raised the event.
+        all event handlers must have. The `src` paramterer is a
+        reference to the object that raised the event. In this case,
+        `src` would be a reference to the `dgs` collection since `dgs`
+        was the object that internally raised the event.
 
         More import, however is the `eargs` parameter. *eargs* stands
         for *event arguments*. It is an object that contains data
@@ -2005,17 +2005,67 @@ with book('Hacking Carapacian Core'):
         `buddy`). `entityaddeventargs`, like all event arguments
         classes, inherits from `entities.eventargs`.
 
-        Another thing to point out is that we used the `+=` operater to
-        subscribe the callable `dgs_onadd` to the event `dgs.onadd`.
-        This is noteworthy because a subscription is an *append*
-        operation: We are appending the callable `dgs_onadd` to the
-        collection of callables that will be invoked whenever an item is
-        added to `dgs`. We could create another event handler and append
-        it to the `dgs.onadd` event and it would also be invoked when an
-        item was added.
+        We used a function as the event handler in the above example.
+        However, it's more common within the framework to use methods.
+        You may be wonder if the `self` parameter required by Python
+        methods causes an issues with the event handling since all event
+        handlers require a strict `src` and `eargs` parameter as their
+        signature.  The answer is that the `self` parameter causes no
+        problem; you just add the `src` and `eargs` parameters after
+        `self`. In the listing below, notice the class called `handler`.
+        It's simply instantiated and its `onadd` method is subscribed to
+        the `dgs`' `onadd` event. Nothing else needed to be changed
+        &mdash; except, of course, that we needed to include `self` in
+        the method signature.
+      ''')
+
+      with listing('Handling events with a method'):
+        # Create a simple list to store any new dogs added
+        added = list()
+
+        # Create an event handling class to capture the onadd event of dgs
+        class handler:
+
+          # Create an event handling method
+          def onadd(self, src, eargs):
+            # Append the dog object that was added
+            added.append(eargs.entity)
+        
+        hnd = handler()
+
+        # Subscribe the hnd.onadd method to the dgs.onadd event. The
+        # `onadd` event is available to the `dgs` collection because it
+        # inherits from `entities`.
+        dgs.onadd += hnd.onadd
+
+        # Create a new dog `buddy`
+        buddy = dog(name='Buddy', dob='2021-05-07') 
+
+        # Add (append) buddy to the dgs collection. This will cause the
+        # onadd event to be raised. Consequently, the hnd.onadd method
+        # will be called since it is subscribed to that event.
+        dgs += buddy
+
+        # We can now prove that the hnd.onadd method was called by asserting
+        # that one item was added to it
+        one(added)
+
+        # We will go further to assert that `buddy` was added
+        is_(added[0], buddy)
+
+      print('''
+        Another thing to point out is that we use the `+=` operater to
+        subscribe the callable.  This is important because a
+        subscription is an *append* operation: We are appending the
+        callable to the collection of callables that will be invoked
+        whenever an item is added to `dgs`. We could create another
+        event handler and append it to the `dgs.onadd` event and it
+        would also be invoked when an item was added.
 
         `entities` and `entity` objects have a number of builtin events
-        that may be useful to create event handlers for in your code.
+        that may be useful to create event handlers in your code.  The
+        tables below list events for the `entities` classes and `entity`
+        classes respectively.
       ''')
 
       with table('List of events in the entities class'):
@@ -2046,16 +2096,75 @@ with book('Hacking Carapacian Core'):
       ''')
 
       print('''
-        An effort is currently underway to standardize the naming of
-        events such that there is always a **before** and **after**
-        version of any event if needed. For example, the `onadd` event
-        mentioned above should be named `onafteradd` to complement
-        `onbeforeadd`. This distinction usually needs to be made with
-        events, however, in some events, such as `oncountchange`, this
-        would probably not be necessary.
+        <aside>
+          An effort is currently underway to standardize the naming of
+          events such that there is always a **before** and **after**
+          version of any event if needed. For example, the `onadd` event
+          mentioned above should be named `onafteradd` to complement
+          `onbeforeadd`. This distinction usually needs to be made with
+          events, however, in some events, such as `oncountchange`, this
+          would probably not be necessary.
+        </aside>
       ''')
 
+      with section('Creating events'):
+        print('''
+          Sometimes you will need to create your own event. Lets create
+          an event that is raised whenever someone renames a dog. We
+          will need to recreate the `dog` class to accomplish this.
+        ''')
 
+        with listing('Creating an event'):
+
+          # Recreate the dog class to include implement the
+          # onbeforenamechange and onafternamechange events
+          class dog(entities.entity):
+            def __init__(name, dob):
+              # Use a private variable to store the dog's name
+              self._name = None
+
+              # Set the dog's name and dob
+              self.name = name
+              self.dob  = dob
+
+              # Create the two events as attributes of the dog class
+              self.onbeforenamechange = event()
+              self.onafternamechange = event()
+
+            @property
+            def name(self):
+              ''' Return the dog's name. 
+              '''
+              return self._name
+
+            @name.setter
+            def name(self, v):
+              ''' Set the dogs name.
+              '''
+              # If we are changing the name...
+              if v != self._name:
+
+                # Create the event argument object to store the before
+                # and after
+                eargs = namechangeeventargs(
+                  before = self.name, after = v
+                )
+                
+                # Fire the onbeforenamechange
+                self.onbeforenamechange(self, eargs)
+
+                # Change the name
+                self._name = v
+
+                # Fire the onafternamechange
+                self.onafternamechange(self, eargs)
+
+          class namechangeeventargs(entities.eventargs):
+            ''' An eventargs class to store the before and after values
+            of the event. '''
+            def __init__(self, before, after):
+              self.before = before
+              self.after = after
 
     with section('Validation'):
       ...
