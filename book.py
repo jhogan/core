@@ -2128,8 +2128,8 @@ with book('Hacking Carapacian Core'):
               self.dob  = dob
 
               # Create the two events as attributes of the dog class
-              self.onbeforenamechange = event()
-              self.onafternamechange = event()
+              self.onbeforenamechange = entities.event()
+              self.onafternamechange = entities.event()
 
             @property
             def name(self):
@@ -2166,6 +2166,66 @@ with book('Hacking Carapacian Core'):
               self.before = before
               self.after = after
 
+        print('''
+          We've made the `name` attribute an `@property` so we can
+          capture the moment a value is assigned to it. We've also
+          created two `events` as class attributes in the constructor
+          called `onbeforenamechange` and `onaftervaluechange`. In the
+          `name`'s setter, we **fire** these events before and after the
+          private variable `_name` is set. As you can see, all "firing"
+          an event means is calling it as if it were a function. 
+
+          We want to let any event handler that subscribes to this event
+          know what the before and after values for `name` are, so we created
+          a `eventargs` class called `namechangeeventargs`. This object
+          will be received by the event handlers as the `eargs` argument.
+          `self` is also passed when firing the event. It will be the
+          `src` argument to any event handlers. In this case, it makes
+          sense to pass the same `eargs` to both the before and after
+          event.
+
+          At this point, the `dog` class works as it did before. We
+          don't need an event handler to subscribe to the events; an
+          event can have zero or more subscribing event handlers. Let's
+          subscribe to the `onafternamechange` to complete the example
+          by creating a new `dog` and by giving the object a new `name`.
+        ''')
+
+          with listing('Subscribing to our custom event'):
+            # Create a list to capture the changes observed by the event
+            # handler
+            changes = list()
+
+            # Create the event handler
+            def dgs_onafternamechange(src, eargs):
+
+              # Append a tuple with the before and after name of the dog
+              changes.append((eargs.before, eargs.after))
+
+            # Create Duke. Oops, we named him Duck
+            duke = dog(name='Duck', date='2020-05-20'))
+
+            # Subscribe the handler to the event
+            duke.onafternamechange += dgs_onafternamechange
+
+            # Correct the name
+            duke.name = 'Duke'
+
+            # Set our expectations for what the `changes` list will hold
+            expect = [
+              ('Duck', 'Duke')
+            ]
+
+            # Assert our expectation
+            eq(expect, changes)
+
+          print('''
+            The event handler `dgs_onafternamechange` captures the
+            before and after name changes.  When we use the `name`
+            setter to change the name from "Duck" to "Duke". We caputre
+            these changes in the `changes` list.
+          ''')
+            
     with section('Validation'):
       ...
 
