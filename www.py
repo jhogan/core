@@ -295,10 +295,19 @@ class application:
                         p += dom.text('Error: ')
                         p += dom.span(type(ex).__name__, class_='type')
                         p += dom.text(' ')
+                        p += dom.pre(str(ex), class_='message')
 
-                        p += dom.span(str(ex), class_='message')
-                        req.page.flash(p)
-                        res.body = req.page.html
+                        # Getting get.page can sometimes raise an error
+                        # because it calls req.site which may have
+                        # trouble establishing itself if it is not set
+                        # up correctly.
+                        try:
+                            pg = req.page
+                        except Exception:
+                            res.body = p.html
+                        else:
+                            pg.flash(p)
+                            res.body = pg.html
 
             # In there was an exception processing the exception,
             # ensure the response is 500 with a simple error message.
