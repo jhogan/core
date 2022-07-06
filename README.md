@@ -139,7 +139,7 @@ easy.
     class products(entities.entities)
         pass
 
-    class product(entitie.entity)
+    class product(entities.entity)
         pass
 
     # Create a collection
@@ -656,6 +656,11 @@ you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
 the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
+
+<!-- TODO Recommend using `nmap` with Vim. Also, recommend using a
+`sleep .5` before the `curl` command in order to allow time for the
+worker process to reload.
+-->
 
 ### Interacting with the database ###
 
