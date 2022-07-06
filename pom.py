@@ -196,7 +196,7 @@ class site(asset.asset):
                 sup.orm.persistencestate = False, False, False
 
                 sup = sup.orm._super
-                wssup = wssup.orm._super
+                wssup = wssup.orm.super
 
             ''' Ensure proprietor '''
 
