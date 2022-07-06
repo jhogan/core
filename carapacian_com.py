@@ -22,6 +22,8 @@ class site(pom.site):
     Proprietor = party.company.carapacian
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.host = 'carapacian.com'
         
         self.pages += home()
 
