@@ -2208,12 +2208,16 @@ with book('Hacking Carapacian Core'):
             # Subscribe the handler to the event
             duke.onafternamechange += dgs_onafternamechange
 
-            # Correct the name
+            # Correct the name. Oops, wrong again
+            duke.name = 'Duk'
+
+            # Corret the name one more time
             duke.name = 'Duke'
 
             # Set our expectations for what the `changes` list will hold
             expect = [
-              ('Duck', 'Duke')
+              ('Duck', 'Duk')
+              ('Duk ', 'Duke')
             ]
 
             # Assert our expectation
@@ -2221,10 +2225,30 @@ with book('Hacking Carapacian Core'):
 
           print('''
             The event handler `dgs_onafternamechange` captures the
-            before and after name changes.  When we use the `name`
-            setter to change the name from "Duck" to "Duke". We caputre
-            these changes in the `changes` list.
+            before and after name changes.  We use the `name` setter to
+            change the name twice. Each change causes the event handler
+            to append a tuple containing the before and after values. (A
+            similar implementation for this functionality can be found
+            in the ORM `entity`s).
           ''')
+
+      with section('Closing thoughts on events'):
+        print('''
+          For lower-level framework code, event handlers are often used
+          to effectively solve programming challanges which would be
+          difficult or perhaps impossible to solve if they didn't exist.
+          For example, in the ORM code, the `onaftervaluechange`
+          event is used to determine if a change to an `entity`'s
+          property has caused it to become *dirty*, i.e., no longer
+          matching its corresponding record in the database. And at the
+          UI level, in the DOM code, a subtype of `event` called
+          `dom.event` is used to handle user interaction with web pages.
+
+          For examples of events used in the codebase, you can grep them
+          with an command such as:
+
+            grep '\.on[a-z]\+ +=' *.py
+        ''')
             
     with section('Validation'):
       ...
