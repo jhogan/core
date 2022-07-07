@@ -1343,6 +1343,26 @@ class directory(inode):
         for nd in self.inodes:
             yield nd
 
+    @property
+    def retrievability(self):
+        # XXX Add bomb comments
+
+        # Anyone can retrieve the radix
+        B()
+        if self.id == directory.RadixId:
+            return orm.violations.empty
+
+        # If you own it you can get it
+        if self.proprietor__partyid == orm.security().proprietorid:
+            return orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot retrieve directory'
+        return vs
+
+
+            
+
 class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the
     digest stored in the database with the digest computed from a file's
