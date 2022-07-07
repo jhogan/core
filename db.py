@@ -174,6 +174,8 @@ class resultset(entitiesmod.entities):
     def demandhasone(self):
         if not self.issingular:
             raise RecordNotFoundError('A single record was not found')
+
+        # TODO Use `return self.only` instead
         return self.first
 
     def __repr__(self):
