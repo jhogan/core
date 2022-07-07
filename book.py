@@ -2236,22 +2236,84 @@ with book('Hacking Carapacian Core'):
         print('''
           For lower-level framework code, event handlers are often used
           to effectively solve programming challanges which would be
-          difficult or perhaps impossible to solve if they didn't exist.
-          For example, in the ORM code, the `onaftervaluechange`
-          event is used to determine if a change to an `entity`'s
-          property has caused it to become *dirty*, i.e., no longer
-          matching its corresponding record in the database. And at the
-          UI level, in the DOM code, a subtype of `event` called
-          `dom.event` is used to handle user interaction with web pages.
-
-          For examples of events used in the codebase, you can grep them
-          with an command such as:
-
-            grep '\.on[a-z]\+ +=' *.py
+          difficult or perhaps impossible to solve if event handling
+          didn't exist.  For example, in the [ORM](#bceb89cf) code, the
+          `onaftervaluechange` event is used to determine if a change to
+          an `entity`'s property has caused it to become *dirty*, i.e.,
+          no longer matching its corresponding record in the database.
+          And at the UI level, in the [DOM](#22ee9373) code, a subtype
+          of `event` called `dom.event` is used to handle user
+          interaction with web pages.
         ''')
             
     with section('Validation'):
-      ...
+      print('''
+        A key feature of both `entities` and `entity` classes is there
+        ability to identify their internal state as **valid** or
+        **invalid**. An invalid entity which reports one or more **broken
+        rules**. A broken rule is an issue with a particular property of
+        the object.
+
+        Let's recreate the `dog` class again this time giving it a
+        `brokenrules` property.
+      ''')
+
+      with listing('Creating a `brokenrules` property'):
+        class dog(entities.entity):
+          def __init__(name, dob):
+            self.name = name
+            self.dob  = dob
+
+          @property
+          def brokenrules(self):
+            brs = entities.brokenrules()
+
+            if not self.name:
+              brs += entities.brokenrule(
+                  msg='Dog must have name', prop='name'
+              )
+
+            if not self.dob:
+              brs += entities.brokenrule(
+                  msg='Dog must have dob', prop='dob'
+              )
+
+            return brs
+
+      print('''
+        In the above listing, we have the simplified version of the
+        `dog` class that we started with. We have added a `brokenrules`
+        property which tests the `dog`'s `name` and `dob` for
+        truthyness. If either property is `None` or an empty string, a
+        `brokerule` object is added to a `brokenrules` collection and
+        the collection is returned (which is necessary for a proper
+        implementation of a `brokenrules` property.). These rules
+        essentially declare that if a `dog` does not have a truthy
+        values for `name` and `dob`, it is not "valid".
+
+        Let's see what the consequences are for creating an invalid dog:
+      ''')
+
+      with listing('Creating an entity with broken rules'):
+        # Create a dog with None fore name and an empty string for its
+        # dob.
+        derp = dog(name=None, dob=str())
+
+        # The `isvalid` property is False
+        false(derp.isvalid)
+
+        # We have two broken rules
+        two(derp.brokenrules)
+
+        # The first broken rule is for the name property
+        br = derp.brokenrules.first
+        eq('name', br.property)
+        eq('Dog must have a name', br.message)
+
+        # The second broken rule is for the dob property
+        br = derp.brokenrules.second
+        eq('dob', br.property)
+        eq('Dog must have a dob', br.message)
 
     with section('Indexes'):
       ...
@@ -2267,7 +2329,7 @@ with book('Hacking Carapacian Core'):
   with chapter("Configuration") as sec:
     ...
 
-  with chapter("Using the Object-relational Mapper") as sec:
+  with chapter("Using the Object-relational Mapper", id='bceb89cf') as sec:
 
     with section('Security'):
 
@@ -2286,7 +2348,7 @@ with book('Hacking Carapacian Core'):
   with chapter('The General Entity Model') as sec:
     ...
 
-  with chapter("Authoring DOM objects") as sec:
+  with chapter("Authoring DOM objects", id='22ee9373') as sec:
     ...
 
   with chapter("Robotic process automation") as sec:
