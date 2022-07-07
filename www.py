@@ -149,6 +149,10 @@ class application:
         break_ = False
 
         try:
+            # Clear state data currently maintained by the WSGI
+            # application.
+            self.clear()
+
             # Set the WSGI environ dict
             self.environment = env
 
@@ -164,9 +168,6 @@ class application:
 
             propr = ws.proprietor
 
-            # Clear state data currently maintained by the WSGI
-            # application.
-            self.clear()
 
             # Set the global request object
             request = self.request
