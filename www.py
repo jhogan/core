@@ -168,6 +168,7 @@ class application:
 
             propr = ws.proprietor
 
+            orm.security.proprietor = propr
 
             # Set the global request object
             request = self.request
