@@ -1274,6 +1274,9 @@ segments of logic. They should be enveloped in three single quotes.
 Unlike docstrings, the concluding single quotes should exist on the same
 line as the last line of comment text.
 
+Whether the comment token is a triple quote (''' or """ ) or an
+octothorpe, a single space should seperate the token from the comment.
+
 ### Example
 
     class widget:

@@ -1348,7 +1348,6 @@ class directory(inode):
         # XXX Add bomb comments
 
         # Anyone can retrieve the radix
-        B()
         if self.id == directory.RadixId:
             return orm.violations.empty
 

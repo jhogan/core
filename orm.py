@@ -8073,8 +8073,8 @@ class orm:
         """
         # TODO Don't allow to run unless apriori.model has been run
 
-        # FIXME:f6c7d0f1 There is a design inherent in this property.
-        # This proprety was created so we could lazy-load the
+        # FIXME:f6c7d0f1 There is a design flaw inherent in this
+        # property.  This proprety was created so we could lazy-load the
         # association between an entity and its complement. However,
         # lazy-loading this means that the `orm` reference on the
         # entities class won't exist until this property has been run on
@@ -10485,8 +10485,9 @@ class orm:
         """
         es = self.instance
         if not self.forentities:
-            msg = 'Use with entities. For entity, use persistencestate'
-            raise ValueError(msg)
+            raise ValueError(
+                'Use with entities. For entity, use persistencestate.'
+            )
             
         sts = []
         for e in es:
@@ -10988,6 +10989,9 @@ class orm:
     def composites(self):
         if not self._composits:
             self._composits = composites()
+
+            # TODO s/self/orm since getsubclasses is a @staticmethod.
+            # This will make the code clearer.
             for sub in self.getsubclasses(of=entity):
                 for map in sub.orm.mappings.entitiesmappings:
                     if map.entities.orm.entity is self.entity:

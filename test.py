@@ -2141,7 +2141,7 @@ class orm_(tester):
 
         migrate(cat, expect)
 
-        # TODO Remove `return` and orm.forteg when migration algorithm
+        # TODO Remove `return` and orm.forget when migration algorithm
         # can handle the below
         orm.forget(cat)
         return
