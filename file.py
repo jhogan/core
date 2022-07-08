@@ -633,6 +633,22 @@ class inode(orm.entity):
 
         return brs
 
+    @property
+    def retrievability(self):
+        # XXX Add bomb comments
+
+        # Anyone can retrieve the radix
+        if self.id == directory.RadixId:
+            return orm.violations.empty
+
+        # If you own it you can get it
+        if self.proprietor__partyid == orm.security().proprietorid:
+            return orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot retrieve directory'
+        return vs
+
 class files(inodes):
     """ Represents a collection of ``file`` objects.
     """
