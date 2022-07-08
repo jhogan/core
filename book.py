@@ -2315,6 +2315,40 @@ with book('Hacking Carapacian Core'):
         eq('dob', br.property)
         eq('Dog must have a dob', br.message)
 
+      print('''
+        In the above listing, we deliberately instantiate the `dog`
+        object `derp` to have `None` as its `name` and an empty string for
+        its `dob`. At this point, we've already broken both of our rules
+        that we declared in above in our `brokenrules` property. Thus
+        the object must be in an invalid state. The is demonstrated by
+        the fact that `derp`'s `isvalid` property is `Fales`. `isvalid`
+        is a property of any `entity` or `entities` object and simply
+        indicates whether the `brokenrules` collection returned by the
+        `brokenrules` property is empty. Moving on, we are later able to
+        see programmaticaly what exactly is wrong with the object by
+        examining `derp.brokenrules`. This can be useful information
+        when debugging and logging. It can also help an end user
+        determine what input they are given to cause the data to be
+        invalid &mdash; consider that a user is entering in a dog's data
+        in a form and they forgot to provide a name or date-of-birth.
+        The messages in the `brokenrules` collection could be presented
+        to them to help them understand the issue.
+
+        <!-- TODO Cover entities collections -->
+
+        At this point, you will have noticed that, other than
+        `derp.isvalid` being `False`, and `derp.brokenrules` being
+        non-empty, there aren't anymore consequences to an entity being
+        invalid. As far as the base `entity` and `entities` classes are
+        concerned, the consequences regarding the *validity* of an
+        object is left to the programmer who uses an entity the class
+        designer who inherits from the base classe. However, ORM entity
+        classes aren't so agnostic about the matter. When an ORM entity
+        is invalid, its persistence logic will refuse to save it to the
+        database. We will cover this topic later in the section on 
+        [ORM validity](#012b0632) in the [ORM](#bceb89cf) chapter.
+      ''')
+
     with section('Indexes'):
       ...
 
@@ -2339,7 +2373,7 @@ with book('Hacking Carapacian Core'):
       with section('Authentication'):
         ...
 
-    with section('Validation'):
+    with section('Validation', id='012b0632'):
       ...
 
     with section('Security'):
