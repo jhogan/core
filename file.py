@@ -634,6 +634,22 @@ class inode(orm.entity):
         return brs
 
     @property
+    def creatability(self):
+        # XXX Add bomb comments
+
+        sec = orm.security()
+
+        if rent := self.inode:
+            # If proprietor owns a directory, it can create inodes
+            # within it.
+            if sec.proprietorid == rent.proprietor__partyid:
+                orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot retrieve inode'
+        return vs
+
+    @property
     def retrievability(self):
         # XXX Add bomb comments
 
