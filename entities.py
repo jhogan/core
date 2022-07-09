@@ -1932,8 +1932,8 @@ class entities:
 
     @property
     def brokenrules(self):
-        """ Collates the broken rules for each of the elements in the
-        collection and returns them as a new ``brokenrules`` collection.
+        """ Collects the broken rules for each of the elements in a new
+        brokenrules collection and returns the collection.
         """
         r = brokenrules()
         for e in self:
@@ -1943,6 +1943,8 @@ class entities:
                 msg += 'Ensure you are using the @property decorator '
                 msg += 'and the property is returning a brokenrules '
                 msg += 'collection.'
+
+                # TODO This should be a TypeError
                 raise ValueError(msg)
             r += brs
         return r
