@@ -139,7 +139,12 @@ class application:
         WSGI standard to invoke in order to return a response to the
         WSGI server and ultimately the user agent.
         """
+
+        # Ensure that the GEM has been fully imported
+        import apriori; apriori.model()
+
         global request, response
+
         res = _response(self.request)
         res.headers += 'Content-Type: text/html'
 
