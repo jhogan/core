@@ -2319,22 +2319,75 @@ with book('Hacking Carapacian Core'):
         In the above listing, we deliberately instantiate the `dog`
         object `derp` to have `None` as its `name` and an empty string for
         its `dob`. At this point, we've already broken both of our rules
-        that we declared in above in our `brokenrules` property. Thus
-        the object must be in an invalid state. The is demonstrated by
+        that we declared above in our `brokenrules` property. Thus
+        the object must be in an *invalid* state. This is demonstrated by
         the fact that `derp`'s `isvalid` property is `Fales`. `isvalid`
         is a property of any `entity` or `entities` object and simply
         indicates whether the `brokenrules` collection returned by the
-        `brokenrules` property is empty. Moving on, we are later able to
-        see programmaticaly what exactly is wrong with the object by
-        examining `derp.brokenrules`. This can be useful information
-        when debugging and logging. It can also help an end user
-        determine what input they are given to cause the data to be
-        invalid &mdash; consider that a user is entering in a dog's data
-        in a form and they forgot to provide a name or date-of-birth.
-        The messages in the `brokenrules` collection could be presented
-        to them to help them understand the issue.
+        `brokenrules` property is empty. Since it returns two broken
+        rules, `derp.isvalid` must be `False`. 
 
-        <!-- TODO Cover entities collections -->
+        Moving on, we are later able to see programmaticaly what exactly
+        is wrong with the object by examining `derp.brokenrules`. This
+        can be useful information when debugging and logging. It can
+        also help an end user determine what input they are giving to
+        cause the data to be invalid &mdash; consider that a user may be
+        entering in  the dog's data in a form and they forgot to provide
+        a name or date-of-birth.  The messages in the `brokenrules`
+        collection could be presented to the user to help them
+        understand the issue which input fields they need to correct.
+
+        Now lets append `derp` to the `dgs` collection and see what 
+        consequences an invalid `entity` has on an `entities`
+        collection. 
+      ''')
+
+      with listing('Creating an entity with broken rules'):
+        try:
+          # The `dgs` collection starts out as "valid"...
+          true(dgs.isvalid)
+
+          # ... because it has zero broken rules
+          zero(dgs.brokenrules)
+
+          # Add the dog with the broken rules
+          dgs += derp
+
+          # Now, the collection is "invalid"
+          false(dgs.isvalid)
+
+          # The collection now has two broken rules
+          two(dgs.brokenrules)
+
+          # The first broken rule is the dog's first broken rule
+          is_(derp.brokenrules.first, dgs.brokenrules.first)
+
+          # The second broken rule is the dog's second broken rule
+          is_(derp.brokenrules.second, dgs.brokenrules.second)
+
+        finally:
+          # Remove derp from the collection
+          dgs.remove(derp)
+
+          # The `dgs` collection is valid again
+          true(dgs.isvalid)
+          zero(dgs.brokenrules)
+
+      print('''
+        In the above listing we see that the `dgs` collection starts out
+        as "valid". When we add the invalid `derp` object to the
+        collection, the collection becomes invalid. The `dogs`
+        collection's `brokenrules` property looks at all the object
+        within the collection and collects any broken rules they have.
+        It creates a new `brokenrules` collection and returns it to us.
+        That is why we are able to get `derp`'s broken rules from
+        `dgs.brokenrules`. So you can see that a business rule regarding
+        collection is that: A collection is invalid if any of its
+        elements are invalid (unless, of course, a collection's
+        brokenrules property has been overridden to change this
+        behavior).
+
+        <!-- TODO Update this paragraph to reflect the above listing -->
 
         At this point, you will have noticed that, other than
         `derp.isvalid` being `False`, and `derp.brokenrules` being
@@ -2342,12 +2395,12 @@ with book('Hacking Carapacian Core'):
         invalid. As far as the base `entity` and `entities` classes are
         concerned, the consequences regarding the *validity* of an
         object is left to the programmer who uses an entity the class
-        designer who inherits from the base classe. However, ORM entity
+        designer who inherits from the base classe.  However, ORM entity
         classes aren't so agnostic about the matter. When an ORM entity
         is invalid, its persistence logic will refuse to save it to the
-        database. We will cover this topic later in the section on 
-        [ORM validity](#012b0632) in the [ORM](#bceb89cf) chapter.
-      ''')
+        database. We will cover this topic later in the section on [ORM
+        validity](#012b0632) in the [ORM](#bceb89cf) chapter.
+    ''')
 
     with section('Indexes'):
       ...
