@@ -3526,6 +3526,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         Return a default implementation of accessibility methods
         (creatability, retrievability, updatability and deletability)
+
+        :param: type str: The type of accessibility, e.g., 
+        'creatability', 'retrievability', 'updatability' or
+        'deletability'
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
 
@@ -3534,6 +3538,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # implying that there is no accessibility issue.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if security().override:
+            # TODO Return violations.empty instead
             return violations()
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -8078,14 +8083,19 @@ class orm:
         # association between an entity and its complement. However,
         # lazy-loading this means that the `orm` reference on the
         # entities class won't exist until this property has been run on
-        # the entity class's orm. See the HACK at f6c7d0f1 for more. We
-        # may want to go back to the original eager-loading approach
-        # where this was done in orm.entitymeta.__new__. The downside
-        # would be an increase in startup time (not sure how much).
+        # the entity class's orm. See the HACK at f6c7d0f1 in git-log
+        # (it was removed) for more. We may want to go back to the
+        # original eager-loading approach where this was done in
+        # orm.entitymeta.__new__. The downside would be an increase in
+        # startup time (not sure how much).
+        # 
+        # Note that this tends not to be an issue because orm.table gets
+        # called on startup for each entity. orm.table calls
+        # `self.entities` thus causing this property to be run for each
+        # entity on startup.
 
         # Memoize
         if not self._entities:
-
             # Create inflect object to pluralize entity class name
             flect = inflect.engine(); 
             flect.classical(); 
@@ -8486,6 +8496,8 @@ class orm:
         by the entities' (not the entity's) name ('persons'). Including
         the module is necessary to prevent name collisions.
         """
+
+        # NOTE See f6c7d0f1 before changing the below line
         mod = inspect.getmodule(self.entities)
         if mod.__name__ == '__main__':
             if hasattr(mod, '__file__'):

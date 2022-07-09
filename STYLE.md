@@ -454,6 +454,9 @@ to use these in the framework.
       attention and scrutenty. Use these liberaly in areas dealing with
       authentication, authorization and other sensitive areas.
 
+      <!-- TODO Note that accessibility methods should only contain
+      bomb-comments -->
+
         class security:
             """
             💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
