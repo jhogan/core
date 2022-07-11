@@ -2343,17 +2343,18 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with listing('Creating an entity with broken rules'):
+        # The `dgs` collection starts out as "valid"...
+        true(dgs.isvalid)
+
+        # ... because it has zero broken rules
+        zero(dgs.brokenrules)
+
         try:
-          # The `dgs` collection starts out as "valid"...
-          true(dgs.isvalid)
-
-          # ... because it has zero broken rules
-          zero(dgs.brokenrules)
-
           # Add the dog with the broken rules
           dgs += derp
 
-          # Now, the collection is "invalid"
+          # Adding an invalid item to the collecton causes the
+          # collection to be "invalid"
           false(dgs.isvalid)
 
           # The collection now has two broken rules
@@ -2377,30 +2378,55 @@ with book('Hacking Carapacian Core'):
         In the above listing we see that the `dgs` collection starts out
         as "valid". When we add the invalid `derp` object to the
         collection, the collection becomes invalid. The `dogs`
-        collection's `brokenrules` property looks at all the object
+        collection's `brokenrules` property looks at all the objects
         within the collection and collects any broken rules they have.
         It creates a new `brokenrules` collection and returns it to us.
         That is why we are able to get `derp`'s broken rules from
         `dgs.brokenrules`. So you can see that a business rule regarding
-        collection is that: A collection is invalid if any of its
-        elements are invalid (unless, of course, a collection's
+        collection is that: *A collection is invalid if any of its
+        elements are invalid* (unless, of course, a collection's
         brokenrules property has been overridden to change this
         behavior).
 
-        <!-- TODO Update this paragraph to reflect the above listing -->
+        You will have notice that there are no real consequences to an
+        `entity` or an `entities` collection being "invalid" other than
+        that its `isvalid` will be `False` and the `brokenrules`
+        property will return a non-empty collection. It's up to you as a
+        programmer what should happen if an entity is invalid.
+        Practically speaking, however, the validity of an `entity` or
+        `entities` collection will only matter to you when you are
+        working with ORM entity classes. When an ORM entity is invalid,
+        its persistence logic will refuse to save the entity's data to
+        the database. We will cover this topic later in the section on
+        [ORM validity](#012b0632) in the [ORM](#bceb89cf) chapter.
 
-        At this point, you will have noticed that, other than
-        `derp.isvalid` being `False`, and `derp.brokenrules` being
-        non-empty, there aren't anymore consequences to an entity being
-        invalid. As far as the base `entity` and `entities` classes are
-        concerned, the consequences regarding the *validity* of an
-        object is left to the programmer who uses an entity the class
-        designer who inherits from the base classe.  However, ORM entity
-        classes aren't so agnostic about the matter. When an ORM entity
-        is invalid, its persistence logic will refuse to save it to the
-        database. We will cover this topic later in the section on [ORM
-        validity](#012b0632) in the [ORM](#bceb89cf) chapter.
     ''')
+
+    with section('Reasons to use brokenrules'):
+      print('''
+        The `brokenrules` property of both `entity` and
+        `entities` classes gives us a way to encapsulate all the
+        validation rules of a given class. This is an important feature
+        because without it, validation rules end up being scattered
+        throughout the various layers of the application such as the
+        user interface, entity classes and the data tier. This
+        scattering makes it difficult to determine exactly what the
+        current validation rules are for a given entity.  Scattered
+        validation logic can also leads to contradictory and buggy
+        validation rules.
+
+        Another important feature of entity validation is the consistent
+        reporting of data issues it afforts us. For example, if we were to
+        enfore the validation rule that a dog's name must not be null at
+        the data tier (i.e., MySQL), the user would likely get a strange
+        MySQL exception were he or she to forget the dog's name. Or
+        perhaps they would see nothing at all because the user interface
+        logic doesn't report exceptions to the user. When the user
+        interface uses entity and entities classes, it can learn exactly
+        what issues there are with the data being submitted by the user,
+        and can report them correctly and in a consistent way thus
+        enhancing the user experience.
+      ''')
 
     with section('Indexes'):
       ...
