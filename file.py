@@ -644,7 +644,7 @@ class inode(orm.entity):
             # If proprietor owns a directory, it can create inodes
             # within it.
             if sec.proprietorid == rent.proprietor__partyid:
-                orm.violations.empty
+                return orm.violations.empty
             
         vs = orm.violations()
         vs += 'Cannot create inode'
