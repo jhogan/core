@@ -27,6 +27,18 @@ class site(pom.site):
         
         self.pages += home()
 
+    def menu(self):
+        mnu = super().menu
+
+
+        itms = mnu.items 
+        itms += pom.menu.item('Services')
+        itms += pom.menu.item('Products')
+        itms += pom.menu.item('Services')
+
+        return mnu
+
+
 class home(pom.page):
     def main(self):
         pass
