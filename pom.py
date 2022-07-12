@@ -1592,7 +1592,7 @@ class page(dom.html):
 class header(dom.header):
     """ Represents the header portion of a web page.
 
-    A page header contains a menus object to contain 0 or more menues in
+    A page header contains a menus object to contain 0 or more menus in
     the header, one main menu, and a logo.
     """
     # TODO Need to add an h2 and subheading parameter to constructor.
@@ -1639,7 +1639,7 @@ class header(dom.header):
 
     @property
     def menus(self):
-        """ The collection of menues for this ``header``.
+        """ The collection of menus for this ``header``.
         """
         if self.menu not in self._menus:
             self._menus += self.menu

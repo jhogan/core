@@ -636,6 +636,7 @@ class inode(orm.entity):
     @property
     def creatability(self):
         # XXX Add bomb comments
+        # Write tests 
 
         sec = orm.security()
 
@@ -646,12 +647,13 @@ class inode(orm.entity):
                 orm.violations.empty
             
         vs = orm.violations()
-        vs += 'Cannot retrieve inode'
+        vs += 'Cannot create inode'
         return vs
 
     @property
     def retrievability(self):
         # XXX Add bomb comments
+        # Write tests 
 
         # Anyone can retrieve the radix
         if self.id == directory.RadixId:
@@ -1378,6 +1380,7 @@ class directory(inode):
     @property
     def retrievability(self):
         # XXX Add bomb comments
+        # Write tests 
 
         # Anyone can retrieve the radix
         if self.id == directory.RadixId:
