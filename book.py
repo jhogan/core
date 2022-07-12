@@ -1941,6 +1941,47 @@ with book('Hacking Carapacian Core'):
             expressions can be.
           ''')
 
+    with section('Entity classse'):
+      print('''
+        In the last section, we outlined the behaviors and properties of
+        `entities` collections, but we haven't talked much about
+        `entity` objects themselves. Unlike `entities` collections,
+        `entity` objects don't have that many builtin features. (This is
+        ironic because subclasses of `entity` encapsulate most of the
+        business logic).  In this section, we will go over the features
+        of that `entity` objects get for free.
+      ''')
+
+      with section('Adding entity objects together'):
+        print('''
+          We've seen how we can append `entity` objects to `entities`
+          collections. However, we can use the `+` on `entity` objects
+          to create new collections:
+        ''')
+
+        with listing('Adding entity objects together'):
+          # Add two entity objects together. The result is a new
+          # collection of dogs.
+          dgs1 = spot + fluffy
+
+          # The type of collection is the generic entities class.
+          type(entities.entities, dgs1)
+
+          # The addition resulted in a collection with two elements
+          two(dgs1)
+
+          # The first element is spot and the second is fluffy
+          is_(dgs1.first, spot)
+          is_(dgs1.first, fluffy)
+
+        print('''
+          In the above listing, we use the `+` operator to add to `dog`
+          object together to produce a collection of dogs. The remaining
+          lines assert the properties of the collection that was created
+          as a result.
+        ''')
+
+
     with section('Events'):
       print('''
         **Events** are actions that happen to an `entity` or `entities`
@@ -2404,28 +2445,29 @@ with book('Hacking Carapacian Core'):
 
     with section('Reasons to use brokenrules'):
       print('''
-        The `brokenrules` property of both `entity` and
-        `entities` classes gives us a way to encapsulate all the
-        validation rules of a given class. This is an important feature
-        because without it, validation rules end up being scattered
-        throughout the various layers of the application such as the
-        user interface, entity classes and the data tier. This
-        scattering makes it difficult to determine exactly what the
-        current validation rules are for a given entity.  Scattered
-        validation logic can also leads to contradictory and buggy
-        validation rules.
+        The `brokenrules` property of both `entity` and `entities`
+        classes gives us a way to encapsulate all the validation rules
+        of a given class. This is an important feature because without
+        it, validation rules end up being scattered throughout the
+        various layers of the application such as the user interface,
+        entity classes and the data tier. This scattering makes it
+        difficult to determine exactly what the current validation rules
+        are for a given entity.  Scattered validation logic can also
+        leads to contradictory and buggy validation rules which are
+        difficult to maintain.
 
         Another important feature of entity validation is the consistent
-        reporting of data issues it afforts us. For example, if we were to
-        enfore the validation rule that a dog's name must not be null at
-        the data tier (i.e., MySQL), the user would likely get a strange
+        reporting of data issues it afforts us. For example, if we were
+        to enforce the validation rule that a dog's name must not be
+        null at the data tier (e.g., using the `NOT NULL` constraint in
+        a `CREATE TABLE` statement), the user would likely get a strange
         MySQL exception were he or she to forget the dog's name. Or
         perhaps they would see nothing at all because the user interface
         logic doesn't report exceptions to the user. When the user
         interface uses entity and entities classes, it can learn exactly
         what issues there are with the data being submitted by the user,
         and can report them correctly and in a consistent way thus
-        enhancing the user experience.
+        enhancing the user's experience.
       ''')
 
     with section('Indexes'):
@@ -2433,11 +2475,6 @@ with book('Hacking Carapacian Core'):
 
     with section('Distinctions with the list interface', id='042d62d4'):
       # count/len(), es[0]/es.first, sort, sorted, enumerate
-
-    with section('Entity classse'):
-      # Go over the small amount of functionality in entities.entity
-      ...
-
 
   with chapter("Configuration") as sec:
     ...
