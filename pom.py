@@ -1613,7 +1613,11 @@ class header(dom.header):
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
         hdr.menu = self.menu.clone()
-        hdr.logo = self.menu.clone()
+
+        # XXX Test this. It was changed in this branch.
+        if logo := self.logo:
+            hdr.logo = logo.clone()
+
         return hdr
 
     @property
@@ -1641,7 +1645,7 @@ class header(dom.header):
     def menus(self):
         """ The collection of menus for this ``header``.
         """
-        if self.menu not in self._menus:
+        if self.menu.name not in self._menus.pluck('name'):
             self._menus += self.menu
 
         return self._menus
