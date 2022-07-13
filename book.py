@@ -1946,10 +1946,10 @@ with book('Hacking Carapacian Core'):
         In the last section, we outlined the behaviors and properties of
         `entities` collections, but we haven't talked much about
         `entity` objects themselves. Unlike `entities` collections,
-        `entity` objects don't have that many builtin features. (This is
-        ironic because subclasses of `entity` encapsulate most of the
-        business logic).  In this section, we will go over the features
-        of that `entity` objects get for free.
+        `entity` objects don't have that many builtin features (this is
+        ironic because subclasses of `entity` typically encapsulate a
+        large amount of business logic).  In this section, we will go
+        over the features of that `entity` objects get for free.
       ''')
 
       with section('Adding entity objects together'):
@@ -1979,10 +1979,24 @@ with book('Hacking Carapacian Core'):
           object together to produce a collection of dogs. The remaining
           lines assert the properties of the collection that was created
           as a result.
+
+          An alternative to the `+` operator is to use the `add()`
+          method. For example, we could have created the `dgs1`
+          collection above by writing:
+
+            dgs1 = spot.add(fluffy)
+
+          However, it's preferable to use the `+` operator since it
+          allows for a more concise and readable coding style.
+
+          `entity` objects, along with `entities` collections, also
+          support [events](#26508ecd) and 
+          [encapsulated validation](#4210bceb), which we will cover in
+          upcoming sections.
         ''')
 
 
-    with section('Events'):
+    with section('Events', id='26508ecd1'):
       print('''
         **Events** are actions that happen to an `entity` or `entities`
         object. Callables, such as methods and functions, can be
@@ -2287,7 +2301,7 @@ with book('Hacking Carapacian Core'):
           interaction with web pages.
         ''')
             
-    with section('Validation'):
+    with section('Validation', id='4210bceb1'):
       print('''
         A key feature of both `entities` and `entity` classes is there
         ability to identify their internal state as **valid** or
