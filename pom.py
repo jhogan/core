@@ -1628,6 +1628,7 @@ class header(dom.header):
         els.clear()
         if self.logo:
             els += self.logo
+
         els += self.menus
         return els
 
