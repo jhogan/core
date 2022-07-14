@@ -12,6 +12,7 @@ from uuid import uuid4, UUID
 import dom
 import party
 import pom
+import ecommerce
 
 class sites(pom.sites):
     pass

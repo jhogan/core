@@ -608,6 +608,8 @@ class url(orm.entity):
 
     @property
     def creatability(self):
+        # XXX Write tests
+        # XXX Write docstring
         # NOTE:7a67115c I suppose anyone should be able to access a URL
         # in most cases. However, associations between ``urls`` and
         # other entity objects would work differently. But those
@@ -618,6 +620,8 @@ class url(orm.entity):
 
     @property
     def retrievability(self):
+        # XXX Write tests
+        # XXX Write docstring
         # NOTE:7a67115c
         return orm.violations.empty
 

@@ -28,6 +28,16 @@ warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 # TODO Add docstrings 
 
+# XXX When we leave the gunicorn service running overnight, the next
+# request to carapacian.com:8000 return a webpage with this Exception:
+#
+#     Error: OperationalError (4031, 'The client was disconnected by the
+#     server because of inactivity.  See wait_timeout and
+#     interactive_timeout for configuring this behavior.')
+#
+# Investigate this issue. Nothing seems to be logged for this, so make
+# sure that logging is done if needed and possible.
+
 class connections(entitiesmod.entities):
     _instance = None
     def __init__(self):

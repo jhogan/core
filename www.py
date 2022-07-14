@@ -55,6 +55,9 @@ import traceback
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 
+# XXX Setups nginx to interface with gunicorn. Ensure carapacian.com is
+# being served with SSL.
+
 class application:
     """ Represents a WSGI application.
     """
