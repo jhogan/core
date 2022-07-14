@@ -349,7 +349,7 @@ class principle(entities.entity):
         return self._company
 
 class tester(entities.entity):
-    def __init__(self, testers, mods=None):
+    def __init__(self, testers, mods=None, user=None, propr=None):
         """ Create the tester abstract object.
 
         :param: testers testers: A reference to the testers collection
@@ -377,9 +377,10 @@ class tester(entities.entity):
                     e.orm.recreate()
 
         # Create and set principles at ORM level for testing
-        orm.security().owner = self.user
-        orm.security().proprietor = self.company
-
+        sec = orm.security()
+        sec.user       = user  if user  else self.user
+        sec.proprietor = propr if propr else self.company
+            
     def recreateprinciples(self):
         principle().recreate()
 
@@ -1136,6 +1137,8 @@ class tester(entities.entity):
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
+    # FIXME The assertions `gt`, `lt` and `le` are broken. they have the
+    # expect and actual mixed up. `ge` was corrected recently.
     def gt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
@@ -1143,7 +1146,7 @@ class tester(entities.entity):
         if not (expect >= actual): self._failures += failure()
 
     def ge(self, expect, actual, msg=None):
-        if not (expect >= actual): self._failures += failure()
+        if not (expect <= actual): self._failures += failure()
 
     def assertLt(self, expect, actual, msg=None):
         if not (expect < actual): self._failures += failure()
@@ -1231,6 +1234,9 @@ class tester(entities.entity):
 
     def twelve(self, actual):
         if len(actual) != 12: self._failures += failure()
+
+    def populated(self, actual):
+        if len(actual) == 0: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
@@ -1365,6 +1371,9 @@ class tester(entities.entity):
         if len(ls) != len(set(ls)): self._failures += failure()
 
     def expect(self, expect, fn, msg=None):
+        # NOTE expect swallows exceptions, so passing -b flag to tester
+        # won't cause a break where fn() raises an exception (assuming
+        # it does).
         try:
             if not callable(fn):
                 raise NotCallableError((

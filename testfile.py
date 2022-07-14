@@ -14,7 +14,7 @@ import apriori; apriori.model()
 
 from dbg import B
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
 import asset
 import base64
 import dom
@@ -52,8 +52,16 @@ def clean():
     if ret != 0:
         raise PermissionError(f'Cannot delete {store}. Check access.')
 
-class foonets(pom.sites): pass
+class foonets(pom.sites):
+    pass
+
 class foonet(pom.site):
+    Id = UUID(hex='2343dc33-1317-4164-96d3-bdd261c68e74')
+
+    Proprietor = party.company(
+        id = UUID(hex='5e4ce2b6-034d-473e-a731-bf66012f4989'),
+        name = 'Foonet, Inc'
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -64,7 +72,7 @@ class foonet(pom.site):
         self.host = 'foo.net'
         self.name = 'foo.net'
 
-class dom_file(tester.tester):
+class file_(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """
@@ -87,37 +95,41 @@ class dom_file(tester.tester):
     def it_adds_js_files_to_site(self):
         ws = foonet()
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
-            integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
-            local = True,
-        )
+        with orm.proprietor(ws.proprietor):
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/deeplearn/0.5.1/deeplearn.min.js',
+                integrity = 'sha512-0mOJXFjD6/f6aGDGJ4mkRiVbtnJ0hSLlWzZAGoBsy8eQxGvwAwOaO3hkdCNm9faeoeRNzS4PEF7rkT429LcRig==',
+            )
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
-            integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
-            local = True,
-        )
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
+                integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
+            )
 
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
-            integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
-            local = True,
-        )
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
+                integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
+                local = True
+            )
 
-        ws.save()
+            ws.save()
 
-        ws1 = ws.orm.reloaded()
+            ws1 = ws.orm.reloaded()
 
-        self.eq(ws.id, ws1.id)
+            self.eq(ws.id, ws1.id)
 
-        ress = ws.resources.inodes.sorted()
-        ress1 = ws1.resources.inodes.sorted()
+            ress = ws.resources.inodes
+            ress1 = ws1.resources.inodes
 
-        self.three(ress)
-        self.three(ress1)
+            self.three(ress)
 
-        for res, res1 in zip(ress, ress1):
+            # The only resource that would have been saved would be
+            # attach.min.js (since we used `local = True`). 
+            self.one(ress1)
+
+            res = ress.last
+            res1 = ress1.only
+
             self.eq(res.id, res1.id)
             self.eq(str(res.url), str(res1.url))
             self.eq(res.integrity, res1.integrity)
@@ -145,64 +157,71 @@ class dom_file(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += index()
+        with orm.proprietor(ws.proprietor):
 
-        # Add site-wide resources
-        ws.resources += file.resource(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
-            integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
-        )
+            # Add site-wide resources
+            ws.resources += file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
+                integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
+                local = True
+            )
 
-        # GET the /en/files page
-        tab = self.browser().tab()
-        res = tab.get('/en/index', ws)
+            # GET the /en/files page
+            tab = self.browser().tab()
+            res = tab.get('/en/index', ws)
 
-        self.status(200, res)
+            self.status(200, res)
 
-        scripts = res['html head script']
-        self.four(scripts)
+            scripts = res['html head script']
+            scripts = scripts.tail(4)
 
-        # Test site-level resource
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
-            scripts.first.src
-        )
-        self.eq(
-            'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
-            scripts.first.integrity
-        )
-        self.eq('anonymous', scripts.first.crossorigin)
+            self.count(4, scripts)
 
-        # Test page-level resources
-        self.eq(
-            'https://code.jquery.com/jquery-3.5.1.js',
-            scripts.second.src
-        )
-        self.eq(None, scripts.second.integrity)
-        self.eq('anonymous', scripts.second.crossorigin)
+            # Test site-level resource
+            self.eq(
+                f'/radix/pom/site/{ws.id.hex}/resources/unicorn.min.js',
+                scripts.first.src
+            )
 
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-            scripts.third.src
-        )
-        self.eq(
-            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-            scripts.third.integrity
-        )
-        self.eq('anonymous', scripts.third.crossorigin)
 
-        self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-            scripts.fourth.src
-        )
+            self.eq(
+                'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
+                scripts.first.integrity
+            )
+            self.eq('anonymous', scripts.first.crossorigin)
 
-        self.eq(None, scripts.fourth.integrity)
-        self.eq('use-credentials', scripts.fourth.crossorigin)
+            # Test page-level resources
+            self.eq(
+                'https://code.jquery.com/jquery-3.5.1.js',
+                scripts.second.src
+            )
+            self.eq(None, scripts.second.integrity)
+            self.eq('anonymous', scripts.second.crossorigin)
+            
+            self.eq(
+                'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                scripts.third.src
+            )
+            self.eq(
+                'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                scripts.third.integrity
+            )
+            self.eq('anonymous', scripts.third.crossorigin)
 
-        for script in scripts:
-            # We aren't caching these resources (`local is True`) so we
-            # shouldn't expect any to be in the database
-            url = ecommerce.url(address=script.src)
-            self.zero(url.resources)
+
+            self.eq(
+                'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+                scripts.ultimate.src
+            )
+
+            self.eq(None, scripts.ultimate.integrity)
+            self.eq('use-credentials', scripts.ultimate.crossorigin)
+
+            for script in scripts:
+                # We aren't caching these resources (`local is True`) so we
+                # shouldn't expect any to be in the database
+                url = ecommerce.url(address=script.src)
+                self.zero(url.resources)
 
     def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
@@ -231,33 +250,33 @@ class dom_file(tester.tester):
 
         # Set up site
         ws = foonet()
-        ws.pages += avatar()
-        ws.save()
-        
+        with orm.proprietor(ws.proprietor):
+            ws.pages += avatar()
+            ws.save()
+            
+            # Get a browser tab
+            tab = self.browser().tab()
 
-        # Get a browser tab
-        tab = self.browser().tab()
+            # Create a file called my-avatar to POST to server
+            f = file.file(name='my-avatar.gif')
 
-        # Create a file called my-avatar to POST to server
-        f = file.file(name='my-avatar.gif')
+            # Assign 1x1 pixel GIF to the file's body property
+            f.body = base64.b64decode(
+                'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+            )
 
-        # Assign 1x1 pixel GIF to the file's body property
-        f.body = base64.b64decode(
-            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-        )
+            # Create a save a user
+            usr = ecommerce.user(name='luser')
+            usr.save()
 
-        # Create a save a user
-        usr = ecommerce.user(name='luser')
-        usr.save()
+            # Post the file. Reference the user's id in the URL.
+            res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+            self.status(201, res1)
 
-        # Post the file. Reference the user's id in the URL.
-        res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
-        self.status(201, res1)
+            usr = usr.orm.reloaded()
+            f1 = usr.directory['var/avatars/default.gif']
 
-        usr = usr.orm.reloaded()
-        f1 = usr.directory['var/avatars/default.gif']
-
-        self.eq(f.body, f1.body)
+            self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
         class index(pom.page):
@@ -266,64 +285,66 @@ class dom_file(tester.tester):
 
         # Set up site
         ws = foonet()
-        ws.pages += index()
+        with orm.proprietor(ws.proprietor):
+            ws.pages += index()
 
-        resx = file.resource(
-            url = 'https://code.jquery.com/jquery-3.5.1.js',
-            local = True
-        )
-
-        ws.resources += resx
-
-        def f():
-            ws.pages.last.resources += file.resource(
-                url        =  'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-                integrity  =  'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-                local      =  True
+            resx = file.resource(
+                url = 'https://code.jquery.com/jquery-3.5.1.js',
+                local = True
             )
 
-        # We should be forbidden from setting local=True when creating
-        # file.resources and appending them to pages. A page does not
-        # need a seperate directory for its own JS, CSS, etc files.
-        # That would lead to clutter and duplication. If a page needs
-        # its own resources that are unique from other pages, we can add
-        # a non-local resource.
-        self.expect(ValueError, f)
+            ws.resources += resx
 
-        ws.save()
+            def f():
+                ws.pages.last.resources += file.resource(
+                    url        =  'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                    integrity  =  'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                    local      =  True
+                )
 
-        # GET the /en/files page
-        tab = self.browser().tab()
-        res = tab.get('/en/index', ws)
+            # We should be forbidden from setting local=True when
+            # creating file.resources and appending them to pages. A
+            # page does not need a seperate directory for its own JS,
+            # CSS, etc files.  That would lead to clutter and
+            # duplication. If a page needs its own resources that are
+            # unique from other pages, we can add a non-local resource.
+            self.expect(ValueError, f)
 
-        self.status(200, res)
+            ws.save()
 
-        scripts = res['html head script']
-        self.one(scripts)
+            # GET the /en/files page
+            tab = self.browser().tab()
+            res = tab.get('/en/index', ws)
 
-        self.eq(
-            (
-                f'/{file.directory.radix.name}'
-                f'/pom/site/{ws.id.hex}/resources/jquery-3.5.1.js'
-            ),
-            scripts.first.src
-        )
-        self.eq(None, scripts.first.integrity)
-        self.eq('anonymous', scripts.first.crossorigin)
+            self.status(200, res)
 
-        resxs = file.resources('name', resx.name)
-        self.one(resxs)
+            scripts = res['html head script']
 
-        # Load and test first: jquery
-        resx1s = ecommerce.urls(
-            'address', 'https://code.jquery.com/jquery-3.5.1.js'
-        ).first.resources
+            scripts = scripts[-1:]
 
-        for resx2s in (resxs, resx1s):
-            self.one(resx2s)
-            self.none(resx2s.first.integrity)
-            self.eq(resxs.first.id, resx2s.first.id)
-            self.eq('anonymous', resx2s.first.crossorigin)
+            self.eq(
+                (
+                    f'/{file.directory.radix.name}'
+                    f'/pom/site/{ws.id.hex}/resources/jquery-3.5.1.js'
+                ),
+                scripts.first.src
+            )
+            self.eq(None, scripts.first.integrity)
+            self.eq('anonymous', scripts.first.crossorigin)
+
+            resxs = file.resources('name', resx.name)
+            self.one(resxs)
+
+            # Load and test first: jquery
+            resx1s = ecommerce.urls(
+                'address', 'https://code.jquery.com/jquery-3.5.1.js'
+            ).first.resources
+
+            for resx2s in (resxs, resx1s):
+                self.one(resx2s)
+                self.none(resx2s.first.integrity)
+                self.eq(resxs.first.id, resx2s.first.id)
+                self.eq('anonymous', resx2s.first.crossorigin)
 
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -585,7 +606,7 @@ class file_file(tester.tester):
                 self.true(br.entity.isfloater)
 
 
-        self.ge(file.directory._floaters.brokenrules.count, 4)
+        self.ge(4, file.directory._floaters.brokenrules.count)
 
     def it_moves_cached_files(self):
         vim = file.file('/usr/bin/vim')
@@ -1635,6 +1656,11 @@ class file_resource(tester.tester):
             self.type(file.resource, nd)
             self.type(file.directory, nd.inode)
             self.true(nd in file.directory.radix)
+
+        # Save radix and all inodes created underneath. Failing to do
+        # this will cause permission issues as other tests to
+        # presist the radix cache.
+        file.directory.radix.save()
 
 if __name__ == '__main__':
     tester.cli().run()

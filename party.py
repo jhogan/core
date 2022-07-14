@@ -4,7 +4,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
 # NOTE Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
 # an standard for ecommerce markup when marking up parties, places, etc.
@@ -24,7 +24,7 @@ from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
 import apriori, asset, file
-import db,orm, primative
+import db, orm, primative
 import uuid, builtins
 
 class parties(orm.entities):                                 
@@ -371,6 +371,7 @@ class company(legalorganization):
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
 
+    # TODO Move this to party.companies
     _carapacian = None
     @classproperty
     def carapacian(cls):

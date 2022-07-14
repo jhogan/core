@@ -2780,7 +2780,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     p1 += f'{map.name} = _binary %s'
-                    args.append(security().proprietor.id.bytes)
+                    args.append(security().proprietorid.bytes)
                     break
 
         if p1:
@@ -3328,7 +3328,31 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # proprietor gets saved to the database.
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 if propr := security().proprietor:
-                    self.proprietor = propr
+
+                    import party
+                    if isinstance(propr, party.party):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Assign the current proprietor to self's
+                        # proprietor property
+
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        self.proprietor = propr
+
+                    elif isinstance(propr, UUID):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # If self.proprietor is not an instance of party
+                        # then it's a UUID.  This will happen in
+                        # unusual circumstances, such as when setting up
+                        # principles. We can at least assign the id to
+                        # the proprietor__partyid property so once the
+                        # proprietor has been created, it can be
+                        # lazy-loaded by this entity.
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        self.proprietor__partyid = propr
+                    else:
+                        raise TypeError(
+                            'Invalid value for proprietor'
+                        )
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
@@ -4028,6 +4052,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # once because the imperitive brokenrules properties that
             # ORM users write can potentially be slow (such as when they
             # need to make a database calls).
+
             isvalid = self.getbrokenrules(
                 ascend=False, recurse=False
             ).isempty
@@ -4073,6 +4098,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         raise ProprietorError(propr)
 
         try:
+            cancel = False
+
             # Take snapshot of before state
             st = self.orm.persistencestate
 
@@ -4087,9 +4114,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.onbeforesave(self, eargs)
 
-                # If an event handler suscribing to onbeforesave didn't
-                # cancel the save...
-                if not eargs.cancel:
+                # If an event handler subscribing to onbeforesave didn't
+                # cancel the save, then execute the mutation.
+                if not (cancel := eargs.cancel):
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     # Unless override is True, test the creatability,
                     # updatability or deletability of the entity given
@@ -4131,6 +4158,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Raise event
                     eargs.preposition = 'after'
                     self.onaftersave(self, eargs)
+
+            # If the onbeforesave event handler above canceled the save,
+            # then return. If self`s save was canceled, we don't want to
+            # persist any of its constituents or composites.
+            if cancel:
+                return
 
             # For each of the constituent entities classes mapped to
             # self, set the foreignkeyfieldmapping to the id of self,
@@ -4558,7 +4591,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
                     else:
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        # Make sure the owner's id of the entiy matches
+                        # Make sure the owner's id of the entity matches
                         # that of the security singleton.
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         if self.orm.isnew:
@@ -7614,7 +7647,7 @@ def su(own):
 
 @contextmanager
 def override(v=True):
-    """ A contextmanager to change security().override is ``v``.  When
+    """ A contextmanager to change security().override to ``v``.  When
     the context manager exits, orm.override is reset to whatever it was
     before the contextmanager was entered.
 
@@ -7653,8 +7686,30 @@ class security:
         return cls._instance
 
     @property
+    def proprietorid(self):
+        """ Returns the id of the `proprietor` property.
+
+        The `proprietor` property normally returns a `proprietor`
+        object. However, in rare circumstances, it will only return the
+        proprietor's id. `proprietorid` exists to deal with the ambiguous
+        nature of the `proprietor` by always returning the id.
+        """
+        propr = self.proprietor
+        if isinstance(propr, UUID):
+            return propr
+
+        return propr.id
+    @property
     def proprietor(self):
         """ Return the proprietor entity currently set.
+
+        Note that the return value will usually be a proprietor object
+        (a subclass of `party.party`).  However, in some catch-22-like
+        situations, such as when the proprietor does not yet exist fully
+        as an object, the proprietor's id (UUID) be returned. Note also
+        that if you are only interested in getting the proprietor's id,
+        regardless of what this property returns, you can use the
+        `proprietorid` property.
         """
         return self._proprietor
 
@@ -7743,7 +7798,7 @@ class security:
     def override(self, v):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        The setter for security.overide.
+        The setter for security.override.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         self._override = v
@@ -8360,7 +8415,7 @@ class orm:
             art = artist()
             assert art.style == 'classicism'
 
-        The ``kwargs`` argument can be used to overide this default::
+        The ``kwargs`` argument can be used to override this default::
 
             art = artist(style='cubism')
             assert art.style == 'cubism'
@@ -8958,7 +9013,9 @@ class orm:
             # Delegate to the instance version of ``recreate``
             e.orm.recreate()
             
-    def _recreate(self, cur=None, recursive=False, guestbook=None):
+    def _recreate(self, 
+        cur=None, recursive=False, ascend=False, guestbook=None
+    ):
         """ Drop and recreate the table for the orm ``self``. 
 
         :param: cur: The MySQLdb cursor used by this and all subsequent
@@ -8967,6 +9024,9 @@ class orm:
         :param: recursive: If True, the constituents and subentities of
         ``self`` will be recursively discovered and their tables
         recreated. Used internally.
+
+        :param: ascend: If True, the composites (i.e., `super`s of self)
+        will have their tables recreated as well. Cf. `recursive`.
 
         :param: guestbook: A list to keep track of which classes' tables
         have been recreated. Used internally to prevent infinite
@@ -9005,19 +9065,35 @@ class orm:
             if recursive:
                 for map in self.mappings.entitiesmappings:
                     map.entities.orm.recreate(
-                        cur, True, guestbook
+                        cur, recursive=True, guestbook=guestbook
                     )
 
                 for ass in self.associations:
-                    ass.entity.orm.recreate(cur, True, guestbook)
+                    ass.entity.orm.recreate(
+                        cur, 
+                        recursive = True, 
+                        guestbook = guestbook
+                    )
 
                     for map in ass.orm.mappings.entitymappings:
                         map.entity.orm.recreate(
-                            cur, recursive, guestbook
+                            cur, 
+                            recursive = recursive, 
+                            guestbook = guestbook
                         )
 
                 for sub in self.subentities:
-                    sub.orm.recreate(cur, True, guestbook)
+                    sub.orm.recreate(
+                        cur, 
+                        recursive = True, 
+                        guestbook = guestbook
+                    )
+
+            if ascend:
+                if sup := self.super:
+                    sup.orm.recreate(
+                        cur=cur, ascend=True, guestbook=guestbook
+                    )
                             
         except Exception as ex:
             # Rollback unless conn and cur weren't successfully

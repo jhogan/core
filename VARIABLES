@@ -1,9 +1,7 @@
 accompany
-
     Used as a boolean to indicate that a getter should include `self`
     along with the collection of objects that it is returning. See:
     dom.element.getsiblings
-
 
 ex 
     Exception. Typically found in exception blocks.
@@ -18,3 +16,7 @@ v
     Value. Used in @proprety setters as the argument that contains the
     value the property should be set to.
 
+x
+    The default varibale in list comprehensions:
+        
+        ls1 =[x for x in ls]

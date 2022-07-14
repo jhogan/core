@@ -1,5 +1,29 @@
 Carapacian Core
 ================
+<!-- TODO
+Add section on linting. We discourage in favor of code review.
+
+We may want a section on the development process to encourage a certain
+mode of development.
+
+* Add section on how to do performance testing
+
+TODO In the future, the `dba` bot should ensure this line is added.
+
+TODO Explain how to view the SQL being sent to MySQL using the snapshot
+context manager:
+    with db.chronicler.snapshot():
+        B()
+        print(self.asset_parties)
+
+TODO In hacking/debugging, explain how to set the
+self.tester.breakonexception = True. This is useful for debuging
+testpom.py
+
+TODO In Environment section, declare Ubuntu's default terminal as the
+officially supported terminal for the source code. Indicate that any
+terminal that can handle support as well as this terminal is acceptable.
+-->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
@@ -459,12 +483,12 @@ excellent choice for the framework's needs.
 
 The RDBMS is also expected to take care of its on scalability and
 backup needs as well as provide network transparency. However, a
-database bot will be written to tend the administration of these
-functions.
+database bot <!--TODO reference the bot section--> will be written to
+tend the administration of these functions.
 
 ### Lower environments ###
 As of this writing, not much work has been done to determine how the
-production environment, as well as the lower environments, such as UAT,
+production environment, as well as the lower enviroments, such as UAT,
 QA, and development will be managed. This section will be updated when
 concrete solutions to this problem domain have been devised.
 

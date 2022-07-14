@@ -926,7 +926,7 @@ class _request:
             except ValueError:
                 return 0
 
-        # NOTE This appears to be ambigous. In the WSGI version,
+        # NOTE This appears to be ambiguous. In the WSGI version,
         # shouldn't we also be returning the size of the body.
 
         return len(self.body)
@@ -1127,7 +1127,7 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        # If the site associated with the reuest doesn't have a page in
+        # If the site associated with the request doesn't have a page in
         # its index, raise a 404
         if not request.page:
             raise NotFoundError(self.path)
