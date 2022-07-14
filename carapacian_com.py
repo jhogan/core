@@ -32,9 +32,18 @@ class site(pom.site):
     def header(self):
         hdr = super().header
 
+        hdr.logo = pom.logo(
+            'Carapacian Logo',
+            href = 'https://carapacian.com',
+            img  = 'https://carapacian.com/images/logo.png',
+        )
+
         mnu = hdr.menu
 
         itms = mnu.items 
+
+        itms.clear()
+
         itms += pom.menu.item('Services')
         itms += pom.menu.item('Products')
         itms += pom.menu.item('Services')

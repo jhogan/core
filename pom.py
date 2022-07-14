@@ -607,10 +607,11 @@ class logo(dom.section):
     """ Represents the organization's logo presented on a web page,
     typically in the page's header.
     """
-    def __init__(self, o):
+    def __init__(self, o, href=None, img=None):
         """ Create a logo page object.
 
         :param: o str: The text to display in the logo
+
         """
         super().__init__()
 
@@ -624,10 +625,13 @@ class logo(dom.section):
         else:
             raise TypeError('Invalid logo type')
 
+        self.href = ecommerce.url(address=href) if href else None
+        self.image = ecommerce.url(address=img) if img else None
+
     def clone(self):
         """ Create a new logo object based on self and return.
         """
-        el = type(self)(self.text)
+        el = type(self)(self.text, href=self.href, img=self.image)
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
         return el
@@ -640,7 +644,16 @@ class logo(dom.section):
         els = dom.elements()
 
         # Add the text span here. See constructor.
-        els += dom.span(self._text)
+        if href := self.href:
+            a = dom.a()
+            a.href = href
+
+            if img := self.image:
+                a += dom.img(src=img, alt=self._text)
+
+            els += a
+        else:
+            els += dom.span(self._text)
         return els
 
     @elements.setter
