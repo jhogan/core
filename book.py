@@ -573,8 +573,6 @@ with book('Hacking Carapacian Core'):
         ...
 
   with chapter("Entity and Entities Objects"):
-    # TODO Add section on nomenclature, e.g., entities, collections,
-    # entity objects, etc.
     print('''
       Almost all classes in the framework inherit directly or indirectly
       from the `entity` class or the `entities` classes located in the 
@@ -586,6 +584,7 @@ with book('Hacking Carapacian Core'):
       it can collect an arbitrary number of objects. In fact, `entities`
       offers most of the methods that the `list`s do &mdash; including
       the ability to iterate over them. 
+
     ''')
 
     with section('Using entities classes'):
@@ -609,8 +608,9 @@ with book('Hacking Carapacian Core'):
 
       print('''
         Above, we have created the classe that can track individual dogs
-        as well as track dogs as collection. Let's now use those classes
-        to track the dogs that the dog sitting company cares for:
+        as well as track dogs as collection . Let's now use those
+        classes to track the dogs that the dog sitting company cares
+        for:
       ''')
 
       with listing('Add entity objects to entities collections'):
@@ -628,9 +628,11 @@ with book('Hacking Carapacian Core'):
         dgs += ace
 
       print('''
-        Now three dogs, Rover, Spot and Ace, are in the `dgs`
-        collection. We can use the `dgs` in a similar way to using a
-        list to make a number of assertions about the collection
+        Now three `dog` objects, `rover`, `spot` and `ace, are in the
+        `dgs` collection (note that the word 'collection" is used
+        interchangably with the phrase "entities object") We can use the
+        `dgs` in a similar way to using a list to make a number of
+        assertions about the collection:
       ''')
       
       with listing('Perform basic operation on entities collection'):
@@ -2487,8 +2489,8 @@ with book('Hacking Carapacian Core'):
     with section('Indexes'):
       ...
 
-    with section('Distinctions with the list interface', id='042d62d4'):
-      # count/len(), es[0]/es.first, sort, sorted, enumerate
+    with section('How to use entities classes'):
+      ...
 
   with chapter("Configuration") as sec:
     ...
