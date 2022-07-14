@@ -2178,8 +2178,8 @@ class entity:
         return es
 
     def __add__(self, t):
-        """ Implement the + operator to Return a new collection with
-        self and e contained in it.
+        """ Implement the + operator to return a new collection with
+        self and e contained within it.
 
             e = entity()
             e1 = entity()
