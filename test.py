@@ -15233,7 +15233,7 @@ class gem_effort(tester):
         maint = effort.requirementtype(name='Maintenance')
 
         # Create product, deliverable and asset
-        good = testproduct.test_product.getvalid(product.good, comment=1)
+        good = testproduct.product_.getvalid(product.good, comment=1)
         good.name = 'Engraved black pen with gold trim'
 
         deliv = effort.deliverable(name='2001 Sales/Marketing Plan')
@@ -15769,13 +15769,13 @@ class gem_effort(tester):
         tsk = effort.task(name='Assemble pencil components')
 
         # Create goods
-        cartridge = testproduct.test_product.getvalid(product.good, comment=1)
+        cartridge = testproduct.product_.getvalid(product.good, comment=1)
         cartridge.name = 'Pencil cartridges'
 
-        eraser = testproduct.test_product.getvalid(product.good, comment=1)
+        eraser = testproduct.product_.getvalid(product.good, comment=1)
         eraser.name = 'Pencil eraser'
 
-        label = testproduct.test_product.getvalid(product.good, comment=1)
+        label = testproduct.product_.getvalid(product.good, comment=1)
         label.name = 'Pencil label'
 
         # Create inventory item
@@ -15910,7 +15910,7 @@ class gem_effort(tester):
         pencil = effort.type(name='Large production run of pencils')
 
         # Create a good
-        eraser = testproduct.test_product.getvalid(product.good, comment=1)
+        eraser = testproduct.product_.getvalid(product.good, comment=1)
         eraser.name = 'Pencil eraser'
 
         # Add a goods standard to the 'Large production run of pencils'
