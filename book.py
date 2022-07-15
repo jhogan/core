@@ -2487,13 +2487,39 @@ with book('Hacking Carapacian Core'):
       ''')
 
     with section('Indexes'):
+      # TODO
       ...
 
     with section('How to use entities classes'):
+      # TODO
       ...
 
   with chapter("Configuration") as sec:
-    ...
+    print('''
+      This chapter will deal with the process of configuring the Core
+      Framework. 
+
+      Two files govern the configuration of the framework: 
+      [configuration.py](configuration.py)
+      and
+      [config.py](config.py). `configuration.py` is tracked by Git. It
+      containes a `configuration` singleton which exposes a base
+      configuration that is generic enough to work in any environment.
+
+      The second file, `config.py`, is not tracked by Git because it
+      contains sensitive information, such as database passwords, that
+      should never be commited to the source code repository. The
+      `config.py` file contains a class called `config` which inherits
+      directly from the aforementioned `configuration` singleton. The
+      framework code interfaces with the `config` class to get
+      basic configuration data about the environment. The `config` class
+      overrides properties from `configuration` to provide sensitive
+      information to the framework and to provide custom configuration
+      that are suitable to the given environment. Since we do not track
+      `config.py`, you may not have it even if you have cloned the
+      repository. You may need to reach out to a coworker or manager
+      for a copy.
+    ''')
 
   with chapter("Using the Object-relational Mapper", id='bceb89cf') as sec:
 
