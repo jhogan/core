@@ -7699,13 +7699,22 @@ class security:
         proprietor's id. `proprietorid` exists to deal with the ambiguous
         nature of the `proprietor` by always returning the id.
         """
+        # XXX Add bomb-comments
         propr = self.proprietor
+        import party
         if isinstance(propr, UUID):
             return propr
+        elif isinstance(propr, party.party):
+            pass
+        else:
+            raise TypeError(
+                'proprietor is incorrect type: ' + str(type(propr))
+            )
 
         return propr.id
     @property
     def proprietor(self):
+        # XXX Add bomb-comments
         """ Return the proprietor entity currently set.
 
         Note that the return value will usually be a proprietor object

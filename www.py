@@ -326,6 +326,8 @@ class application:
 
                 # TODO We should probably run the output of
                 # str(ex) through html.escape(). 
+
+                # TODO Add traceback to output
                 res.body = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))

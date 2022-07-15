@@ -904,7 +904,7 @@ class resource(file):
         :param: local bool: If True, persist the resource's metadata in
         the database during a `resource.save()` call and cache the file
         data to the local hard drive located under the `inode.store`
-        directory. 
+        directory. The default is False.
         
         Allowing `local` to default to False causes no persistence to
         ever happen. This can be useful if you only want to use the
