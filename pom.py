@@ -62,6 +62,8 @@ class site(asset.asset):
         self._html = None
         self._head = None
         self._lang = 'en'
+        self._keywords = str()
+        self._description = None
         self._charset = 'utf-8'
         self._viewport = \
             'width=device-width, initial-scale=1, shrink-to-fit=no'
@@ -498,6 +500,12 @@ class site(asset.asset):
 
         self._head += dom.title(self.title)
 
+        if keywords := self.keywords:
+            self._head += dom.meta(name='keywords', content=keywords)
+
+        if desc := self.metadescription:
+            self._head += dom.meta(name='description', content=desc)
+
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
@@ -517,6 +525,26 @@ class site(asset.asset):
             self._head += el
 
         return self._head
+
+    @property
+    def keywords(self):
+        # XXX docstring
+        return self._keywords
+
+    @keywords.setter
+    def keywords(self, v):
+        # XXX docstring
+        self._keywords = v
+
+    @property
+    def metadescription(self):
+        # XXX docstring
+        return self._description
+
+    @metadescription.setter
+    def metadescription(self, v):
+        # XXX docstring
+        self._description = v
 
     @property
     def header(self):

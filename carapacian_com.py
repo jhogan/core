@@ -26,7 +26,21 @@ class site(pom.site):
         super().__init__(*args, **kwargs)
 
         self.host = 'carapacian.com'
-        
+
+        self.title = 'Carapacian Sustainable Software'
+
+        self.keywords = 'carapacian core technical debt'
+
+        self.metadescription = 'Your partners in technical debt managment'
+
+        try:
+            with orm.proprietor(Proprietor):
+                self.resources += file.resource(
+                    url = 'https://carapacian.com/css/brightlight-green.css'
+                )
+        except Exception as ex:
+            PM(ex)
+
         self.pages += home()
 
     @property
