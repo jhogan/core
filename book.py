@@ -2503,14 +2503,14 @@ with book('Hacking Carapacian Core'):
       [configuration.py](configuration.py)
       and
       [config.py](config.py). `configuration.py` is tracked by Git. It
-      containes a `configuration` singleton which exposes a base
+      containes a `configuration` class which exposes a base
       configuration that is generic enough to work in any environment.
 
       The second file, `config.py`, is not tracked by Git because it
-      contains sensitive information, such as database passwords, that
+      contains sensitive information (such as database passwords) that
       should never be commited to the source code repository. The
       `config.py` file contains a class called `config` which inherits
-      directly from the aforementioned `configuration` singleton. The
+      directly from the aforementioned `configuration` class. The
       framework code interfaces with the `config` class to get
       basic configuration data about the environment. The `config` class
       overrides properties from `configuration` to provide sensitive
@@ -2519,6 +2519,36 @@ with book('Hacking Carapacian Core'):
       `config.py`, you may not have it even if you have cloned the
       repository. You may need to reach out to a coworker or manager
       for a copy.
+
+      The `configuration` base class contains configuration for logging
+      to syslog, Boolean properties such as `inproduction` and
+      `indevelopment` to flag to the framework code which type of
+      environment its in, an `accounts` property` which return a
+      collection of accounts data (used for logging into databases and
+      the like). As mentioned above, the `config` class is used to
+      override these properties to provide sensitive and
+      environment-specific configurations.
+
+      To access a configuration value, simply instantiate the `config`
+      class read it's property. For example, to determine which
+      environment we are in, we can do the following.
+    ''')
+
+    with listing('Reading configuration values'):
+      from config import config
+      cfg = config()
+
+      eq('development', cfg.environment)
+      true(cfg.indevelopment)
+      false(cfg.inproduction)
+
+    print('''
+      The above code tells us that the current environment is
+      development and not production. This knowledge can obviously be
+      useful for a number of use cases. For example, we would want to
+      ensure that integration tests aren't run in a production
+      environment (in fact, there is code in [tester.py](tester.py) to
+      do just that.
     ''')
 
   with chapter("Using the Object-relational Mapper", id='bceb89cf') as sec:
