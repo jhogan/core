@@ -572,7 +572,7 @@ with book('Hacking Carapacian Core'):
       with section('Tests as Effort Statements', id=0xd89c06c2)
         ...
 
-  with chapter("Entity and Entities Objects"):
+  with chapter("Entity and Entities Objects", id='64baaf7a'):
     print('''
       Almost all classes in the framework inherit directly or indirectly
       from the `entity` class or the `entities` classes located in the 
@@ -2497,14 +2497,12 @@ with book('Hacking Carapacian Core'):
   with chapter("Configuration") as sec:
     print('''
       This chapter will deal with the process of configuring the Core
-      Framework. 
+      Framework for a given environment. 
 
-      Two files govern the configuration of the framework: 
-      [configuration.py](configuration.py)
-      and
-      [config.py](config.py). `configuration.py` is tracked by Git. It
-      containes a `configuration` class which exposes a base
-      configuration that is generic enough to work in any environment.
+      Two files govern the configuration of the framework's environment:
+      [configuration.py](configuration.py) and [config.py](config.py).
+      `configuration.py` is tracked by Git. It contains a
+      `configuration` class which exposes a base configuration.
 
       The second file, `config.py`, is not tracked by Git because it
       contains sensitive information (such as database passwords) that
@@ -2514,23 +2512,23 @@ with book('Hacking Carapacian Core'):
       framework code interfaces with the `config` class to get
       basic configuration data about the environment. The `config` class
       overrides properties from `configuration` to provide sensitive
-      information to the framework and to provide custom configuration
-      that are suitable to the given environment. Since we do not track
-      `config.py`, you may not have it even if you have cloned the
-      repository. You may need to reach out to a coworker or manager
-      for a copy.
+      information to the framework, and to provide custom configuration
+      that are appropriate for a given environment. Since we do not
+      track `config.py`, you may not have it even if you have cloned the
+      repository. You may need to reach out to a work colleague or
+      manager for a copy.
 
       The `configuration` base class contains configuration for logging
       to syslog, Boolean properties such as `inproduction` and
       `indevelopment` to flag to the framework code which type of
-      environment its in, an `accounts` property` which return a
+      environment its in, and an `accounts` property` which return a
       collection of accounts data (used for logging into databases and
       the like). As mentioned above, the `config` class is used to
       override these properties to provide sensitive and
       environment-specific configurations.
 
       To access a configuration value, simply instantiate the `config`
-      class read it's property. For example, to determine which
+      class and read its property. For example, to determine which
       environment we are in, we can do the following.
     ''')
 
@@ -2543,15 +2541,72 @@ with book('Hacking Carapacian Core'):
       false(cfg.inproduction)
 
     print('''
-      The above code tells us that the current environment is
-      development and not production. This knowledge can obviously be
-      useful for a number of use cases. For example, we would want to
-      ensure that integration tests aren't run in a production
-      environment (in fact, there is code in [tester.py](tester.py) to
-      do just that.
+      The above code tells us that the current environment the framework
+      is in is *development* and not production. This knowledge can
+      obviously be useful for a number of use cases. For example, we
+      would want to ensure that integration tests aren't run in a
+      production environment (in fact, there is code in
+      [tester.py](tester.py) to do just that.
     ''')
 
-  with chapter("Using the Object-relational Mapper", id='bceb89cf') as sec:
+  with chapter("Using the object-relational mapper", id='bceb89cf'):
+    with section('Introduction'):
+      ...
+
+    with section('Defining classes'):
+      print('''
+        In the chapter on [entities](#64baaf7a), we created a `dogs`
+        collection and an `dog` object. Though these classes could
+        manage data about dogs, they could not persist that data to a
+        database. Let's recreate those classes to be ORM class.
+      ''')
+
+      with listing('Creating a ORM class'):
+        # Import the orm module
+        import orm
+
+        # Create the dogs collection this time inheriting from
+        # orm.entities instead of entities.entities.
+        class dogs(orm.entities):
+          pass
+
+        # Create the dogs collection this time inheriting from
+        # orm.entity instead of entities.entity.
+        class dog(orm.entity)
+          name = str
+          dob = date
+
+      print('''
+        There are a number of things to point out here. First is that
+        the classes inherit from the [orm](orm.py) entities classes
+        instead of the [entities](entities.py) classes.
+
+        Intead of defining the attributes of `dog` at the
+        instance level, as we did in the [entities](#64baaf7a)
+        chapter, we have assigned data types to them at the class level.
+        At first sight, this will seem very strange, but what we are
+        doing here is defining the data types for the dog class. When
+        Python encounters the `class` statement, it looks at these
+        type declarations and builds an internal data structure that
+        allows the `dog` entity to exposes these attributes as type-safe
+        properties which are mapped to columns in a database table.
+        There is a lot to unpack there, but let's start out with the
+        basics by creating a dog object and using it's properties.
+      ''')
+
+    with section('Inheritance'):
+      ...
+
+    with section('Retrieving data'):
+
+      with section('Joins')
+        ...
+
+      with section('Eager loading')
+        ...
+
+    with section('Streaming'):
+      ...
 
     with section('Security'):
 
@@ -2562,9 +2617,6 @@ with book('Hacking Carapacian Core'):
         ...
 
     with section('Validation', id='012b0632'):
-      ...
-
-    with section('Security'):
       ...
 
   with chapter('The General Entity Model') as sec:
