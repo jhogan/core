@@ -2564,14 +2564,15 @@ with book('Hacking Carapacian Core'):
       with listing('Creating a ORM class'):
         # Import the orm module
         import orm
+        from datetime import date
 
         # Create the dogs collection this time inheriting from
-        # orm.entities instead of entities.entities.
+        # orm.entities instead of entities.entities
         class dogs(orm.entities):
           pass
 
-        # Create the dogs collection this time inheriting from
-        # orm.entity instead of entities.entity.
+        # Create the dog entity this time inheriting from
+        # orm.entity instead of entities.entity
         class dog(orm.entity)
           name = str
           dob = date
@@ -2581,17 +2582,56 @@ with book('Hacking Carapacian Core'):
         the classes inherit from the [orm](orm.py) entities classes
         instead of the [entities](entities.py) classes.
 
-        Intead of defining the attributes of `dog` at the
-        instance level, as we did in the [entities](#64baaf7a)
-        chapter, we have assigned data types to them at the class level.
-        At first sight, this will seem very strange, but what we are
-        doing here is defining the data types for the dog class. When
-        Python encounters the `class` statement, it looks at these
-        type declarations and builds an internal data structure that
-        allows the `dog` entity to exposes these attributes as type-safe
-        properties which are mapped to columns in a database table.
-        There is a lot to unpack there, but let's start out with the
-        basics by creating a dog object and using it's properties.
+        As you can see, we are defining the attributes of `dog` and
+        assigning them data types: the `dog`'s name is going to be of
+        type `str` and the `dob` will be of type `date`. Now we can
+        instantiate the dog class and assign values to its `name` and
+        `dob` attributes.
+      ''')
+
+      with listing('Assigning values to entity attributes'):
+        # Create a new dog entity
+        lassie = dog()
+
+        # Note that the str attributes defaults to an empty string while
+        # the date data type defaults to None.
+        empty(lassie.name)
+        none(lassie.dob)
+
+        # Assign the attributes
+        lassie.name = 'Lassie'
+        lassie.dob = date(1938, 12, 17)
+
+        # Assert that the assignments took place
+        eq('Lassie', lassie.name)
+        eq(date(1938, 12, 17), lassie.dob)
+
+      print('''
+        The `name` defaults to an empty string while the `dob` defaults
+        to `None`. We make assignments to the attributes then assert
+        that the assignments took.
+
+        So far so good, but at this point you are probably wondering
+        at the class's definition. Let's take another look at it.i
+
+          class dog(orm.entity)
+            name = str
+            dob = date
+
+        <aside>
+          Given that definition, it would seem that the `name` property
+          would default to `str` and `dob` would default to `date`.
+
+          When the `class` statement is executed by Python, the
+          *metaclass* for the `entity` class is invoked. This code reads
+          the body of the dog class as defined above and maps `name` and
+          `dob` to internal structures. Then, the metaclass removes
+          these assignments, but retains the information they provide.
+          In the above exaple, we really don't see much evidenec that
+          the class defination does much, but as we progress throught
+          the chapter, it will be clearer why these definitions are
+          important.
+        </aside>
       ''')
 
     with section('Inheritance'):
