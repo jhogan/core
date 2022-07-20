@@ -2573,7 +2573,7 @@ with book('Hacking Carapacian Core'):
 
         # Create the dog entity this time inheriting from
         # orm.entity instead of entities.entity
-        class dog(orm.entity)
+        class dog(orm.entity):
           name = str
           dob = date
 
@@ -2609,30 +2609,54 @@ with book('Hacking Carapacian Core'):
       print('''
         The `name` defaults to an empty string while the `dob` defaults
         to `None`. We make assignments to the attributes then assert
-        that the assignments took.
+        that the assignments worked correctly.
 
-        So far so good, but at this point you are probably wondering
-        at the class's definition. Let's take another look at it.i
+        <aside>
+        At this point you are probably wondering at the class's
+        definition. Let's take another look at it:
 
           class dog(orm.entity)
             name = str
             dob = date
 
-        <aside>
-          Given that definition, it would seem that the `name` property
-          would default to `str` and `dob` would default to `date`.
+        Given that definition, it would seem that the `name` property
+        would default to `str` and `dob` would default to `date`.
 
-          When the `class` statement is executed by Python, the
-          *metaclass* for the `entity` class is invoked. This code reads
-          the body of the dog class as defined above and maps `name` and
-          `dob` to internal structures. Then, the metaclass removes
-          these assignments, but retains the information they provide.
-          In the above exaple, we really don't see much evidenec that
-          the class defination does much, but as we progress throught
-          the chapter, it will be clearer why these definitions are
-          important.
+        When the `class dog(orm.entity)` statement is executed by
+        Python, the *metaclass* for the `orm.entity` base-class is
+        invoked. This code reads the body of the `dog` class as defined
+        above and maps `name` and `dob` to internal structures. Then,
+        the metaclass removes these assignments, but retains the
+        information they provided.  Assigning values to the attributes
+        requires the ORM to use the internal structure to store and
+        retrive the correct data, even though the attributes seem to
+        behave as simple Python attributes.
         </aside>
       ''')
+
+    with section('Collections'):
+      print('''
+        Unlike regular entity classes, ORM entity classes need a
+        complementary entities class. If we only declared `dog` without
+        a `dogs` entities class, or vice-versa, we would get an error.
+
+        The ORM automaticaly tries to find the complement by guessing
+        what the plural name of the class would be and discovering
+        through Python's reflexion facilities. 
+
+        Entity complements are necessary for internal ORM functionality.
+        However, we are able to see what the ORM has decided the
+        complement is:
+      ''')
+
+      print('''
+        This technique is usually
+        reliable because we use the
+        [inflect](https://pypi.org/project/inflect/) library. However,
+        in cases where the ORM gets it wrong, we can explicitly 
+      ''')
+    with section('Creating the `dog` table'):
+      ...
 
     with section('Inheritance'):
       ...
