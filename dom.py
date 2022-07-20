@@ -2241,12 +2241,11 @@ class wbr(element):
 wordbreaks = wbrs
 wordbreak = wbr
 
-# TODO This can be renamed to brs and br
-class breaks(elements):
+class brs(elements):
     """ A class used to contain a collection of ``br`` elements.
     """
 
-class break_(element):
+class br(element):
     """ The HTML <br> element produces a line break in text
     (carriage-return). It is useful for writing a poem or an address,
     where the division of lines is significant.

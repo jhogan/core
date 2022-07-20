@@ -85,7 +85,7 @@ class inodes(orm.entities):
         super().__init__(*args, **kwargs)
 
         # XXX:fae234dd This forces a premature (non-deferred) load of
-        # inodes. We should create a onbeforeadd property instead.
+        # inodes. We should create an onbeforeadd property instead.
         self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
@@ -1393,9 +1393,6 @@ class directory(inode):
         vs = orm.violations()
         vs += 'Cannot retrieve directory'
         return vs
-
-
-            
 
 class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the
