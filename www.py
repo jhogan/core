@@ -334,12 +334,11 @@ class application:
             if not break_:
                 # Use the WSGI start_response to send the HTTP status
                 # and headers back to the browser.
-                phrase = f'{res.status} XXX'
-                start_response(phrase, res.headers.list)
                 # TODO Instead of the stock HTTP reason phrase, we could
                 # respond with the exception's message here, although
                 # the exception message should be delivered somewhere in
                 # the payload.
+                start_response(res.message, res.headers.list)
 
                 # Return the responses body to the browser
                 return iter([bytes(res.body, 'UTF-8')]) 
