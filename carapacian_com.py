@@ -37,12 +37,12 @@ class site(pom.site):
             hd = super().head
             hd += dom.meta(
                 name = 'keywords', 
-                content = 'carapacian core technical debt'
+                content = 'lorem ipsum dolor sit amet'
             )
 
             hd += dom.meta(
                 name = 'description', 
-                content = 'Your partners in technical debt managment'
+                content = 'Interdum et malesuada fames ac ante ipsum'
             )
 
             csss = [

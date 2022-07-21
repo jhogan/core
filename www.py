@@ -55,9 +55,6 @@ import traceback
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 
-# XXX Setups nginx to interface with gunicorn. Ensure carapacian.com is
-# being served with SSL.
-
 class application:
     """ Represents a WSGI application.
     """
@@ -165,8 +162,9 @@ class application:
             self.environment = env
 
             import orm
-            # Set the owner to anonymous. XXX This doesn't address how
-            # an authenticated user would be set.
+            # Set the owner to anonymous. 
+            # TODO This doesn't address how an authenticated user would
+            # be set.
             orm.security.owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
@@ -338,6 +336,10 @@ class application:
                 # and headers back to the browser.
                 phrase = f'{res.status} XXX'
                 start_response(phrase, res.headers.list)
+                # TODO Instead of the stock HTTP reason phrase, we could
+                # respond with the exception's message here, although
+                # the exception message should be delivered somewhere in
+                # the payload.
 
                 # Return the responses body to the browser
                 return iter([bytes(res.body, 'UTF-8')]) 
@@ -696,13 +698,10 @@ class _request:
                     except KeyError:
                         pass
 
-            # If ws is a string, look for the website module that matches
-            # the string. The website module will have the `site` class, so
-            # get that class and use it to instantiate a site object.
-
-            # XXX Correct this so we can load website modules that have
-            # corresponding file names with dots in them, i.e.,
-            # s/carapacian_com.py/carapacian.com.py/
+            # If ws is a string, look for the website module that
+            # matches the string. The website module will have the
+            # `site` class, so get that class and use it to instantiate
+            # a site object.
             if isinstance(ws, str):
                 # XXX Try without a port
                 host, port = ws.split(':')
@@ -912,6 +911,10 @@ class _request:
                 ua = str()
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
+
+
+            # XXX Requests through gunicorn cause hits to be fail. Make
+            # sure nothing is in syslog when hitting /.
             logs.exception(msg)
 
     @property
