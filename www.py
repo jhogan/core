@@ -702,8 +702,7 @@ class _request:
             # `site` class, so get that class and use it to instantiate
             # a site object.
             if isinstance(ws, str):
-                # XXX Try without a port
-                host, port = ws.split(':')
+                host, sep, port = ws.partition(':')
                 host = host.replace('.', '_')
                 mod = __import__(host,  globals(), locals())
                 ws = getattr(mod, 'site')()
