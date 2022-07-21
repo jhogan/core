@@ -140,6 +140,9 @@ class application:
         WSGI server and ultimately the user agent.
         """
 
+        # Set the WSGI environ dict
+        self.environment = env
+
         # Ensure that the GEM has been fully imported
         import apriori; apriori.model()
 
@@ -157,9 +160,6 @@ class application:
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
-
-            # Set the WSGI environ dict
-            self.environment = env
 
             import orm
             # Set the owner to anonymous. 
