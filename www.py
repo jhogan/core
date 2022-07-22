@@ -1031,15 +1031,14 @@ class _request:
         HTTP_REFERER of the HTTP request.
         """
         if not self._referer:
-            if not (url := self.environment['HTTP_REFERER']):
-                # We should return None here. However, because of
-                # 6028ce62, this causes an exception. We need to addres
-                # that first, then we should be able to return None
-                # here.
-                # return None
-                ...
-
-            url = str(url)
+            try:
+                url = self.environment['HTTP_REFERER']
+            except KeyError:
+                return None
+            except Exception as ex:
+                logs.exception(f"Can't get HTTP_REFERER: {ex}")
+            else:
+                url = str(url)
 
             self._referer = ecommerce.url(address=url)
         return self._referer
@@ -1051,7 +1050,15 @@ class _request:
         """
         if not self._useragent:
             if self.iswsgi:
-                ua = str(self.environment['USER_AGENT'])
+                try:
+                    ua = str(self.environment['USER_AGENT'])
+                except KeyError:
+                    return None
+                except Exception as ex:
+                    logs.exception(f"Can't get USER_AGENT: {ex}")
+                else:
+                    ua = str(ua)
+
                 self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
