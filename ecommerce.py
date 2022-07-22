@@ -67,12 +67,16 @@ class users(orm.entities):
 
     @classproperty
     def root(cls):
-        """ XXX
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return the root user for the ORM. The root user is able to
+        access and modify any ORM data.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
 
         # XXX If an exception is raised here (and probably most other
         # places), a different exception is reported to the browser via
-        # gunicorn. Ensure that the following get's reported to the
+        # gunicorn. Ensure that the following gets reported to the
         # user agent.
         # raise ValueError('derp');
 
@@ -451,6 +455,11 @@ class user(orm.entity):
         
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for `user`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         vs = orm.violations()
         sec = orm.security()
         usr = sec.user
@@ -608,20 +617,32 @@ class url(orm.entity):
 
     @property
     def creatability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        creatability for `url`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
         # XXX Write tests
-        # XXX Write docstring
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # NOTE:7a67115c I suppose anyone should be able to access a URL
         # in most cases. However, associations between ``urls`` and
         # other entity objects would work differently. But those
         # accessibilty restrictions  would be enforced in the
         # association objects.  For now, permit readability to all
         # (within the current tenant (orm.proprietor) of course).
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for `url`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         # XXX Write tests
-        # XXX Write docstring
         # NOTE:7a67115c
         return orm.violations.empty
 
@@ -938,6 +959,17 @@ class ip(electronicaddress):
 
     def __str__(self):
         return self.address
+
+    @property
+    def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for ip.
+
+        Anyone can read an IP record
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return orm.violations.empty
 
 class useragent(orm.entity):
     """ Describes the mechanism, such as protocol, platform, browser,

@@ -974,18 +974,25 @@ class contactmechanism(orm.entity):
 
     @property
     def creatability(self):
-        """ Anyone can create a contact mechanism.
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Anyone can create a contact mechanism.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        At the moment, only sendbot will be able to read contact
+        mechanisms. This will obviously need to be expanded in the
+        future.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         import bot
         vs = orm.violations()
 
-        # NOTE At the moment, only sendbot will be able to read contact
-        # mechanisms. This will obviously need to be expanded in the
-        # future.
         vs.demand_user_is(bot.sendbot.user)
 
         return vs
