@@ -2634,14 +2634,14 @@ with book('Hacking Carapacian Core'):
         </aside>
       ''')
 
-    with section('Collections'):
+    with section('Class complements'):
       print('''
-        Unlike regular entity classes, ORM entity classes need a
-        complementary entities class. If we only declared `dog` without
-        a `dogs` entities class, or vice-versa, we would get an error.
+        Unlike regular `entity` classes, ORM entity classes need a
+        complementary `entities` class. If we declared `dog` without a
+        `dogs` entities class, or vice-versa, we would get an error.
 
         The ORM automaticaly tries to find the complement by guessing
-        what the plural name of the class would be and discovering
+        what the plural name of the class would be and discovering it
         through Python's reflexion facilities. 
 
         Entity complements are necessary for internal ORM functionality.
@@ -2649,12 +2649,62 @@ with book('Hacking Carapacian Core'):
         complement is:
       ''')
 
+      with listing('Getting entity compliments'):
+        # The dog class knows its corresponding collection class
+        is_(dog.orm.entities, dogs)
+
+        # A dog objects knows its corresponding collection class
+        is_(dog().orm.entities, dogs)
+
+        # A dogs collection class knows its corresponding entity class
+        is_(dogs.orm.entity, dog)
+
+        # A dogs collection object knows its corresponding entity class
+        is_(dogs().orm.entity, dog)
+
       print('''
-        This technique is usually
-        reliable because we use the
-        [inflect](https://pypi.org/project/inflect/) library. However,
-        in cases where the ORM gets it wrong, we can explicitly 
+        Even though our class declarations never denote an
+        association between `dog` and `dogs`, we can see that the two
+        classes, or objects created therefrom, know about each
+        other.
+
+        In the above code, we introduce the `orm` attribute that all ORM
+        classes and objects have. We will discuss this attribute bore in
+        [The `orm` attribute](#e7a9db8e) section below.
+
+
+        The ORM usually correctly discovers the complements of ORM
+        classes by using the
+        [inflect](https://pypi.org/project/inflect/) library to
+        determine the plural of an `entity` class's name. In cases where
+        `inflect` doesn't do the right thing, you can override it by
+        assigning an `entities` attribute in the `entity`'s class
+        declarration:
       ''')
+
+      with listing('Forcing an entities complement'):
+        # Create a collection of viruses insisting the proper spelling
+        # is "virii".
+        with virii(orm.entities):
+          pass
+
+        with virus(orm.entity):
+          # Cause `virii` to be the `virus`'s collection class
+          entities = virii
+
+          # Create some ORM attributes
+          name = str
+          discovered = date
+
+        # The virus class knows its corresponding collection class
+        is_(virus.orm.entities, virii)
+
+        # A virii collection class knows its corresponding entity class
+        is_(virii.orm.entity, virus)
+
+    with section('The `orm` attribute', id='e7a9db8e')
+      ...
+
     with section('Creating the `dog` table'):
       ...
 
