@@ -2669,17 +2669,16 @@ with book('Hacking Carapacian Core'):
         other.
 
         In the above code, we introduce the `orm` attribute that all ORM
-        classes and objects have. We will discuss this attribute bore in
+        classes and objects have. We will discuss this attribute more in
         [The `orm` attribute](#e7a9db8e) section below.
 
-
-        The ORM usually correctly discovers the complements of ORM
+        Core Framework usually correctly discovers the complements of ORM
         classes by using the
         [inflect](https://pypi.org/project/inflect/) library to
         determine the plural of an `entity` class's name. In cases where
         `inflect` doesn't do the right thing, you can override it by
         assigning an `entities` attribute in the `entity`'s class
-        declarration:
+        declaration:
       ''')
 
       with listing('Forcing an entities complement'):
@@ -2703,7 +2702,29 @@ with book('Hacking Carapacian Core'):
         is_(virii.orm.entity, virus)
 
     with section('The `orm` attribute', id='e7a9db8e')
-      ...
+      print('''
+        In the above code listings we can see that entity and entities
+        classes, along with the objects created from those classes, have
+        an `orm` attribute. The `orm` attribute allows us to access
+        lower-level properties and behaviors of the ORM. 
+
+        Normally when writing or using entities, you will not use the
+        `orm` attribute. However, its features can be useful for certain
+        types of programming tasks like writting automated tests. The
+        `orm` attribute can be useful for debugging, and can help
+        workaround bugs in the ORM.
+
+        As you progress through this chapter, you will see the `orm`
+        attribute used to demonstrate various things. However, remember
+        that it was designed for use by the Core Framework; it was
+        not intended for use by entity class designers or users of those
+        classes. It just so happens that it provides a nice way to learn
+        about certain aspects of entities. Of course, some of the
+        members of the `orm` attribute should be considered private and
+        not be used unless you really know what you are doing. After you
+        have read this chapter, you should have an understanding about
+        which ones are safe to use.
+      ''')
 
     with section('Creating the `dog` table'):
       ...
