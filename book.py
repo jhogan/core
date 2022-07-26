@@ -108,7 +108,7 @@ with book('Hacking Carapacian Core'):
         print('''
           The name of assert methods tend to be short and/or
           abbreviated which differs from most other unit testing
-          frameworks. For example, The equivalenet assertion methods for
+          frameworks. For example, The equivalent assertion methods for
           for `eq()` in Python's `unittest` is `assertEqual()'. Assert
           method names are short because, when you are in a test method,
           shorter, abbreviated assertion method names are easy to spot since
@@ -1705,7 +1705,7 @@ with book('Hacking Carapacian Core'):
             fido = dgs1.only
 
             # This should work since we got the slice notation correct
-            # above. It's equivalenet to writing the following:
+            # above. It's equivalent to writing the following:
             fido = dgs1.first
             if not fido:
               raise ValueError()
@@ -2494,7 +2494,7 @@ with book('Hacking Carapacian Core'):
       # TODO
       ...
 
-  with chapter("Configuration") as sec:
+  with chapter("Configuration", id="f7d18852"):
     print('''
       This chapter will deal with the process of configuring the Core
       Framework for a given environment. 
@@ -2727,7 +2727,56 @@ with book('Hacking Carapacian Core'):
       ''')
 
     with section('Creating the `dog` table'):
-      ...
+      print('''
+        So far, we've create the `dog` entity class, instantiated it and
+        assigned values to its properties. However, the whole point of
+        having ORM objects is so we can persiste their data to a
+        database &mdash; so let's do just that.
+
+        <aside class="note">
+          If you want to follow along with the upcoming example, you
+          will want to make user you environment is configured correctly
+          for database access. Read the chapter
+          [Configuration](#f7d18852) for assistance.
+        </aside>
+
+        The first thing we will need to do is to create a table to
+        hold the records for the dogs. Since ORM entity class contain
+        the complete data definitions for the entity, the ORM is used to
+        create the table for us. Let's first have a look at the `CREATE
+        TABLE` statement the ORM will issues to the database:
+      ''')
+
+      with listing('Generate a CREATE TABLE statement'):
+        expect = self.dedent('''
+          CREATE TABLE `main_dogs`(
+              `id` binary(16) primary key,
+              `proprietor__partyid` binary(16),
+              `owner__userid` binary(16),
+              `createdat` datetime(6),
+              `updatedat` datetime(6),
+              `name` varchar(255),
+              `dob` date,
+              INDEX proprietor__partyid_ix (proprietor__partyid),
+              INDEX owner__userid_ix (owner__userid)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ''')
+
+        eq(expect, dog.orm.createtable)
+
+      print('''
+        In addition to the `name` and `dob` columns, the ORM creates a
+        number of other standard columns as well.
+
+        Note that the name is defined as a `varchar(255)`. Since we
+        defined `name` as a `str` in its class definition, the ORM has
+        translated this into what it belives is the closest MySQL
+        equivalent. A similar translation whas made for `dob`s data
+        type: The ORM translated the Python class `datetime.date` to the
+        MySQL data type `date`.
+      ''')
+
+        
 
     with section('Inheritance'):
       ...
