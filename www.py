@@ -834,10 +834,16 @@ class _request:
                 site       =  self.site,
                 language   =  self.language,
                 ip         =  self.ip,
-                url        =  self.referer,
                 size       =  self.size,
-                useragent  =  self.useragent,
             )
+
+            # Conditionally assign theses hit attributes because of
+            # 6028ce62
+            if ref := self.referer:
+                self._hit.url = ref
+
+            if ua := self.useragent:
+                self._hit.useragent = ua
 
             if self.jwt:
                 self._hit.isjwtvalid = self.jwt.isvalid
