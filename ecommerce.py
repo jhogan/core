@@ -917,6 +917,21 @@ class hit(orm.entity):
         """
         return self.begin and not self.end
 
+    @property
+    def creatability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        creatability for `hit`
+
+        Only root can create a hit they are records keeped by the system
+        to indicate whether on not a URL was accessed.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        vs = orm.violations()
+        vs.demand_root()
+        return vs
+
 class hitstatustype(apriori.type):
     """ Records status information about the ``hit`` - for example if a
     requested file if a server ``hit`` was sucessfully retrieved or if
