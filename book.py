@@ -2632,6 +2632,32 @@ with book('Hacking Carapacian Core'):
         retrive the correct data, even though the attributes seem to
         behave as simple Python attributes.
         </aside>
+
+        In addition to the attributes we've defined on the class, there
+        are several default attributes we get for free. Every ORM entity
+        class has an **`id`** attribute which can be used to retrive or
+        set a unique identifier for the object. Let's take a look at
+        this attribute in action:
+      ''')
+
+      with listing('The `id` attribute'):
+        from uuid import uuid4
+        dg = dog()
+        type(uuid, dg.id)
+
+      print('''
+        From the listing above, we can tell that the value returned from
+        the ``id`` property is of type `uuid4`. We can also see that the
+        id has already been generated for us (otherwise, `dg.id` would
+        be of type `NoneType)`. So there is no need to set the `id`, and
+        in general, you should accept the id that is generated. 
+
+        If you are familiar with UUID's, you will have guessed that the
+        value returned is a random, 16 bytes value. These values are so
+        large that that they are virtually guarenteed to not repeat
+        themselves thus they make excellent identifiers for entity
+        objects. Later, we will see that the `id`'s value is used as the
+        primary key when the entity is stored in the database.
       ''')
 
     with section('Class complements'):
