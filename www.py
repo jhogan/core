@@ -855,52 +855,53 @@ class _request:
         """ Log the hit.
         """
         try: 
-            # Get the request's ``hit`` entity
-            hit = self.hit
+            with orm.sudo():
+                # Get the request's ``hit`` entity
+                hit = self.hit
 
-            par = None
+                par = None
 
-            # Get the user's party. If no user is logged in, use the
-            # anonymous user.
-            if self.user:
-                par = self.user.party
-                hit.user = self.user
-            else:
-                par = party.party.anonymous
+                # Get the user's party. If no user is logged in, use the
+                # anonymous user.
+                if self.user:
+                    par = self.user.party
+                    hit.user = self.user
+                else:
+                    par = party.party.anonymous
 
-            if par is None:
-                par = party.party.anonymous
+                if par is None:
+                    par = party.party.anonymous
 
-            # Get the party's visitor role
-            visitor = par.visitor
+                # Get the party's visitor role
+                visitor = par.visitor
 
-            # Get the party's visitor role's current visit
-            visit = visitor.visits.current
+                # Get the party's visitor role's current visit
+                visit = visitor.visits.current
 
-            # Get the current time in UTC
-            now = primative.datetime.utcnow()
+                # Get the current time in UTC
+                now = primative.datetime.utcnow()
 
-            # Create a new ``visit`` if a current one doesn't not exist
-            if not visit:
-                visit = ecommerce.visit(
-                    begin = now
-                )
-                visitor.visits += visit
+                # Create a new ``visit`` if a current one doesn't not exist
+                if not visit:
+                    visit = ecommerce.visit(
+                        begin = now
+                    )
+                    visitor.visits += visit
 
-            # If the hit is new, the begin date will be None meaning it
-            # is not ``inprogress``. If that's the case, set the begin
-            # date. Otherwise, we can conclude the hit with the end
-            # datetime and HTTP status.
-            if hit.inprogress:
-                hit.end = now
-                hit.status = response.status
-            else:
-                hit.begin = now
+                # If the hit is new, the begin date will be None meaning it
+                # is not ``inprogress``. If that's the case, set the begin
+                # date. Otherwise, we can conclude the hit with the end
+                # datetime and HTTP status.
+                if hit.inprogress:
+                    hit.end = now
+                    hit.status = response.status
+                else:
+                    hit.begin = now
 
-            hit.visit = visit
+                hit.visit = visit
 
-            # Create/update the hit
-            hit.save()
+                # Create/update the hit
+                hit.save()
         except Exception as ex:
             # Failing to log a hit shouldn't stop page invocation.
             # Instead we log the failure to the syslog.
