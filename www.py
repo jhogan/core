@@ -162,7 +162,6 @@ class application:
             # application.
             self.clear()
 
-            import orm
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
@@ -903,8 +902,10 @@ class _request:
             # Create/update the hit
             hit.save()
         except Exception as ex:
-            # Failing to log a hit shouldn't stop page invocation. We
-            # should log the failure to the syslog.
+            # Failing to log a hit shouldn't stop page invocation.
+            # Instead we log the failure to the syslog.
+
+            # NOTE Write code here that can't raise an another exception
             try:
                 ua = str(self.environment['USER_AGENT'])
             except:
@@ -917,9 +918,7 @@ class _request:
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
 
-
-            # XXX Requests through gunicorn cause hits to be fail. Make
-            # sure nothing is in syslog when hitting /.
+            # XXX Make sure nothing is in syslog when hitting /.
             logs.exception(msg)
 
     @property

@@ -84,11 +84,20 @@ class inodes(orm.entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # XXX:fae234dd This forces a premature (non-deferred) load of
-        # inodes. We should create an onbeforeadd property instead.
+        # TODO:fae234dd This forces a premature (non-deferred) load of
+        # inodes. We should create an onbeforeadd property where the
+        # subscription happens once. See fae234dd in git-log.
         self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
+        """ An event handler to process inode objects as they are being
+        added to the `inodes` collection.
+
+        Here we raise a ValueError error if a an inode with the same
+        name is being added. Later, we work with the floaters and radix
+        caches to make sure the correct composite is being set on the
+        inode being added (see code below).
+        """
         flts = directory._floaters
         radix = directory.radix
         nd = eargs.entity
@@ -108,15 +117,16 @@ class inodes(orm.entities):
                     'name already exists.'
                 )
 
-        # The search through the floaters directory (`nd in flts`) cause
-        # a load of the directory structure and sets the composite of nd
-        # back to flts. Capture the composite here and reassign later.
+        # The search through the floaters directory (`nd in flts`)
+        # causes a load of the directory structure and sets the
+        # composite of nd back to flts. Capture the composite here and
+        # reassign later.
         comp = nd.inode
 
         ''' If the inode being added is already in the floaters or radix
         cache, make sure the composite of the inode being added is set
         correctly in case we are moving from floaters to radix or
-        within radix (it_moves_cached_files).
+        within radix (see it_moves_cached_files).
         '''
         # If the node being added is within the floaters directory...
         if nd in flts or nd in radix:
