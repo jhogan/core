@@ -612,15 +612,13 @@ class inode(orm.entity):
         id = self.inode.id if self.inode else None
         op = '=' if id else 'is'
 
-        # XXX:fae234dd We only need to run the interation as root. Grep
-        # fae234dd for more.
+        nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
+        # Make sure we don't create an inode with the same name as an
+        # existing one under the same inode. I don't think this can
+        # happen because we try to load inodes whenever we reference
+        # them. Hovever, obviously we will want to prevent this at
+        # the validation level.
         with orm.sudo():
-            nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
-            # Make sure we don't create an inode with the same name as an
-            # existing one under the same inode. I don't think this can
-            # happen because we try to load inodes whenever we reference
-            # them. Hovever, obviously we will want to prevent this at
-            # the validation level.
             for nd in nds:
                 if self.id != nd.id and nd.name == self.name:
                     brs += entities.brokenrule(
