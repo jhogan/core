@@ -2658,6 +2658,26 @@ with book('Hacking Carapacian Core'):
         themselves thus they make excellent identifiers for entity
         objects. Later, we will see that the `id`'s value is used as the
         primary key when the entity is stored in the database.
+
+        ORM entity objects also contain a **`createdat`** and
+        **`updatedat`** property. The `createdat` contains the datetime
+        that the entity was first saved to the database. The
+        `updatedat` property contains the datetime that the entity was
+        last modified in the database.
+      ''')
+
+      with listing('The `id` attribute'):
+        dg = dog()
+        none(dg.createdat)
+        none(dg.updatedat)
+
+      print('''
+        As you can see in the listing, when we first create the `dog`
+        object, its `createdat` and `updatedat` attributes are both
+        `None`. This is because we haven't saved them to the database
+        yet. When we cover persistence later in this chapter, we will
+        see that these attributes will return datetime values when we
+        save entity objects to the database.
       ''')
 
     with section('Class complements'):
@@ -2801,6 +2821,9 @@ with book('Hacking Carapacian Core'):
         type: The ORM translated the Python class `datetime.date` to the
         MySQL data type `date`.
       ''')
+
+      # TODO Demonstrate id, createdat, updatedat and the like after
+      # entity objects have been saved to the database.
 
         
 
