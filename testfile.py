@@ -366,7 +366,7 @@ class file_file(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            with orm.sudo():
+            with orm.sudo(), orm.proprietor(party.company.carapacian):
                 file.directory.radix.delete()
 
     def it_creates_with_name_kwargs(self):
