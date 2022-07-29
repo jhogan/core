@@ -278,7 +278,7 @@ class site(asset.asset):
         directory doesn't exist, it is created.
         """
         # We may not need the try:except logic here if we decide to
-        # implement the suggestion at bda97447 (seach git-log)
+        # implement the suggestion at bda97447 (seach git-log).
         if not self._resources:
             try:
                 self._resources = self.directory['resources']
@@ -290,10 +290,11 @@ class site(asset.asset):
 
                 try:
                     # If the owner hasn't been set, make root the
-                    # owner. XXX It's not clear who the owner should be
-                    # at this point. If the site's resource directory
+                    # owner. 
+                    # TODO It's not clear who the owner should be at
+                    # this point. If the site's resource directory
                     # hasn't been created yet, the anonymous user might
-                    # end up being the owner. Or an authenticated. The
+                    # end up being the owner. Or an authenticated, The
                     # owner of the directory will have rights to that
                     # directory. The user that ends up creating the
                     # resources directory probably shouldn't have those
@@ -1860,7 +1861,7 @@ class traceback(dom.article):
 class _404(page):
     """ An error page to show that the requested page was not found.
     """
-    # NOTE I think this shoud inherit from ``error``.
+    # TODO I think this shoud inherit from ``error``.
 
     # XXX Commented out reference to www.NotFoundError. When `gunicorn`
     # runs www.py, www.py imports pom.py. Referencing `www` before

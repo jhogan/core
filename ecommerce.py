@@ -73,13 +73,6 @@ class users(orm.entities):
         access and modify any ORM data.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
-
-        # XXX If an exception is raised here (and probably most other
-        # places), a different exception is reported to the browser via
-        # gunicorn. Ensure that the following gets reported to the
-        # user agent.
-        # raise ValueError('derp');
-
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
             for map in user.orm.mappings.foreignkeymappings:
