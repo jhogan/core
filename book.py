@@ -2678,6 +2678,14 @@ with book('Hacking Carapacian Core'):
         yet. When we cover persistence later in this chapter, we will
         see that these attributes will return datetime values when we
         save entity objects to the database.
+
+        ORM entity object also come with a `proprietor` and `owner`
+        attribute. These will be covered in detail in the
+        [Security](#ea38ee04) section later in this chapter. In short:
+        the `proprietor` attribute is a reference to the *party*
+        (such as a company or organization) that legally owns the
+        record. The `owner` attribute is a reference to the *user*
+        account that created the record. 
       ''')
 
     with section('Class complements'):
@@ -2811,21 +2819,32 @@ with book('Hacking Carapacian Core'):
         eq(expect, dog.orm.createtable)
 
       print('''
-        In addition to the `name` and `dob` columns, the ORM creates a
-        number of other standard columns as well.
+        In addition to the `name` and `dob` columns, the ORM will create a
+        number of other standard columns that correspond to the
+        entity object's attributes described above such as `id`,
+        `createdat` and `updatedat`. 16 byte binary fields are used to
+        to store references to the `proprietor` and `owner`.
 
-        Note that the name is defined as a `varchar(255)`. Since we
+        Note that `name` is defined as a `varchar(255)`. Since we
         defined `name` as a `str` in its class definition, the ORM has
         translated this into what it belives is the closest MySQL
-        equivalent. A similar translation whas made for `dob`s data
+        equivalent. A similar translation was made for `dob`s data
         type: The ORM translated the Python class `datetime.date` to the
-        MySQL data type `date`.
+        MySQL data type `date`. 
+
+        The `id` field is a binary field that stores 16 bytes of data.
+        As you will remember from the above discussion on entity `id`
+        attributes, they are UUID's. Since all UUID's are 16 bytes, the
+        primary key is a `binary(16)` which the ORM will use to store the
+        id's value. You can also see that with the `proprietor__partyid`
+        and `owner__userid` fields, a `binary(16)` field is used as well
+        because these fields will be used to store the id of those
+        entities being referenced. Indexes are created on these fields
+        to allow for fast lookup of these reference fields.
       ''')
 
       # TODO Demonstrate id, createdat, updatedat and the like after
       # entity objects have been saved to the database.
-
-        
 
     with section('Inheritance'):
       ...
@@ -2841,7 +2860,7 @@ with book('Hacking Carapacian Core'):
     with section('Streaming'):
       ...
 
-    with section('Security'):
+    with section('Security', id='ea38ee04'):
 
       with section('Authorization'):
         ...
