@@ -165,7 +165,7 @@ class application:
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
-            orm.security.owner = ecommerce.users.anonymous
+            orm.security().owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
             req = self.request

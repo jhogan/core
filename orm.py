@@ -7867,7 +7867,7 @@ class security:
 
     @user.setter
     def user(self, v):
-        self.owner = v
+        self._owner = v
 
     @property
     def issudo(self):
