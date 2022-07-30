@@ -978,6 +978,10 @@ class menu(dom.nav):
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
+    @property
+    def ismain(self):
+        return self.name == 'main'
+
     def clone(self):
         """ Create and return a new menu based on this menu.
         """
@@ -1626,7 +1630,12 @@ class header(dom.header):
         """
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
-        hdr.menu = self.menu.clone()
+
+        for mnu in hdr.menus:
+            if mnu.ismain:
+                break
+        else:
+            hdr.menu = self.menu.clone()
 
         # XXX Test this. It was changed in this branch.
         if logo := self.logo:
@@ -1660,8 +1669,7 @@ class header(dom.header):
     def menus(self):
         """ The collection of menus for this ``header``.
         """
-        if self.menu.name not in self._menus.pluck('name'):
-            self._menus += self.menu
+        self._menus |= self.menu
 
         return self._menus
 
