@@ -792,6 +792,8 @@ class page(tester.tester):
             'nav[aria-label=Main]>ul>li>a[href="http://www.statistics.com"]'
         )
 
+        # XXX Make sure we can run this test with -T
+
         self.one(pg[sels])
 
         self.eq(

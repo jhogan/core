@@ -742,8 +742,6 @@ class menu(dom.nav):
     #
     #     del main_menus.id # Currently dosen't work
 
-    # TODO This should inherit from dom.menu, not dom.nav
-
     ''' Inner classes '''
     class items(dom.lis):
         """ A collection of ``item`` objects (<li>) which contain the
