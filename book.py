@@ -2784,13 +2784,13 @@ with book('Hacking Carapacian Core'):
       print('''
         So far, we've create the `dog` entity class, instantiated it and
         assigned values to its properties. However, the whole point of
-        having ORM objects is so we can persiste their data to a
+        having ORM objects is so we can persist their data to a
         database &mdash; so let's do just that.
 
         <aside class="note">
           If you want to follow along with the upcoming example, you
-          will want to make user you environment is configured correctly
-          for database access. Read the chapter
+          will want to make sure your environment is configured
+          correctly for database access. Read the chapter
           [Configuration](#f7d18852) for assistance.
         </aside>
 
@@ -2802,6 +2802,7 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with listing('Generate a CREATE TABLE statement'):
+        # Create a string that contains the CREATE TABLE statement
         expect = self.dedent('''
           CREATE TABLE `main_dogs`(
               `id` binary(16) primary key,
@@ -2816,14 +2817,15 @@ with book('Hacking Carapacian Core'):
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ''')
 
+        # The `orm.createtable` attribute returns the CERATE TABLE
+        # statement for the entity
         eq(expect, dog.orm.createtable)
 
       print('''
         In addition to the `name` and `dob` columns, the ORM will create a
         number of other standard columns that correspond to the
         entity object's attributes described above such as `id`,
-        `createdat` and `updatedat`. 16 byte binary fields are used to
-        to store references to the `proprietor` and `owner`.
+        `createdat` and `updatedat`. 
 
         Note that `name` is defined as a `varchar(255)`. Since we
         defined `name` as a `str` in its class definition, the ORM has
@@ -2832,15 +2834,92 @@ with book('Hacking Carapacian Core'):
         type: The ORM translated the Python class `datetime.date` to the
         MySQL data type `date`. 
 
-        The `id` field is a binary field that stores 16 bytes of data.
-        As you will remember from the above discussion on entity `id`
-        attributes, they are UUID's. Since all UUID's are 16 bytes, the
-        primary key is a `binary(16)` which the ORM will use to store the
-        id's value. You can also see that with the `proprietor__partyid`
-        and `owner__userid` fields, a `binary(16)` field is used as well
-        because these fields will be used to store the id of those
-        entities being referenced. Indexes are created on these fields
-        to allow for fast lookup of these reference fields.
+        The `id` field is a binary field that stores 16 bytes of binary
+        data.  As you will remember from the above discussion on entity
+        `id` attributes, their values are UUID's. Since all UUID's are
+        16 bytes, the primary key is a `binary(16)` which the ORM will
+        use to store the id's value. You can also see that with the
+        `proprietor__partyid` and `owner__userid` fields, a `binary(16)`
+        field is used because these fields will be used to store the
+        id's of those entities being referenced. Indexes are created on
+        these fields to allow for fast lookups on these reference
+        fields.
+
+        So now that we know what `CREATE TABLE` statement the ORM will
+        send to the database to create the table, lets cause the ORM to
+        do just that:
+      ''')
+
+      with listing(
+        'Issue the `CREATE TABLE` statement to the database'
+      ):
+        dog.orm.recreate()
+
+      print('''
+        The `recreate()` method first drops any table that exists then
+        creates the table using whatever is returned from
+        `orm.createtable`. 
+
+        <aside class="note">
+          Normally as a programmer, you won't need to know how to create
+          tables except in rare circumstances. Table creation and
+          modification are usually done by the `crust` command. See the
+          section [Running migrations](#8c9baa57) in the
+          [Crust](#0227a7b7) chapter.
+        </aside>
+
+        Now that the table exists in the database, we are able to
+        create a new `dog1 object and save it to the database.
+      ''')
+
+      with listing('Persist an ORM entity'):
+        # Run in an override context to avoid accessibility methods
+				with orm.override():
+
+          # Create and save and retrive dog as root user
+					with orm.sudo():
+            # Instantiate and set attribute values
+						d = dog()
+						d.name = 'Rex'
+						d.dob = 'Jun 10, 1998'
+
+            # Save the new dog to the database
+						d.save()
+
+            # Load the saved dog from the database back into a new dog
+            # object `d1`
+            d1 = dog(d.id)
+
+        # Make assertions about the d and d1 objects
+        eq('Rex', d.name)
+        eq('Rex', d1.name)
+
+        eq(primative.date('Jun 10, 1998'), d.dob)
+        eq(primative.date('Jun 10, 1998'), d1.dob)
+
+        eq(d.id, d1.id)
+
+      print('''
+        The first line puts the persistence code in an `override`
+        context. This line can be ignored for the most part. It simply
+        causes the persistence code to ignore accessibility methods
+        which you will learn more about in the
+        [Authorization](#54014644) section in the [Security](#ea38ee04)
+        chapter.
+
+        The next `with` statments sets the user to `root`. The ORM
+        demands that a user be set before we can persist entity objects.
+        Again, this will be covered later in the
+        [Authorization](#54014644) section in the [Security](#ea38ee04)
+        chapter.
+
+        Once we are in a valid context, we can instantiate a `dog`
+        object and set its attributes. Calling the `dog`s `save()`
+        causes a record to be created in the `dog` table. The attribute
+        values we set are saved to the `name` and `dob` fields of the
+        table. After the record has been saved, we can load the `dog`
+        object from the database back into a new variable, this time
+        `d1`. The attributes of `d` and `d1` should be the same.
       ''')
 
       # TODO Demonstrate id, createdat, updatedat and the like after
@@ -2862,7 +2941,7 @@ with book('Hacking Carapacian Core'):
 
     with section('Security', id='ea38ee04'):
 
-      with section('Authorization'):
+      with section('Authorization', id='54014644'):
         ...
 
       with section('Authentication'):
@@ -2880,8 +2959,8 @@ with book('Hacking Carapacian Core'):
   with chapter("Robotic process automation") as sec:
     ...
 
-  with chapter("Crust") as sec:
-    with section('Running migrations') as sec:
+  with chapter("Crust", id='0227a7b7'):
+    with section('Running migrations', id='8c9baa57'):
       ...
 
   with chapter("Logging") as sec:
