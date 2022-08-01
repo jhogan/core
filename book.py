@@ -2873,7 +2873,7 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with listing('Persist an ORM entity'):
-        # Run in an override context to avoid accessibility methods
+        # Run in an overridden context to avoid accessibility methods
 				with orm.override():
 
           # Create and save and retrive dog as root user
@@ -2903,9 +2903,8 @@ with book('Hacking Carapacian Core'):
         The first line puts the persistence code in an `override`
         context. This line can be ignored for the most part. It simply
         causes the persistence code to ignore accessibility methods
-        which you will learn more about in the
-        [Authorization](#54014644) section in the [Security](#ea38ee04)
-        chapter.
+        which will be covered in the [Authorization](#54014644) section
+        in the [Security](#ea38ee04) chapter.
 
         The next `with` statments sets the user to `root`. The ORM
         demands that a user be set before we can persist entity objects.
@@ -2913,17 +2912,25 @@ with book('Hacking Carapacian Core'):
         [Authorization](#54014644) section in the [Security](#ea38ee04)
         chapter.
 
-        Once we are in a valid context, we can instantiate a `dog`
+        Once we are finally in a valid context, we can instantiate a `dog`
         object and set its attributes. Calling the `dog`s `save()`
         causes a record to be created in the `dog` table. The attribute
         values we set are saved to the `name` and `dob` fields of the
-        table. After the record has been saved, we can load the `dog`
-        object from the database back into a new variable, this time
-        `d1`. The attributes of `d` and `d1` should be the same.
+        table. 
+
+        After the object has been saved, we are able to retrieve the
+        object from the database. We do this by passing the `id` to the
+        entity class's constructor. The resulting object, `d1`, should
+        be equivalent to the original `d`, as we assert at the end of
+        the listing.
       ''')
 
       # TODO Demonstrate id, createdat, updatedat and the like after
       # entity objects have been saved to the database.
+
+    with section('Debugging ORM entities'):
+      # chronicler.snapshot()
+      ...
 
     with section('Inheritance'):
       ...
