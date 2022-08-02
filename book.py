@@ -2914,9 +2914,9 @@ with book('Hacking Carapacian Core'):
 
         Once we are finally in a valid context, we can instantiate a `dog`
         object and set its attributes. Calling the `dog`s `save()`
-        causes a record to be created in the `dog` table. The attribute
-        values we set are saved to the `name` and `dob` fields of the
-        table. 
+        method causes a record to be created in the `dog`'s table. The
+        attribute values we set are saved to the `name` and `dob` fields
+        of the table. 
 
         After the object has been saved, we are able to retrieve the
         object from the database. We do this by passing the `id` to the
@@ -2925,11 +2925,60 @@ with book('Hacking Carapacian Core'):
         the listing.
       ''')
 
+      with section('Behind the scenes'):
+        print('''
+          As you may have guessed, when we called the `save()` method, the
+          ORM constructed an `INSERT` statement based on `d`'s attributes
+          and sent it to the database. You can view the `INSERT` statement
+          that the ORM will send by calling by using the 'getinsert`
+          method:
+
+            sql, args = d.orm.mappings.getinsert()
+
+          The `sql` variable above will have the *parameterized* `INSERT`
+          statement:
+
+            INSERT INTO main_dogs (
+              `id`, `proprietor__partyid`, `owner__userid`, 
+              `createdat`, `updatedat`, `name`, `dob`
+            ) VALUES (_binary %s, %s, %s, %s, %s, %s, %s);
+
+          The `%s` placeholders are replaced by the elements in `args`
+          list.
+
+          When we retrieved the `dog` object via the constructor, the ORM
+          built an `SELECT` statement, sent it to the database, and
+          populated the attributes of `d1` with the results. We can get
+          the `SELECT` statement using the `orm`'s `select` property:
+
+            sql, args = d.orm.select
+
+          Like the `INSERT` statement, the `sql` variable will hold a
+          parameterized query like the one below:
+
+            SELECT * FROM main_dogs WHERE id = _binary %s
+
+          The `%s` placeholder will be replaced with the first element of
+          `args`, which will be a binary representation of the `dog`'s
+          id.
+
+          Later in the chapter, when we modify the `dog` entity and
+          delete it, we will see that the ORM creates and issues
+          `UPDATE` and `DELETE` statements respectively to the database
+          similar to the ones above.
+      ''')
+
       # TODO Demonstrate id, createdat, updatedat and the like after
       # entity objects have been saved to the database.
 
     with section('Debugging ORM entities'):
       # chronicler.snapshot()
+      ...
+
+    with section('Relationships'):
+      ...
+
+    with section('Atomicity'):
       ...
 
     with section('Inheritance'):
