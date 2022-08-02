@@ -651,6 +651,12 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
+            # Recreate this table because the entry in it will be
+            # orphaned since the tables for 'asset' (`asset`) and 'pom'
+            # (`site`) were deleted above.
+            import carapacian_com
+            carapacian_com.site.orm.recreate()
+
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
 
