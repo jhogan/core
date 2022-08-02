@@ -5560,8 +5560,8 @@ class mappings(entitiesmod.entities):
 
         return ixs
 
-    # TODO getinsert, getupdate and getdelete should be defined on the
-    # `orm` class.
+    # TODO:18725bb1 getinsert, getupdate and getdelete should be defined
+    # on the `orm` class.
     def getinsert(self):
         """ Returns a tuple whose first element is an INSERT INTO
         statement and whose second element is the parameterized
