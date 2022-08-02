@@ -642,7 +642,10 @@ class page(tester.tester):
             propr.owner = ecommerce.users.root
             
         # Now we can call the constructor
-        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+        mods = (
+            'party', 'ecommerce', 'pom', 
+            'asset', 'apriori', 'file',
+        )
         super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:

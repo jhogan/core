@@ -247,7 +247,7 @@ inherits from `dom.nav`.
 
 Entire websites are represented by classes that inherit from `pom.site`.
 For example, in website modules, such as
-[carpacian_com.py](carapacian_com.py), the `carapacian_com.site` class
+[carapacian_com.py](carapacian_com.py), the `carapacian_com.site` class
 inherits from `pom.site`, while classes that inherit from `pom.page`
 exist in that module to represent the website's pages.
 
