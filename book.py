@@ -2883,6 +2883,10 @@ with book('Hacking Carapacian Core'):
 						d.name = 'Rex'
 						d.dob = 'Jun 10, 1998'
 
+            # Assert the builtin attributes createdat and updatedat
+            none(d.createdat)
+            none(d.updatedat)
+
             # Save the new dog to the database
 						d.save()
 
@@ -2890,40 +2894,54 @@ with book('Hacking Carapacian Core'):
             # object `d1`
             d1 = dog(d.id)
 
-        # Make assertions about the d and d1 objects
-        eq('Rex', d.name)
-        eq('Rex', d1.name)
+          # Make assertions about the d and d1 objects
+          eq('Rex', d.name)
+          eq('Rex', d1.name)
 
-        eq(primative.date('Jun 10, 1998'), d.dob)
-        eq(primative.date('Jun 10, 1998'), d1.dob)
+          eq(primative.date('Jun 10, 1998'), d.dob)
+          eq(primative.date('Jun 10, 1998'), d1.dob)
 
-        eq(d.id, d1.id)
+          eq(d.id, d1.id)
 
-      print('''
-        The first line puts the persistence code in an `override`
-        context. This line can be ignored for the most part. It simply
-        causes the persistence code to ignore accessibility methods
-        which will be covered in the [Authorization](#54014644) section
-        in the [Security](#ea38ee04) chapter.
+          # Assert the builtin attributes createdat and updatedat
+          type(primative.datetime, d.createdat)
+          type(primative.datetime, d.updatedat)
 
-        The next `with` statments sets the user to `root`. The ORM
-        demands that a user be set before we can persist entity objects.
-        Again, this will be covered later in the
-        [Authorization](#54014644) section in the [Security](#ea38ee04)
-        chapter.
+          eq(d.createdat, d1.createdat)
+          eq(d.updatedat, d1.updatedat)
+          
+          # updatedat and createdat are equal to each other when entity is
+          # created.
+          eq(d.updatedat, d.createdat)
 
-        Once we are finally in a valid context, we can instantiate a `dog`
-        object and set its attributes. Calling the `dog`s `save()`
-        method causes a record to be created in the `dog`'s table. The
-        attribute values we set are saved to the `name` and `dob` fields
-        of the table. 
+        print('''
+          The first line puts the persistence code in an `override`
+          context. This line can be ignored for the most part. It simply
+          causes the persistence code to ignore accessibility methods
+          which will be covered in the [Authorization](#54014644) section
+          in the [Security](#ea38ee04) chapter.
 
-        After the object has been saved, we are able to retrieve the
-        object from the database. We do this by passing the `id` to the
-        entity class's constructor. The resulting object, `d1`, should
-        be equivalent to the original `d`, as we assert at the end of
-        the listing.
-      ''')
+          The next `with` statments sets the user to `root`. The ORM
+          demands that a user be set before we can persist entity objects.
+          Again, this will be covered later in the
+          [Authorization](#54014644) section in the [Security](#ea38ee04)
+          chapter.
+
+          Once we are finally in a valid context, we can instantiate a `dog`
+          object and set its attributes. The `createdat` and `updatedat`
+          attributes are `None' beore we save the `dog` to the database.
+          Calling the `dog`s `save()` method causes a record to be created
+          in the `dog`'s table. The attribute values we set are saved to
+          the `name` and `dob` fields of the table. The `createdat` and
+          `updatedat` attributes will contain a datetime equal to the
+          moment the `dog` was saved.
+
+          After the object has been saved, we are able to retrieve the
+          object from the database. We do this by passing the `id` to the
+          entity class's constructor. The resulting object, `d1`, should
+          be equivalent to the original `d`, as we assert at the end of
+          the listing.
+        ''')
 
       with section('Behind the scenes'):
         print('''
@@ -2968,8 +2986,48 @@ with book('Hacking Carapacian Core'):
           similar to the ones above.
       ''')
 
-      # TODO Demonstrate id, createdat, updatedat and the like after
-      # entity objects have been saved to the database.
+      print('''
+        So far, we've seen how to use a simple entity to save and
+        retrieve its data to and from a database. Next we will
+        demonstrate how to update the entity the delete it. Let's take
+        our `dog` object `d` and change the `name` attribute the
+        persiste the changes to the database.
+
+      ''')
+
+      with listing('Update an entity'):
+
+        # Adjust the security context so we can successfully update
+        # the dog
+				with orm.override(), with orm.sudo():
+
+          # Observe that the entity knows that it is "clean"
+          false(d.orm.isdirty)
+          
+          # Update the dog name
+          d.name = 'Patches'
+
+          # Observe that the orm knows that it is dirty 
+          true(d.orm.isdirty)
+
+          # Persist the dog
+          d.save()
+
+          # Get a reloaded instance of the dog
+          d1 = d.orm.reloaded()
+
+          # Assert that the reloaded dog matches the original dog
+          eq(d.id, d1.id)
+          eq(d.name, d1.name)
+
+          # This assertion proves that the entity was successfully
+          # updated in the database
+          eq('Patches', d1.name)
+
+        print('''
+          
+        ''')
+
 
     with section('Debugging ORM entities'):
       # chronicler.snapshot()
