@@ -28,12 +28,12 @@ Exception classes corresponding to HTTP status codes 3xx, 4xx and 5xx
 are also provided in this module.
 """
 
+from config import config
 from dbg import B, PM
 from functools import reduce
 from pprint import pprint
 import apriori
 import auth
-import config
 import dom
 import entities
 import exc
