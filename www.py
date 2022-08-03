@@ -684,18 +684,23 @@ class _request:
             # of at the top
             import pom
 
-            # NOTE 'server_site' is a contrived, non-HTTP environment
-            # variable used by test scripts to pass in instances of site
-            # objects to use.
             ws = None
             try:
                 ws = self.environment['HTTP_HOST']
             except KeyError:
                 if config().indevelopment:
                     try:
+                        # NOTE 'SERVER_SITE' is a contrived, non-HTTP
+                        # environment variable used by test scripts to
+                        # pass an instances of site objects to use.
                         ws = self.environment['SERVER_SITE']
                     except KeyError:
                         pass
+                else:
+                    # TODO Raise a useful Exception here if, for some
+                    # reason, the user agent doesn't provide an
+                    # HTTP_HOST. 
+                    ...
 
             # If ws is a string, look for the website module that
             # matches the string. The website module will have the

@@ -8,6 +8,18 @@
 
 # TODO Add a `store` property. This is already being implemented in
 # config.py. See file.inode.store.
+
+# TODO Create a constuctor that requires a 'bypass' argument. The gaol
+# is to discourage use from non-subclasses. We want to prevent code like
+# thi:
+#
+#    import config
+#    config.configuration().indevelopment
+#
+# in favor of
+#  
+#    config.config().indevelopment
+
 import accounts
 from dbg import B
 
