@@ -799,16 +799,15 @@ class tester(entities.entity):
 
                 def create_environ(env=None):
                     d = {
-                        'content_type': 'application/x-www-form-urlencoded',
-                        'http_accept': '*/*',
-                        'http_host': '127.0.0.0:8000',
-                        'http_user_agent': 'tester/1.0',
-                        'raw_uri': '/',
-                        'remote_port': '43130',
-                        'script_name': '',
-                        'server_port': '8000',
-                        'server_protocol': 'http/1.1',
-                        'server_software': 'gunicorn/19.4.5',
+                        'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+                        'HTTP_ACCEPT': '*/*',
+                        'HTTP_USER_AGENT': 'tester/1.0',
+                        'RAW_URI': '/',
+                        'REMOTE_PORT': '43130',
+                        'SCRIPT_NAME': '',
+                        'SERVER_PORT': '8000',
+                        'SERVER_PROTOCOL': 'http/1.1',
+                        'SERVER_SOFTWARE': 'gunicorn/19.4.5',
                         'gunicorn.socket': None,
                         'wsgi.errors': None,
                         'wsgi.file_wrapper': None,
@@ -922,14 +921,14 @@ class tester(entities.entity):
                 else: 
                     env = create_environ()
 
-                env['path_info']       =  path
-                env['query_string']    =  qs
-                env['server_name']     =  ws.host
-                env['server_site']     =  ws
-                env['request_method']  =  meth
-                env['remote_addr']     =  self.tabs.browser.ip
-                env['http_referer']    =  self.referer
-                env['user_agent']      =  self.browser.useragent
+                env['PATH_INFO']       =  path
+                env['QUERY_STRING']    =  qs
+                env['SERVER_NAME']     =  ws.host
+                env['SERVER_SITE']     =  ws
+                env['REQUEST_METHOD']  =  meth
+                env['REMOTE_ADDR']     =  self.tabs.browser.ip
+                env['HTTP_REFERER']    =  self.referer
+                env['USER_AGENT']      =  self.browser.useragent
 
                 # Create WSGI app
                 app = www.application()
