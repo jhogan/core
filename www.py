@@ -920,7 +920,7 @@ class _request:
             try:
                 ip = str(self.environment['REMOTE_ADDR'])
             except:
-                ua = str()
+                ip = str()
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
 
