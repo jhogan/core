@@ -4604,7 +4604,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg = None
 
                             if own:
-                                if own.id != map.value:
+                                # The security contekt's owner must
+                                # match the entity if we are not root.
+                                if not own.isroot and own.id != map.value:
                                     msg = (
                                         'Owner id does not match orm id'
                                     )
