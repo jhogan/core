@@ -2989,10 +2989,10 @@ with book('Hacking Carapacian Core'):
       print('''
         So far, we've seen how to use a simple entity to save and
         retrieve its data to and from a database. Next we will
-        demonstrate how to update the entity the delete it. Let's take
-        our `dog` object `d` and change the `name` attribute the
-        persiste the changes to the database.
-
+        demonstrate how to update the entity's values in the database.
+        After that, we will learn how to delete the entity's record.. Let's take
+        our `dog` object `d` and change the value for its `name`
+        attribute. Then we will persist the changes to the database.
       ''')
 
       with listing('Update an entity'):
@@ -3001,14 +3001,8 @@ with book('Hacking Carapacian Core'):
         # the dog
 				with orm.override(), with orm.sudo():
 
-          # Observe that the entity knows that it is "clean"
-          false(d.orm.isdirty)
-          
           # Update the dog name
           d.name = 'Patches'
-
-          # Observe that the orm knows that it is dirty 
-          true(d.orm.isdirty)
 
           # Persist the dog
           d.save()
@@ -3025,7 +3019,27 @@ with book('Hacking Carapacian Core'):
           eq('Patches', d1.name)
 
         print('''
-          
+          As in the prior example, you can ignore the `with` statement.
+          We will cover security in the [Security](#ea38ee04) chapter.
+
+          The next line changes the `dog`'s `name` attribute. As in the
+          prior example, we call the entity`s `save()` method. The
+          `save()` method issues an `UPDATE` statement to the database
+          that changes the records `name` field to "Patches".
+
+          The rest of the listing demonstrates that the record was
+          actually updated in the database. The next line introduces the
+          `orm.reloaded()` method. This method issues a `SELECT` query
+          to the database to reload the entity by its primary key. It is
+          identical to writing:
+              
+              d1 = dog(d.id)
+
+          Once we have a reloaded version of the dog objects, we can
+          demonstrate that its attributes match the original `dog`
+          object `d`, and that the reloaded version's `name` is
+          "Patches". This proves the `save()` method successfully
+          changed the entity's record in the database.
         ''')
 
 
