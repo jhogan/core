@@ -943,9 +943,16 @@ class tester(entities.entity):
                 iter = app(env, start_response)
 
                 res = www._response(req) 
-                res._status = st
+
+                # Just get the status code from st (which contains the
+                # entire phrase, i.e., '200 OK'). In the future, we may
+                # have a res.message setter that can parse this out, but
+                # that would only be necessary if we want to include
+                # non-standard phrases such as '502 Bad Database
+                # Connection' instead of the standard '502 Bad Gateway'.
+                res._status = st.split()[0]
                 res._headers = www.headers(hdrs)
-                res.body = next(iter)
+                res.body = next(iter).decode('utf-8')
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')

@@ -1428,7 +1428,7 @@ class _response():
     def status(self):
         """ The HTTP status code of the response.
         """
-        return self._status
+        return int(self._status)
 
     @status.setter
     def status(self, v):
