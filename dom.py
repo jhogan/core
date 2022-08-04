@@ -6263,8 +6263,8 @@ class html(element):
     """
 
     def __init__(self, html=None, ids=False, *args, **kwargs):
-        """ Create HTML element, pares HTML string depending on whether
-        or not `html` is provided (see docstring in for class)
+        """ Create HTML element, parses HTML string depending on whether
+        or not `html` is provided (see docstring for this class)
 
         :param: html str: If provided, the html is parsed. See docstring
         for class.

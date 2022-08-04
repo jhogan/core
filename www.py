@@ -342,6 +342,7 @@ class application:
 
                 # Return the responses body to the browser
                 return iter([bytes(res.body, 'UTF-8')]) 
+
             request = None
 
 # TODO The class name should be `request` and the main instance should
