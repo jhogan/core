@@ -990,7 +990,7 @@ class _request:
         """
         if self.iswsgi:
             try:
-                return int(self.environment.get('content_length', 0))
+                return int(self.environment.get('CONTENT_LENGTH', 0))
             except ValueError:
                 return 0
 

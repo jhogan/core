@@ -719,7 +719,7 @@ class tester(entities.entity):
                 # Setting the Content-Type header to application/json
                 # basically flags the request as XHR.
                 hdrs = www.headers(
-                    {'content_type': 'application/json'}
+                    {'CONTENT_TYPE': 'application/json'}
                 )
 
                 return self._request(
@@ -878,7 +878,7 @@ class tester(entities.entity):
                         inp = io.BytesIO(body)
 
                         env = create_environ({
-                            'content_length':  str(len(body)),
+                            'CONTENT_LENGTH':  str(len(body)),
                             'wsgi.input':      inp,
                         })
                         
@@ -904,18 +904,18 @@ class tester(entities.entity):
                         inp.seek(0)
 
                         env = create_environ({
-                            'content_type':  (
+                            'CONTENT_TYPE':  (
                                 'multipart/form-data; '
                                 f'boundry={boundry}'
                             ),
-                            'content_length': len(inp.getvalue()),
+                            'CONTENT_LENGTH': len(inp.getvalue()),
                             'wsgi.input': inp,
                         })
                     else:
                         inp = io.BytesIO(frm.post)
 
                         env = create_environ({
-                            'content_length':  len(frm.post),
+                            'CONTENT_LENGTH':  len(frm.post),
                             'wsgi.input':      inp,
                         })
                 else: 
