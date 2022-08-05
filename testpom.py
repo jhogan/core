@@ -2035,7 +2035,6 @@ class page(tester.tester):
         self.eq('I got clicked', hit.logs.first.message)
         self.none(hit.isjwtvalid)
 
-
         # Now that we've clicked the button, the tab's internal DOM
         # should have a <p> tag with the word Thanks in it due to the
         # XHR request having completed successfully.

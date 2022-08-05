@@ -832,7 +832,7 @@ class visit(orm.entity):
 # perhaps we should be using apriori.log itself here. If not, we need a
 # comment explaining why not.
 class log(orm.entity):
-    """ A log entry a user can add to the hit entity.
+    """ A log entry a framework user can add to the hit entity.
 
         class mypage(pom.page):
             def main(self):
