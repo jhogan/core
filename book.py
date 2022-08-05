@@ -2986,62 +2986,109 @@ with book('Hacking Carapacian Core'):
           similar to the ones above.
       ''')
 
-      print('''
-        So far, we've seen how to use a simple entity to save and
-        retrieve its data to and from a database. Next we will
-        demonstrate how to update the entity's values in the database.
-        After that, we will learn how to delete the entity's record.. Let's take
-        our `dog` object `d` and change the value for its `name`
-        attribute. Then we will persist the changes to the database.
-      ''')
-
-      with listing('Update an entity'):
-
-        # Adjust the security context so we can successfully update
-        # the dog
-				with orm.override(), with orm.sudo():
-
-          # Update the dog name
-          d.name = 'Patches'
-
-          # Persist the dog
-          d.save()
-
-          # Get a reloaded instance of the dog
-          d1 = d.orm.reloaded()
-
-          # Assert that the reloaded dog matches the original dog
-          eq(d.id, d1.id)
-          eq(d.name, d1.name)
-
-          # This assertion proves that the entity was successfully
-          # updated in the database
-          eq('Patches', d1.name)
-
+      with section('Updating an entity'):
         print('''
-          As in the prior example, you can ignore the `with` statement.
-          We will cover security in the [Security](#ea38ee04) chapter.
-
-          The next line changes the `dog`'s `name` attribute. As in the
-          prior example, we call the entity`s `save()` method. The
-          `save()` method issues an `UPDATE` statement to the database
-          that changes the records `name` field to "Patches".
-
-          The rest of the listing demonstrates that the record was
-          actually updated in the database. The next line introduces the
-          `orm.reloaded()` method. This method issues a `SELECT` query
-          to the database to reload the entity by its primary key. It is
-          identical to writing:
-              
-              d1 = dog(d.id)
-
-          Once we have a reloaded version of the dog objects, we can
-          demonstrate that its attributes match the original `dog`
-          object `d`, and that the reloaded version's `name` is
-          "Patches". This proves the `save()` method successfully
-          changed the entity's record in the database.
+          So far, we've seen how to use a simple entity to save and
+          retrieve its data to and from a database. Next we will
+          demonstrate how to update the entity's values in the database.
+          After that, we will learn how to delete the entity's record.. Let's take
+          our `dog` object `d` and change the value for its `name`
+          attribute. Then we will persist the changes to the database.
         ''')
 
+        with listing('Update an entity'):
+
+          # Adjust the security context so we can successfully update
+          # the dog
+          with orm.override(), orm.sudo():
+
+            # Update the dog name
+            d.name = 'Patches'
+
+            # Persist the dog
+            d.save()
+
+            # Get a reloaded instance of the dog
+            d1 = d.orm.reloaded()
+
+            # Assert that the reloaded dog matches the original dog
+            eq(d.id, d1.id)
+            eq(d.name, d1.name)
+
+            # This assertion proves that the entity was successfully
+            # updated in the database
+            eq('Patches', d1.name)
+
+          print('''
+            As in the prior example, you can ignore the `with` statement.
+            We will cover security in the [Security](#ea38ee04) chapter.
+
+            The next line changes the `dog`'s `name` attribute. As in the
+            prior example, we call the entity`s `save()` method. The
+            `save()` method issues an `UPDATE` statement to the database
+            that changes the database record's `name` field to "Patches".
+
+            The rest of the listing demonstrates that the record was
+            actually updated in the database. The next line introduces the
+            `orm.reloaded()` method. This method issues a `SELECT` query
+            to the database to reload the entity by its primary key. It is
+            identical to writing:
+                
+                d1 = dog(d.id)
+
+            Once we have a reloaded version of the dog objects, we can
+            demonstrate that its attributes match the original `dog`
+            object `d`, and that the reloaded version's `name` is
+            "Patches". This proves the `save()` method successfully
+            changed the entity's record in the database.
+          ''')
+
+        with section('Deleting an entity'):
+          print('''
+            As you would probably expect, the ORM allows us to easily
+            delete an entity permanently from the database.
+          '''
+
+          with listing('Deleting an entity'):
+            # Adjust the security context so we can successfully delete
+            # the dog
+            with orm.override(), orm.sudo():
+
+              # Delete the dog from the database
+              d.delete()
+
+              # Import the db module
+              import db
+
+              # Attempting to load the deleted record results in a
+              # db.RecordNotFoundError exception
+              expect(db.RecordNotFoundError, d.orm.reloaded)
+
+          print('''
+            As you can see, deleting an entity is as simple as calling
+            its `delete()` method. We can prove that the database record
+            was successfully deleted by trying to reload it. We `expect`
+            a `db.RecordNotFoundError` to be raised when an attempt is
+            made to reload it. Though the record is deleted, the `d`
+            entity still exists in memory intact, so you are able to
+            interogates its attributes if you need to. You can even
+            resave it if you want.
+
+          ''')
+
+          with aside('Soft deletes'):
+            '''
+            You may expect the ORM to support a "soft delete" option
+            where the ORM allow you to call a delete method which sets a
+            flag on the record that marks it as 'deleted' without
+            actually removing the record from the database. Soft deletes
+            are not supported by the currently supported by the ORM and
+            probably won't be in the future. Regardless, you should
+            ensure that you database's disaster recovery plan is robust
+            enough to allow for the recovery of mistakenly deleted data
+            in a timely manner.  You are, of course, free to implement
+            an archive flag on the entity if you want.
+            '''
 
     with section('Debugging ORM entities'):
       # chronicler.snapshot()
