@@ -340,8 +340,15 @@ class application:
                 # the payload.
                 start_response(res.message, res.headers.list)
 
+                if body := res.body:
+                    pass
+                else:
+                    # In the case of HEAD request, body will be None, so
+                    # assign empty str for the bytes() function.
+                    body = ''
+
                 # Return the responses body to the browser
-                return iter([bytes(res.body, 'UTF-8')]) 
+                return iter([bytes(body, 'UTF-8')]) 
 
             request = None
 

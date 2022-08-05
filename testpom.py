@@ -1023,7 +1023,7 @@ class page(tester.tester):
         ws.pages += pg
         tab = self.browser().tab()
         res = tab.head('/en/time', ws)
-        self.none(res.body)
+        self.empty(res.body)
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):
