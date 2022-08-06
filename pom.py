@@ -1670,7 +1670,12 @@ class header(dom.header):
     def menus(self):
         """ The collection of menus for this ``header``.
         """
-        self._menus |= self.menu
+
+        for mnu in self._menus:
+            if mnu.name == self.menu.name:
+                break
+        else:
+            self._menus |= self.menu
 
         return self._menus
 
