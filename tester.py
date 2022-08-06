@@ -828,7 +828,7 @@ class tester(entities.entity):
 
                     cookies = self.browser.cookies
                     if cookies.count:
-                        d['http_cookie'] = cookies.header.value
+                        d['HTTP_COOKIE'] = cookies.header.value
 
                     # Merge env into d
                     if env:
@@ -836,23 +836,23 @@ class tester(entities.entity):
                     
                     # Merge the HTTP request headers in `arg_hdrs` into
                     # the environ dict. According to WSGI, actual HTTP
-                    # request headers should be preceeded by an 'http_'.
+                    # request headers should be preceeded by an 'HTTP_'.
                     if arg_hdrs:
                         for hdr in arg_hdrs:
-                            name = hdr.name.replace('-', '_').lower()
+                            name = hdr.name.replace('-', '_').upper()
 
-                            d['http_' + name] = hdr.value
+                            d['HTTP_' + name] = hdr.value
 
                             # Some standard WSGI environ keys overlap
                             # with standard HTTP request headers. In
                             # that case, add the WSGI version. So if we
                             # have a HTTP header of Content-Type, we
                             # should add that to the WSGI environ dict
-                            # as 'http_content_type' and 'content_type'.
+                            # as 'HTTP_CONTENT_TYPE' and 'CONTENT_TYPE'.
                             # See:
                             #     https://wsgi.readthedocs.io/en/latest/definitions.html
                             #     https://developer.mozilla.org/en-US/docs/Glossary/Request_header
-                            if name in ('content_type',):
+                            if name in ('CONTENT_TYPE',):
                                 d[name] = hdr.value
 
                     return d
