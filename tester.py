@@ -668,6 +668,13 @@ class tester(entities.entity):
                 """
                 return self.html[sel]
 
+            def __str__(self):
+                r = str(self.html)
+
+                # TODO Add URL to return when url is available
+                # r += str(self.url)
+                return r
+
             def navigate(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
                 the  webserver (ws). The response is used to update the
