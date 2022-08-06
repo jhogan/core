@@ -676,6 +676,7 @@ class menus(entities.entities, dom.section):
     def clone(self):
         """ Create and return a ``menus`` collection based on this one.
         """
+
         mnus = type(self)()
         for mnu in self:
             mnus += mnu.clone()

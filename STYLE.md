@@ -1,5 +1,7 @@
 Style Guide for the Core Framework
 ==================================
+<!-- TODO Add rule to indicate we favor single-quotes over double-quotes
+since they are more predictable to grep-->
 
 1. 72 characters line limit
 -------------------------

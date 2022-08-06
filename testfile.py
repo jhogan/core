@@ -265,7 +265,7 @@ class file_(tester.tester):
                 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
             )
 
-            # Create a save a user
+            # Create and save a user
             usr = ecommerce.user(name='luser')
             usr.save()
 

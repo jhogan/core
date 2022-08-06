@@ -23,6 +23,11 @@ testpom.py
 TODO In Environment section, declare Ubuntu's default terminal as the
 officially supported terminal for the source code. Indicate that any
 terminal that can handle support as well as this terminal is acceptable.
+
+TODO: Explain that, within tests, you can cause breakonexception by using this
+line:
+    
+    self.testers.breakonexception = True
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
