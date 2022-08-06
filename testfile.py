@@ -250,6 +250,14 @@ class file_(tester.tester):
 
         # Set up site
         ws = foonet()
+
+        # Make sure we persist any unsaved inodes under radix.  The
+        # cdnjs.cloudflare.com, for example, gets created but never
+        # saved, causing an ownership exception later in this test if we
+        # don't save it as root.
+        with orm.sudo():
+            file.directory.radix.save()
+
         with orm.proprietor(ws.proprietor):
             ws.pages += avatar()
             ws.save()
