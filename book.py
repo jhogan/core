@@ -2943,7 +2943,7 @@ with book('Hacking Carapacian Core'):
           the listing.
         ''')
 
-      with section('Behind the scenes'):
+      with section('Behind the scenes: inserting and retrieving'):
         print('''
           As you may have guessed, when we called the `save()` method, the
           ORM constructed an `INSERT` statement based on `d`'s attributes
@@ -3043,52 +3043,97 @@ with book('Hacking Carapacian Core'):
             changed the entity's record in the database.
           ''')
 
-        with section('Deleting an entity'):
-          print('''
-            As you would probably expect, the ORM allows us to easily
-            delete an entity permanently from the database.
+      with section('Behind the scenes: updating'):
+        print('''
+          Because we had already saved the `dog` object in a prior
+          listing, the dog object new it was no longer a **new** entity.
+          Thus, calling the `save()` method would not result in another
+          `INSERT` statement being sent to the database. However, since
+          its `name` attribute had been saved, the object entered into a
+          **dirty** state. An entity enters into a dirty state whenever
+          it detects that its attributes' values don't all equal the
+          values in its corresponding record in the database. (We will
+          cover the *new* and *dirty* persistence variables later in the
+          section called [Behind the scenes: persistence
+          varibles](#45e881e3)). Since the `dog` object knew it was
+          dirty, it issued an `UPDATE` statement to the database to
+          change the `name` field to "Patches". You can get the `UPDATE`
+          statement by calling the `dog`'s `getupdate()` method:
+
+            sql, args = d.orm.mappings.getupdate()
+
+          The `sql` variable above will have a parameterized `UPDATE`
+          statement. 
+
+            UPDATE main_dogs
+            SET 
+              `proprietor__partyid` = %s, 
+              `owner__userid` = _binary %s, 
+              `createdat` = %s, 
+              `updatedat` = %s, 
+              `name` = %s,
+              `dob` = %%s
+            WHERE id = _binary %s;
+
+          The `%s` placeholders will be replace by the values in
+          `args` before being sent to the database. Though each of the
+          `dog`'s fields are in the `SET` clause, it's the `name` field
+          that matters since that has the new value. The `updatedat`
+          field will be set to the current timestamp to indicate when
+          the record was last updated.
+        ''')
+
+      with section('Deleting an entity'):
+        print('''
+          As you would probably expect, the ORM allows us to easily
+          delete an entity permanently from the database.
+        '''
+
+        with listing('Deleting an entity'):
+          # Adjust the security context so we can successfully delete
+          # the dog
+          with orm.override(), orm.sudo():
+
+            # Delete the dog from the database
+            d.delete()
+
+            # Import the db module
+            import db
+
+            # Attempting to load the deleted record results in a
+            # db.RecordNotFoundError exception
+            expect(db.RecordNotFoundError, d.orm.reloaded)
+
+        print('''
+          As you can see, deleting an entity is as simple as calling
+          its `delete()` method. We can prove that the database record
+          was successfully deleted by trying to reload it. We `expect`
+          a `db.RecordNotFoundError` to be raised when an attempt is
+          made to reload it. Though the record is deleted, the `d`
+          entity object still exists in memory unaltered, so you are
+          able to interogates its attributes if you need to. You can
+          even resave it if you want.
+        ''')
+
+        with aside('Soft deletes'):
+          '''
+          You may expect the ORM to support a "soft delete" option
+          where the ORM allow you to call a delete method which sets a
+          flag on the record that marks it as 'deleted' without
+          actually removing the record from the database. Soft deletes
+          are not currently supported by the ORM.  Regardless, you
+          should ensure that you database's disaster recovery plan is
+          robust enough to allow for the recovery of mistakenly
+          deleted data in a timely manner.  You are, of course, free
+          to implement an archive flag on the entity if you want.
           '''
 
-          with listing('Deleting an entity'):
-            # Adjust the security context so we can successfully delete
-            # the dog
-            with orm.override(), orm.sudo():
+      with section('Behind the scenes: deleting'):
+        print('''
+        ''')
 
-              # Delete the dog from the database
-              d.delete()
-
-              # Import the db module
-              import db
-
-              # Attempting to load the deleted record results in a
-              # db.RecordNotFoundError exception
-              expect(db.RecordNotFoundError, d.orm.reloaded)
-
-          print('''
-            As you can see, deleting an entity is as simple as calling
-            its `delete()` method. We can prove that the database record
-            was successfully deleted by trying to reload it. We `expect`
-            a `db.RecordNotFoundError` to be raised when an attempt is
-            made to reload it. Though the record is deleted, the `d`
-            entity still exists in memory intact, so you are able to
-            interogates its attributes if you need to. You can even
-            resave it if you want.
-
-          ''')
-
-          with aside('Soft deletes'):
-            '''
-            You may expect the ORM to support a "soft delete" option
-            where the ORM allow you to call a delete method which sets a
-            flag on the record that marks it as 'deleted' without
-            actually removing the record from the database. Soft deletes
-            are not supported by the currently supported by the ORM and
-            probably won't be in the future. Regardless, you should
-            ensure that you database's disaster recovery plan is robust
-            enough to allow for the recovery of mistakenly deleted data
-            in a timely manner.  You are, of course, free to implement
-            an archive flag on the entity if you want.
-            '''
+      with section('Behind the scenes: persistence varibles', id='45e881e3'):
+        ...
 
     with section('Debugging ORM entities'):
       # chronicler.snapshot()
