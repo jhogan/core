@@ -2291,7 +2291,7 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
-        a_blog = tab['header>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
@@ -2312,7 +2312,7 @@ class page(tester.tester):
 
         self.eq('foonet | Spa', tab.html['title'].only.text)
 
-        a_blog = tab['header>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
 
         tab.inspa = False
         a_blog.click()
