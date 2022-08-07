@@ -7588,7 +7588,7 @@ def proprietor(propr):
     propr1 = sec.proprietor
     try:
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # Set the proprietor to `propr` and yield immediatly
+        # Set the proprietor to `propr` and yield immediately
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sec.proprietor = propr
         yield
