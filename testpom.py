@@ -735,7 +735,8 @@ class page(tester.tester):
         self.isnot(ws.header, pg.header)
         self.isnot(ws.head, pg.head)
         self.isnot(ws.header.menus, pg.header.menus)
-        self.isnot(ws.header.menu, pg.header.menu)
+        self.none(ws.header.menu)
+        self.none(pg.header.menu)
 
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
@@ -777,6 +778,8 @@ class page(tester.tester):
                     These are the company's sales statistics:
                 ''')
 
+                self.header.makemain()
+
                 self.header.menu.items += pom.menu.item(
                     'Statistics',
                     href='http://www.statistics.com'
@@ -790,7 +793,6 @@ class page(tester.tester):
         pg.elements
 
         self.eq('Statistics', pg.header.menu.items.last.text)
-        self.ne('Statistics', ws.header.menu.items.last.text)
 
         self.eq(
             'http://www.statistics.com',
@@ -849,8 +851,10 @@ class page(tester.tester):
         pg = ws['/en/blogs']
         self.notnone(pg.site)
 
+        self.none(pg.header.menu)
+        self.none(ws.header.menu)
+
         self.isnot(pg.header,        ws.header)
-        self.isnot(pg.header.menu,   ws.header.menu)
         self.isnot(pg.header.menus,  ws.header.menus)
         self.isnot(pg.head,          ws.head)
 
@@ -2277,6 +2281,7 @@ class page(tester.tester):
     def it_patches_page_on_menu_click(self):
         class spa(pom.page):
             def main(self):
+                self.header.makemain()
                 self.main += dom.p('Welcome to the SPA')
 
         ws = foonet()
@@ -2300,6 +2305,7 @@ class page(tester.tester):
     def it_navigates_to_pages_when_spa_is_disabled(self):
         class spa(pom.page):
             def main(self):
+                self.header.makemain()
                 self.main += dom.p('Welcome to the SPA')
 
         ws = foonet()

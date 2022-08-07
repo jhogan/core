@@ -65,12 +65,10 @@ class site(pom.site):
             img  = 'https://carapacian.com/images/logo.png',
         )
 
-        mnu = hdr.menu
+        B()
+        hdr.menu = pom.menu(name='main')
 
-        itms = mnu.items 
-
-        itms.clear()
-
+        itms = hdr.menu.items
         itms += pom.menu.item('Services')
         itms += pom.menu.item('Products')
         itms += pom.menu.item('Services')

@@ -1622,7 +1622,6 @@ class header(dom.header):
         super().__init__(*args, **kwargs)
         self.site = site
         self._menus = menus()
-        self._menu = None
         self._logo = None
 
     def clone(self):
@@ -1631,12 +1630,6 @@ class header(dom.header):
         """
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
-
-        for mnu in hdr.menus:
-            if mnu.ismain:
-                break
-        else:
-            hdr.menu = self.menu.clone()
 
         # XXX Test this. It was changed in this branch.
         if logo := self.logo:
@@ -1670,13 +1663,6 @@ class header(dom.header):
     def menus(self):
         """ The collection of menus for this ``header``.
         """
-
-        for mnu in self._menus:
-            if mnu.name == self.menu.name:
-                break
-        else:
-            self._menus |= self.menu
-
         return self._menus
 
     @menus.setter
@@ -1687,16 +1673,32 @@ class header(dom.header):
     def menu(self):
         """ Return the main menu for this ``header`` object.
         """
-        if not self._menu:
-            self._menu = self._getmenu()
+        for mnu in self.menus:
+            if mnu.ismain:
+                return mnu
 
-        return self._menu
+        return None
 
     @menu.setter
     def menu(self, v):
-        self._menu = v
+        for i, mnu in self.menus.enumerate():
+            if mnu.ismain:
+                self.menus[i] = mnu
+                break
+        else:
+            v.name = 'main'
+            self.menus += v
 
-    def _getmenu(self):
+    def makemain(self):
+        if self.menu:
+            raise ValueError('Main menu already exists')
+
+        self.menu = self._getmenu(ws)
+
+        return self.menu
+
+    @staticmethod
+    def _getmenu(ws):
         """ Create and return a menu based on the site's pages.
         """
         def getitems(pgs):
@@ -1719,7 +1721,7 @@ class header(dom.header):
 
         mnu = menu('main')
 
-        for itm in getitems(self.site.pages):
+        for itm in getitems(ws.pages):
             mnu.items += itm
 
         return mnu
