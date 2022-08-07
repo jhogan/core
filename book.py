@@ -3115,7 +3115,7 @@ with book('Hacking Carapacian Core'):
           even resave it if you want.
         ''')
 
-        with aside('Soft deletes'):
+        with aside('Soft deletes', id='2b7b0ae4'):
           '''
           You may expect the ORM to support a "soft delete" option
           where the ORM allow you to call a delete method which sets a
@@ -3130,10 +3130,41 @@ with book('Hacking Carapacian Core'):
 
       with section('Behind the scenes: deleting'):
         print('''
+          The `delete()` method markes the dog object for deletion (by
+          setting the `d.orm.ismarkedfordeletion` persistence variable
+          to True, then immediately calls the `save()` method:
+
+            def delete(self):
+                self.orm.ismarkedfordeletion = True
+                self.save()
+
+          Using a flag to mark the entity for deletion allows for
+          defered deletion which may be useful in some situations. Note
+          that marking an entity for deletion is not a soft delete (see
+          the [aside on soft deletes](#2b7b0ae4); setting the
+          `ismarkedfordeletion` does nothing more than flag the `save()`
+          method to issue a `DELETE` statement to the database when
+          called.
+
+          The `DELETE` statement that is used can be obtained from the
+          `getdelete()` method:
+
+            sql, args = d.orm.mappings.getdelete()
+
+          The `sql` varible will contain the parameterized `DELETE`
+          statement:
+
+            DELETE FROM main_dogs WHERE id = _binary %s;
+
+          The first element of the `args` varible will contain the
+          primary key of the `dog` being deleted.
         ''')
 
       with section('Behind the scenes: persistence varibles', id='45e881e3'):
         ...
+
+    with section('ORM events'):
+      ...
 
     with section('Debugging ORM entities'):
       # chronicler.snapshot()
