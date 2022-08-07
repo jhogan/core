@@ -1578,6 +1578,9 @@ class entities:
         return r
 
     # TODO Rename 'item' to 'v'
+    # TODO __setitem__ should be similar to __getitem__ in that it
+    # should be able to except a key of type that uses the `id`
+    # attribute then the `name` attribute of `entity` objects.
     def __setitem__(self, key, item):
         """ Implements an indexer that can be assigned an element.
 
