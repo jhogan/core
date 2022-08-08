@@ -1693,7 +1693,7 @@ class header(dom.header):
         if self.menu:
             raise ValueError('Main menu already exists')
 
-        self.menu = self._getmenu(ws)
+        self.menu = self._getmenu(self.site)
 
         return self.menu
 

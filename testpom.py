@@ -170,7 +170,7 @@ class pom_menu_items(tester.tester):
         """
         ws = foonet()
         mnu = pom.menu('main')
-        main = ws.header.menus['main']
+        main = ws.header.makemain()
         mnu.items += main.items
 
         self.eq(main.pretty,        main.pretty)
@@ -286,7 +286,7 @@ class site(tester.tester):
     def it_appends_menu_items(self):
         ws = foonet()
         mnu = pom.menu('main')
-        main = ws.header.menus['main']
+        main = ws.header.makemain()
         mnu.items += main.items
 
         uls = dom.html(mnu.items.html)['ul>li']
@@ -387,6 +387,7 @@ class site(tester.tester):
     def it_menu_has_aria_attributes(self):
         ws = foonet()
 
+        ws.header.makemain()
         navs = ws.header['nav']
         self.two(navs)
 
@@ -395,11 +396,11 @@ class site(tester.tester):
 
     def it_calls_main_menu(self):
         ws = pom.site()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.zero(mnu.items)
 
         ws = foonet()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.five(mnu.items)
 
         self.eq(
@@ -453,7 +454,7 @@ class site(tester.tester):
 
     def it_mutates_main_menu(self):
         ws = foonet()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.five(mnu.items)
 
         # blogs item
@@ -486,7 +487,7 @@ class site(tester.tester):
 
         sels = dom.selectors('li')
         self.true('My Profile' in (x.text for x in mnu[sels]))
-        self.true('My Profile' in (x.text for x in ws.header[sels]))
+        self.true('My Profile' in (x.text for x in ws.header.menu[sels]))
 
         ''' Delete the blogs munu '''
         sels = dom.selectors('li > a[href="%s"]' % itm.page.path)
