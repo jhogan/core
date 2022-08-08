@@ -1235,7 +1235,7 @@ class element(entities.entity):
             # event.
             return self._trigger(trigger=attr)
 
-        raise AttributeError()
+        raise AttributeError(f"Attribute '{attr}' not found")
 
     def _on(self, ev):
         """ Return or set a memoized dom.event object for the event
@@ -2823,10 +2823,6 @@ class li(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
-
-# TODO:dea3866d Remove
-listitems = lis
-listitem = li
 
 class outputs(elements):
     """ A class used to contain a collection of ``output`` elements.
