@@ -3160,8 +3160,53 @@ with book('Hacking Carapacian Core'):
           primary key of the `dog` being deleted.
         ''')
 
-      with section('Behind the scenes: persistence varibles', id='45e881e3'):
-        ...
+      with section(
+        'Behind the scenes: persistence state varibles', id='45e881e3'
+      ):
+        print('''
+          In the above sections, we touched on entity **persistence state
+          variables**. In this section, we will delve deeper in to see how
+          they work.
+
+          Persistence variable are attributes of an entity's `orm`
+          object. There are three persistence state `isnew`, `isdirty`
+          and `ismarkedfordeletion`. 
+
+          When we first instantiate an entity, it will be in a *new*
+          state:
+
+            d = dog()
+						d.name = 'Rex'
+						d.dob = 'Jun 10, 1998'
+            true(d.orm.isnew)
+
+          The *new* state implies that the entity has no corresponding
+          record in the database. Thus, a call to the `save()` method
+          will cause an `INSERT` statement to be issued to the database.
+          If the `INSERT` succeeds, the `isnew` flag will be set to
+          `False:
+
+            d.save()
+            false(d.orm.isnew)
+
+          Now that the `isnew` variable is `False`, any subsequent calls
+          to `save()` will involve no interations with the database.
+          However, when we change an attribute's value, the ORM will
+          notice the change and set the `isdirty` flag to True:
+
+            false(d.orm.isdirty)
+            d.name = 'Patches'
+            true(d.orm.isdirty)
+
+          Now when we call `save()` and `UPDATE` statement will be
+          issued to the database to change the corresponding record to
+          match the entity's values.
+
+            d.save()
+            false(d.orm.isdirty)
+
+        ''')
+
 
     with section('ORM events'):
       ...
