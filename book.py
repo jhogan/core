@@ -3257,6 +3257,9 @@ with book('Hacking Carapacian Core'):
 
       ''')
 
+    with section('Testing ORM entities'):
+      ...
+
     with section('ORM events'):
       ...
 

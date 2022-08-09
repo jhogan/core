@@ -2013,13 +2013,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         onafterload event is raised in orm.collect(). 
         """
 
-        # Get a reference to the chronicler single ton
+        # Get a reference to the chronicler singleton
         chron = db.chronicler.getinstance()
 
         # Add a chonicle instance to the chronicler as a way of
         # recording, in memory, the database interaction (i.e., the SQL
         # and operation type, that occured.
-        chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
+        chron += db.chronicle(
+          eargs.entity, eargs.op, eargs.sql, eargs.args
+        )
 
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
