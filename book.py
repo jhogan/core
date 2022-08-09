@@ -3190,29 +3190,74 @@ with book('Hacking Carapacian Core'):
             false(d.orm.isnew)
 
           Now that the `isnew` variable is `False`, any subsequent calls
-          to `save()` will involve no interations with the database.
+          to `save()` will involve no interaction with the database.
           However, when we change an attribute's value, the ORM will
-          notice the change and set the `isdirty` flag to True:
+          notice the change and cause the `isdirty` flag to be True:
 
             false(d.orm.isdirty)
             d.name = 'Patches'
             true(d.orm.isdirty)
 
-          Now when we call `save()` and `UPDATE` statement will be
-          issued to the database to change the corresponding record to
-          match the entity's values.
+          Now when we call `save()`, the ORM will note that the entity
+          is dirty and *not* new, and will consequently issue an
+          `UPDATE` statement to the database to update the corresponding
+          record with the modified values:
 
             d.save()
             false(d.orm.isdirty)
 
+          Finally, there is the *marked-for-deletion* state indicated
+          by the `orm` object`s `ismarkedfordeletion` flag. This is a
+          simple flag that, when set to `True`, causes a call to
+          `save()` to delete entity's corresponding record:
+
+            d.orm.ismarkedfordeletion = True
+            d.save()
+            expect(db.RecordNotFoundError, d.orm.reloaded)
+
+          Above, the `save()` method observes that `ismarkedfordeletion`
+          is `True` and consequently issues a `DELETE` statement to the
+          database to delete the entity's corresponding record in the
+          database. Note, however, that the `delete()` method can do the
+          above job as well:
+            
+            d.delete()
+            expect(db.RecordNotFoundError, d.orm.reloaded)
         ''')
 
 
-    with section('ORM events'):
-      ...
-
     with section('Debugging ORM entities'):
-      # chronicler.snapshot()
+      print('''
+        When it isn't clear why the ORM is behaving in a certain way, it
+        is often useful to look under the hood and see what SQL is being
+        sent to the database. You have already seen the methods that get
+        the `INSERT`, `SELECT`, `UPDATE` and `DELETE` statement:
+
+            sql, args = d.orm.getinsert()
+            sql, args = d.orm.select
+            sql, args = d.orm.mappings.getupdate()
+            sql, args = d.orm.mappings.getdelete()
+
+        Each of the above returns a tuple where the first element is a
+        parameterized SQL statement and the second element is a list of
+        arguments used to replace the placeholders (`%s`) in the
+        parameterized SQL.
+
+        These can be useful, but they don't tell you the actual SQL that
+        is being sent the database when a given ORM operation is
+        invoked. Whenever the ORM interacts with the database, it
+        chronicles the SQL to the `db.chronicles` singleton. This
+        object keeps track of the last 20 SQL statements that were sent
+        to the database (or whatever `db.chronicler.getinstance().max`
+        equals). You can view these statements with a line like the
+        following:
+
+          import db
+          print(db.chronicler.getinstance().chronicles)
+
+      ''')
+
+    with section('ORM events'):
       ...
 
     with section('Relationships'):
