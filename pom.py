@@ -376,17 +376,6 @@ class site(asset.asset):
     def pages(self, v):
         self._pages = v
 
-    @classmethod
-    def getinstance(cls):
-        """ Get the single site instance for this session.
-        """
-        # TODO The site's host will be derived from a configuration file
-        # setting.
-
-        # XXX:4eb7385e Evaluate whether this method is still needed
-
-        return cls('foo.net')
-
     def __repr__(self):
         """ Return a string representation of the site object.
         """
