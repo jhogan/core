@@ -724,8 +724,7 @@ class _request:
             if isinstance(ws, pom.site):
                 self._site =  ws
             else:
-                # Set the site reference as set in the config logic
-                self._site = pom.site.getinstance()
+                raise TypeError('Invalid site type')
 
         return self._site
 
