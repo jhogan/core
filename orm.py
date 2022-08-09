@@ -7716,6 +7716,7 @@ class security:
             )
 
         return propr.id
+
     @property
     def proprietor(self):
         """
@@ -7761,7 +7762,7 @@ class security:
 
             (or)
 
-            ent.save()        # INSERT OR UPDATE
+            ent.save()        # INSERT or UPDATE
             
         When updating or deleting a record, the record must be owned by
         by the security().proprietor or else a ProprietorError will be

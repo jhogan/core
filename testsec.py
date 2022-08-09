@@ -1182,8 +1182,6 @@ class proprietor(tester.tester):
         self.notnone(phr.orm.super.orm.super.proprietor)
 
     def it_sets_proprietor(self):
-        """
-        """
         tsla = party.company(name='Tesla')
         orm.security().proprietor = tsla
 

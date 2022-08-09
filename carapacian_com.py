@@ -15,6 +15,7 @@ import pom
 import ecommerce
 import file
 
+# XXX Begin test file/script
 class sites(pom.sites):
     pass
 
@@ -65,7 +66,6 @@ class site(pom.site):
             img  = 'https://carapacian.com/images/logo.png',
         )
 
-        B()
         hdr.menu = pom.menu(name='main')
 
         itms = hdr.menu.items

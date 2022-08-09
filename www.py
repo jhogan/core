@@ -932,7 +932,6 @@ class _request:
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
 
-            # XXX Make sure nothing is in syslog when hitting /.
             logs.exception(msg)
 
     @property
