@@ -162,10 +162,11 @@ class application:
             # application.
             self.clear()
 
+            sec = orm.security()
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
-            orm.security().owner = ecommerce.users.anonymous
+            sec.owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
             req = self.request
@@ -174,7 +175,7 @@ class application:
 
             propr = ws.proprietor
 
-            orm.security.proprietor = propr
+            sec.proprietor = propr
 
             # Set the global request object
             request = self.request
