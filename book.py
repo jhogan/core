@@ -3255,6 +3255,37 @@ with book('Hacking Carapacian Core'):
           import db
           print(db.chronicler.getinstance().chronicles)
 
+        However, this technique is a little imprecise since it doesn't
+        tell us exactly which cronicled SQL statements correspond to
+        which lines where executed. A better way is to use the
+        `snapshot()` context manager to see what SQL a particular line
+        of Python is is causing to be sent to the database:
+
+          d = dog()
+          d.name = 'Rex'
+          d.dob = 'Jun 10, 1998'
+
+          with db.chronicler.snapshot():
+            d.save()
+
+        In the above example, the `INSERT` statement resulting from the
+        `save()` method will be printed to stdout. Obviously, the
+        snapshot() should only be used when debugging and the line
+        should be remove altogether before merging a feature branch
+        into 'main'. If for some reason you don't want the SQL to be
+        printed to stdout, you can suppress this behaviour and still
+        capture the SQL being sent to the database by passing `False` to
+        the `snapshot` method:
+
+          with db.chronicler.snapshot(False) as chrs:
+            d.save()
+
+            # chrs is a chronicler object
+            type(db.chronicler, chrs)
+
+            # We can stringify a chronicler object to get the SQL
+            # statements as a string.
+            sql_statements = str(chrs)
       ''')
 
     with section('Testing ORM entities'):
