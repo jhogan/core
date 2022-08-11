@@ -59,20 +59,6 @@ class configuration:
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
 
-    _instance = None
-    @classmethod
-    def getinstance(cls):
-        """ Get the singleton instance of the configuration.
-
-        :param: cls type: The ``configuration`` class or a subtype
-        thereof.
-        """
-        # XXX Are we still using this
-        B()
-        if not cls._instance:
-            cls._instance = cls()
-        return cls._instance
-
     @property
     def inproduction(self):
         """ Returns True if the current environment is considered a
