@@ -740,6 +740,13 @@ class page(tester.tester):
         self.none(ws.header.menu)
         self.none(pg.header.menu)
 
+    def it_gets_page_with_no_main_function(self):
+        ws = foonet()
+        tab = self.browser().tab()
+        res = tab.get('/', ws)
+        msg = res['main .message'].html
+        self.true('Page class needs main method' in msg)
+
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
         class stats(pom.page):
