@@ -1363,6 +1363,7 @@ class page(dom.html):
                                 'following: %s' % (k, str_flattened)
                             )
                         self._args[k] = arg in expected[1]
+
                 elif datetime.datetime in v.annotation.mro():
                     try:
                         v = primative.datetime(arg)
@@ -1626,7 +1627,6 @@ class header(dom.header):
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
 
-        # XXX Test this. It was changed in this branch.
         if logo := self.logo:
             hdr.logo = logo.clone()
 
@@ -1809,6 +1809,7 @@ class error(page):
     www.HttpError exception. This page will be used to capture the
     exceptions details and present it to the user.
     """
+
     @property
     def pages(self):
         """ A collection of error pages. Usually, the error pages will
@@ -1870,14 +1871,17 @@ class traceback(dom.article):
 class _404(page):
     """ An error page to show that the requested page was not found.
     """
-    # TODO I think this shoud inherit from ``error``.
+    # TODO I think this should inherit from ``error``.
 
-    # XXX Commented out reference to www.NotFoundError. When `gunicorn`
+    # NOTE Commented out reference to www.NotFoundError. When `gunicorn`
     # runs www.py, www.py imports pom.py. Referencing `www` before
     # `www.py` has been fully loaded causes a circular reference issue.
-    # I can't remember exactly why `ex` needs to be annotated. Either
-    # way, a solution needs to be devised for this.
+    # This is fine; it is not necessary to annotate this
+    # parameter. Parameters are only necessary to annotate so that user
+    # input (query strings, etc.) are defined ahead of time. This page,
+    # being an exception page, is never call by the user directly.
     #def main(self, ex: www.NotFoundError):
+
     def main(self, ex):
         """ The main method of the page.
 
