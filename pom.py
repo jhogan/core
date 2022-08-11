@@ -1102,14 +1102,12 @@ class page(dom.html):
         self._args         =  dict()
         self._resources    =  None
         
-        # TODO Shouldn't a page have a main function. If not, explain
-        # why here.
         try:
             self._mainfunc = self.main
         except AttributeError:
-            # XXX See why we get here and explain why. See TODO above.
-            # Should we log this? A user may forget to add a `main`
-            # method and get a `pass` instead of a helpful error message.
+            # A page doesn't necessarily need a main function on
+            # instantiation.  # However, an AttributeError will be
+            # raised if the page is ever accessed.
             pass
 
         self.clear()
@@ -1472,6 +1470,14 @@ class page(dom.html):
                         meth()
                         
                 else:
+                    try:
+                        main = self._mainfunc
+                    except AttributeError as ex:
+                        cls = str(type(self))
+                        raise AttributeError(
+                            f'Page class needs main method: {cls}'
+                        ) from ex
+
                     # Inject global variables into main()
                     globs = self._mainfunc.__func__.__globals__
                     globs['req'] = www.request
