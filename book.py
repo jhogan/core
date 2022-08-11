@@ -3225,6 +3225,59 @@ with book('Hacking Carapacian Core'):
             expect(db.RecordNotFoundError, d.orm.reloaded)
         ''')
 
+      with section('The save() method'):
+        print('''
+          As we have seen, the `save()` method of an entity class
+          *persists* the entity to the database, i.e., it issues an
+          `INSERT`, `UPDATE` or `DELETE` statement, or no statement at
+          all, depending on the value of the persistence variables.
+
+          Normally the `save()` method is called without any parameters,
+          however it is possible to pass in zero or more entity objects
+          to have them saved as well. Considere the following:
+        ''')
+
+        with listing():
+          # Create three dogs
+          d = dog()
+          d.name = 'Rex'
+
+          d1 = dog()
+          d.name = 'Bandit'
+
+          d2 = dog()
+          d.name = 'Benji'
+
+          # Save the dogs
+          d.save(d1, d2)
+
+          # Assert that the dogs made it to the database
+          expect(None, d.orm.reloaded)
+          expect(None, d1.orm.reloaded)
+          expect(None, d2.orm.reloaded)
+
+        print('''
+          In the above listing, we create the `dog` "Rex", "Bandit" and
+          "Benji", then we save "Rex" giving its `save()` method
+          "Bandit" and "Benji". Each `dog` will be saved to the
+          database; that is to say, each `dog` will have their `save()`
+          method called.
+        ''')
+
+        with section('Atomicity'):
+          print('''
+            Any call to the `save()` method will result in an atomic
+            transaction to the database. That is to say: if there is an
+            exception raised during any part of the saving process, any
+            changes that were made to the dataase during the save will be
+            rolled back.
+
+            This may seem irrevelant at the moment since, whenever we've
+            called `save()` so far, only one record gets created, updated or
+            deleted. However, in future sections of this chapter, you will
+            see tha `save()` often involves multiple record changes.
+          ''')
+
 
     with section('Debugging ORM entities'):
       print('''
@@ -3256,10 +3309,10 @@ with book('Hacking Carapacian Core'):
           print(db.chronicler.getinstance().chronicles)
 
         However, this technique is a little imprecise since it doesn't
-        tell us exactly which cronicled SQL statements correspond to
-        which lines where executed. A better way is to use the
+        tell us exactly which chronicled SQL statements correspond to
+        which lines were executed. A better way is to use the
         `snapshot()` context manager to see what SQL a particular line
-        of Python is is causing to be sent to the database:
+        of Python is causing to be sent to the database:
 
           d = dog()
           d.name = 'Rex'
@@ -3269,7 +3322,7 @@ with book('Hacking Carapacian Core'):
             d.save()
 
         In the above example, the `INSERT` statement resulting from the
-        `save()` method will be printed to stdout. Obviously, the
+        `save()` method will be printed to `stdout`. Obviously, the
         snapshot() should only be used when debugging and the line
         should be remove altogether before merging a feature branch
         into 'main'. If for some reason you don't want the SQL to be
@@ -3288,6 +3341,7 @@ with book('Hacking Carapacian Core'):
             sql_statements = str(chrs)
       ''')
 
+
     with section('Testing ORM entities'):
       ...
 
@@ -3297,8 +3351,6 @@ with book('Hacking Carapacian Core'):
     with section('Relationships'):
       ...
 
-    with section('Atomicity'):
-      ...
 
     with section('Inheritance'):
       ...
