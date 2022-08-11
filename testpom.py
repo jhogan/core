@@ -660,6 +660,7 @@ class page(tester.tester):
 
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
+        party.company.orm.recreate(ascend=True)
 
         # Clear radix cache
         with suppress(AttributeError):
@@ -803,8 +804,6 @@ class page(tester.tester):
         sels = dom.selectors(
             'nav[aria-label=Main]>ul>li>a[href="http://www.statistics.com"]'
         )
-
-        # XXX Make sure we can run this test with -T
 
         self.one(pg[sels])
 
