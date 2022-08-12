@@ -2688,7 +2688,7 @@ with book('Hacking Carapacian Core'):
         account that created the record. 
       ''')
 
-    with section('Class complements'):
+    with section('Class complements', id='547592d9'):
       print('''
         Unlike regular `entity` classes, ORM entity classes need a
         complementary `entities` class. If we declared `dog` without a
@@ -3230,7 +3230,7 @@ with book('Hacking Carapacian Core'):
           As we have seen, the `save()` method of an entity class
           *persists* the entity to the database, i.e., it issues an
           `INSERT`, `UPDATE` or `DELETE` statement, or no statement at
-          all, depending on the value of the persistence variables.
+          all, depending on the values of the persistence variables.
 
           Normally the `save()` method is called without any parameters,
           however it is possible to pass in zero or more entity objects
@@ -3258,26 +3258,64 @@ with book('Hacking Carapacian Core'):
 
         print('''
           In the above listing, we create the `dog` "Rex", "Bandit" and
-          "Benji", then we save "Rex" giving its `save()` method
+          "Benji", then we save "Rex" passing to its `save()` method
           "Bandit" and "Benji". Each `dog` will be saved to the
           database; that is to say, each `dog` will have their `save()`
           method called.
+
+          The `save()` operation performed in an **atomic transaction**:
+          that is to say: if there is an exception raised during any
+          part of the saving process, any changes that were made to the
+          dataase during the save will be rolled back. An exception can
+          happen at any time during the save process and can result from
+          from anything from a network problem or invalid data in the
+          entity.
         ''')
 
-        with section('Atomicity'):
-          print('''
-            Any call to the `save()` method will result in an atomic
-            transaction to the database. That is to say: if there is an
-            exception raised during any part of the saving process, any
-            changes that were made to the dataase during the save will be
-            rolled back.
+    with section('Using ORM entities collections'):
+      print('''
+        So far we have worked with simple entity objects. As you may
+        remember from the [Class complement](#547592d9) section, each
+        entity class has a corresponding entities collection class.
+        Earlier, we had created a `dogs` collection class to serve as
+        the complement to the `dog` entity class. We can collect
+        instances of `dog` entity objects in a `dogs` collection and
+        save them in one line:
+      ''')
 
-            This may seem irrevelant at the moment since, whenever we've
-            called `save()` so far, only one record gets created, updated or
-            deleted. However, in future sections of this chapter, you will
-            see tha `save()` often involves multiple record changes.
-          ''')
+        with listing():
+          # Create a dogs collection
+          ds = dogs()
 
+          # Create and collect three dog entity objects
+          ds += dog()
+          ds.last.name = 'Rex'
+
+          ds += dog()
+          ds.last.name = 'Bandit'
+
+          ds += dog()
+          ds.last.name = 'Benji'
+
+          # Save the dogs
+          ds.save()
+
+          # Assert that the dogs made it to the database
+          for d in ds:
+            expect(None, d.orm.reloaded)
+
+        print('''
+          This listing is similar to the one before it except this time,
+          instead of using variables to store the `dog` instances, we
+          append them to a collection. We access the last appended `dog`
+          via the `last` attribute of the collection to set its `name`
+          attribute. Instead of saving each dog one by one, we can
+          simply call the `save()` method on the `dogs` enttities
+          collection. Like the previous listing, this `save()` will be
+          in an atomic transaction so that if there is an exception at
+          any point in the saving process, the entire transaction will
+          rollback.
+        ''')
 
     with section('Debugging ORM entities'):
       print('''
