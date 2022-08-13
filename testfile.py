@@ -1063,6 +1063,80 @@ class file_(tester.tester):
 
         self.eq(body, f.body.decode('ascii'))
 
+    def it_calls_creatability(self):
+        with orm.override():
+            dirname = uuid.uuid4().hex
+            d = file.directory(f'/var/log/{dirname}')
+            d.save()
+
+        ''' If proprietor owns a directory, it CAN create inodes
+        within it. '''
+        with orm.override(False):
+            with orm.proprietor(d.proprietor):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+                f = d.file(filename)
+                self.expect(None, f.save)
+
+        ''' If proprietor owns a directory, it CAN'T create inodes
+        within it. '''
+        with orm.override(False):
+            with orm.proprietor(party.company.carapacian):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+
+                try:
+                    f = d.file(filename)
+                    self.expect(orm.AuthorizationError, f.save)
+                finally:
+                    with orm.override(True):
+                        try:
+                            # Remove from radix cache so it won't be
+                            # saved (or attempted to be saved) by a
+                            # future test 
+                            f.delete()
+                        except:
+                            pass
+
+    def it_calls_retrievability(self):
+        with orm.override():
+            with orm.sudo():
+                name = uuid.uuid4().hex
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+                name = uuid.uuid4().hex
+                usr1 = ecommerce.user(name=name)
+                usr1.save()
+        
+        with orm.override():
+            dirname = uuid.uuid4().hex
+            d = file.directory(f'/var/log/{dirname}')
+            d.save()
+
+        with orm.proprietor(d.proprietor):
+            with orm.su(usr):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+                f = d.file(filename)
+                f.save()
+
+            with orm.override(False):
+                with orm.su(usr):
+                    self.expect(None, f.orm.reloaded)
+
+                with orm.su(usr1):
+                    self.expect(orm.AuthorizationError, f.orm.reloaded)
+
 class file_directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
