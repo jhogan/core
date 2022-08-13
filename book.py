@@ -572,7 +572,7 @@ with book('Hacking Carapacian Core'):
       with section('Tests as Effort Statements', id=0xd89c06c2)
         ...
 
-  with chapter("Entity and Entities Objects", id='64baaf7a'):
+  with chapter("Entity and entities objects", id='64baaf7a'):
     print('''
       Almost all classes in the framework inherit directly or indirectly
       from the `entity` class or the `entities` classes located in the 
@@ -587,7 +587,7 @@ with book('Hacking Carapacian Core'):
 
     ''')
 
-    with section('Using entities classes'):
+    with section('Using entities classes', id='eca3195f'):
       print('''
         Normally you don't use `entities` and `entity` classes directly.
         Instead, you create classes that inherit from them. Consider
@@ -3276,7 +3276,7 @@ with book('Hacking Carapacian Core'):
       print('''
         So far we have worked with simple entity objects. As you may
         remember from the [Class complement](#547592d9) section, each
-        entity class has a corresponding entities collection class.
+        entity class requires a corresponding entities collection class.
         Earlier, we had created a `dogs` collection class to serve as
         the complement to the `dog` entity class. We can collect
         instances of `dog` entity objects in a `dogs` collection and
@@ -3305,16 +3305,33 @@ with book('Hacking Carapacian Core'):
             expect(None, d.orm.reloaded)
 
         print('''
-          This listing is similar to the one before it except this time,
+          This listing is similar to the one before except this time,
           instead of using variables to store the `dog` instances, we
           append them to a collection. We access the last appended `dog`
           via the `last` attribute of the collection to set its `name`
           attribute. Instead of saving each dog one by one, we can
           simply call the `save()` method on the `dogs` enttities
-          collection. Like the previous listing, this `save()` will be
-          in an atomic transaction so that if there is an exception at
-          any point in the saving process, the entire transaction will
-          rollback.
+          collection. 
+
+          Like the previous listing, this `save()` operation will be
+          performed in an atomic transaction so that if there is an
+          exception at any point in the saving process, the entire
+          transaction will rollback, and the code that calls `save()`
+          will have the opportunity to `except` the Exception.
+
+          The `dogs` class is an entities collection class which means
+          it inherits from `orm.entities`. This class inherits from
+          `entities.entities` which we discussed at length in the [Using
+          entities classses](#eca3195f) section of the [Entity and
+          entities objects](#64baaf7a) chapter. Thus, `orm.entities`
+          classes inherits the rich feature-set of `entities.entities`
+          with some of those features being overridden to suite the
+          needs of ORM collection classes. In this section, we will
+          discuss these features in detail.
+
+          The most powerful feature of ORM entities is that they query
+          the database through their construction.
+
         ''')
 
     with section('Debugging ORM entities'):
