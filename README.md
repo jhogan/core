@@ -26,6 +26,8 @@ terminal that can handle support as well as this terminal is acceptable.
 
 TODO: Explain that, within tests, you can cause breakonexception by using this
 line:
+
+TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
     
     self.testers.breakonexception = True
 -->

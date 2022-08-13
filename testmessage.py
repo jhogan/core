@@ -271,7 +271,10 @@ class test_message(tester.tester):
             dis = dis.orm.reloaded()
 
     def it_calls_creatability(self):
-        """ Any user can create a message.
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Any user can create a message.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         with orm.override():
             name = uuid.uuid4().hex
@@ -290,7 +293,10 @@ class test_message(tester.tester):
                 self.expect(None, msg.save)
 
     def it_calls_retrievability(self):
-        """ Any user can retrieve a message they created.
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Any user can retrieve a message they created.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         with orm.override():
             with orm.sudo():

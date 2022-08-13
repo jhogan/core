@@ -72,7 +72,7 @@ class foonet(pom.site):
         self.host = 'foo.net'
         self.name = 'foo.net'
 
-class file_(tester.tester):
+class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """
@@ -354,7 +354,7 @@ class file_(tester.tester):
                 self.eq(resxs.first.id, resx2s.first.id)
                 self.eq('anonymous', resx2s.first.crossorigin)
 
-class file_file(tester.tester):
+class file_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -291,9 +291,15 @@ class inode(orm.entity):
         if isinstance(id, str):
             try:
                 # See if str is a UUID, i.e., the inode's primary key
+
+                # FIXME:8960bf52 This can't be right. It prevents us
+                # from creating directories with names that look like
+                # UUIDs:
+                #
+                #     dir.file(uuid4().hex)
                 id = uuid.UUID(hex=id)
             except ValueError:
-                # The str id wil be considered a path
+                # The str id will be considered a path
                 pass
 
         if isinstance(id, str):
@@ -648,8 +654,6 @@ class inode(orm.entity):
         creatability for `inode`.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
-        # XXX Write tests 
-
         sec = orm.security()
 
         if rent := self.inode:
@@ -1306,8 +1310,8 @@ class directory(inode):
             # varient.
 
             # TODO Write test to ensure radix is always owned by root.
-            # TODO This looks a lot life _floaters. We can consolidate
-            # with a private method
+            # TODO This looks a lot like _floaters. We can consolidate
+            # with a private method.
             import party
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
