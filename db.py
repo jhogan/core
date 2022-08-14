@@ -516,8 +516,8 @@ class executioner(entitiesmod.entity):
                 #     https://github.com/PyMySQL/mysqlclient/commit/8a46faf58071cb6eba801edd76f1bb670af1a41d
                 #
                 # NOTE that it's good we have an executioner/executor
-                # class to centralize this, but there are severa other
-                # areas in the code base that call MySQLdb.cursor.execute
+                # class to centralize this, but there are several other
+                # areas in the codebase that call MySQLdb.cursor.execute
                 # that won't benefit from this hack at the moment. We
                 # should work in the direction of getting all calls to
                 # MySQL to go through this class.
