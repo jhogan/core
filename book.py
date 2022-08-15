@@ -3276,98 +3276,130 @@ with book('Hacking Carapacian Core'):
         with section(
           'Collecting and saving with ORM entities collections'
         ):
+          print('''
+            So far we have worked with individual entity objects. As you may
+            remember from the [Class complement](#547592d9) section, each
+            entity class requires a corresponding entities collection class.
+            Earlier, we had created a `dogs` collection class to serve as
+            the complement to the `dog` entity class. We can use that class
+            to collect `dog` entity objects and use the collection's
+            `save()` method to save all the collected objects.
+          ''')
+
+            with listing():
+              # Create a dogs collection
+              ds = dogs()
+
+              # Create and collect three dog entity objects
+              ds += dog()
+              ds.last.name = 'Rex'
+
+              ds += dog()
+              ds.last.name = 'Bandit'
+
+              ds += dog()
+              ds.last.name = 'Benji'
+
+              # Save the dogs
+              ds.save()
+
+              # Assert that the dogs made it to the database
+              for d in ds:
+                expect(None, d.orm.reloaded)
+
+          print('''
+            This listing is similar to the one before except this time,
+            instead of using variables to store the `dog` instances, we
+            append them to a collection. We access the last appended `dog`
+            via the `last` attribute of the collection to set its `name`
+            attribute. Instead of saving each dog one-by-one, we can
+            simply call the `save()` method on the `dogs` entities
+            collection. 
+
+            Like the previous listing, this `save()` operation will be
+            performed in an atomic transaction so that, if there is an
+            exception at any point in the saving process, the entire
+            transaction will rollback, and the code that calls `save()`
+            will have the opportunity to `except` the `Exception`, e.g.,:
+              
+              try:
+                  ds.save()
+              except Exception as ex:
+                  # Find out what went wrong
+                  ...
+
+            In the listing, each `dog` was *new*, and therefore a `save()`
+            would have resulted in three `INSERT`s to the database.  However,
+            it is important to remember that, calling the `save()` on the
+            collection calls the `save()` method on each of the entity objects
+            in the collection. Thus, calling `save()` on a collection could
+            end up being a mixture of `INSERT`s, `UPDATE`s and `DELETE`s being
+            sent to the database depending on the persistence state of the
+            given entity object.  Also, calling `save()` on an entity
+            collection could result in no database interaction if the entity's
+            persistence state indicates that nothing should be done.
+
+            The `dogs` class is an entities collection class which means
+            it inherits from `orm.entities` which  inherits from
+            `entities.entities` which we discussed at length in the [Using
+            entities classses](#eca3195f) section of the [Entity and
+            entities objects](#64baaf7a) chapter. Thus, `orm.entities`
+            classes inherits the rich feature-set of `entities.entities`
+            with some of those features being overridden to suit the
+            needs of ORM collection classes. In this section, we will
+            discuss these features in detail.
+
+          ''')
+
+        with section('Querying with collection entities'):
+          print('''
+            One most powerful feature of ORM entities is that they can
+            query the database through their construction. As we've seen,
+            passing no arguments to the entities constructor does nothing
+            more than provide us with an empty collection object. However,
+            through the constructor we are able to specify arguments that
+            are used to create a `SELECT` statement which will be sent to
+            the database. The results from the `SELECT` will be used to
+            populate the collection.
+
+            Though we will see we can give full Boolean expressions
+            (similar to `WHERE` clauses) to the constructor, let's start
+            with what is perhaps the simplest type of query: a simple
+            equality test:
+          ''')
+
+          with listing('Performing a simple equality query'):
+            # Query the database fro all dogs that have a name of "Rex"
+            dgs = dogs('name', 'Rex')
+
+            # Assert that only one was found
+            one(dgs)
+
+            # Assert that its name is indeed Rex
+            eq('Rex', dgs.only.name)
+
         print('''
-          So far we have worked with individual entity objects. As you may
-          remember from the [Class complement](#547592d9) section, each
-          entity class requires a corresponding entities collection class.
-          Earlier, we had created a `dogs` collection class to serve as
-          the complement to the `dog` entity class. We can use that class
-          to collect `dog` entity objects and use the collection's
-          `save()` method to save all the collected objects.
-        ''')
+          From a previous listing, we had saved a `dog` to the database
+          that we named "Rex". The above construction of the `dogs`
+          collection searches for any `dog` in the `dogs` table with the
+          name of "Rex". The SQL it generates is similar to:
 
-          with listing():
-            # Create a dogs collection
-            ds = dogs()
+            SELECT *
+            FROM dogs
+            WHERE name = 'Rex';
 
-            # Create and collect three dog entity objects
-            ds += dog()
-            ds.last.name = 'Rex'
+          Since there is only one `dog` with that name, the collection
+          ends up containing only one dog object which we access through
+          the `only` attribute. Had there been more `dogs` named "Rex",
+          we would have ended up with more `dog` objects in the
+          collection.
 
-            ds += dog()
-            ds.last.name = 'Bandit'
-
-            ds += dog()
-            ds.last.name = 'Benji'
-
-            # Save the dogs
-            ds.save()
-
-            # Assert that the dogs made it to the database
-            for d in ds:
-              expect(None, d.orm.reloaded)
-
-        print('''
-          This listing is similar to the one before except this time,
-          instead of using variables to store the `dog` instances, we
-          append them to a collection. We access the last appended `dog`
-          via the `last` attribute of the collection to set its `name`
-          attribute. Instead of saving each dog one-by-one, we can
-          simply call the `save()` method on the `dogs` entities
-          collection. 
-
-          Like the previous listing, this `save()` operation will be
-          performed in an atomic transaction so that, if there is an
-          exception at any point in the saving process, the entire
-          transaction will rollback, and the code that calls `save()`
-          will have the opportunity to `except` the `Exception`, e.g.,:
-            
-            try:
-                ds.save()
-            except Exception as ex:
-                # Find out what went wrong
-                ...
-
-          In the listing, each `dog` was *new*, and therefore a `save()`
-          would have resulted in three `INSERT`s to the database.  However,
-          it is important to remember that, calling the `save()` on the
-          collection calls the `save()` method on each of the entity objects
-          in the collection. Thus, calling `save()` on a collection could
-          end up being a mixture of `INSERT`s, `UPDATE`s and `DELETE`s being
-          sent to the database depending on the persistence state of the
-          given entity object.  Also, calling `save()` on an entity
-          collection could result in no database interaction if the entity's
-          persistence state indicates that nothing should be done.
-
-          The `dogs` class is an entities collection class which means
-          it inherits from `orm.entities` which  inherits from
-          `entities.entities` which we discussed at length in the [Using
-          entities classses](#eca3195f) section of the [Entity and
-          entities objects](#64baaf7a) chapter. Thus, `orm.entities`
-          classes inherits the rich feature-set of `entities.entities`
-          with some of those features being overridden to suit the
-          needs of ORM collection classes. In this section, we will
-          discuss these features in detail.
-
-        ''')
-        with section(
-          'Querying with collection entities'
-        ):
-
-        print('''
-          One most powerful feature of ORM entities is that they can
-          query the database through their construction. As we've seen,
-          passing no arguments to the entities constructor does nothing
-          more than provide us with an empty collection object. However,
-          through the constructor we are able to specify arguments that
-          are used to create a `SELECT` statement which will be sent to
-          the database. The results from the `SELECT` will be used to
-          populate the collection.
-
-          Though we will see we can give full Boolean expressions
-          (similar to `WHERE` clauses) to the constructor, let's start
-          with what is perhaps the simplest type of query: a simple
-          equality test:
+          Of coures, the filter criteria of queries need to be much more
+          expressive that the above two-argument form would allow.
+          However, since simple equality tests like this are pretty
+          common, the two-argument form is provided by the ORM as a
+          convenience. More expressive queries are more verbose but also
+          more powerful.
         ''')
 
     with section('Debugging ORM entities'):
