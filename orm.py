@@ -1753,7 +1753,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             arts = artists('firstname = %s', ('Jeff',))
 
         The above queries are parameterized, i.e., the SQL and the
-        values are seperated to protected against SQL injection. It's
+        values are seperated to protect against SQL injection. It's
         possible to use unparameterized queries, but the following will
         result in a ValueError::
 
