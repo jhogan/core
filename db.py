@@ -494,6 +494,7 @@ class executioner(entitiesmod.entity):
     def execute(self, es=None):
         pl = pool.getdefault()
         for i in range(self.max):
+            reconnect = rollback = False
             conn = pl.pull()
             cur = conn.createcursor()
 
@@ -526,13 +527,17 @@ class executioner(entitiesmod.entity):
                     x = MySQLdb.Warning(str(w))
                     warn(x)
 
-            except MySQLdb.OperationalError as ex:
-                # Reconnect if the connection object has timed out and no
-                # longer holds a connection to the database.
-                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
+            except MySQLdb.InterfaceError as ex:
+                B()
+                if ex.args[0] == 0:
+                    reconnect = True
+                else:
+                    rollback = True
 
-                if i + 1 == self.max:
-                    raise
+            except MySQLdb.OperationalError as ex:
+                # Reconnect if the connection object has timed out and
+                # no longer holds a connection to the database.
+                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
 
                 try:
                     errno = ex.args[0]
@@ -540,33 +545,50 @@ class executioner(entitiesmod.entity):
                     errno = ''
 
                 if errno in (2006, 2013) or not conn.isopen:
-                    msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
-                    msg = msg.format(i, errno, conn.isopen)
-                    logs.debug(msg)
-
-                    eargs = operationeventargs(
-                        self, 'reconnect', None, None, 'before'
-                    )
-
-                    self.onbeforereconnect(self, eargs)
-
-                    conn.reconnect()
-
-                    eargs.preposition = 'after'
-
-                    self.onafterreconnect(self, eargs)
+                    reconnect = True
                 else:
-                    conn.rollback()
-                    raise
+                    rollback = True
+
             except Exception as ex:
-                conn.rollback()
-                raise
+                rollback = True
+
             else:
                 conn.commit()
-                return
+                break
+
             finally:
                 cur.close()
                 pl.push(conn)
+
+                if reconnect and rollback:
+                    raise ValueError(
+                        'reconnect and rollback cannot both be true'
+                    )
+
+                if reconnect:
+                    if i + 1 < self.max:
+                        msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
+                        msg = msg.format(i, errno, conn.isopen)
+                        logs.debug(msg)
+
+                        eargs = operationeventargs(
+                            self, 'reconnect', None, None, 'before'
+                        )
+
+                        self.onbeforereconnect(self, eargs)
+
+                        conn.reconnect()
+
+                        eargs.preposition = 'after'
+
+                        self.onafterreconnect(self, eargs)
+                    else:
+                        break
+
+                elif rollback:
+                    conn.rollback()
+                    break
+
 
 def exec(sql, args=None):
     exec = executioner(
