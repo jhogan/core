@@ -3398,9 +3398,45 @@ with book('Hacking Carapacian Core'):
           expressive that the above two-argument form would allow.
           However, since simple equality tests like this are pretty
           common, the two-argument form is provided by the ORM as a
-          convenience. More expressive queries are more verbose but also
-          more powerful.
+          convenience. Below we will cover more expressive ways to query
+          entities.  These forms are more verbose but also more powerful.
+
+          Note that interaction with the database to load entities does
+          not occure during instantiation but rather when an attribute
+          is called on the the entities collection. So, in the above
+          listing, the line:
+
+            dgs = dogs('name', 'Rex')
+
+          doesn't actually cause a `SELECT` to be sent to the database.
+          It mearly constructs the collection with the parameters that
+          will be used in the `WHERE` clause.  It's the following line
+          that actually causes the `SELECT` statement to be sent to the
+          database:
+
+            one(dgs)
+
+          This is because `one()` will call an attribute of the
+          collection (i.e., `dgs.count`). This is refered to as
+          **defered execution**. The ORM uses defered execution 
+          to support sorting which will be cover later in the
+          [Sorting](#9141f618) section &mdash; although you may find
+          it useful for certain performance optimization strategies
+          &mdash; such as contructing multiple collections then later
+          loading only a subset of them based some condition.
+
+          You can explicitly load an entities collection by calling
+          `orm.collect()` on it, although this is rarely necessary and
+          would be functionally equivalent to calling any other
+          attribute on it:
+
+            dgs = dogs('name', 'Rex')
+            dgs.orm.collect()
+
         ''')
+
+      with section('Sorting', id='9141f618'):
+        ...
 
     with section('Debugging ORM entities'):
       print('''
