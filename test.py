@@ -7764,7 +7764,7 @@ class orm_(tester):
         # save() to be successful.
         art.onafterreconnect -= art_onafterreconnect
 
-        self.expect(None, lambda: art.save())
+        self.expect(None, art.save)
 
         # Ensure e.load recovers correctly from a disconnect like we did with
         # e.save() above.  (Normally, __init__(id) for an entity calls
