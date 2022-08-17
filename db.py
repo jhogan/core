@@ -480,8 +480,7 @@ class chronicle(entitiesmod.entity):
     def clone(self):
         return chronicle(self.entity, self.op, self.sql, self.args)
 
-# TODO s/executioner/executor/
-class executioner(entitiesmod.entity):
+class executor(entitiesmod.entity):
     def __init__(self, exec, max=2):
         self._execute = exec
         self.max = max
@@ -516,7 +515,7 @@ class executioner(entitiesmod.entity):
                 #
                 #     https://github.com/PyMySQL/mysqlclient/commit/8a46faf58071cb6eba801edd76f1bb670af1a41d
                 #
-                # NOTE that it's good we have an executioner/executor
+                # NOTE that it's good we have an executor
                 # class to centralize this, but there are several other
                 # areas in the codebase that call MySQLdb.cursor.execute
                 # that won't benefit from this hack at the moment. We
@@ -591,7 +590,7 @@ class executioner(entitiesmod.entity):
 
 
 def exec(sql, args=None):
-    exec = executioner(
+    exec = executor(
         lambda cur: cur.execute(sql, args)
     )
 

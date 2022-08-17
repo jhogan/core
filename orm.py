@@ -2298,7 +2298,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if type(cls) is type:
             return cls.all.count
         else:
-            # TODO Subscribe to executioner's on*connect events
+            # TODO Subscribe to executor's on*connect events
             self = cls
             if self.orm.isstreaming:
                 sql = 'SELECT COUNT(*) FROM ' + self.orm.table
@@ -2313,7 +2313,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     cur.execute(sql, args)
                     ress = db.resultset(cur)
 
-                db.executioner(exec).execute()
+                db.executor(exec).execute()
 
                 return ress.first[0]
             else:
@@ -2630,7 +2630,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Both items will be created (INSERTed)
             itms.save()
         """
-        exec = db.executioner(self._save)
+        exec = db.executor(self._save)
         exec.execute(es)
 
     def _save(self, cur, es=None):
@@ -3990,18 +3990,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for e in es:
                 e._save(cur)
 
-        # Create an executioner object with the above save() callable
-        exec = db.executioner(save)
+        # Create an executor object with the above save() callable
+        exec = db.executor(save)
 
-        # Register reconnect events of the executioner so they can be
+        # Register reconnect events of the executor so they can be
         # issued
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
 
-        # Call then executioner's exec methed which will call the exec()
-        # callable above. executioner.execute will take care of dead,
+        # Call then executor's exec methed which will call the exec()
+        # callable above. executor.execute will take care of dead,
         # pooled connection, and atomicity.
         exec.execute()
 
@@ -8399,7 +8399,7 @@ class orm:
     @staticmethod
     def exec(sql, args=None):
         # NOTE This doesn't appear to be used anywhere
-        exec = db.executioner(
+        exec = db.executor(
             lambda cur: cur.execute(sql, args)
         )
 
@@ -9018,7 +9018,7 @@ class orm:
         """ Remove all date in the table that is associated with the
         entity.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = 'TRUNCATE TABLE %s;' % self.table
 
         if cur:
@@ -9074,7 +9074,7 @@ class orm:
         try: 
             conn = None
             if not cur:
-                # TODO Use executioner
+                # TODO Use executor
                 pool = db.pool.getdefault()
                 conn = pool.pull()
                 cur = conn.createcursor()
@@ -9150,7 +9150,7 @@ class orm:
         :param: cur: The MySQLdb cursor to use for the database
         connection.
         """
-        # TODO Use executioner
+        # TODO Use executor
         # TODO UPPER CASE 'drop table'
         sql = 'drop table `%s`;' % self.table
 
@@ -9175,7 +9175,7 @@ class orm:
         :param: cur: The MySQLdb cursor to use for the database
         connection.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = self.altertable
 
         if not sql:
@@ -9197,7 +9197,7 @@ class orm:
         an exception if the table already exists. If False (default),
         raise an exception.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = self.createtable
 
         try:
@@ -9468,7 +9468,7 @@ class orm:
             cur.execute(sql)
             ress = db.resultset(cur)
 
-        exec = db.executioner(exec)
+        exec = db.executor(exec)
 
         exec.execute()
 
@@ -9530,10 +9530,10 @@ class orm:
             cur.execute(sql, args)
             ress = db.resultset(cur)
 
-        # Create an executioner
-        exec = db.executioner(exec)
+        # Create an executor
+        exec = db.executor(exec)
 
-        # Bubble up the executioner's events
+        # Bubble up the executor's events
         exec.onbeforereconnect += \
             lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
@@ -9628,7 +9628,7 @@ class orm:
                 sql += f'\nLIMIT {limit} OFFSET {offset}'
 
             # Set up a function to be called by the database's
-            # executioner to populate `ress` with the resultset
+            # executor to populate `ress` with the resultset
             ress = None
             def exec(cur):
                 nonlocal ress
@@ -9639,10 +9639,10 @@ class orm:
                 # Assign ress the resultset
                 ress = db.resultset(cur)
 
-            # Instantiate the executioner
-            exec = db.executioner(exec)
+            # Instantiate the executor
+            exec = db.executor(exec)
 
-            # Connect the executioner's *reconnect events to self's
+            # Connect the executor's *reconnect events to self's
             exec.onbeforereconnect += \
                 lambda src, eargs: self.instance.onbeforereconnect(
                     src, eargs

@@ -7821,7 +7821,7 @@ class orm_(tester):
         def warn(cur):
             cur.execute('select 0/0')
 
-        exec = db.executioner(warn)
+        exec = db.executor(warn)
 
         self.expect(MySQLdb.Warning, lambda: exec.execute())
 
