@@ -491,9 +491,37 @@ class executor(entitiesmod.entity):
         self.execute(es)
 
     def execute(self, es=None):
+        def rollback(conn, ex):
+            conn.rollback()
+            raise ex
+
+        def reconnect(i, conn, ex):
+            if i + 1 < self.max:
+                try:
+                    errno = ex.args[0]
+                except:
+                    errno = ''
+
+                msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
+                msg = msg.format(i, errno, conn.isopen)
+                logs.debug(msg)
+
+                eargs = operationeventargs(
+                    self, 'reconnect', None, None, 'before'
+                )
+
+                self.onbeforereconnect(self, eargs)
+
+                conn.reconnect()
+
+                eargs.preposition = 'after'
+
+                self.onafterreconnect(self, eargs)
+            else:
+                raise ex
+            
         pl = pool.getdefault()
         for i in range(self.max):
-            reconnect = rollback = False
             conn = pl.pull()
             cur = conn.createcursor()
 
@@ -527,11 +555,10 @@ class executor(entitiesmod.entity):
                     warn(x)
 
             except MySQLdb.InterfaceError as ex:
-                B()
                 if ex.args[0] == 0:
-                    reconnect = True
+                    reconnect(i, conn, ex)
                 else:
-                    rollback = True
+                    rollback(conn, ex)
 
             except MySQLdb.OperationalError as ex:
                 # Reconnect if the connection object has timed out and
@@ -544,12 +571,12 @@ class executor(entitiesmod.entity):
                     errno = ''
 
                 if errno in (2006, 2013) or not conn.isopen:
-                    reconnect = True
+                    reconnect(i, conn, ex)
                 else:
-                    rollback = True
+                    rollback(conn, ex)
 
             except Exception as ex:
-                rollback = True
+                rollback(conn, ex)
 
             else:
                 conn.commit()
@@ -558,36 +585,6 @@ class executor(entitiesmod.entity):
             finally:
                 cur.close()
                 pl.push(conn)
-
-                if reconnect and rollback:
-                    raise ValueError(
-                        'reconnect and rollback cannot both be true'
-                    )
-
-                if reconnect:
-                    if i + 1 < self.max:
-                        msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
-                        msg = msg.format(i, errno, conn.isopen)
-                        logs.debug(msg)
-
-                        eargs = operationeventargs(
-                            self, 'reconnect', None, None, 'before'
-                        )
-
-                        self.onbeforereconnect(self, eargs)
-
-                        conn.reconnect()
-
-                        eargs.preposition = 'after'
-
-                        self.onafterreconnect(self, eargs)
-                    else:
-                        break
-
-                elif rollback:
-                    conn.rollback()
-                    break
-
 
 def exec(sql, args=None):
     exec = executor(
