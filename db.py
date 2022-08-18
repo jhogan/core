@@ -525,6 +525,7 @@ class executor(entitiesmod.entity):
             caused the need for a rollback.
             """
             
+            logs.warning(f'Rollback because {type(ex)} "{ex}"')
             conn.rollback()
             raise ex
 
@@ -547,16 +548,13 @@ class executor(entitiesmod.entity):
                 except:
                     errno = ''
 
-                msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
-                msg = msg.format(i, errno, conn.isopen)
-                logs.debug(msg)
-
                 eargs = operationeventargs(
                     self, 'reconnect', None, None, 'before'
                 )
 
                 self.onbeforereconnect(self, eargs)
 
+                logs.warning(f'Reconnect because {type(ex)} "{ex}"')
                 conn.reconnect()
 
                 eargs.preposition = 'after'
