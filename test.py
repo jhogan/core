@@ -7737,8 +7737,21 @@ class orm_(tester):
             self.eq(1, d.count(prop))
         
     def it_recovers_from_InterfaceException(self):
+        """ The db.executor, which is used by orm.entity.save(), will
+        have to deal with the MySQLdb's cursor raising an InterfaceError
+        by attempting to reestablish the connection. InterfaceError
+        occures when the MySQL server terminates a (pooled) connection.
+        This happens after the connection has been dormant for longer
+        than `wait_timeout` (default 8 hours).
+        """
+
         encountered = False
         def art_onbeforesave(src, eargs):
+            """ Event handler for the db.executor to deal with an
+            InterfaceError. The exception is thrown the first but not
+            second time so the executor's logic will think the
+            reconnection was a success.
+            """
             nonlocal encountered
             if not encountered:
                 encountered = True
@@ -7748,6 +7761,8 @@ class orm_(tester):
 
         art.onbeforesave += art_onbeforesave
 
+        # We exect that save() succeeds because the executor has
+        # correctly dealt with the InterfaceError.
         self.expect(None, art.save)
 
     def it_reconnects_closed_database_connections(self):

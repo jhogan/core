@@ -481,6 +481,14 @@ class chronicle(entitiesmod.entity):
         return chronicle(self.entity, self.op, self.sql, self.args)
 
 class executor(entitiesmod.entity):
+    """ The executor class ensures that code that interacts with the
+    database is successful. Certain exceptions from the database
+    interaction will be solved by reestablishing a pooled connection and
+    retrying the interaction. If an exception cannot be resolved through
+    reestablishing the connection, the transaction will be rolled back
+    and the exception re-raised to the calling code.
+    """
+
     def __init__(self, exec, max=2):
         """ Create an executor.
 
