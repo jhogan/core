@@ -7736,6 +7736,20 @@ class orm_(tester):
         for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
         
+    def it_recovers_from_InterfaceException(self):
+        encountered = False
+        def art_onbeforesave(src, eargs):
+            nonlocal encountered
+            if not encountered:
+                encountered = True
+                raise MySQLdb._exceptions.InterfaceError(0)
+
+        art = artist.getvalid()
+
+        art.onbeforesave += art_onbeforesave
+
+        self.expect(None, art.save)
+
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
             drown()
