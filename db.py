@@ -482,20 +482,65 @@ class chronicle(entitiesmod.entity):
 
 class executor(entitiesmod.entity):
     def __init__(self, exec, max=2):
+        """ Create an executor.
+
+        :param: exec callable: A callable which does the actual
+        interaction with the database.
+
+        :param: mix int: The number of times to retry calling `exec` if
+        there is an exception.
+        """
         self._execute = exec
         self.max = max
         self.onbeforereconnect  =  entitiesmod.event()
         self.onafterreconnect   =  entitiesmod.event()
     
     def __call__(self, es=None):
+        """ Run self.execute(es).
+        """
         self.execute(es)
 
     def execute(self, es=None):
+        """ Invoke the callable. 
+
+        :param: es object: An optional argument to be passed to the
+        callable, e.g., an orm.entities collection.
+
+        If the callable raises an exception, and that exception appears
+        to be due to a connection issue with the database, an attempt is
+        made to reconnect to the database then the callable is
+        re-invoked. If there is an exception and that exception does not
+        appear to be solvable by attempting a reconnect, then the
+        transaction is rolled back and the exception is re-raised to the
+        caller.
+        """
+
         def rollback(conn, ex):
+            """ Rollback the transaction and re-raise the exception:
+
+            :param: conn connection: The connection object the cursor
+            from which executes the transaction.
+
+            :param: ex Exception: The exception that occured which
+            caused the need for a rollback.
+            """
+            
             conn.rollback()
             raise ex
 
         def reconnect(i, conn, ex):
+            """ Attempts a reestablish a database connection.
+
+            :param: i int: The number of times a reconnect has been
+            attempted by the calling code. If it exceeds self.max, don't
+            reconnect; just re-raise the exception.
+
+            :param: conn connection: The connection object we would like
+            to reconnect.
+
+            :param: ex Exception: The exception object that caused the
+            need for a reconnect.
+            """
             if i + 1 < self.max:
                 try:
                     errno = ex.args[0]
@@ -520,12 +565,18 @@ class executor(entitiesmod.entity):
             else:
                 raise ex
             
+        # Get the default connection pool
         pl = pool.getdefault()
+
         for i in range(self.max):
+            # Pull a connection out of the pull
             conn = pl.pull()
+
+            # Create cursor
             cur = conn.createcursor()
 
             try:
+                # Invoke the callable
                 if es:
                     self._execute(cur, es)
                 else:
@@ -543,12 +594,12 @@ class executor(entitiesmod.entity):
                 #
                 #     https://github.com/PyMySQL/mysqlclient/commit/8a46faf58071cb6eba801edd76f1bb670af1a41d
                 #
-                # NOTE that it's good we have an executor
-                # class to centralize this, but there are several other
-                # areas in the codebase that call MySQLdb.cursor.execute
-                # that won't benefit from this hack at the moment. We
-                # should work in the direction of getting all calls to
-                # MySQL to go through this class.
+                # NOTE that it's good we have an executor class to
+                # centralize this, but there are several other areas in
+                # the codebase that call MySQLdb.cursor.execute that
+                # won't benefit from this hack at the moment. We should
+                # work in the direction of getting all calls to MySQL to
+                # go through this class.
                 if w := conn._conn.show_warnings():
                     from warnings import warn
                     x = MySQLdb.Warning(str(w))
@@ -556,34 +607,47 @@ class executor(entitiesmod.entity):
 
             except MySQLdb.InterfaceError as ex:
                 if ex.args[0] == 0:
+                    # This condition occurs when the connection hasn't
+                    # been used in 8 hours. Orm more precisely: the
+                    # `wait_timeout` has been exceeded (see
+                    # https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_wait_timeout)
+                    # The solution seems to be to reconnect.
                     reconnect(i, conn, ex)
                 else:
                     rollback(conn, ex)
 
             except MySQLdb.OperationalError as ex:
-                # Reconnect if the connection object has timed out and
-                # no longer holds a connection to the database.
-                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
-
                 try:
                     errno = ex.args[0]
                 except:
                     errno = ''
 
+                # TODO Replace magic number with MySQL constants
                 if errno in (2006, 2013) or not conn.isopen:
+                    # Reconnect if the connection object has timed out
+                    # and no longer holds a connection to the database.
+                    # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
                     reconnect(i, conn, ex)
                 else:
+                    # There appears to be some other error that can't be
+                    # corrected by a reconnect. We will have to
+                    # rollback.
                     rollback(conn, ex)
 
             except Exception as ex:
+                # Rollback and re-raise on standard exceptions
                 rollback(conn, ex)
 
             else:
+                # Commit and break retry loop if success
                 conn.commit()
                 break
 
             finally:
+                # Close cursor
                 cur.close()
+
+                # Push connection back into the pool
                 pl.push(conn)
 
 def exec(sql, args=None):
