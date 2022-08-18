@@ -9534,10 +9534,23 @@ class orm:
         exec = db.executor(exec)
 
         # Bubble up the executor's events
-        exec.onbeforereconnect += \
-            lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
-        exec.onafterreconnect  += \
-            lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+        def exec_onbeforereconnect(src, eargs):
+            """ Handles the onbeforereconnect event of the executor.
+            Bubbles the event up to subscribers of
+            self.instance.onbeforereconnect.
+            """
+            return self.instance.onbeforereconnect(src, eargs)
+
+        def exec_onafterreconnect(src, eargs):
+            """ Handles the onafterreconnect event of the executor.
+            Bubbles the event up to subscribers of
+            self.instance.onafterreconnect.
+            """
+            return self.instance.onafterreconnect(src, eargs)
+
+        # Subscribe the above handlers to the executor's events
+        exec.onbeforereconnect += exec_onbeforereconnect
+        exec.onafterreconnect += exec_onafterreconnect
 
         # Run the query (this will invoke the `exec` callable above.
         exec.execute()
