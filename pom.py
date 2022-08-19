@@ -32,6 +32,9 @@ import MySQLdb
 #
 # WAI-ARIA Authoring Practices 1.1
 # https://www.w3.org/TR/wai-aria-practices/
+#
+# How to use structured data
+# https://developers.google.com/search/docs/advanced/structured-data/intro-structured-data#structured-data
 
 class sites(asset.assets): 
     """ A collection of web ``site`` objects.
