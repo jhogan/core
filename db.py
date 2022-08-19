@@ -10,6 +10,8 @@
 from config import config
 from contextlib import contextmanager
 from dbg import B
+from MySQLdb.constants.CR import SERVER_GONE_ERROR
+from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 import accounts
 import entities as entitiesmod
@@ -628,8 +630,17 @@ class executor(entitiesmod.entity):
                 except:
                     errno = ''
 
-                # TODO Replace magic number with MySQL constants
-                if errno in (2006, 2013) or not conn.isopen:
+                # CLIENT_INTERACTION_TIMEOUT doesn't exist yet in the
+                # MySQLdb libray so just create it here.
+                CLIENT_INTERACTION_TIMEOUT = 4031
+
+                errs = (
+                    SERVER_LOST,                  # 2013
+                    SERVER_GONE_ERROR,            # 2006
+                    CLIENT_INTERACTION_TIMEOUT,   # 4031
+                )
+
+                if errno in errs or not conn.isopen:
                     # Reconnect if the connection object has timed out
                     # and no longer holds a connection to the database.
                     # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python

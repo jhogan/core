@@ -22,6 +22,8 @@ from dbg import B, PM, PR
 from entities import BrokenRulesError
 from func import enumerate, getattr
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from MySQLdb.constants.CR import SERVER_GONE_ERROR
+from MySQLdb.constants.CR import SERVER_LOST
 from pprint import pprint
 from random import randint, uniform, random
 from tester import *
@@ -7764,6 +7766,49 @@ class orm_(tester):
         # We exect that save() succeeds because the executor has
         # correctly dealt with the InterfaceError.
         self.expect(None, art.save)
+
+    def it_reconnects_on_OperationError(self):
+        encountered = 0
+        lost = gone = timeout = False
+        CLIENT_INTERACTION_TIMEOUT = 4031
+        def art_onbeforesave(src, eargs):
+            OperationalError = MySQLdb._exceptions.OperationalError
+            nonlocal encountered
+            nonlocal lost, gone, timeout
+
+            encountered += 1
+
+            if encountered == 1:
+                lost = True
+                raise OperationalError(SERVER_LOST)
+
+            if encountered == 3:
+                gone = True
+                raise OperationalError(SERVER_GONE_ERROR)
+
+            if encountered == 5:
+                timeout = True
+                raise OperationalError(CLIENT_INTERACTION_TIMEOUT)
+
+
+        errs = (
+            SERVER_LOST,
+            SERVER_GONE_ERROR,
+            CLIENT_INTERACTION_TIMEOUT,
+        )
+
+        for err in errs:
+            art = artist.getvalid()
+
+            art.onbeforesave += art_onbeforesave
+
+            # We exect that save() succeeds because the executor has
+            # correctly dealt with the InterfaceError.
+            self.expect(None, art.save)
+
+        self.true(lost)
+        self.true(gone)
+        self.true(timeout)
 
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
