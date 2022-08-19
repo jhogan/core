@@ -3353,23 +3353,23 @@ with book('Hacking Carapacian Core'):
 
         with section('Querying with collection entities'):
           print('''
-            One most powerful feature of ORM entities is that they can
-            query the database through their construction. As we've seen,
+            One of the most powerful feature of ORM entities is that they can
+            query the database through their constructor. As we've seen: 
             passing no arguments to the entities constructor does nothing
             more than provide us with an empty collection object. However,
             through the constructor we are able to specify arguments that
-            are used to create a `SELECT` statement which will be sent to
+            are used to generate a `SELECT` statement which will be sent to
             the database. The results from the `SELECT` will be used to
             populate the collection.
 
-            Though we will see we can give full Boolean expressions
+            Though we will see that we can give full Boolean expressions
             (similar to `WHERE` clauses) to the constructor, let's start
             with what is perhaps the simplest type of query: a simple
             equality test:
           ''')
 
           with listing('Performing a simple equality query'):
-            # Query the database fro all dogs that have a name of "Rex"
+            # Query the database for all dogs that have a name of "Rex"
             dgs = dogs('name', 'Rex')
 
             # Assert that only one was found
@@ -3395,7 +3395,7 @@ with book('Hacking Carapacian Core'):
           collection.
 
           Of coures, the filter criteria of queries need to be much more
-          expressive that the above two-argument form would allow.
+          expressive than the above two-argument form would allow.
           However, since simple equality tests like this are pretty
           common, the two-argument form is provided by the ORM as a
           convenience. Below we will cover more expressive ways to query
@@ -3410,9 +3410,9 @@ with book('Hacking Carapacian Core'):
 
           doesn't actually cause a `SELECT` to be sent to the database.
           It mearly constructs the collection with the parameters that
-          will be used in the `WHERE` clause.  It's the following line
-          that actually causes the `SELECT` statement to be sent to the
-          database:
+          will be used in the `WHERE` clause.  It's the following line,
+          in the above example, that actually causes the `SELECT`
+          statement to be sent to the database:
 
             one(dgs)
 
@@ -3426,13 +3426,78 @@ with book('Hacking Carapacian Core'):
           loading only a subset of them based some condition.
 
           You can explicitly load an entities collection by calling
-          `orm.collect()` on it, although this is rarely necessary and
-          would be functionally equivalent to calling any other
-          attribute on it:
+          `orm.collect()` on it: 
 
             dgs = dogs('name', 'Rex')
             dgs.orm.collect()
 
+          However, this is rarely necessary and would be functionally
+          equivalent to calling any other attribute on it.
+
+          Lets rewrite the above listing to use the more the Boolean
+          expression query form:
+        ''')
+
+        with listing(
+          'Using a Boolean expression for a simple equality query'
+        ):
+          # Query the database for all dogs that have a name of "Rex"
+          dgs = dogs("name = %s", 'Rex')
+
+          # Assert that only one was found
+          one(dgs)
+
+          # Assert that its name is indeed Rex
+          eq('Rex', dgs.only.name)
+
+      print('''
+        This listing does the same thing as the prior listing, however
+        here we are using a Boolean expression (the kind of thing you
+        would use in a `WHERE` clause). 
+
+        In this query, a placeholder (%s) is used to seperate the value
+        "Rex" from the query string.  This is an important feature to
+        prevent against SQL injection attacts, particularly when the
+        data being replaced is a variable which contains user input.
+
+        We can use as many placeholders and their corresponding values
+        as wee need. For example, we could change the query to search
+        for any dog whose name is "Rex" or "Bandit" like this:
+      ''')
+
+        with listing(
+          'Using a Boolean expression for a multiple equality tests'
+        ):
+          # Query the database for all dogs that have a name of "Rex"
+          dgs = dogs("name = %s or name = %s", 'Rex', 'Bandit')
+
+          # Assert that only one was found
+          two(dgs)
+
+          # Sort the dogs based on name
+          dgs.sort('name')
+
+          # Assert that its name is indeed Rex
+          eq('Bandit', dgs.first.name)
+          eq('Rex'   , dgs.Second.name)
+
+        print('''
+          The above construction produces a query similar to this SQL:
+
+            SELECT *
+            FROM dogs
+            WHERE name = 'Rex' or name = 'Bandit';
+
+          In this construction, we have two placeholders (%s)
+          which will be substituted for the two values: 'Rex' and
+          'Bandit'. We can add as many placeholders and substitution
+          arguments as we like.
+
+          Note that we are able to use the in-memory `sort()` derived
+          from the `entities.entities` base class to sort the `dog`
+          elements by name. This allows us to make assertions about
+          which element is which. Without the call to `sort()`, the
+          order of the elements would be indeterminate.
         ''')
 
       with section('Sorting', id='9141f618'):
