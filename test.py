@@ -65,6 +65,7 @@ import testorder
 import testparty
 import testpom
 import testproduct
+import testcarapacian_com
 import testsec
 import testthird
 import testwww
