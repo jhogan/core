@@ -12,6 +12,7 @@ from uuid import uuid4, UUID
 import carapacian_com
 import tester
 import pom
+import party
 
 class sites(tester.tester):
     def it_inherits_from_pom_site(self):
@@ -20,9 +21,8 @@ class sites(tester.tester):
 
 class site(tester.tester):
     def it_has_carapacian_as_its_proprietor(self):
-        B()
         ws = carapacian_com.site()
-        self.is_(ws.orm.proprietor, party.company.carapacian)
+        self.eq(ws.proprietor.id, party.company.carapacian.id)
         
 
 if __name__ == '__main__':
