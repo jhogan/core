@@ -1842,8 +1842,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #     ents = artists('name')
         #
         # which is meaningless.
+
         try:
             if not hasattr(type(self), 'orm'):
+                # TODO Should this be AttributeError. If not, add a
+                # comment explaining why.
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
                     'Check that the entity inherits from the '
@@ -8103,7 +8106,7 @@ class orm:
 
         Note that the inflect module is used to deduce that 'myents' is
         the entities collection for 'myent'. This can be overridden
-        during class direction using the entities field::
+        by setting the `entities` field of the class:
             
             class virii(orm.entities):
                 pass
@@ -8134,6 +8137,10 @@ class orm:
             # Create inflect object to pluralize entity class name
             flect = inflect.engine(); 
             flect.classical(); 
+
+            # We want the plural of 'status' to be 'statuses'. Without
+            # this line, the plural of 'status' is 'status' which won't
+            # do. (Note A lot of classes in the GEM end with 'status')
             flect.defnoun('status', 'statuses')
 
             # Get the entity (singular) class 
