@@ -1853,7 +1853,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # NOTE Use self_orm for the rest of this method to take
                 # the burden off __getattribute__. This helps with
                 # performance.
-                self_orm = self.orm = self.orm.clone()
+
+
+                self_orm = self._orm = type(self).orm.clone()
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -2020,6 +2022,31 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         # recording, in memory, the database interaction (i.e., the SQL
         # and operation type, that occured.
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
+
+    @classproperty
+    def orm(cls):
+        self = None
+        if type(cls) is not entitiesmeta:
+            self = cls
+            cls = None
+
+        # If we are calling from a class reference
+        if cls:
+            if not hasattr(cls, '_orm'):
+                for sub in orm.getsubclasses(of=entity):
+                    if sub.orm.entities is cls:
+                        return sub.orm
+                else:
+                    raise builtins.AttributeError(
+                        "The 'orm' attribute of this class is not "
+                        "currently available"
+                    )
+            return cls._orm
+
+        # If we ar calling from an instance
+        elif self:
+            return self._orm
+
 
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
@@ -2409,13 +2436,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Just return the orm instance of the entities collection if
         # attr is 'orm'.
-        if attr == 'orm':
+        if attr in ('orm', '_orm'):
             return object.__getattribute__(self, attr)
 
         if attr == 'brokenrules':
             return entities.getbrokenrules(self)
 
-        self_orm = self.orm
+        self_orm = self._orm
 
         # Raise exception if we are streaming and one of these nono
         # attributes is called.
@@ -8156,7 +8183,7 @@ class orm:
                 else:
                     # If found in cache
                     self._entities = sub
-                    self._entities.orm = self
+                    self._entities._orm = self
 
         return self._entities
 
