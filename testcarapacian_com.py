@@ -5,6 +5,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
+import apriori; apriori.model()
 from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
