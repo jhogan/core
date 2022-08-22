@@ -22,7 +22,6 @@ class sites(pom.sites):
 class site(pom.site):
     Id = UUID(hex='c0784fca-3fe7-45e6-87f8-e2ebbc4e7bf4')
 
-    Proprietor = party.company.carapacian
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -32,6 +31,10 @@ class site(pom.site):
 
         self.pages += home()
     
+    @property
+    def Proprietor(self):
+        return party.company.carapacian
+
     @property
     def head(self):
         if not self._head:
