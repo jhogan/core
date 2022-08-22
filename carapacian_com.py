@@ -33,6 +33,12 @@ class site(pom.site):
     
     @property
     def Proprietor(self):
+        # TODO Originally this was a constant. However, this caused
+        # problems when tests scripts would import this module because
+        # the below code was executed on import which caused problems
+        # because the ORM's caches were prematurly filled. The current
+        # solution works fine, but we should have a rethink about the
+        # way proprietor's are associated with `site` classes.
         return party.company.carapacian
 
     @property

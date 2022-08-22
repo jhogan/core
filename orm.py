@@ -2028,6 +2028,22 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @classproperty
     def orm(cls):
+        """ Return the entities' orm object.
+
+        It's possible, but not unlikely, that an entities' orm attribute
+        is accessed before the entities' complement has had its
+        `entities` proprety run. 
+
+        If `cls` is indeed a class referenc, we search through all the
+        `entity` classes to find the complement and return that
+        complement's `orm` object.
+
+        Alternatively, `cls` might actually be a referece to an entities
+        collection instance, in which case, we just return the private
+        `_orm` field.
+        """
+
+        # Determine if cls is a class reference or an instance
         self = None
         if type(cls) is not entitiesmeta:
             self = cls
@@ -2046,7 +2062,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     )
             return cls._orm
 
-        # If we ar calling from an instance
+        # If we are calling from an instance
         elif self:
             return self._orm
 
