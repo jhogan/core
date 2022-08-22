@@ -67,6 +67,7 @@ import testorder
 import testparty
 import testpom
 import testproduct
+import testcarapacian_com
 import testsec
 import testthird
 import testwww
@@ -5640,6 +5641,20 @@ class orm_(tester):
             self.false(pres.orm.isdirty)
             self.false(pres.orm.ismarkedfordeletion)
             self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+
+    def it_calls_orm_on_entities(self):
+        class monads(orm.entities):
+            pass
+
+        self.expect(AttributeError, lambda: monads.orm)
+
+        class monad(orm.entity):
+            pass
+
+        o = self.expect(None, lambda: monads.orm)
+
+        self.is_(monad.orm, o)
+
 
     def it_calls_entities(self):
         # Creating a single orm.entity with no collection should produce

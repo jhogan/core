@@ -151,12 +151,6 @@ class site(asset.asset):
                 "Site's Proprietor constant is the wrong type"
             )
 
-        if not self.Proprietor.name:
-            raise ValueError(
-                "Site's Proprietor constant "
-                'must have an id an and a name'
-            )
-
         ''' Save self '''
 
         # Get the root user
@@ -164,6 +158,12 @@ class site(asset.asset):
 
         # Ensure as root and use the site's proprietor
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
+            if not self.Proprietor.name:
+                raise ValueError(
+                    "Site's Proprietor constant "
+                    'must have an id an and a name'
+                )
+
             ''' Create or retrieve site record '''
             insert = False
             try:

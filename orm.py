@@ -1842,8 +1842,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #     ents = artists('name')
         #
         # which is meaningless.
+
         try:
             if not hasattr(type(self), 'orm'):
+                # TODO Should this be AttributeError. If not, add a
+                # comment explaining why.
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
                     'Check that the entity inherits from the '
@@ -1853,7 +1856,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # NOTE Use self_orm for the rest of this method to take
                 # the burden off __getattribute__. This helps with
                 # performance.
-                self_orm = self.orm = self.orm.clone()
+
+
+                self_orm = self._orm = type(self).orm.clone()
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -2020,6 +2025,48 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         # recording, in memory, the database interaction (i.e., the SQL
         # and operation type, that occured.
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
+
+    @classproperty
+    def orm(cls):
+        """ Return the entities' orm object.
+
+        It's possible, but not unlikely, that an entities' orm attribute
+        is accessed before the entities' complement has had its
+        `entities` proprety run. 
+
+        If `cls` is indeed a class referenc, we search through all the
+        `entity` classes to find the complement and return that
+        complement's `orm` object.
+
+        Alternatively, `cls` might actually be a referece to an entities
+        collection instance, in which case, we just return the private
+        `_orm` field.
+        """
+
+        # Determine if cls is a class reference or an instance
+        self = None
+        if type(cls) is not entitiesmeta:
+            self = cls
+            cls = None
+
+        # If we are calling from a class reference
+        if cls:
+            if not hasattr(cls, '_orm'):
+                for sub in orm.getsubclasses(of=entity):
+                    if sub.orm.entities is cls:
+                        cls._orm = sub.orm
+                        break
+                else:
+                    raise builtins.AttributeError(
+                        "The 'orm' attribute of this class is not "
+                        "currently available"
+                    )
+            return cls._orm
+
+        # If we are calling from an instance
+        elif self:
+            return self._orm
+
 
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
@@ -2409,13 +2456,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Just return the orm instance of the entities collection if
         # attr is 'orm'.
-        if attr == 'orm':
+        if attr in ('orm', '_orm'):
             return object.__getattribute__(self, attr)
 
         if attr == 'brokenrules':
             return entities.getbrokenrules(self)
 
-        self_orm = self.orm
+        self_orm = self._orm
 
         # Raise exception if we are streaming and one of these nono
         # attributes is called.
@@ -3069,7 +3116,7 @@ class entitymeta(type):
             # collection class and that the entities collection class
             # has a reference to the orm.
             orm_.entities = ents
-            orm_.entities.orm = orm_
+            orm_.entities._orm = orm_
 
         # If a class wants to define a custom table name, assign it to
         # the `orm` here and remove it from this entity class's
@@ -8076,7 +8123,7 @@ class orm:
 
         Note that the inflect module is used to deduce that 'myents' is
         the entities collection for 'myent'. This can be overridden
-        during class direction using the entities field::
+        by setting the `entities` field of the class:
             
             class virii(orm.entities):
                 pass
@@ -8107,6 +8154,10 @@ class orm:
             # Create inflect object to pluralize entity class name
             flect = inflect.engine(); 
             flect.classical(); 
+
+            # We want the plural of 'status' to be 'statuses'. Without
+            # this line, the plural of 'status' is 'status' which won't
+            # do. (Note A lot of classes in the GEM end with 'status')
             flect.defnoun('status', 'statuses')
 
             # Get the entity (singular) class 
@@ -8156,7 +8207,7 @@ class orm:
                 else:
                     # If found in cache
                     self._entities = sub
-                    self._entities.orm = self
+                    self._entities._orm = self
 
         return self._entities
 
