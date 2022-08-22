@@ -2054,7 +2054,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if not hasattr(cls, '_orm'):
                 for sub in orm.getsubclasses(of=entity):
                     if sub.orm.entities is cls:
-                        return sub.orm
+                        cls._orm = sub.orm
+                        break
                 else:
                     raise builtins.AttributeError(
                         "The 'orm' attribute of this class is not "
