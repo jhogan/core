@@ -3504,7 +3504,13 @@ with book('Hacking Carapacian Core'):
           they are not identical. The framework parses the queries
           (which it calls "predicates") and stores them in internal data
           structures which are later used to generate actual 'WHERE'
-          clause arguments. That being said,
+          clause arguments. 
+
+          That being said, the syntax is nearly identical to the type of
+          expressions you would give to a `WHERE` clause. All the
+          standard comparative operator are supported. Also, using
+          paranthesis to nest expressions works. However, you shouldn't
+          expect MySQL function such as `TRIM()` or `LENGTH()` to work. 
         ''')
 
         with section('Using the conjunctive-kwargs form'):
