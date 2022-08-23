@@ -277,7 +277,7 @@ class party(orm.entity):
         # moment.)
         usrs = users('party__partyid', self.id)
 
-        # If the current user is one of the party's (self's) user
+        # If the current user is one of the party's (self's) users
         id = orm.security().user.id
         with orm.sudo():
             for usr in usrs:
