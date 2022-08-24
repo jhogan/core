@@ -3513,6 +3513,46 @@ with book('Hacking Carapacian Core'):
           expect MySQL function such as `TRIM()` or `LENGTH()` to work
           nor should you expect non-comparative operators, such as
           those used in arthmatic expessions, to work.
+
+          If you want to see the SQL that the entities collection will
+          produce, you can `print` out the collection's `where` object.
+
+            dgs = dogs('name IN (%s, %s)', ('Rex', 'Bandit'))
+
+          In this example, we used the IN operator which you will be
+          familiar with from SQL. Let's see what SQL the ORM will
+          issue to the database for this query. If we print the `where`
+          object:
+
+            print(dgs.orm.where)
+
+          we will receive the following output.
+
+            name IN (%s, %s)
+            ['Rex', 'Bandit']
+
+          The first line contains the SQL. As you can see, the SQL
+          matches our query expression exactly. The second line contains
+          our arguments. for the parameterized SQL of the first line.
+          To see the entire SQL statement, you can use:
+
+            print(*dgs.orm.select)
+
+          This will give us the entire select statement:
+
+						SELECT
+								`t_d`.id AS `t_d.id`,
+								`t_d`.proprietor__partyid AS `t_d.proprietor__partyid`,
+								`t_d`.owner__userid AS `t_d.owner__userid`,
+								`t_d`.createdat AS `t_d.createdat`,
+								`t_d`.updatedat AS `t_d.updatedat`,
+								`t_d`.name AS `t_d.name`,
+								`t_d`.dob AS `t_d.dob`
+						FROM main_dogs AS `t_d`
+						WHERE (`t_d`.name IN (%s, %s)) ['Rex', 'Bandit']
+
+          Here we can see the `WHERE` clause in the context of the full
+          `SELECT` statement.
         ''')
 
         with section('Using the conjunctive-kwargs form'):
