@@ -62,8 +62,7 @@ class home(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        with orm.proprietor(party.company.carapacian):
-            res = tab.get('/', ws)
+        res = tab.get('/', ws)
         self.status(200, res)
 
         self.eq(f'{ws.title} | Index', res['html>head>title'].text)
