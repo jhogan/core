@@ -69,6 +69,7 @@ class home(tester.tester):
 
     def it_has_correct_title(self):
         tab = self.browser().tab()
+        ws = carapacian_com.site()
         res = tab.get('/', ws)
         self.startswith(Title, res['html>head>title'].text)
 
