@@ -68,6 +68,8 @@ class home(tester.tester):
         self.eq(f'{ws.title} | Index', res['html>head>title'].text)
 
     def it_has_correct_title(self):
+        Title = 'Carapacian Sustainable Software | Index'
+
         tab = self.browser().tab()
         ws = carapacian_com.site()
         res = tab.get('/', ws)
