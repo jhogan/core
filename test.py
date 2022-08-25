@@ -4540,6 +4540,7 @@ class orm_(tester):
             if rprs1.count != 2:
                 # This happened today:
                 # HAPPENED Jun 2, 2020
+                # HAPPENED Aug 24, 2022
                 print('This bug has happened befor')
                 B()
             t.retrieved(rprs1)
