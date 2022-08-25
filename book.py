@@ -3688,6 +3688,56 @@ with book('Hacking Carapacian Core'):
             sql_statements = str(chrs)
       ''')
 
+    with section('Relationships'):
+
+      with section('One-to-many'):
+        print('''
+          Defining a one-to-many relationship between to classes is
+          pretty straightforward. Let's say that we are building an
+          order entry system. In the system, we want to model customers
+          and sales orders. Each customer can have zero or more sales
+          orders. Lets define those class and the one-to-many
+          relationship between them:
+        ''')
+
+        with listing('Defining a one-to-many relationship'):
+
+          ''' Define the collection classes first. '''
+          class customers(orm.entities):
+            pass
+
+          class orders(orm.entities):
+            pass
+
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            # The customer's names
+            firstname = str
+            lastname = str
+
+            # This line establishes the relationship.
+            orders = orders
+
+          class order(orm.entity):
+            number = int
+
+        print('''
+          Above we have created a `customer` and `order` entity along
+          with their collection complements. Importantly, we defined the
+          collections first. This allows to reference the `orders`
+          collection class from the `customer` class defition in the
+          line:
+
+            class customer(orm.entity):
+              ...
+              orders = orders
+
+          With this line, the ORM can see that we want the `customer`
+          entity to have an attribute called `orders` which contains a
+          collection of `order` objects thus establishing the
+          one-to-many relationship between the two objects.
+          
+        ''')
 
     with section('Testing ORM entities'):
       ...
@@ -3695,8 +3745,6 @@ with book('Hacking Carapacian Core'):
     with section('ORM events'):
       ...
 
-    with section('Relationships'):
-      ...
 
 
     with section('Inheritance'):
