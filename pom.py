@@ -280,36 +280,32 @@ class site(asset.asset):
         """ Returns the sites's resources directory. If the 'resources'
         directory doesn't exist, it is created.
         """
-        # We may not need the try:except logic here if we decide to
-        # implement the suggestion at bda97447 (seach git-log).
         if not self._resources:
+            # NOTE We may not need the try:except logic here if we decide to
+            # implement the suggestion at bda97447 (seach git-log).
             try:
-                self._resources = self.directory['resources']
+                # TODO:bef8387e It's not clear who the owner should be
+                # at this point. If the site's resource directory hasn't
+                # been created yet, the anonymous user might end up
+                # being the owner. Or if authenticated, the owner of the
+                # directory will have rights to that directory. The user
+                # that ends up creating the resources directory probably
+                # shouldn't have those rights. Maybe the site object
+                # needs its own admin user for these types of things.
+                with orm.sudo():
+                    self._resources = self.directory['resources']
+
             except IndexError:
                 resx = file.directory('resources')
                 self.directory += resx
                 
-                sec = orm.security()
-
-                try:
-                    # If the owner hasn't been set, make root the
-                    # owner. 
-                    # TODO It's not clear who the owner should be at
-                    # this point. If the site's resource directory
-                    # hasn't been created yet, the anonymous user might
-                    # end up being the owner. Or an authenticated, The
-                    # owner of the directory will have rights to that
-                    # directory. The user that ends up creating the
-                    # resources directory probably shouldn't have those
-                    # rights. Maybe the site object needs its own admin
-                    # user for these types of things.
-                    if not (own := sec.owner):
-                        sec.owner = ecommerce.users.root
+                # If the owner hasn't been set, make root the owner. 
+                # See TODO:bef8387e above.
+                with orm.sudo():
                     resx.save()
-                finally:
-                    sec.owner = own
 
                 self._resources = resx
+
         return self._resources
 
     @resources.setter
