@@ -75,7 +75,6 @@ class home(tester.tester):
         res = tab.get('/', ws)
         self.startswith(Title, res['html>head>title'].text)
 
-
 if __name__ == '__main__':
     tester.cli().run()
 
