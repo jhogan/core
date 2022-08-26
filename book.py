@@ -3704,13 +3704,17 @@ with book('Hacking Carapacian Core'):
 
           ''' Define the collection classes first. '''
           class customers(orm.entities):
-            pass
+            """ Represents a collection of customers.
+            """
 
           class orders(orm.entities):
-            pass
+            """ Represents a collection of orders.
+            """
 
           ''' Define the entity classes '''
           class customer(orm.entity):
+            """ Represents person who can place orders.
+            """
             # The customer's names
             firstname = str
             lastname = str
@@ -3719,14 +3723,23 @@ with book('Hacking Carapacian Core'):
             orders = orders
 
           class order(orm.entity):
+            """ Represents a sales order
+            """
+
+            # An order number that users can use to reference the order
             number = int
+
+            # The date and time the order was placed
+            placed = datetime
+
+            # Will be True if order is canceled
+            canceled = bool
 
         print('''
           Above we have created a `customer` and `order` entity along
           with their collection complements. Importantly, we defined the
-          collections first. This allows to reference the `orders`
-          collection class from the `customer` class defition in the
-          line:
+          collections first. This allows us to reference the `orders`
+          collection class from the `customer` class definition:
 
             class customer(orm.entity):
               ...
@@ -3736,8 +3749,50 @@ with book('Hacking Carapacian Core'):
           entity to have an attribute called `orders` which contains a
           collection of `order` objects thus establishing the
           one-to-many relationship between the two objects.
-          
+
+          Note that this object model will need a `lineitem` entity as
+          well as a `product` entity in order for us to represent a real
+          order. We will create those entity classes later. For now, we
+          will just focus on the one-to-many relatioship between
+          `customers` and `orders`.
+
+          Now that we have our classes defined, lets write some code
+          that creates a `customer` with some orders associated with it.
         ''')
+
+        with listing('Using a one-to-many relationship'):
+          # Ensure that the tables are created in the database
+          customer.orm.recreate()
+          orders.orm.recreate()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+
+            # Create the customer
+            cust = customer()
+            cust.firstname = 'John'
+            cust.lastname = 'McDougall'
+
+            Maxint = 2147483648
+            ord = order()
+            ord.number = random.randint(1, Maxint)
+
+            ord1 = order()
+            ord1.number = random.randint(1, Maxint)
+
+            cust.orders += ord
+            cust.orders += ord1
+
+
+
+    with section('Custom properties'):
+      ...
+
+    with section('Imperitive attributes'):
+      ...
+
+    with section('ORM types'):
+      ...
 
     with section('Testing ORM entities'):
       ...
