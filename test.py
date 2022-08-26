@@ -21,9 +21,9 @@ from datetime import timezone, datetime, date
 from dbg import B, PM, PR
 from entities import BrokenRulesError
 from func import enumerate, getattr
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from MySQLdb.constants.CR import SERVER_GONE_ERROR
 from MySQLdb.constants.CR import SERVER_LOST
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from tester import *
@@ -57,6 +57,7 @@ import re
 import shipment
 import tempfile
 import testbot
+import testcarapacian_com
 import testdom
 import testecommerce
 import testentities
@@ -67,7 +68,6 @@ import testorder
 import testparty
 import testpom
 import testproduct
-import testcarapacian_com
 import testsec
 import testthird
 import testwww

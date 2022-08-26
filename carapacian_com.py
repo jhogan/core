@@ -10,12 +10,11 @@ from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import dom
-import party
-import pom
 import ecommerce
 import file
+import party
+import pom
 
-# XXX Begin test file/script
 class sites(pom.sites):
     pass
 

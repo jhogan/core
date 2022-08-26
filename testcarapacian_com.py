@@ -6,15 +6,16 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
 import apriori; apriori.model()
+
 from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import carapacian_com
-import tester
-import pom
 import orm
 import party
+import pom
+import tester
 
 class sites(tester.tester):
     def it_inherits_from_pom_site(self):
