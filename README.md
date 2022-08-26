@@ -45,13 +45,14 @@ It offers the following features:
 * Database [migration](#assets-command-line-interface)
 * [Logging](#assets-logging)
 * Robust [third-party API integration](#assets-third-party)
+* Web-based [file system](#assets-file-module)
 
 Assets
 ------
 This section provides an overview of the various files in the framework.
 
 <a id="assets-test-scripts"></a>
-## Test Scripts ##
+### Test Scripts ###
 Most development begins with the test scripts. All test scripts are in
 the glob pattern `test*.py`, e.g., [testlogs.py](testlogs.py). Each test script
 corresponds to a module which is the subject of its tests. 
@@ -82,7 +83,7 @@ Below is a list of the current test scripts:
 * [testwww.py](testwww.py)              Tests classes in [www.py](www.py)
 
 <a id="assets-gem"></a>
-## General Entity Model (GEM) ##
+### General Entity Model (GEM) ###
 The **General Entity Model**, sometimes called the universal data model,
 is a large collection of ORM objects designed to work together to manage
 and store business data in a robust and universal way. 
@@ -134,7 +135,7 @@ Below is a list of the modules that currently contain GEM classes.
 * [product.py](product.py)        Contains classes involved in product management
 * [shipment.py](shipment.py)      Contains classes involved in shipping
 
-## Entity modules ##
+### Entity modules ###
 The entity modules, [entities.py](entities.py), contains base classes
 that most of the classes in the framework ultimately inherit from. The
 most import of these are `entities` and `entity`. The classes contain
@@ -188,7 +189,7 @@ The `entities` and `entity` class provide the base classes for ORM
 mapping](#assets-orm-module) for more on ORM classes.
 
 <a id="assets-orm-module"></a>
-## Object-relational mapper (ORM) module ##
+### Object-relational mapper (ORM) module ###
 An important part of the framework is the **object-relational mapper
 (ORM)**. It provides the persistence layer for the [GEM](#assets-gem)
 classes as well as other [active record](https://en.wikipedia.org/wiki/Active_record_pattern) 
@@ -236,7 +237,7 @@ If we create and save a `salesorder`, a record in its table, as well as
 the `order` table, are saved atomically.
 
 <a id="assets-dom-module"></a>
-## DOM and POM modules ##
+### DOM and POM modules ###
 The DOM module, [dom.py](dom.py), provides class that support DOM authoring and
 parsing - similar to the DOM objects provided to JavaScript through a
 browser - though the interface is easier and more Pythonic. 
@@ -259,7 +260,7 @@ inherits from `pom.site`, while classes that inherit from `pom.page`
 exist in that module to represent the website's pages.
 
 <a id="assets-robotic-process-automation"></a>
-## Robotic process automation (RPA) ##
+### Robotic process automation (RPA) ###
 The [bot.py](bot.py) modules provides classes that inherit from the `bot.bot`
 class. These bot's are intended to be run as background process to
 automate a number of routine tasks. 
@@ -288,7 +289,7 @@ an executable. Each invocation would bring to life a certain bot:
 
 Init systems, like systemd, can be used to invoke the bots this way.
 
-## HTTP and WSGI modules ##
+### HTTP and WSGI modules ###
 The [www.py](www.py) contains support for HTTP objects such as HTTP requests and
 responses, HTTP exceptions and errors. It also contains a `browser`
 object to make HTTP requests easier and more intuitive (for example, the
@@ -300,13 +301,13 @@ server invokes thus providing an entry for HTTP requests into the
 framework's logic (see `www.application.__call__`).
 
 <a id="assets-command-line-interface"></a>
-## Command line interface (crust) ##
+### Command line interface (crust) ###
 `crust` is the main command-line interface to the framework. 
 Currently,  `crust` is used to inactively perform database migrations.
 Future uses would include issuing queries to learn about the framework's
 environment as well as communicating with bots.
 
-## Library dependency files ##
+### Library dependency files ###
 A couple of simple text files exists to store the third-party libraries
 that the framework depends on. These files are [deb](deb) and
 [pip](pip). The packages listed in deb should be installed using `apt`
@@ -314,7 +315,7 @@ while the packages listed in `pip` should be installed with `pip`. See
 the [Operating system](#environment-operating-system) section for
 details on how and why to use these files.
 
-## Documentation files ##
+### Documentation files ###
 There are a few files, all in uppercase, used for various documentation
 purposes:
 
@@ -342,7 +343,8 @@ class.
 
 * [VERSION](VERSION)     Contains the version number of Carapacian Core
 
-## File module ##
+<a id="assets-file-module"></a>
+### File module ###
 A file system for use by the framework and its users is provided by the
 [file.py](file.py) module. File metadata is stored in the database, while file
 contents are stored on the actual file system. Since the file classes
@@ -356,14 +358,14 @@ the file module for its own needs, though the database would probably
 make a better choice for most use cases.
 
 <a id="assets-third-party"></a>
-## Third party module ##
+### Third party module ###
 The [third.py](third.py) module contains classes related to the integration of the
 framework with third party systems such as external mail servers, credit
 card processing systems, geocoding services etc. It contains facilities
 that perform, monitor and manager these interactions.
 
 <a id="assets-logging"></a>
-## Logging ##
+### Logging ###
 The logging module, [log.py](log.py), wraps calls to Python's native
 logging library which can be configured to send messages to a remote or
 local syslog.
@@ -384,7 +386,7 @@ ideal. However, the [log.py](log.py) module should be used to log locally
   file logging as a last resort.
 
 <a id="assets-configuration"></a>
-## Configuration ##
+### Configuration ###
 Configuration of the environment is made in two files. The first,
 [configuration.py](configuration.py) is a versioned file which contains no secret
 information, such as database passwords, but does provide a default
@@ -410,7 +412,7 @@ Environment
 -----------
 
 <a id="environment-operating-system"></a>
-## Operating system ##
+### Operating system ###
 The recommend operating system for Carapacian Core is Linux. The Ubuntu
 distribution of Linux is where the Core was developed and where it has
 received most of its testing, however, it should run on most
@@ -458,7 +460,7 @@ Adding the `-U` flag causes the packages to be updated.
 
     pip3 install -U `cat pip`
 
-## Database ##
+### Database ###
 The RDBMS of choice is MySQL. The configuration for the database
 connections can set using the `config.accounts` property in the
 [config.py](config.py) file. Iterate over the the accounts from the base class
@@ -491,7 +493,7 @@ backup needs as well as provide network transparency. However, a
 database bot <!--TODO reference the bot section--> will be written to
 tend the administration of these functions.
 
-## Lower environments ##
+### Lower environments ###
 As of this writing, not much work has been done to determine how the
 production environment, as well as the lower enviroments, such as UAT,
 QA, and development will be managed. This section will be updated when
@@ -501,7 +503,7 @@ Hacking
 -------
 
 <a id="hacking-running-tests"></a>
-## Running tests
+### Running tests ###
 Most feature development and bug fixes are done by adding a number of
 tests to the [suite of regression testing scripts](#assets-test-scripts).
 
@@ -522,7 +524,8 @@ To run all the tests, you can simply run the [test.py](test.py) script.
     ./test.py
 
 This runs all the tests in that file as well as all the tests in files
-that match the pattern `test*.py`. 
+that match the pattern `test*.py`. Note that `test.py` should complete
+with no failures on a feature branch before it is merged into 'main'.
 
 To narrow you tests down a little, you choose to run only the
 module-level tests. To run all the product tests, run the [testproduct.py](testproduct.py)

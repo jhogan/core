@@ -182,7 +182,7 @@ class entities:
     def __bool__(self):
         """ Returns True.
 
-        An entities class will always return True. Unlike a list, you
+        An entities object will always return True. Unlike a list, you
         should not test if an entities collection has elements by seeing
         if it's truthy. Rather, you should call its `isplurality`
         property:
@@ -531,7 +531,8 @@ class entities:
 
         You can also nest field names::
 
-            assert ents.pluck('name.__class__') == [str, str]
+            assert ents.pluck('name.__class__') == \
+              ["<class 'str'>", "<class 'str'>"]
 
         Here, we are just plucking the __class__ property of the str
         object, which of course is str. You can use as many dots as
@@ -559,7 +560,7 @@ class entities:
         # sng.artist_artists.pluck('object').pluck('orm.super')
         #
         # However, list()s should continue to be returned if any of the
-        # elements are not entitiy objects. On the other hand, we could
+        # elements are not entity objects. On the other hand, we could
         # have a `primativeentity` class that can wrap a primative
         # value. This would make it possible to always return an
         # entities collection, i.e.:
@@ -573,7 +574,7 @@ class entities:
         # us to create an entities collection object that is the most
         # specialized for the given list of entities as possible.
         #
-        # Also, for the above line to work, I think would should make
+        # Also, for the above line to work, I think we should make
         # sure we are using rgetattr() instead of getattr. 
         class formatter(string.Formatter):
             def convert_field(self, v, conv):
@@ -854,7 +855,7 @@ class entities:
                 return min if v is None else v
         elif callable(str):
             # TODO:2fff5b9e This is wrong even though it works. We are
-            # testing if the str bulitin is callable, which it is, so as
+            # testing if the str builtin is callable, which it is, so as
             # long as key is not str, key will be assaigned to key1. The
             # above should be changed to `elif callable(key)` and their
             # should be an `else` that raises a TypeError.
@@ -935,7 +936,7 @@ class entities:
 
             if entity:
                 If e is an entity, it will simply be removed, if it
-                exists in the collection, and the onremove event will be
+                exists in the collection, the onremove event will be
                 raised.
 
                     # Remove gerp
@@ -960,7 +961,7 @@ class entities:
                     es.remove(lambda x: x.startswith('d'))
 
             if int:
-                if e is an int, e will be passed to the indexor. The
+                if e is an int, e will be passed to the indexer. The
                 resulting entity will be removed and onremove will be
                 raised.
 
@@ -1040,7 +1041,7 @@ class entities:
         Note that the onremove event will be raised if an element is
         removed. 
 
-        :param: ix NoneType|int|str: The index or a why of describing
+        :param: ix NoneType|int|str: The index or a way of describing
         what will be remove.
             
             if int:
@@ -1058,6 +1059,12 @@ class entities:
                 the element by index. The element is then removed from
                 the collection and returned.
         """
+
+        # TODO Supporting an int as an argument makes sense since Python
+        # lists support this, however, it seems like the implementation
+        # for the str version shouldn't be supported since it equivalent
+        # to es.remove(str). This implementation isn't implied by the
+        # work "pop".
 
         # TODO I think that None should be returned if no element is
         # found. For example, if ix is an int that doesn't
@@ -1166,6 +1173,9 @@ class entities:
         self.remove(e)
         self.insertafter(ix, e)
 
+    # NOTE We could support the @= operator for inserts by overridding
+    # the __rmatmul__ method. See
+    # https://stackoverflow.com/questions/27385633/what-is-the-symbol-for-in-python
     def insert(self, ix, e):
         """ Insert the entity ``e`` into the collection before the
         element at index `ix`. This method is identical to
@@ -1925,8 +1935,8 @@ class entities:
 
     @property
     def brokenrules(self):
-        """ Collates the broken rules for each of the elements in the
-        collection and returns them as a new ``brokenrules`` collection.
+        """ Collects the broken rules for each of the elements in a new
+        brokenrules collection and returns the collection.
         """
         r = brokenrules()
         for e in self:
@@ -1936,6 +1946,8 @@ class entities:
                 msg += 'Ensure you are using the @property decorator '
                 msg += 'and the property is returning a brokenrules '
                 msg += 'collection.'
+
+                # TODO This should be a TypeError
                 raise ValueError(msg)
             r += brs
         return r
@@ -2169,8 +2181,8 @@ class entity:
         return es
 
     def __add__(self, t):
-        """ Implement the + operator to Return a new collection with
-        self and e contained in it.
+        """ Implement the + operator to return a new collection with
+        self and e contained within it.
 
             e = entity()
             e1 = entity()
@@ -2571,14 +2583,14 @@ class event(entities):
         es += entity()
 
     Notably, multiple event handlers can subscribe to an event. In the
-    above code could we could have had multiple event handler invoked
+    above code, could we could have had multiple event handler invoked
     simply by adding more subscriptions::
 
         def main_onadd1(self, src, eargs):
             print(f'Hello')
 
         # Subscribe main_onadd1 to es.onadd. 
-        es.onadd += main_onadd
+        es.onadd += main_onadd1
 
         # Append a new entity. Now, main_onadd and main_onadd1 will be
         # called in that order.
@@ -2594,7 +2606,7 @@ class event(entities):
 
     The src parameter is a reference to the object that fired the event.
     The eargs parameter is an instance of a subclass of ``eventargs``.
-    ``eventarg`` subclasses contain the information needed by a specific
+    ``eventargs`` subclasses contain the information needed by a specific
     event. For example, the eventargs that onadd uses is called
     ``entityaddeventargs``. This object contains the ``entity`` attribute
     used above in the handler.
@@ -2606,7 +2618,7 @@ class event(entities):
         :param: src object: The source of the event. This is usually a
         reference to the object that fired the event.
 
-        :param: e eventarg: An instance of a subtype of eventargs. This
+        :param: e eventargs: An instance of a subtype of eventargs. This
         contains the specific arguments needed to be passed to the event
         handlers for any given event.
         """
@@ -2716,7 +2728,7 @@ class entityaddeventargs(eventargs):
         es += e
     """
     def __init__(self, e):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity being appended.
         """
@@ -2727,7 +2739,7 @@ class entityremoveeventargs(eventargs):
     removed from an entities collection::
     """
     def __init__(self, e):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity being removed.
         """
@@ -2739,7 +2751,7 @@ class entityvaluechangeeventargs(eventargs):
     onaftervaluechange.
     """
     def __init__(self, e, prop):
-        """ Create the eventarg.
+        """ Create the eventargs.
 
         :param: e entity: The entity whose attribute is being assigned a
         new value.

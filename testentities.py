@@ -454,7 +454,7 @@ class test_entities(tester.tester):
         self.assertEq(math.pi,  cs1.second.value)
         self.assertEq(Light,    cs1.third.value)
 
-    def it_calls_sorted_with_lambda(self):
+    def it_calls_sorted_with_callable(self):
         """ The entities.sorted() method is like entities.sort() except
         it returns a new sorted entities collection and leaves the existing
         one untouched. """

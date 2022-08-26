@@ -1074,6 +1074,9 @@ class tester(entities.entity):
     def assertTruthy(self, actual, msg=None):
         if not actual: self._failures += failure()
 
+    def truthy(self, actual, msg=None):
+        if not actual: self._failures += failure()
+
     def assertFalse(self, actual, msg=None):
         if type(actual) != bool:
             raise ValueError('actual must be bool')
@@ -1088,6 +1091,9 @@ class tester(entities.entity):
 
     def assertFalsey(self, actual, msg=None):
         if actual: self._failures += failure()
+
+    def falsey(self, actual, msg=None):
+        if not actual: self._failures += failure()
 
     def assertFail(self, msg=None):
         self._failures += failure()
@@ -1389,7 +1395,7 @@ class tester(entities.entity):
                     'a: ' + type(fn).__name__
                 ))
 
-            # Invoke the calable. If we expect no exception (expect is
+            # Invoke the callable. If we expect no exception (expect is
             # None), return the value.
             r = fn()
 
