@@ -3725,10 +3725,6 @@ with book('Hacking Carapacian Core'):
           class order(orm.entity):
             """ Represents a sales order
             """
-
-            # An order number that users can use to reference the order
-            number = int
-
             # The date and time the order was placed
             placed = datetime
 
@@ -3773,16 +3769,64 @@ with book('Hacking Carapacian Core'):
             cust.firstname = 'John'
             cust.lastname = 'McDougall'
 
-            Maxint = 2147483648
+            # Create two order objects
             ord = order()
-            ord.number = random.randint(1, Maxint)
-
             ord1 = order()
-            ord1.number = random.randint(1, Maxint)
 
+            # Assert that the order objects have no customer associated
+            # with them
+            none(ord.customer)
+            none(ord1.customer)
+
+            # Append each order to the customers collection of orders.
             cust.orders += ord
             cust.orders += ord1
 
+            # By appending the orders to the customer's order
+            # collection, each order knows its customer via the
+            # `customer` property.
+            is_(cust, ord.customer)
+            is_(cust, ord1.customer)
+
+        print('''
+          First we run the `orm.recreate()` method to issue the `CREATE
+          TABLE` commands to the database so there will be database
+          tables to save the entity objects to. The `with` statement
+          sets up the security context which you can ignore for now.
+
+          Next we create a `customer` object and assign some values to
+          its attributes. Then we create two `orders` objects. Because
+          of the one-to-many relationship we defined in the class
+          definitions, `customer` objects will expose an `orders`
+          attributes which returns the `customer`'s own collection of
+          `orders`. We used this collection to append our two `order`
+          objects to it using the `+=` operator thus associating the
+          `orders` with the `customer`. 
+
+          The collection objects on the *many* side of a one-to-many
+          relationship are called **constituent**. The object on the
+          *one* side is called the **composite**. So in this example,
+          the ``orders`` are *constiuents* of the `customer`, while the
+          `customer` is a composite of each of the `order` objects.
+
+          Now that the `orders` have been appendend, the `customer`
+          object has access to them through its `orders` collection.
+          Also, as we assert above, the `order` object have access to
+          the `customer` object they have been assigned to through their
+          `customer` property. The ORM is able to infer the need for a
+          `customer` property here because it knows that `order` is on
+          the *many* of a one-to-many relationship.
+
+          At this point, we have 3 new objects: the `customer` and its
+          two `orders`. However, they are not in the database yet. Let's
+          save them now.
+        ''')
+
+        with listing('Saving an object and its constiuents'):
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+            cust.save()
 
 
     with section('Custom properties'):
@@ -3799,8 +3843,6 @@ with book('Hacking Carapacian Core'):
 
     with section('ORM events'):
       ...
-
-
 
     with section('Inheritance'):
       ...
