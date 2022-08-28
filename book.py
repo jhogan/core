@@ -3792,7 +3792,8 @@ with book('Hacking Carapacian Core'):
           First we run the `orm.recreate()` method to issue the `CREATE
           TABLE` commands to the database so there will be database
           tables to save the entity objects to. The `with` statement
-          sets up the security context which you can ignore for now.
+          sets up the security context &mdash; however, you can ignore
+          this for now.
 
           Next we create a `customer` object and assign some values to
           its attributes. Then we create two `orders` objects. Because
@@ -3807,9 +3808,9 @@ with book('Hacking Carapacian Core'):
           relationship are called **constituent**. The object on the
           *one* side is called the **composite**. So in this example,
           the ``orders`` are *constiuents* of the `customer`, while the
-          `customer` is a composite of each of the `order` objects.
+          `customer` is a *composite* of each of the `order` objects.
 
-          Now that the `orders` have been appendend, the `customer`
+          Now that the `orders` have been appended, the `customer`
           object has access to them through its `orders` collection.
           Also, as we assert above, the `order` object have access to
           the `customer` object they have been assigned to through their
@@ -3826,7 +3827,52 @@ with book('Hacking Carapacian Core'):
 
           # Override the security context
           with orm.override(), orm.sudo()
+            
+            # Save the customer object along with its constituents,
+            # i.e., the two order objects.
             cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+          # Sort the orders of the original customer by id
+          cust.orders.sort('id')
+
+          # Sort the orders of the reloaded customer by id
+          cust1.orders.sort('id')
+
+          # Assert the reloaded customer, and its orders, match the
+          # original 
+          eq(cust.id, cust1)
+          eq(cust.orders.first.id, cust1.orders.first.id)
+          eq(cust.orders.second.id, cust1.orders.second.id)
+
+        print('''
+          Conveniently, all we needed to do to save the customer and its
+          constituents (i.e., its order objects), was to call `save()` on
+          the `cust` object. This results in `INSERT` statements being
+          sent to the database to persist all three objects. 
+
+          The `INSERT`s are performed in an atomic transaction so if any
+          of them fail, the entire transaction will be rolled back and
+          the exception that caused the problem will be raised.
+
+          Later in the listing, we reload the `customer` entity from the
+          database. As we've seen in prior example, this technique is
+          used to prove that the `customer` object made it to the
+          database. However, what's novel above this example is that the
+          reloaded `cust1` object contains the reloaded `orders` as well
+          (as we assert in the final lines of the listing). 
+
+          Importantly, the `customer`'s `orders` collection is
+          lazy-loaded. That is to say, when we reloaded the `customer`
+          object, the `orders` objecs were not loaded (they may have not
+          been needed). It's only when `cust1.orders` is called that the
+          `order` entities are actually loaded from the database. When
+          they are loaded, they are memoized meaning additional calls to
+          `cust1.orders` will not result in database activity because
+          the `orders` have been cached in memory.
+        ''')
 
 
     with section('Custom properties'):
