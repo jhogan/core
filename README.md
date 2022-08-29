@@ -633,6 +633,7 @@ interface directly, you can run the Green Unicorn HTTP/WSGI server and
 hit the services from a browser or some other user-agent like `curl`. To
 run the service, you can `cd` into the framework's source directory and
 run the command:
+<!-- XXX Change to use unix sockets -->
 
    gunicorn -b carapacian.com:8000 --reload --timeout 0 'www:application()' 
 
