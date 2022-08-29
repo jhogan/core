@@ -3766,8 +3766,8 @@ with book('Hacking Carapacian Core'):
 
             # Create the customer
             cust = customer()
-            cust.firstname = 'John'
-            cust.lastname = 'McDougall'
+            cust.firstname = 'Johnny'
+            cust.lastname = 'Rotten'
 
             # Create two order objects
             ord = order()
@@ -3841,15 +3841,17 @@ with book('Hacking Carapacian Core'):
           # Sort the orders of the reloaded customer by id
           cust1.orders.sort('id')
 
+
           # Assert the reloaded customer, and its orders, match the
           # original 
           eq(cust.id, cust1)
           eq(cust.orders.first.id, cust1.orders.first.id)
           eq(cust.orders.second.id, cust1.orders.second.id)
+          two(cust.orders)
 
         print('''
           Conveniently, all we needed to do to save the customer and its
-          constituents (i.e., its order objects), was to call `save()` on
+          constituents (i.e., its `order` objects), was to call `save()` on
           the `cust` object. This results in `INSERT` statements being
           sent to the database to persist all three objects. 
 
@@ -3858,11 +3860,11 @@ with book('Hacking Carapacian Core'):
           the exception that caused the problem will be raised.
 
           Later in the listing, we reload the `customer` entity from the
-          database. As we've seen in prior example, this technique is
-          used to prove that the `customer` object made it to the
+          database. As we've seen in prior example, we can use this
+          technique to prove that the `customer` object made it to the
           database. However, what's novel above this example is that the
-          reloaded `cust1` object contains the reloaded `orders` as well
-          (as we assert in the final lines of the listing). 
+          reloaded `cust1` object contains reloaded `orders`.  (as we
+          assert in the final lines of the listing). 
 
           Importantly, the `customer`'s `orders` collection is
           lazy-loaded. That is to say, when we reloaded the `customer`
@@ -3872,7 +3874,62 @@ with book('Hacking Carapacian Core'):
           they are loaded, they are memoized meaning additional calls to
           `cust1.orders` will not result in database activity because
           the `orders` have been cached in memory.
+
+          In the above example, all the mutations were `INSERT`s.
+          However, they could have been any mixture of the other
+          mutations (Viz. `UPDATE` and `DELETE`). To demonstrate, the
+          following listing will `UPDATE` the `customer` object,
+          `INSERT` a new order, and `DELETE` an existing `order`.
         ''')
+
+        with listing('Update an object and its constiuents'):
+          
+          # Change the attributes of the customer (i.e., `UPDATE`)
+          cust.firstname = 'John'
+          cust.lastname = 'Lydon'
+
+          # Get a reference to the customers orders collection
+          ords = cust.orders
+
+          # Remove the first order from the colection causing it to be
+          # marked for deletion (i.e., DELETE). Assign the removed order
+          # to rmord.
+          rmord = ords.shift()
+
+          # Instantiate a new order object and append it to the
+          # customer's collection of orders (i.e., INSERT)
+          ords += order()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+            
+            # Save the customer object. This will UPDATE the customer,
+            # DELETE its first order, and INSERT a new order for the
+            # customer.
+            cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+          # Sort the orders of the original customer by id
+          cust.orders.sort('id')
+
+          # Sort the orders of the reloaded customer by id
+          cust1.orders.sort('id')
+
+          # Assert the reloaded customer, and its orders, match the
+          # original 
+          eq('John', cust.firstname)
+          eq('Lydon', cust.lastname)
+
+          ords1 = cust1.orders
+
+          # Assert the removed order was no reloaded since it was
+          # deleted.
+          false(rmord.id in ords1.pluck('id'))
+
+          ords1.first.id, ords1.first.id)
+          eq(ords.second.id, ords1.second.id)
 
 
     with section('Custom properties'):
