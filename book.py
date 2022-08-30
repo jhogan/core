@@ -3877,24 +3877,23 @@ with book('Hacking Carapacian Core'):
 
           In the above example, all the mutations were `INSERT`s.
           However, they could have been any mixture of the other
-          mutations (Viz. `UPDATE` and `DELETE`). To demonstrate, the
+          mutations, viz. `UPDATE` and `DELETE`. To demonstrate, the
           following listing will `UPDATE` the `customer` object,
           `INSERT` a new order, and `DELETE` an existing `order`.
         ''')
 
         with listing('Update an object and its constiuents'):
-          
           # Change the attributes of the customer (i.e., `UPDATE`)
           cust.firstname = 'John'
           cust.lastname = 'Lydon'
 
-          # Get a reference to the customers orders collection
+          # Get a reference to the customer's orders collection
           ords = cust.orders
 
           # Remove the first order from the colection causing it to be
           # marked for deletion (i.e., DELETE). Assign the removed order
-          # to rmord.
-          rmord = ords.shift()
+          # to `rmord`.
+          rmord = ords.pop()
 
           # Instantiate a new order object and append it to the
           # customer's collection of orders (i.e., INSERT)
@@ -3902,7 +3901,6 @@ with book('Hacking Carapacian Core'):
 
           # Override the security context
           with orm.override(), orm.sudo()
-            
             # Save the customer object. This will UPDATE the customer,
             # DELETE its first order, and INSERT a new order for the
             # customer.
@@ -3919,17 +3917,49 @@ with book('Hacking Carapacian Core'):
 
           # Assert the reloaded customer, and its orders, match the
           # original 
-          eq('John', cust.firstname)
-          eq('Lydon', cust.lastname)
+          eq('John', cust1.firstname)
+          eq('Lydon', cust1.lastname)
 
+          # Assign the reloaded customer orders to `ords1' to make the
+          # forthcoming lines shorter
           ords1 = cust1.orders
 
-          # Assert the removed order was no reloaded since it was
+          # Assert the removed order was not reloaded since it was
           # deleted.
           false(rmord.id in ords1.pluck('id'))
 
-          ords1.first.id, ords1.first.id)
+          # Assert that the reloaded orders match the non-deleted orders
+          # from the original collection
+          eq(ords.first.id, ords1.first.id)
           eq(ords.second.id, ords1.second.id)
+
+        print('''
+          In the above listing, we take the original `customer` object
+          and change its, attributes. Then we remove (`.pop()`)  the
+          last `order` off the 'customer`'s collection of `orders`. Not
+          only does this have the affect of removing the order from the
+          collection, but it also markes the order for deletion. Next we
+          append an `order` to the `customer`'s `orders` collection.
+
+          However, no database interaction happens until we call the
+          `save()` method on `cust`. At that point, the `customer` is
+          `UPDATE`ed, the removed order is `DELETE`ed, and the new
+          `order` is `INSERT`ed all in an atomic transaction.
+
+          Later, we reload the `customer` and assert that the reloaded
+          version contains the updates as well as the new `order`. We
+          also assert that the removed order is not in the reloaded
+          `orders` collection.
+
+          Note that any operation that removes an object from a an ORM
+          collection (e.g., `.remove()`, `shift()`, `del`, `-=`) marks
+          it for deletion. Likewise, any append apperation (e.g.,
+          `.append()`, `unshift()`, `<<`, `+=`, `|=`) would have
+          resulting in the object being `INSERT`ed into the database
+          (assuming it was a new object, i.e., `orm.isnew is True`).
+          Regardless, its `save()` method will be called to ensure it is
+          persisted.
+        ''')
 
 
     with section('Custom properties'):
