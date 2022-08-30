@@ -716,6 +716,10 @@ class _request:
             # `site` class, so get that class and use it to instantiate
             # a site object.
             if isinstance(ws, str):
+                # XXX When we hit 'https://www.carapacian.com', the
+                # below will try to import 'www_carapacian_com.py' which
+                # doesn't exist. We should strip any preceding 'www.' if
+                # there is an excepting during the import and try again.
                 host, sep, port = ws.partition(':')
                 host = host.replace('.', '_')
                 mod = __import__(host,  globals(), locals())
