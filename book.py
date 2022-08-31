@@ -3895,6 +3895,10 @@ with book('Hacking Carapacian Core'):
           # to `rmord`.
           rmord = ords.pop()
 
+          # Assert that rmord is marked for deletion as a consequence of
+          # the pop()
+          true(rmord.orm.ismarkedfordeletion)
+
           # Instantiate a new order object and append it to the
           # customer's collection of orders (i.e., INSERT)
           ords += order()
@@ -3933,18 +3937,21 @@ with book('Hacking Carapacian Core'):
           eq(ords.first.id, ords1.first.id)
           eq(ords.second.id, ords1.second.id)
 
+          # Assert there isn't a third order lingering around
+          two(ords)
+
         print('''
           In the above listing, we take the original `customer` object
-          and change its, attributes. Then we remove (`.pop()`)  the
+          and change its attributes. Then we remove (`.pop()`)  the
           last `order` off the 'customer`'s collection of `orders`. Not
-          only does this have the affect of removing the order from the
-          collection, but it also markes the order for deletion. Next we
+          only does this have the effect of removing the order from the
+          collection, but it also marks the order for deletion. Next we
           append an `order` to the `customer`'s `orders` collection.
 
           However, no database interaction happens until we call the
           `save()` method on `cust`. At that point, the `customer` is
-          `UPDATE`ed, the removed order is `DELETE`ed, and the new
-          `order` is `INSERT`ed all in an atomic transaction.
+          `UPDATE`ed, the removed order is `DELETE`ed, and the newly
+          appenderd `order` is `INSERT`ed all in an atomic transaction.
 
           Later, we reload the `customer` and assert that the reloaded
           version contains the updates as well as the new `order`. We
@@ -3955,10 +3962,61 @@ with book('Hacking Carapacian Core'):
           collection (e.g., `.remove()`, `shift()`, `del`, `-=`) marks
           it for deletion. Likewise, any append apperation (e.g.,
           `.append()`, `unshift()`, `<<`, `+=`, `|=`) would have
-          resulting in the object being `INSERT`ed into the database
+          resulted in the object being `INSERT`ed into the database
           (assuming it was a new object, i.e., `orm.isnew is True`).
           Regardless, its `save()` method will be called to ensure it is
           persisted.
+
+          We can see that the ORM provides us a convenient way to modify
+          and persist all objects involed in a one-to-many relationship.
+          So far we've only dealt with a one-to-many relatioship of a
+          single depth. However, relationships can be set up with an
+          n-level of depth and an invocation of the `save()` method will
+          ensure that all objects in the hierarchy are persisted.
+
+          Let's create a line item collection so we can add
+          products to our orders. We will recreate the `order` entity so
+          we can establish a one-to-many relationship between it and the
+          line items collection:
+        ''')
+
+        with listing('Add a lineitem entity'):
+          class lineitems(orm.entities):
+            """ A collection of line items of an order.
+            """
+
+          class lineitem(orm.entity):
+            """ A line item in an `order`.
+            """
+            product = str
+            quantity = int
+
+          # Recreate the order class
+          class order(orm.entity):
+            """ Represents a sales order
+            """
+            # The date and time the order was placed
+            placed = datetime
+
+            # Will be True if order is canceled
+            canceled = bool
+
+            # Establish the one-to-many relationship between orders and
+            # line items.
+            lineitems = lineitems
+
+        print('''
+          Above we have create a `lineitem` entity which will store the
+          product's that a user has ordered. 
+
+          (Normally, a product would be its own entity, but since we
+          havn't discussed many-to-many relationships yet, we will just
+          be satisfied with a simple `str` to represent which product is
+          ordered.)
+
+          In the final line of the listing, we inform the orme that
+          `order` and `lineitems` have one-to-many relationship with
+          each other.
         ''')
 
 
