@@ -349,6 +349,9 @@ class application:
                     body = ''
 
                 # Return the responses body to the browser
+                # XXX Make sure there is a linefeed at the end of `body`,
+                # if for no other reason than to make `curl` easier to
+                # use.
                 return iter([bytes(body, 'UTF-8')]) 
 
             request = None
