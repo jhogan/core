@@ -1023,7 +1023,7 @@ class pages(entities.entities):
         return None
 
     def __getitem__(self, path):
-        """ An indexer to get the page in teh collection given a path.
+        """ An indexer to get the page in the collection given a path.
 
         :param: path str|list: The path of the page to get. For example, 
             
