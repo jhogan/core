@@ -23,6 +23,17 @@
 # only instantiate the `config` class. That way, the code will be taking
 # advantage of custom configurations.
 
+# TODO Create a constuctor that requires a 'bypass' argument. The gaol
+# is to discourage use from non-subclasses. We want to prevent code like
+# thi:
+#
+#    import config
+#    config.configuration().indevelopment
+#
+# in favor of
+#  
+#    config.config().indevelopment
+
 import accounts
 from dbg import B
 
@@ -65,18 +76,6 @@ class configuration:
     # by providing an environment @property here that raises
     # NotImplementedError
     environment = 'development'
-
-    _instance = None
-    @classmethod
-    def getinstance(cls):
-        """ Get the singleton instance of the configuration.
-
-        :param: cls type: The ``configuration`` class or a subtype
-        thereof.
-        """
-        if not cls._instance:
-            cls._instance = cls()
-        return cls._instance
 
     @property
     def inproduction(self):

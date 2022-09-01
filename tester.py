@@ -668,6 +668,13 @@ class tester(entities.entity):
                 """
                 return self.html[sel]
 
+            def __str__(self):
+                r = str(self.html)
+
+                # TODO Add URL to return when url is available
+                # r += str(self.url)
+                return r
+
             def navigate(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
                 the  webserver (ws). The response is used to update the
@@ -719,7 +726,7 @@ class tester(entities.entity):
                 # Setting the Content-Type header to application/json
                 # basically flags the request as XHR.
                 hdrs = www.headers(
-                    {'content_type': 'application/json'}
+                    {'CONTENT_TYPE': 'application/json'}
                 )
 
                 return self._request(
@@ -799,16 +806,15 @@ class tester(entities.entity):
 
                 def create_environ(env=None):
                     d = {
-                        'content_type': 'application/x-www-form-urlencoded',
-                        'http_accept': '*/*',
-                        'http_host': '127.0.0.0:8000',
-                        'http_user_agent': 'tester/1.0',
-                        'raw_uri': '/',
-                        'remote_port': '43130',
-                        'script_name': '',
-                        'server_port': '8000',
-                        'server_protocol': 'http/1.1',
-                        'server_software': 'gunicorn/19.4.5',
+                        'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+                        'HTTP_ACCEPT': '*/*',
+                        'HTTP_USER_AGENT': 'tester/1.0',
+                        'RAW_URI': '/',
+                        'REMOTE_PORT': '43130',
+                        'SCRIPT_NAME': '',
+                        'SERVER_PORT': '8000',
+                        'SERVER_PROTOCOL': 'http/1.1',
+                        'SERVER_SOFTWARE': 'gunicorn/19.4.5',
                         'gunicorn.socket': None,
                         'wsgi.errors': None,
                         'wsgi.file_wrapper': None,
@@ -822,7 +828,7 @@ class tester(entities.entity):
 
                     cookies = self.browser.cookies
                     if cookies.count:
-                        d['http_cookie'] = cookies.header.value
+                        d['HTTP_COOKIE'] = cookies.header.value
 
                     # Merge env into d
                     if env:
@@ -830,23 +836,23 @@ class tester(entities.entity):
                     
                     # Merge the HTTP request headers in `arg_hdrs` into
                     # the environ dict. According to WSGI, actual HTTP
-                    # request headers should be preceeded by an 'http_'.
+                    # request headers should be preceeded by an 'HTTP_'.
                     if arg_hdrs:
                         for hdr in arg_hdrs:
-                            name = hdr.name.replace('-', '_').lower()
+                            name = hdr.name.replace('-', '_').upper()
 
-                            d['http_' + name] = hdr.value
+                            d['HTTP_' + name] = hdr.value
 
                             # Some standard WSGI environ keys overlap
                             # with standard HTTP request headers. In
                             # that case, add the WSGI version. So if we
                             # have a HTTP header of Content-Type, we
                             # should add that to the WSGI environ dict
-                            # as 'http_content_type' and 'content_type'.
+                            # as 'HTTP_CONTENT_TYPE' and 'CONTENT_TYPE'.
                             # See:
                             #     https://wsgi.readthedocs.io/en/latest/definitions.html
                             #     https://developer.mozilla.org/en-US/docs/Glossary/Request_header
-                            if name in ('content_type',):
+                            if name in ('CONTENT_TYPE',):
                                 d[name] = hdr.value
 
                     return d
@@ -879,7 +885,7 @@ class tester(entities.entity):
                         inp = io.BytesIO(body)
 
                         env = create_environ({
-                            'content_length':  str(len(body)),
+                            'CONTENT_LENGTH':  str(len(body)),
                             'wsgi.input':      inp,
                         })
                         
@@ -905,31 +911,31 @@ class tester(entities.entity):
                         inp.seek(0)
 
                         env = create_environ({
-                            'content_type':  (
+                            'CONTENT_TYPE':  (
                                 'multipart/form-data; '
                                 f'boundry={boundry}'
                             ),
-                            'content_length': len(inp.getvalue()),
+                            'CONTENT_LENGTH': len(inp.getvalue()),
                             'wsgi.input': inp,
                         })
                     else:
                         inp = io.BytesIO(frm.post)
 
                         env = create_environ({
-                            'content_length':  len(frm.post),
+                            'CONTENT_LENGTH':  len(frm.post),
                             'wsgi.input':      inp,
                         })
                 else: 
                     env = create_environ()
 
-                env['path_info']       =  path
-                env['query_string']    =  qs
-                env['server_name']     =  ws.host
-                env['server_site']     =  ws
-                env['request_method']  =  meth
-                env['remote_addr']     =  self.tabs.browser.ip
-                env['http_referer']    =  self.referer
-                env['user_agent']      =  self.browser.useragent
+                env['PATH_INFO']       =  path
+                env['QUERY_STRING']    =  qs
+                env['SERVER_NAME']     =  ws.host
+                env['SERVER_SITE']     =  ws
+                env['REQUEST_METHOD']  =  meth
+                env['REMOTE_ADDR']     =  self.tabs.browser.ip
+                env['HTTP_REFERER']    =  self.referer
+                env['USER_AGENT']      =  self.browser.useragent
 
                 # Create WSGI app
                 app = www.application()
@@ -944,9 +950,16 @@ class tester(entities.entity):
                 iter = app(env, start_response)
 
                 res = www._response(req) 
-                res._status = st
-                res._headers = www.headers(**hdrs)
-                res.body = next(iter)
+
+                # Just get the status code from st (which contains the
+                # entire phrase, i.e., '200 OK'). In the future, we may
+                # have a res.message setter that can parse this out, but
+                # that would only be necessary if we want to include
+                # non-standard phrases such as '502 Bad Database
+                # Connection' instead of the standard '502 Bad Gateway'.
+                res._status = st.split()[0]
+                res._headers = www.headers(hdrs)
+                res.body = next(iter).decode('utf-8')
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')

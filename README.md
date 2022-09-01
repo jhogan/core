@@ -23,6 +23,13 @@ testpom.py
 TODO In Environment section, declare Ubuntu's default terminal as the
 officially supported terminal for the source code. Indicate that any
 terminal that can handle support as well as this terminal is acceptable.
+
+TODO: Explain that, within tests, you can cause breakonexception by using this
+line:
+
+TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
+    
+    self.testers.breakonexception = True
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
@@ -140,7 +147,7 @@ easy.
     class products(entities.entities)
         pass
 
-    class product(entitie.entity)
+    class product(entities.entity)
         pass
 
     # Create a collection
@@ -248,7 +255,7 @@ inherits from `dom.nav`.
 
 Entire websites are represented by classes that inherit from `pom.site`.
 For example, in website modules, such as
-[carpacian_com.py](carapacian_com.py), the `carapacian_com.site` class
+[carapacian_com.py](carapacian_com.py), the `carapacian_com.site` class
 inherits from `pom.site`, while classes that inherit from `pom.page`
 exist in that module to represent the website's pages.
 
@@ -644,9 +651,10 @@ indefinite amount of time for the request to complete. This is useful
 for step-by-step debugging described below because the time it takes to
 debug an issues will likely be longer than the timeout.
 
-the 'www.application()' instantiates the `application`` class in
-`www.py` and returns an instance to ``gunicorn``. This is where the
-framework code receives the HTTP request per the WSGI standard.
+The 'www.application()' argument at the end of the command causes
+`gunicorn` to instantiate the `application`` class in `www.py` and
+returns the instance to ``gunicorn``. This is where the framework code
+receives the HTTP request per the WSGI standard.
 
 The above service can then be invoked with `curl`:
 
@@ -659,6 +667,11 @@ you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
 the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
+
+<!-- TODO Recommend using `nmap` with Vim. Also, recommend using a
+`sleep .5` before the `curl` command in order to allow time for the
+worker process to reload.
+-->
 
 ### Interacting with the database ###
 

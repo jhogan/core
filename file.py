@@ -83,9 +83,21 @@ class inodes(orm.entities):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # TODO:fae234dd This forces a premature (non-deferred) load of
+        # inodes. We should create an onbeforeadd property where the
+        # subscription happens once. See fae234dd in git-log.
         self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
+        """ An event handler to process inode objects as they are being
+        added to the `inodes` collection.
+
+        Here we raise a ValueError error if a an inode with the same
+        name is being added. Later, we work with the floaters and radix
+        caches to make sure the correct composite is being set on the
+        inode being added (see code below).
+        """
         flts = directory._floaters
         radix = directory.radix
         nd = eargs.entity
@@ -105,15 +117,16 @@ class inodes(orm.entities):
                     'name already exists.'
                 )
 
-        # The search through the floaters directory (`nd in flts`) cause
-        # a load of the directory structure and sets the composite of nd
-        # back to flts. Capture the composite here and reassign later.
+        # The search through the floaters directory (`nd in flts`)
+        # causes a load of the directory structure and sets the
+        # composite of nd back to flts. Capture the composite here and
+        # reassign later.
         comp = nd.inode
 
         ''' If the inode being added is already in the floaters or radix
         cache, make sure the composite of the inode being added is set
         correctly in case we are moving from floaters to radix or
-        within radix (it_moves_cached_files).
+        within radix (see it_moves_cached_files).
         '''
         # If the node being added is within the floaters directory...
         if nd in flts or nd in radix:
@@ -278,9 +291,15 @@ class inode(orm.entity):
         if isinstance(id, str):
             try:
                 # See if str is a UUID, i.e., the inode's primary key
+
+                # FIXME:8960bf52 This can't be right. It prevents us
+                # from creating directories with names that look like
+                # UUIDs:
+                #
+                #     dir.file(uuid4().hex)
                 id = uuid.UUID(hex=id)
             except ValueError:
-                # The str id wil be considered a path
+                # The str id will be considered a path
                 pass
 
         if isinstance(id, str):
@@ -598,21 +617,23 @@ class inode(orm.entity):
 
         id = self.inode.id if self.inode else None
         op = '=' if id else 'is'
+
         nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
         # Make sure we don't create an inode with the same name as an
         # existing one under the same inode. I don't think this can
         # happen because we try to load inodes whenever we reference
         # them. Hovever, obviously we will want to prevent this at
         # the validation level.
-        for nd in nds:
-            if self.id != nd.id and nd.name == self.name:
-                brs += entities.brokenrule(
-                    msg   =  f'Cannot create "{self.name}": inode exist',
-                    prop  =  'name', 
-                    type  =  'unique', 
-                    e     =  self
-                )
-                break
+        with orm.sudo():
+            for nd in nds:
+                if self.id != nd.id and nd.name == self.name:
+                    brs += entities.brokenrule(
+                        msg   =  f'Cannot create "{self.name}": inode exist',
+                        prop  =  'name', 
+                        type  =  'unique', 
+                        e     =  self
+                    )
+                    break
 
         # Can't save floaters. Floaters are temporary inodes which must
         # be moved to the radix cached before being saved.
@@ -625,6 +646,44 @@ class inode(orm.entity):
             )
 
         return brs
+
+    @property
+    def creatability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        creatability for `inode`.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        sec = orm.security()
+
+        if rent := self.inode:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # If proprietor owns a directory, it can create inodes
+            # within it.
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            if sec.proprietorid == rent.proprietor__partyid:
+                return orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot create inode'
+        return vs
+
+    @property
+    def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for `inode`.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If you own it you can get it
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if self.owner__userid == orm.security().owner.id:
+            return orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot retrieve directory'
+        return vs
 
 class files(inodes):
     """ Represents a collection of ``file`` objects.
@@ -863,7 +922,7 @@ class resource(file):
         :param: local bool: If True, persist the resource's metadata in
         the database during a `resource.save()` call and cache the file
         data to the local hard drive located under the `inode.store`
-        directory. 
+        directory. The default is False.
         
         Allowing `local` to default to False causes no persistence to
         ever happen. This can be useful if you only want to use the
@@ -1243,8 +1302,8 @@ class directory(inode):
             # varient.
 
             # TODO Write test to ensure radix is always owned by root.
-            # TODO This looks a lot life _floaters. We can consolidate
-            # with a private method
+            # TODO This looks a lot like _floaters. We can consolidate
+            # with a private method.
             import party
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
@@ -1335,6 +1394,31 @@ class directory(inode):
         """
         for nd in self.inodes:
             yield nd
+
+    @property
+    def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for directory
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        # Write tests 
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Anyone can retrieve the radix
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if self.id == directory.RadixId:
+            return orm.violations.empty
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If you own it you can get it
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if self.proprietor__partyid == orm.security().proprietorid:
+            return orm.violations.empty
+            
+        vs = orm.violations()
+        vs += 'Cannot retrieve directory'
+        return vs
 
 class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the

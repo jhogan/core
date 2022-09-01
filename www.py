@@ -28,9 +28,11 @@ Exception classes corresponding to HTTP status codes 3xx, 4xx and 5xx
 are also provided in this module.
 """
 
+from config import config
 from dbg import B, PM
 from functools import reduce
 from pprint import pprint
+import apriori
 import auth
 import dom
 import entities
@@ -38,6 +40,7 @@ import exc
 import file
 import json
 import logs
+import orm
 import os
 import party, ecommerce
 import pdb
@@ -111,6 +114,7 @@ class application:
             # likes to use its own data structure for this, so make sure
             # it always gives us a dict.
             raise TypeError('Environment must be of type "dict"')
+
         self.request.demand()
            
     def __call__(self, env, start_response):
@@ -136,7 +140,15 @@ class application:
         WSGI standard to invoke in order to return a response to the
         WSGI server and ultimately the user agent.
         """
+
+        # Set the WSGI environ dict
+        self.environment = env
+
+        # Ensure that the GEM has been fully imported
+        import apriori; apriori.model()
+
         global request, response
+
         res = _response(self.request)
         res.headers += 'Content-Type: text/html'
 
@@ -150,11 +162,20 @@ class application:
             # application.
             self.clear()
 
-            # Set the WSGI environ dict
-            self.environment = env
+            sec = orm.security()
+            # Set the owner to anonymous. 
+            # TODO This doesn't address how an authenticated user would
+            # be set.
+            sec.owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
             req = self.request
+
+            ws = self.request.site
+
+            propr = ws.proprietor
+
+            sec.proprietor = propr
 
             # Set the global request object
             request = self.request
@@ -283,9 +304,19 @@ class application:
                         p += dom.text('Error: ')
                         p += dom.span(type(ex).__name__, class_='type')
                         p += dom.text(' ')
-                        p += dom.span(str(ex), class_='message')
-                        req.page.flash(p)
-                        res.body = req.page.html
+                        p += dom.pre(str(ex), class_='message')
+
+                        # Getting get.page can sometimes raise an error
+                        # because it calls req.site which may have
+                        # trouble establishing itself if it is not set
+                        # up correctly.
+                        try:
+                            pg = req.page
+                        except Exception:
+                            res.body = p.html
+                        else:
+                            pg.flash(p)
+                            res.body = pg.html
 
             # In there was an exception processing the exception,
             # ensure the response is 500 with a simple error message.
@@ -294,6 +325,8 @@ class application:
 
                 # TODO We should probably run the output of
                 # str(ex) through html.escape(). 
+
+                # TODO Add traceback to output
                 res.body = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
@@ -302,10 +335,21 @@ class application:
             if not break_:
                 # Use the WSGI start_response to send the HTTP status
                 # and headers back to the browser.
-                start_response(res.status, dict(res.headers.list))
+                # TODO Instead of the stock HTTP reason phrase, we could
+                # respond with the exception's message here, although
+                # the exception message should be delivered somewhere in
+                # the payload.
+                start_response(res.message, res.headers.list)
+
+                if body := res.body:
+                    pass
+                else:
+                    # In the case of HEAD request, body will be None, so
+                    # assign empty str for the bytes() function.
+                    body = ''
 
                 # Return the responses body to the browser
-                return iter([res.body])
+                return iter([bytes(body, 'UTF-8')]) 
 
             request = None
 
@@ -353,6 +397,7 @@ class _request:
         self._url        =  url
         self._method     =  None
         self._useragent  =  None
+        self._site       =  None
 
     def __repr__(self):
         """ A string representation of the HTTP request.
@@ -607,7 +652,7 @@ class _request:
         environment varible is returned.
         """
         if self.iswsgi:
-            return self.environment['server_name']
+            return self.environment['SERVER_NAME']
 
         import urllib
         return urllib.parse.urlparse(self._url).hostname
@@ -629,7 +674,7 @@ class _request:
         If there is no query string, None is returned.
         """
         if self.iswsgi:
-            qs = self.environment['query_string']
+            qs = self.environment['QUERY_STRING']
 
             if not qs:
                 qs = None
@@ -643,26 +688,45 @@ class _request:
     def site(self):
         """ Get the single site (``pom.site``) for this instance.
         """
-        try:
-            # NOTE 'server_site' is a contrived, non-HTTP environment
-            # variable used by test scripts to pass in instances of site
-            # objects to use.
-
-            # TODO When the config logic is complete (eb7e5ad0) Ensure
-            # that we are in a test environment before accepting this
-            # variable to prevent against tampering.
-            ws = self.environment['server_site']
-
+        if not self._site:
             # Prevent circular importing by importing pom here instead
             # of at the top
             import pom
-            if isinstance(ws, pom.site):
-                return ws
-        except KeyError:
-            pass
 
-        # Return the site object as set in the config logic
-        return pom.site.getinstance()
+            ws = None
+            try:
+                ws = self.environment['HTTP_HOST']
+            except KeyError:
+                if config().indevelopment:
+                    try:
+                        # NOTE 'SERVER_SITE' is a contrived, non-HTTP
+                        # environment variable used by test scripts to
+                        # pass an instances of site objects to use.
+                        ws = self.environment['SERVER_SITE']
+                    except KeyError:
+                        pass
+                else:
+                    # TODO Raise a useful Exception here if, for some
+                    # reason, the user agent doesn't provide an
+                    # HTTP_HOST. 
+                    ...
+
+            # If ws is a string, look for the website module that
+            # matches the string. The website module will have the
+            # `site` class, so get that class and use it to instantiate
+            # a site object.
+            if isinstance(ws, str):
+                host, sep, port = ws.partition(':')
+                host = host.replace('.', '_')
+                mod = __import__(host,  globals(), locals())
+                ws = getattr(mod, 'site')()
+
+            if isinstance(ws, pom.site):
+                self._site =  ws
+            else:
+                raise TypeError('Invalid site type')
+
+        return self._site
 
     @property
     def page(self):
@@ -782,10 +846,16 @@ class _request:
                 site       =  self.site,
                 language   =  self.language,
                 ip         =  self.ip,
-                url        =  self.referer,
                 size       =  self.size,
-                useragent  =  self.useragent,
             )
+
+            # Conditionally assign theses hit attributes because of
+            # 6028ce62
+            if ref := self.referer:
+                self._hit.url = ref
+
+            if ua := self.useragent:
+                self._hit.useragent = ua
 
             if self.jwt:
                 self._hit.isjwtvalid = self.jwt.isvalid
@@ -798,66 +868,70 @@ class _request:
         """ Log the hit.
         """
         try: 
-            # Get the request's ``hit`` entity
-            hit = self.hit
+            with orm.sudo():
+                # Get the request's ``hit`` entity
+                hit = self.hit
 
-            par = None
+                par = None
 
-            # Get the user's party. If no user is logged in, use the
-            # anonymous user.
-            if self.user:
-                par = self.user.party
-                hit.user = self.user
-            else:
-                par = party.party.anonymous
+                # Get the user's party. If no user is logged in, use the
+                # anonymous user.
+                if self.user:
+                    par = self.user.party
+                    hit.user = self.user
+                else:
+                    par = party.party.anonymous
 
-            if par is None:
-                par = party.party.anonymous
+                if par is None:
+                    par = party.party.anonymous
 
-            # Get the party's visitor role
-            visitor = par.visitor
+                # Get the party's visitor role
+                visitor = par.visitor
 
-            # Get the party's visitor role's current visit
-            visit = visitor.visits.current
+                # Get the party's visitor role's current visit
+                visit = visitor.visits.current
 
-            # Get the current time in UTC
-            now = primative.datetime.utcnow()
+                # Get the current time in UTC
+                now = primative.datetime.utcnow()
 
-            # Create a new ``visit`` if a current one doesn't not exist
-            if not visit:
-                visit = ecommerce.visit(
-                    begin = now
-                )
-                visitor.visits += visit
+                # Create a new ``visit`` if a current one doesn't not exist
+                if not visit:
+                    visit = ecommerce.visit(
+                        begin = now
+                    )
+                    visitor.visits += visit
 
-            # If the hit is new, the begin date will be None meaning it
-            # is not ``inprogress``. If that's the case, set the begin
-            # date. Otherwise, we can conclude the hit with the end
-            # datetime and HTTP status.
-            if hit.inprogress:
-                hit.end = now
-                hit.status = response.status
-            else:
-                hit.begin = now
+                # If the hit is new, the begin date will be None meaning it
+                # is not ``inprogress``. If that's the case, set the begin
+                # date. Otherwise, we can conclude the hit with the end
+                # datetime and HTTP status.
+                if hit.inprogress:
+                    hit.end = now
+                    hit.status = response.status
+                else:
+                    hit.begin = now
 
-            hit.visit = visit
+                hit.visit = visit
 
-            # Create/update the hit
-            hit.save()
+                # Create/update the hit
+                hit.save()
         except Exception as ex:
-            # Failing to log a hit shouldn't stop page invocation. We
-            # should log the failure to the syslog.
+            # Failing to log a hit shouldn't stop page invocation.
+            # Instead we log the failure to the syslog.
+
+            # NOTE Write code here that can't raise an another exception
             try:
-                ua = str(self.environment['user_agent'])
+                ua = str(self.environment['USER_AGENT'])
             except:
                 ua = str()
 
             try:
-                ip = str(self.environment['remote_addr'])
+                ip = str(self.environment['REMOTE_ADDR'])
             except:
-                ua = str()
+                ip = str()
 
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
+
             logs.exception(msg)
 
     @property
@@ -912,7 +986,7 @@ class _request:
             slash.
         """
         if self.iswsgi:
-            return self.environment['path_info']
+            return self.environment['PATH_INFO']
 
     @property
     def size(self):
@@ -922,7 +996,7 @@ class _request:
         """
         if self.iswsgi:
             try:
-                return int(self.environment.get('content_length', 0))
+                return int(self.environment.get('CONTENT_LENGTH', 0))
             except ValueError:
                 return 0
 
@@ -949,7 +1023,7 @@ class _request:
         in the HTTP request.
         """
         if self.iswsgi:
-            return self.environment['request_method'].upper()
+            return self.environment['REQUEST_METHOD'].upper()
         
         if self._method:
             return self._method.upper()
@@ -966,7 +1040,7 @@ class _request:
         the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
-            ip = str(self.environment['remote_addr'])
+            ip = str(self.environment['REMOTE_ADDR'])
             self._ip = ecommerce.ip(address=ip)
         return self._ip
 
@@ -976,15 +1050,14 @@ class _request:
         HTTP_REFERER of the HTTP request.
         """
         if not self._referer:
-            if not (url := self.environment['http_referer']):
-                # We should return None here. However, because of
-                # 6028ce62, this causes an exception. We need to addres
-                # that first, then we should be able to return None
-                # here.
-                # return None
-                ...
-
-            url = str(url)
+            try:
+                url = self.environment['HTTP_REFERER']
+            except KeyError:
+                return None
+            except Exception as ex:
+                logs.exception(f"Can't get HTTP_REFERER: {ex}")
+            else:
+                url = str(url)
 
             self._referer = ecommerce.url(address=url)
         return self._referer
@@ -996,7 +1069,15 @@ class _request:
         """
         if not self._useragent:
             if self.iswsgi:
-                ua = str(self.environment['user_agent'])
+                try:
+                    ua = str(self.environment['USER_AGENT'])
+                except KeyError:
+                    return None
+                except Exception as ex:
+                    logs.exception(f"Can't get USER_AGENT: {ex}")
+                else:
+                    ua = str(ua)
+
                 self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
@@ -1015,7 +1096,7 @@ class _request:
         """ Return the TCP port for the request, e.g., 80, 8080, 443.
         """
         if self.iswsgi:
-            return int(self.environment['server_port'])
+            return int(self.environment['SERVER_PORT'])
 
         import urllib
         return urllib.parse.urlparse(self._url).port
@@ -1077,7 +1158,10 @@ class _request:
         """
         # TODO This should check self.headers['content-type'] if it
         # can't be found in the WSGI environment.
-        return self.environment['content_type'].strip()
+        try:
+            return self.environment['CONTENT_TYPE'].strip()
+        except KeyError:
+            return None
 
     @property
     def mime(self):
@@ -1152,7 +1236,6 @@ class _request:
 
             # The remaining demands will be for non-event XHR requests
             # only
-            
             if self.isevent:
                 return
 
@@ -1351,7 +1434,7 @@ class _response():
     def status(self):
         """ The HTTP status code of the response.
         """
-        return self._status
+        return int(self._status)
 
     @status.setter
     def status(self, v):
@@ -2184,7 +2267,7 @@ class header(entities.entity):
 
             ('content-type', 'text/html')
         """
-        return (self.name, self.value)
+        return (str(self.name), str(self.value))
 
 class browsers(entities.entities):
     """ A collection of ``browser`` objects.

@@ -1235,7 +1235,7 @@ class element(entities.entity):
             # event.
             return self._trigger(trigger=attr)
 
-        raise AttributeError()
+        raise AttributeError(f"Attribute '{attr}' not found")
 
     def _on(self, ev):
         """ Return or set a memoized dom.event object for the event
@@ -2241,12 +2241,11 @@ class wbr(element):
 wordbreaks = wbrs
 wordbreak = wbr
 
-# TODO This can be renamed to brs and br
-class breaks(elements):
+class brs(elements):
     """ A class used to contain a collection of ``br`` elements.
     """
 
-class break_(element):
+class br(element):
     """ The HTML <br> element produces a line break in text
     (carriage-return). It is useful for writing a poem or an address,
     where the division of lines is significant.
@@ -2824,10 +2823,6 @@ class li(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
-
-# TODO:dea3866d Remove
-listitems = lis
-listitem = li
 
 class outputs(elements):
     """ A class used to contain a collection of ``output`` elements.
@@ -6264,8 +6259,8 @@ class html(element):
     """
 
     def __init__(self, html=None, ids=False, *args, **kwargs):
-        """ Create HTML element, pares HTML string depending on whether
-        or not `html` is provided (see docstring in for class)
+        """ Create HTML element, parses HTML string depending on whether
+        or not `html` is provided (see docstring for this class)
 
         :param: html str: If provided, the html is parsed. See docstring
         for class.

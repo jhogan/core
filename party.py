@@ -277,7 +277,7 @@ class party(orm.entity):
         # moment.)
         usrs = users('party__partyid', self.id)
 
-        # If the current user is one of the party's (self's) user
+        # If the current user is one of the party's (self's) users
         id = orm.security().user.id
         with orm.sudo():
             for usr in usrs:
@@ -377,9 +377,10 @@ class company(legalorganization):
     def carapacian(cls):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns the official Carapacian company entity. If the entity does
-        not exist in the database, it will be created. The id for the entity
-        is hardcoded and should never be changed.
+        Returns the official Carapacian company entity
+        (`party.company`). If the entity does not exist in the database,
+        it will be created. The id for the entity is hardcoded and
+        should never be changed.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         
@@ -973,18 +974,25 @@ class contactmechanism(orm.entity):
 
     @property
     def creatability(self):
-        """ Anyone can create a contact mechanism.
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Anyone can create a contact mechanism.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        At the moment, only sendbot will be able to read contact
+        mechanisms. This will obviously need to be expanded in the
+        future.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         import bot
         vs = orm.violations()
 
-        # NOTE At the moment, only sendbot will be able to read contact
-        # mechanisms. This will obviously need to be expanded in the
-        # future.
         vs.demand_user_is(bot.sendbot.user)
 
         return vs

@@ -74,6 +74,8 @@ def PM(ex):
             that is currently being handled (an exception must be being
             handled if the default is to be used).
     """
+    # TODO Make the ex argument option. It should default to the
+    # exception in the calling code.
     import pdb
     pdb.post_mortem(ex.__traceback__)
 

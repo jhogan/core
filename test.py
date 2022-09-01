@@ -21,6 +21,8 @@ from datetime import timezone, datetime, date
 from dbg import B, PM, PR
 from entities import BrokenRulesError
 from func import enumerate, getattr
+from MySQLdb.constants.CR import SERVER_GONE_ERROR
+from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
@@ -55,6 +57,7 @@ import re
 import shipment
 import tempfile
 import testbot
+import testcarapacian_com
 import testdom
 import testecommerce
 import testentities
@@ -2141,7 +2144,7 @@ class orm_(tester):
 
         migrate(cat, expect)
 
-        # TODO Remove `return` and orm.forteg when migration algorithm
+        # TODO Remove `return` and orm.forget when migration algorithm
         # can handle the below
         orm.forget(cat)
         return
@@ -4537,6 +4540,7 @@ class orm_(tester):
             if rprs1.count != 2:
                 # This happened today:
                 # HAPPENED Jun 2, 2020
+                # HAPPENED Aug 24, 2022
                 print('This bug has happened befor')
                 B()
             t.retrieved(rprs1)
@@ -5638,6 +5642,20 @@ class orm_(tester):
             self.false(pres.orm.isdirty)
             self.false(pres.orm.ismarkedfordeletion)
             self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+
+    def it_calls_orm_on_entities(self):
+        class monads(orm.entities):
+            pass
+
+        self.expect(AttributeError, lambda: monads.orm)
+
+        class monad(orm.entity):
+            pass
+
+        o = self.expect(None, lambda: monads.orm)
+
+        self.is_(monad.orm, o)
+
 
     def it_calls_entities(self):
         # Creating a single orm.entity with no collection should produce
@@ -7736,6 +7754,78 @@ class orm_(tester):
         for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
         
+    def it_recovers_from_InterfaceException(self):
+        """ The db.executor, which is used by orm.entity.save(), will
+        have to deal with the MySQLdb's cursor raising an InterfaceError
+        by attempting to reestablish the connection. InterfaceError
+        occures when the MySQL server terminates a (pooled) connection.
+        This happens after the connection has been dormant for longer
+        than `wait_timeout` (default 8 hours).
+        """
+
+        encountered = False
+        def art_onbeforesave(src, eargs):
+            """ Event handler for the db.executor to deal with an
+            InterfaceError. The exception is thrown the first but not
+            second time so the executor's logic will think the
+            reconnection was a success.
+            """
+            nonlocal encountered
+            if not encountered:
+                encountered = True
+                raise MySQLdb._exceptions.InterfaceError(0)
+
+        art = artist.getvalid()
+
+        art.onbeforesave += art_onbeforesave
+
+        # We exect that save() succeeds because the executor has
+        # correctly dealt with the InterfaceError.
+        self.expect(None, art.save)
+
+    def it_reconnects_on_OperationError(self):
+        encountered = 0
+        lost = gone = timeout = False
+        CLIENT_INTERACTION_TIMEOUT = 4031
+        def art_onbeforesave(src, eargs):
+            OperationalError = MySQLdb._exceptions.OperationalError
+            nonlocal encountered
+            nonlocal lost, gone, timeout
+
+            encountered += 1
+
+            if encountered == 1:
+                lost = True
+                raise OperationalError(SERVER_LOST)
+
+            if encountered == 3:
+                gone = True
+                raise OperationalError(SERVER_GONE_ERROR)
+
+            if encountered == 5:
+                timeout = True
+                raise OperationalError(CLIENT_INTERACTION_TIMEOUT)
+
+
+        errs = (
+            SERVER_LOST,
+            SERVER_GONE_ERROR,
+            CLIENT_INTERACTION_TIMEOUT,
+        )
+
+        for err in errs:
+            art = artist.getvalid()
+
+            art.onbeforesave += art_onbeforesave
+
+            # We exect that save() succeeds because the executor has
+            # correctly dealt with the InterfaceError.
+            self.expect(None, art.save)
+
+        self.true(lost)
+        self.true(gone)
+        self.true(timeout)
+
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
             drown()
@@ -7764,7 +7854,7 @@ class orm_(tester):
         # save() to be successful.
         art.onafterreconnect -= art_onafterreconnect
 
-        self.expect(None, lambda: art.save())
+        self.expect(None, art.save)
 
         # Ensure e.load recovers correctly from a disconnect like we did with
         # e.save() above.  (Normally, __init__(id) for an entity calls
@@ -7821,7 +7911,7 @@ class orm_(tester):
         def warn(cur):
             cur.execute('select 0/0')
 
-        exec = db.executioner(warn)
+        exec = db.executor(warn)
 
         self.expect(MySQLdb.Warning, lambda: exec.execute())
 

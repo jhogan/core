@@ -67,6 +67,12 @@ class users(orm.entities):
 
     @classproperty
     def root(cls):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return the root user for the ORM. The root user is able to
+        access and modify any ORM data.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
             for map in user.orm.mappings.foreignkeymappings:
@@ -83,6 +89,7 @@ class users(orm.entities):
             )
 
             if usrs.isplurality:
+                # TODO Replace with IntegrityError
                 raise ValueError('Multiple roots found')
 
             if usrs.issingular:
@@ -441,6 +448,11 @@ class user(orm.entity):
         
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for `user`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         vs = orm.violations()
         sec = orm.security()
         usr = sec.user
@@ -598,16 +610,32 @@ class url(orm.entity):
 
     @property
     def creatability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        creatability for `url`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        # TODO Write tests
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # NOTE:7a67115c I suppose anyone should be able to access a URL
         # in most cases. However, associations between ``urls`` and
         # other entity objects would work differently. But those
         # accessibilty restrictions  would be enforced in the
         # association objects.  For now, permit readability to all
         # (within the current tenant (orm.proprietor) of course).
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for `url`
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        # TODO Write tests
         # NOTE:7a67115c
         return orm.violations.empty
 
@@ -804,7 +832,7 @@ class visit(orm.entity):
 # perhaps we should be using apriori.log itself here. If not, we need a
 # comment explaining why not.
 class log(orm.entity):
-    """ A log entry a user can add to the hit entity.
+    """ A log entry a framework user can add to the hit entity.
 
         class mypage(pom.page):
             def main(self):
@@ -882,6 +910,21 @@ class hit(orm.entity):
         """
         return self.begin and not self.end
 
+    @property
+    def creatability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        creatability for `hit`
+
+        Only root can create a hit they are records keeped by the system
+        to indicate whether on not a URL was accessed.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        vs = orm.violations()
+        vs.demand_root()
+        return vs
+
 class hitstatustype(apriori.type):
     """ Records status information about the ``hit`` - for example if a
     requested file if a server ``hit`` was sucessfully retrieved or if
@@ -924,6 +967,17 @@ class ip(electronicaddress):
 
     def __str__(self):
         return self.address
+
+    @property
+    def retrievability(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        retrievability for ip.
+
+        Anyone can read an IP record
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return orm.violations.empty
 
 class useragent(orm.entity):
     """ Describes the mechanism, such as protocol, platform, browser,

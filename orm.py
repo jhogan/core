@@ -1842,8 +1842,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #     ents = artists('name')
         #
         # which is meaningless.
+
         try:
             if not hasattr(type(self), 'orm'):
+                # TODO Should this be AttributeError. If not, add a
+                # comment explaining why.
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
                     'Check that the entity inherits from the '
@@ -1853,7 +1856,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # NOTE Use self_orm for the rest of this method to take
                 # the burden off __getattribute__. This helps with
                 # performance.
-                self_orm = self.orm = self.orm.clone()
+
+
+                self_orm = self._orm = type(self).orm.clone()
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -2022,6 +2027,48 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         chron += db.chronicle(
           eargs.entity, eargs.op, eargs.sql, eargs.args
         )
+
+    @classproperty
+    def orm(cls):
+        """ Return the entities' orm object.
+
+        It's possible, but not unlikely, that an entities' orm attribute
+        is accessed before the entities' complement has had its
+        `entities` proprety run. 
+
+        If `cls` is indeed a class referenc, we search through all the
+        `entity` classes to find the complement and return that
+        complement's `orm` object.
+
+        Alternatively, `cls` might actually be a referece to an entities
+        collection instance, in which case, we just return the private
+        `_orm` field.
+        """
+
+        # Determine if cls is a class reference or an instance
+        self = None
+        if type(cls) is not entitiesmeta:
+            self = cls
+            cls = None
+
+        # If we are calling from a class reference
+        if cls:
+            if not hasattr(cls, '_orm'):
+                for sub in orm.getsubclasses(of=entity):
+                    if sub.orm.entities is cls:
+                        cls._orm = sub.orm
+                        break
+                else:
+                    raise builtins.AttributeError(
+                        "The 'orm' attribute of this class is not "
+                        "currently available"
+                    )
+            return cls._orm
+
+        # If we are calling from an instance
+        elif self:
+            return self._orm
+
 
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
@@ -2300,7 +2347,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if type(cls) is type:
             return cls.all.count
         else:
-            # TODO Subscribe to executioner's on*connect events
+            # TODO Subscribe to executor's on*connect events
             self = cls
             if self.orm.isstreaming:
                 sql = 'SELECT COUNT(*) FROM ' + self.orm.table
@@ -2315,7 +2362,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     cur.execute(sql, args)
                     ress = db.resultset(cur)
 
-                db.executioner(exec).execute()
+                db.executor(exec).execute()
 
                 return ress.first[0]
             else:
@@ -2411,13 +2458,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Just return the orm instance of the entities collection if
         # attr is 'orm'.
-        if attr == 'orm':
+        if attr in ('orm', '_orm'):
             return object.__getattribute__(self, attr)
 
         if attr == 'brokenrules':
             return entities.getbrokenrules(self)
 
-        self_orm = self.orm
+        self_orm = self._orm
 
         # Raise exception if we are streaming and one of these nono
         # attributes is called.
@@ -2632,7 +2679,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Both items will be created (INSERTed)
             itms.save()
         """
-        exec = db.executioner(self._save)
+        exec = db.executor(self._save)
         exec.execute(es)
 
     def _save(self, cur, es=None):
@@ -3071,7 +3118,7 @@ class entitymeta(type):
             # collection class and that the entities collection class
             # has a reference to the orm.
             orm_.entities = ents
-            orm_.entities.orm = orm_
+            orm_.entities._orm = orm_
 
         # If a class wants to define a custom table name, assign it to
         # the `orm` here and remove it from this entity class's
@@ -3528,6 +3575,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         Return a default implementation of accessibility methods
         (creatability, retrievability, updatability and deletability)
+
+        :param: type str: The type of accessibility, e.g., 
+        'creatability', 'retrievability', 'updatability' or
+        'deletability'
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
 
@@ -3536,6 +3587,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # implying that there is no accessibility issue.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if security().override:
+            # TODO Return violations.empty instead
             return violations()
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -3987,18 +4039,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for e in es:
                 e._save(cur)
 
-        # Create an executioner object with the above save() callable
-        exec = db.executioner(save)
+        # Create an executor object with the above save() callable
+        exec = db.executor(save)
 
-        # Register reconnect events of the executioner so they can be
+        # Register reconnect events of the executor so they can be
         # issued
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
 
-        # Call then executioner's exec methed which will call the exec()
-        # callable above. executioner.execute will take care of dead,
+        # Call then executor's exec methed which will call the exec()
+        # callable above. executor.execute will take care of dead,
         # pooled connection, and atomicity.
         exec.execute()
 
@@ -4601,7 +4653,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg = None
 
                             if own:
-                                if own.id != map.value:
+                                # The security contekt's owner must
+                                # match the entity if we are not root.
+                                if not own.isroot and own.id != map.value:
                                     msg = (
                                         'Owner id does not match orm id'
                                     )
@@ -7691,21 +7745,34 @@ class security:
 
     @property
     def proprietorid(self):
-        """ Returns the id of the `proprietor` property.
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the id of the `proprietor` property.
 
         The `proprietor` property normally returns a `proprietor`
         object. However, in rare circumstances, it will only return the
         proprietor's id. `proprietorid` exists to deal with the ambiguous
         nature of the `proprietor` by always returning the id.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         propr = self.proprietor
+        import party
         if isinstance(propr, UUID):
             return propr
+        elif isinstance(propr, party.party):
+            pass
+        else:
+            raise TypeError(
+                'proprietor is incorrect type: ' + str(type(propr))
+            )
 
         return propr.id
+
     @property
     def proprietor(self):
-        """ Return the proprietor entity currently set.
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return the proprietor entity currently set.
 
         Note that the return value will usually be a proprietor object
         (a subclass of `party.party`).  However, in some catch-22-like
@@ -7714,6 +7781,7 @@ class security:
         that if you are only interested in getting the proprietor's id,
         regardless of what this property returns, you can use the
         `proprietorid` property.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         return self._proprietor
 
@@ -7745,7 +7813,7 @@ class security:
 
             (or)
 
-            ent.save()        # INSERT OR UPDATE
+            ent.save()        # INSERT or UPDATE
             
         When updating or deleting a record, the record must be owned by
         by the security().proprietor or else a ProprietorError will be
@@ -7825,14 +7893,6 @@ class security:
         """
         return self._owner
 
-    @property
-    def user(self):
-        # TODO This will be the central place to store the logged in
-        # user. This will probably usually be the owner, though there
-        # may be a need to distinguish the ORM's "owner" from the
-        # "logged in user". More thought is need for this.
-        return self._owner
-
     @owner.setter
     def owner(self, v):
         """
@@ -7862,7 +7922,7 @@ class security:
 
     @user.setter
     def user(self, v):
-        self.owner = v
+        self._owner = v
 
     @property
     def issudo(self):
@@ -8068,7 +8128,7 @@ class orm:
 
         Note that the inflect module is used to deduce that 'myents' is
         the entities collection for 'myent'. This can be overridden
-        during class direction using the entities field::
+        by setting the `entities` field of the class:
             
             class virii(orm.entities):
                 pass
@@ -8078,12 +8138,31 @@ class orm:
         """
         # TODO Don't allow to run unless apriori.model has been run
 
+        # FIXME:f6c7d0f1 There is a design flaw inherent in this
+        # property.  This proprety was created so we could lazy-load the
+        # association between an entity and its complement. However,
+        # lazy-loading this means that the `orm` reference on the
+        # entities class won't exist until this property has been run on
+        # the entity class's orm. See the HACK at f6c7d0f1 in git-log
+        # (it was removed) for more. We may want to go back to the
+        # original eager-loading approach where this was done in
+        # orm.entitymeta.__new__. The downside would be an increase in
+        # startup time (not sure how much).
+        # 
+        # Note that this tends not to be an issue because orm.table gets
+        # called on startup for each entity. orm.table calls
+        # `self.entities` thus causing this property to be run for each
+        # entity on startup.
+
         # Memoize
         if not self._entities:
-
             # Create inflect object to pluralize entity class name
             flect = inflect.engine(); 
             flect.classical(); 
+
+            # We want the plural of 'status' to be 'statuses'. Without
+            # this line, the plural of 'status' is 'status' which won't
+            # do. (Note A lot of classes in the GEM end with 'status')
             flect.defnoun('status', 'statuses')
 
             # Get the entity (singular) class 
@@ -8133,7 +8212,7 @@ class orm:
                 else:
                     # If found in cache
                     self._entities = sub
-                    self._entities.orm = self
+                    self._entities._orm = self
 
         return self._entities
 
@@ -8376,7 +8455,7 @@ class orm:
     @staticmethod
     def exec(sql, args=None):
         # NOTE This doesn't appear to be used anywhere
-        exec = db.executioner(
+        exec = db.executor(
             lambda cur: cur.execute(sql, args)
         )
 
@@ -8481,6 +8560,8 @@ class orm:
         by the entities' (not the entity's) name ('persons'). Including
         the module is necessary to prevent name collisions.
         """
+
+        # NOTE See f6c7d0f1 before changing the below line
         mod = inspect.getmodule(self.entities)
         if mod.__name__ == '__main__':
             if hasattr(mod, '__file__'):
@@ -8993,7 +9074,7 @@ class orm:
         """ Remove all date in the table that is associated with the
         entity.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = 'TRUNCATE TABLE %s;' % self.table
 
         if cur:
@@ -9049,7 +9130,7 @@ class orm:
         try: 
             conn = None
             if not cur:
-                # TODO Use executioner
+                # TODO Use executor
                 pool = db.pool.getdefault()
                 conn = pool.pull()
                 cur = conn.createcursor()
@@ -9125,7 +9206,7 @@ class orm:
         :param: cur: The MySQLdb cursor to use for the database
         connection.
         """
-        # TODO Use executioner
+        # TODO Use executor
         # TODO UPPER CASE 'drop table'
         sql = 'drop table `%s`;' % self.table
 
@@ -9150,7 +9231,7 @@ class orm:
         :param: cur: The MySQLdb cursor to use for the database
         connection.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = self.altertable
 
         if not sql:
@@ -9172,7 +9253,7 @@ class orm:
         an exception if the table already exists. If False (default),
         raise an exception.
         """
-        # TODO Use executioner
+        # TODO Use executor
         sql = self.createtable
 
         try:
@@ -9443,7 +9524,7 @@ class orm:
             cur.execute(sql)
             ress = db.resultset(cur)
 
-        exec = db.executioner(exec)
+        exec = db.executor(exec)
 
         exec.execute()
 
@@ -9538,14 +9619,27 @@ class orm:
             cur.execute(sql, args)
             ress = db.resultset(cur)
 
-        # Create an executioner
-        exec = db.executioner(exec)
+        # Create an executor
+        exec = db.executor(exec)
 
-        # Bubble up the executioner's events
-        exec.onbeforereconnect += \
-            lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
-        exec.onafterreconnect  += \
-            lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+        # Bubble up the executor's events
+        def exec_onbeforereconnect(src, eargs):
+            """ Handles the onbeforereconnect event of the executor.
+            Bubbles the event up to subscribers of
+            self.instance.onbeforereconnect.
+            """
+            return self.instance.onbeforereconnect(src, eargs)
+
+        def exec_onafterreconnect(src, eargs):
+            """ Handles the onafterreconnect event of the executor.
+            Bubbles the event up to subscribers of
+            self.instance.onafterreconnect.
+            """
+            return self.instance.onafterreconnect(src, eargs)
+
+        # Subscribe the above handlers to the executor's events
+        exec.onbeforereconnect += exec_onbeforereconnect
+        exec.onafterreconnect += exec_onafterreconnect
 
         # Run the query (this will invoke the `exec` callable above.
         exec.execute()
@@ -9636,7 +9730,7 @@ class orm:
                 sql += f'\nLIMIT {limit} OFFSET {offset}'
 
             # Set up a function to be called by the database's
-            # executioner to populate `ress` with the resultset
+            # executor to populate `ress` with the resultset
             ress = None
             def exec(cur):
                 nonlocal ress
@@ -9647,10 +9741,10 @@ class orm:
                 # Assign ress the resultset
                 ress = db.resultset(cur)
 
-            # Instantiate the executioner
-            exec = db.executioner(exec)
+            # Instantiate the executor
+            exec = db.executor(exec)
 
-            # Connect the executioner's *reconnect events to self's
+            # Connect the executor's *reconnect events to self's
             exec.onbeforereconnect += \
                 lambda src, eargs: self.instance.onbeforereconnect(
                     src, eargs
@@ -10513,8 +10607,9 @@ class orm:
         """
         es = self.instance
         if not self.forentities:
-            msg = 'Use with entities. For entity, use persistencestate'
-            raise ValueError(msg)
+            raise ValueError(
+                'Use with entities. For entity, use persistencestate.'
+            )
             
         sts = []
         for e in es:
@@ -11016,6 +11111,9 @@ class orm:
     def composites(self):
         if not self._composits:
             self._composits = composites()
+
+            # TODO s/self/orm since getsubclasses is a @staticmethod.
+            # This will make the code clearer.
             for sub in self.getsubclasses(of=entity):
                 for map in sub.orm.mappings.entitiesmappings:
                     if map.entities.orm.entity is self.entity:

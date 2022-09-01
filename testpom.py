@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
@@ -165,7 +170,7 @@ class pom_menu_items(tester.tester):
         """
         ws = foonet()
         mnu = pom.menu('main')
-        main = ws.header.menus['main']
+        main = ws.header.makemain()
         mnu.items += main.items
 
         self.eq(main.pretty,        main.pretty)
@@ -281,7 +286,7 @@ class site(tester.tester):
     def it_appends_menu_items(self):
         ws = foonet()
         mnu = pom.menu('main')
-        main = ws.header.menus['main']
+        main = ws.header.makemain()
         mnu.items += main.items
 
         uls = dom.html(mnu.items.html)['ul>li']
@@ -382,6 +387,7 @@ class site(tester.tester):
     def it_menu_has_aria_attributes(self):
         ws = foonet()
 
+        ws.header.makemain()
         navs = ws.header['nav']
         self.two(navs)
 
@@ -390,11 +396,11 @@ class site(tester.tester):
 
     def it_calls_main_menu(self):
         ws = pom.site()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.zero(mnu.items)
 
         ws = foonet()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.five(mnu.items)
 
         self.eq(
@@ -448,7 +454,7 @@ class site(tester.tester):
 
     def it_mutates_main_menu(self):
         ws = foonet()
-        mnu = ws.header.menu
+        mnu = ws.header.makemain()
         self.five(mnu.items)
 
         # blogs item
@@ -481,7 +487,7 @@ class site(tester.tester):
 
         sels = dom.selectors('li')
         self.true('My Profile' in (x.text for x in mnu[sels]))
-        self.true('My Profile' in (x.text for x in ws.header[sels]))
+        self.true('My Profile' in (x.text for x in ws.header.menu[sels]))
 
         ''' Delete the blogs munu '''
         sels = dom.selectors('li > a[href="%s"]' % itm.page.path)
@@ -637,14 +643,24 @@ class page(tester.tester):
             propr.owner = ecommerce.users.root
             
         # Now we can call the constructor
-        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
+        mods = (
+            'party', 'ecommerce', 'pom', 
+            'asset', 'apriori', 'file',
+        )
         super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
             fastnets.orm.recreate()
 
+            # Recreate this table because the entry in it will be
+            # orphaned since the tables for 'asset' (`asset`) and 'pom'
+            # (`site`) were deleted above.
+            import carapacian_com
+            carapacian_com.site.orm.recreate()
+
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
+        party.company.orm.recreate(ascend=True)
 
         # Clear radix cache
         with suppress(AttributeError):
@@ -721,7 +737,15 @@ class page(tester.tester):
         self.isnot(ws.header, pg.header)
         self.isnot(ws.head, pg.head)
         self.isnot(ws.header.menus, pg.header.menus)
-        self.isnot(ws.header.menu, pg.header.menu)
+        self.none(ws.header.menu)
+        self.none(pg.header.menu)
+
+    def it_gets_page_with_no_main_function(self):
+        ws = foonet()
+        tab = self.browser().tab()
+        res = tab.get('/', ws)
+        msg = res['main .message'].html
+        self.true('Page class needs main method' in msg)
 
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
@@ -763,6 +787,8 @@ class page(tester.tester):
                     These are the company's sales statistics:
                 ''')
 
+                self.header.makemain()
+
                 self.header.menu.items += pom.menu.item(
                     'Statistics',
                     href='http://www.statistics.com'
@@ -776,7 +802,6 @@ class page(tester.tester):
         pg.elements
 
         self.eq('Statistics', pg.header.menu.items.last.text)
-        self.ne('Statistics', ws.header.menu.items.last.text)
 
         self.eq(
             'http://www.statistics.com',
@@ -833,8 +858,10 @@ class page(tester.tester):
         pg = ws['/en/blogs']
         self.notnone(pg.site)
 
+        self.none(pg.header.menu)
+        self.none(ws.header.menu)
+
         self.isnot(pg.header,        ws.header)
-        self.isnot(pg.header.menu,   ws.header.menu)
         self.isnot(pg.header.menus,  ws.header.menus)
         self.isnot(pg.head,          ws.head)
 
@@ -1007,7 +1034,7 @@ class page(tester.tester):
         ws.pages += pg
         tab = self.browser().tab()
         res = tab.head('/en/time', ws)
-        self.none(res.body)
+        self.empty(res.body)
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):
@@ -2019,7 +2046,6 @@ class page(tester.tester):
         self.eq('I got clicked', hit.logs.first.message)
         self.none(hit.isjwtvalid)
 
-
         # Now that we've clicked the button, the tab's internal DOM
         # should have a <p> tag with the word Thanks in it due to the
         # XHR request having completed successfully.
@@ -2262,6 +2288,7 @@ class page(tester.tester):
     def it_patches_page_on_menu_click(self):
         class spa(pom.page):
             def main(self):
+                self.header.makemain()
                 self.main += dom.p('Welcome to the SPA')
 
         ws = foonet()
@@ -2276,7 +2303,7 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
-        a_blog = tab['header>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
@@ -2285,6 +2312,7 @@ class page(tester.tester):
     def it_navigates_to_pages_when_spa_is_disabled(self):
         class spa(pom.page):
             def main(self):
+                self.header.makemain()
                 self.main += dom.p('Welcome to the SPA')
 
         ws = foonet()
@@ -2297,7 +2325,7 @@ class page(tester.tester):
 
         self.eq('foonet | Spa', tab.html['title'].only.text)
 
-        a_blog = tab['header>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
 
         tab.inspa = False
         a_blog.click()

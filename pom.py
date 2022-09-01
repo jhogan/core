@@ -9,7 +9,7 @@
 ########################################################################
 
 from contextlib import suppress
-from dbg import B
+from dbg import B, PM
 from uuid import UUID, uuid4
 import asset, ecommerce
 import datetime
@@ -26,11 +26,15 @@ import primative
 import textwrap
 import party
 import www
+import MySQLdb
 
 # References:
 #
 # WAI-ARIA Authoring Practices 1.1
 # https://www.w3.org/TR/wai-aria-practices/
+#
+# How to use structured data
+# https://developers.google.com/search/docs/advanced/structured-data/intro-structured-data#structured-data
 
 class sites(asset.assets): 
     """ A collection of web ``site`` objects.
@@ -61,6 +65,8 @@ class site(asset.asset):
         self._html = None
         self._head = None
         self._lang = 'en'
+        self._keywords = str()
+        self._description = None
         self._charset = 'utf-8'
         self._viewport = \
             'width=device-width, initial-scale=1, shrink-to-fit=no'
@@ -145,12 +151,6 @@ class site(asset.asset):
                 "Site's Proprietor constant is the wrong type"
             )
 
-        if not self.Proprietor.name:
-            raise ValueError(
-                "Site's Proprietor constant "
-                'must have an id an and a name'
-            )
-
         ''' Save self '''
 
         # Get the root user
@@ -158,11 +158,26 @@ class site(asset.asset):
 
         # Ensure as root and use the site's proprietor
         with orm.sudo(), orm.proprietor(self.Proprietor.id):
-            
+            if not self.Proprietor.name:
+                raise ValueError(
+                    "Site's Proprietor constant "
+                    'must have an id an and a name'
+                )
+
             ''' Create or retrieve site record '''
+            insert = False
             try:
                 ws = type(self)(self.Id)
             except db.RecordNotFoundError:
+                insert = True
+            except MySQLdb._exceptions.ProgrammingError as ex:
+                if ex.args[0] == MySQLdb.constants.ER.NO_SUCH_TABLE:
+                    self.orm.create()
+                    insert = True
+                else:
+                    raise
+
+            if insert:
                 ws = type(self)(
                     id = self.Id, 
                     name = self.Proprietor.name, 
@@ -186,7 +201,7 @@ class site(asset.asset):
                 sup.orm.persistencestate = False, False, False
 
                 sup = sup.orm._super
-                wssup = wssup.orm._super
+                wssup = wssup.orm.super
 
             ''' Ensure proprietor '''
 
@@ -265,16 +280,32 @@ class site(asset.asset):
         """ Returns the sites's resources directory. If the 'resources'
         directory doesn't exist, it is created.
         """
-        # We may not need the try:except logic here if we decide to
-        # implement the suggestion at bda97447 (seach git-log)
         if not self._resources:
+            # NOTE We may not need the try:except logic here if we decide to
+            # implement the suggestion at bda97447 (seach git-log).
             try:
-                self._resources = self.directory['resources']
+                # TODO:bef8387e It's not clear who the owner should be
+                # at this point. If the site's resource directory hasn't
+                # been created yet, the anonymous user might end up
+                # being the owner. Or if authenticated, the owner of the
+                # directory will have rights to that directory. The user
+                # that ends up creating the resources directory probably
+                # shouldn't have those rights. Maybe the site object
+                # needs its own admin user for these types of things.
+                with orm.sudo():
+                    self._resources = self.directory['resources']
+
             except IndexError:
                 resx = file.directory('resources')
                 self.directory += resx
-                resx.save()
+                
+                # If the owner hasn't been set, make root the owner. 
+                # See TODO:bef8387e above.
+                with orm.sudo():
+                    resx.save()
+
                 self._resources = resx
+
         return self._resources
 
     @resources.setter
@@ -343,14 +374,6 @@ class site(asset.asset):
     @pages.setter
     def pages(self, v):
         self._pages = v
-
-    @classmethod
-    def getinstance(cls):
-        """ Get the single site instance for this session.
-        """
-        # TODO The site's host will be derived from a configuration file
-        # setting.
-        return cls('foo.net')
 
     def __repr__(self):
         """ Return a string representation of the site object.
@@ -575,10 +598,11 @@ class logo(dom.section):
     """ Represents the organization's logo presented on a web page,
     typically in the page's header.
     """
-    def __init__(self, o):
+    def __init__(self, o, href=None, img=None):
         """ Create a logo page object.
 
         :param: o str: The text to display in the logo
+
         """
         super().__init__()
 
@@ -592,10 +616,13 @@ class logo(dom.section):
         else:
             raise TypeError('Invalid logo type')
 
+        self.href = ecommerce.url(address=href) if href else None
+        self.image = ecommerce.url(address=img) if img else None
+
     def clone(self):
         """ Create a new logo object based on self and return.
         """
-        el = type(self)(self.text)
+        el = type(self)(self.text, href=self.href, img=self.image)
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
         return el
@@ -608,7 +635,16 @@ class logo(dom.section):
         els = dom.elements()
 
         # Add the text span here. See constructor.
-        els += dom.span(self._text)
+        if href := self.href:
+            a = dom.a()
+            a.href = href
+
+            if img := self.image:
+                a += dom.img(src=img, alt=self._text)
+
+            els += a
+        else:
+            els += dom.span(self._text)
         return els
 
     @elements.setter
@@ -628,6 +664,7 @@ class menus(entities.entities, dom.section):
     def clone(self):
         """ Create and return a ``menus`` collection based on this one.
         """
+
         mnus = type(self)()
         for mnu in self:
             mnus += mnu.clone()
@@ -693,8 +730,6 @@ class menu(dom.nav):
     #     # and 
     #
     #     del main_menus.id # Currently dosen't work
-
-    # TODO This should inherit from dom.menu, not dom.nav
 
     ''' Inner classes '''
     class items(dom.lis):
@@ -932,6 +967,10 @@ class menu(dom.nav):
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
+    @property
+    def ismain(self):
+        return self.name == 'main'
+
     def clone(self):
         """ Create and return a new menu based on this menu.
         """
@@ -1062,11 +1101,12 @@ class page(dom.html):
         self._args         =  dict()
         self._resources    =  None
         
-        # TODO Shouldn't a page have a main function. If not, explain
-        # why here.
         try:
             self._mainfunc = self.main
         except AttributeError:
+            # A page doesn't necessarily need a main function on
+            # instantiation.  # However, an AttributeError will be
+            # raised if the page is ever accessed.
             pass
 
         self.clear()
@@ -1322,6 +1362,7 @@ class page(dom.html):
                                 'following: %s' % (k, str_flattened)
                             )
                         self._args[k] = arg in expected[1]
+
                 elif datetime.datetime in v.annotation.mro():
                     try:
                         v = primative.datetime(arg)
@@ -1429,6 +1470,14 @@ class page(dom.html):
                         meth()
                         
                 else:
+                    try:
+                        main = self._mainfunc
+                    except AttributeError as ex:
+                        cls = str(type(self))
+                        raise AttributeError(
+                            f'Page class needs main method: {cls}'
+                        ) from ex
+
                     # Inject global variables into main()
                     globs = self._mainfunc.__func__.__globals__
                     globs['req'] = www.request
@@ -1557,7 +1606,7 @@ class page(dom.html):
 class header(dom.header):
     """ Represents the header portion of a web page.
 
-    A page header contains a menus object to contain 0 or more menues in
+    A page header contains a menus object to contain 0 or more menus in
     the header, one main menu, and a logo.
     """
     # TODO Need to add an h2 and subheading parameter to constructor.
@@ -1568,7 +1617,6 @@ class header(dom.header):
         super().__init__(*args, **kwargs)
         self.site = site
         self._menus = menus()
-        self._menu = None
         self._logo = None
 
     def clone(self):
@@ -1577,8 +1625,10 @@ class header(dom.header):
         """
         hdr = type(self)(self.site)
         hdr.menus = self.menus.clone()
-        hdr.menu = self.menu.clone()
-        hdr.logo = self.menu.clone()
+
+        if logo := self.logo:
+            hdr.logo = logo.clone()
+
         return hdr
 
     @property
@@ -1589,6 +1639,7 @@ class header(dom.header):
         els.clear()
         if self.logo:
             els += self.logo
+
         els += self.menus
         return els
 
@@ -1604,11 +1655,8 @@ class header(dom.header):
 
     @property
     def menus(self):
-        """ The collection of menues for this ``header``.
+        """ The collection of menus for this ``header``.
         """
-        if self.menu not in self._menus:
-            self._menus += self.menu
-
         return self._menus
 
     @menus.setter
@@ -1619,16 +1667,32 @@ class header(dom.header):
     def menu(self):
         """ Return the main menu for this ``header`` object.
         """
-        if not self._menu:
-            self._menu = self._getmenu()
+        for mnu in self.menus:
+            if mnu.ismain:
+                return mnu
 
-        return self._menu
+        return None
 
     @menu.setter
     def menu(self, v):
-        self._menu = v
+        for i, mnu in self.menus.enumerate():
+            if mnu.ismain:
+                self.menus[i] = mnu
+                break
+        else:
+            v.name = 'main'
+            self.menus += v
 
-    def _getmenu(self):
+    def makemain(self):
+        if self.menu:
+            raise ValueError('Main menu already exists')
+
+        self.menu = self._getmenu(self.site)
+
+        return self.menu
+
+    @staticmethod
+    def _getmenu(ws):
         """ Create and return a menu based on the site's pages.
         """
         def getitems(pgs):
@@ -1651,7 +1715,7 @@ class header(dom.header):
 
         mnu = menu('main')
 
-        for itm in getitems(self.site.pages):
+        for itm in getitems(ws.pages):
             mnu.items += itm
 
         return mnu
@@ -1744,6 +1808,7 @@ class error(page):
     www.HttpError exception. This page will be used to capture the
     exceptions details and present it to the user.
     """
+
     @property
     def pages(self):
         """ A collection of error pages. Usually, the error pages will
@@ -1805,8 +1870,18 @@ class traceback(dom.article):
 class _404(page):
     """ An error page to show that the requested page was not found.
     """
-    # NOTE I think this shoud inherit from ``error``.
-    def main(self, ex: www.NotFoundError):
+    # TODO I think this should inherit from ``error``.
+
+    # NOTE Commented out reference to www.NotFoundError. When `gunicorn`
+    # runs www.py, www.py imports pom.py. Referencing `www` before
+    # `www.py` has been fully loaded causes a circular reference issue.
+    # This is fine; it is not necessary to annotate this
+    # parameter. Parameters are only necessary to annotate so that user
+    # input (query strings, etc.) are defined ahead of time. This page,
+    # being an exception page, is never call by the user directly.
+    #def main(self, ex: www.NotFoundError):
+
+    def main(self, ex):
         """ The main method of the page.
 
         :param: ex www.NotFoundError: The www.NotFoundError exception
@@ -1821,7 +1896,7 @@ class _404(page):
 
     @property
     def name(self):
-        """ Return teh name of the error page.
+        """ Return the name of the error page.
         """
         return type(self).__name__.replace('_', '')
 

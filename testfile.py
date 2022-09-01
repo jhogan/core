@@ -72,7 +72,7 @@ class foonet(pom.site):
         self.host = 'foo.net'
         self.name = 'foo.net'
 
-class file_(tester.tester):
+class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """
@@ -250,6 +250,14 @@ class file_(tester.tester):
 
         # Set up site
         ws = foonet()
+
+        # Make sure we persist any unsaved inodes under radix.  The
+        # cdnjs.cloudflare.com, for example, gets created but never
+        # saved, causing an ownership exception later in this test if we
+        # don't save it as root.
+        with orm.sudo():
+            file.directory.radix.save()
+
         with orm.proprietor(ws.proprietor):
             ws.pages += avatar()
             ws.save()
@@ -265,7 +273,7 @@ class file_(tester.tester):
                 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
             )
 
-            # Create a save a user
+            # Create and save a user
             usr = ecommerce.user(name='luser')
             usr.save()
 
@@ -346,7 +354,7 @@ class file_(tester.tester):
                 self.eq(resxs.first.id, resx2s.first.id)
                 self.eq('anonymous', resx2s.first.crossorigin)
 
-class file_file(tester.tester):
+class file_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -366,7 +374,7 @@ class file_file(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            with orm.sudo():
+            with orm.sudo(), orm.proprietor(party.company.carapacian):
                 file.directory.radix.delete()
 
     def it_creates_with_name_kwargs(self):
@@ -1054,6 +1062,80 @@ class file_file(tester.tester):
         f = f.orm.reloaded()
 
         self.eq(body, f.body.decode('ascii'))
+
+    def it_calls_creatability(self):
+        with orm.override():
+            dirname = uuid.uuid4().hex
+            d = file.directory(f'/var/log/{dirname}')
+            d.save()
+
+        ''' If proprietor owns a directory, it CAN create inodes
+        within it. '''
+        with orm.override(False):
+            with orm.proprietor(d.proprietor):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+                f = d.file(filename)
+                self.expect(None, f.save)
+
+        ''' If proprietor owns a directory, it CAN'T create inodes
+        within it. '''
+        with orm.override(False):
+            with orm.proprietor(party.company.carapacian):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+
+                try:
+                    f = d.file(filename)
+                    self.expect(orm.AuthorizationError, f.save)
+                finally:
+                    with orm.override(True):
+                        try:
+                            # Remove from radix cache so it won't be
+                            # saved (or attempted to be saved) by a
+                            # future test 
+                            f.delete()
+                        except:
+                            pass
+
+    def it_calls_retrievability(self):
+        with orm.override():
+            with orm.sudo():
+                name = uuid.uuid4().hex
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+                name = uuid.uuid4().hex
+                usr1 = ecommerce.user(name=name)
+                usr1.save()
+        
+        with orm.override():
+            dirname = uuid.uuid4().hex
+            d = file.directory(f'/var/log/{dirname}')
+            d.save()
+
+        with orm.proprietor(d.proprietor):
+            with orm.su(usr):
+                filename = uuid.uuid4().hex
+
+                # We should be able to remove this with the resolution
+                # of FIXME:8960bf52:
+                filename += 'x'
+                f = d.file(filename)
+                f.save()
+
+            with orm.override(False):
+                with orm.su(usr):
+                    self.expect(None, f.orm.reloaded)
+
+                with orm.su(usr1):
+                    self.expect(orm.AuthorizationError, f.orm.reloaded)
 
 class file_directory(tester.tester):
     def __init__(self, *args, **kwargs):

@@ -1,5 +1,7 @@
 Style Guide for the Core Framework
 ==================================
+<!-- TODO Add rule to indicate we favor single-quotes over double-quotes
+since they are more predictable to grep-->
 
 1. 72 characters line limit
 -------------------------
@@ -453,6 +455,9 @@ to use these in the framework.
       Changes made to these areas of source code should receive more
       attention and scrutenty. Use these liberaly in areas dealing with
       authentication, authorization and other sensitive areas.
+
+      <!-- TODO Note that accessibility methods should only contain
+      bomb-comments -->
 
         class security:
             """
@@ -1274,6 +1279,9 @@ segments of logic. They should be enveloped in three single quotes.
 Unlike docstrings, the concluding single quotes should exist on the same
 line as the last line of comment text.
 
+Whether the comment token is a triple quote (''' or """ ) or an
+octothorpe, a single space should seperate the token from the comment.
+
 ### Example
 
     class widget:
@@ -1494,4 +1502,6 @@ Though method names should strive to be one word, parameters should
 strive to be standard abbreviations. Regular varibales strive to be
 standarad abbreviations so this creates a standard look and feel for all
 variables.
+
+Explain that discrete methods are easier to read in small windows.
 -->

@@ -1,8 +1,12 @@
+carapacian:    car   cara
+key:           k
+handler:       hnd
 index:         ix
 list:          ls
-parent:        rent
-tuple:         tup
-handler:       hnd
 object:        obj
-return-value:  r
+parent:        rent
+entity:        e
+entities:      es
 proprietor:    propr
+return-value:  r
+tuple:         tup
