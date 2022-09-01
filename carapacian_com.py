@@ -29,7 +29,7 @@ class site(pom.site):
         self.title = 'Carapacian Sustainable Software'
 
         self.pages += home()
-    
+
     @property
     def Proprietor(self):
         # TODO Originally this was a constant. However, this caused
