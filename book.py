@@ -2629,13 +2629,13 @@ with book('Hacking Carapacian Core'):
         the metaclass removes these assignments, but retains the
         information they provided.  Assigning values to the attributes
         requires the ORM to use the internal structure to store and
-        retrive the correct data, even though the attributes seem to
+        retrieve the correct data, even though the attributes seem to
         behave as simple Python attributes.
         </aside>
 
         In addition to the attributes we've defined on the class, there
         are several default attributes we get for free. Every ORM entity
-        class has an **`id`** attribute which can be used to retrive or
+        class has an **`id`** attribute which can be used to retrieve or
         set a unique identifier for the object. Let's take a look at
         this attribute in action:
       ''')
@@ -2876,7 +2876,7 @@ with book('Hacking Carapacian Core'):
         # Run in an overridden context to avoid accessibility methods
 				with orm.override():
 
-          # Create and save and retrive dog as root user
+          # Create and save and retrieve dog as root user
 					with orm.sudo():
             # Instantiate and set attribute values
 						d = dog()
@@ -3980,6 +3980,7 @@ with book('Hacking Carapacian Core'):
           line items collection:
         ''')
 
+        from decimal import Decimal as dec
         with listing('Add a lineitem entity'):
           class lineitems(orm.entities):
             """ A collection of line items of an order.
@@ -3989,6 +3990,7 @@ with book('Hacking Carapacian Core'):
             """ A line item in an `order`.
             """
             product = str
+            price = dec
             quantity = int
 
           # Recreate the order class
@@ -4010,15 +4012,83 @@ with book('Hacking Carapacian Core'):
           product's that a user has ordered. 
 
           (Normally, a product would be its own entity, but since we
-          havn't discussed many-to-many relationships yet, we will just
+          haven't discussed many-to-many relationships yet, we will just
           be satisfied with a simple `str` to represent which product is
           ordered.)
 
-          In the final line of the listing, we inform the orme that
+          In the final line of the listing, we inform the ORM that
           `order` and `lineitems` have one-to-many relationship with
           each other.
+
+          Let's create a new `customer`, add an `order` to it, and this time
+          we will include `lineitems`
         ''')
 
+        with listing('Persisting n-levels deap'):
+          # Create the lineitem table
+          lineitem.orm.recreate()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+
+            # Create the customer
+            cust = customer()
+            cust.firstname = 'Jay'
+            cust.lastname = 'Leno'
+
+            # Create the order
+            ord = order()
+
+            # Create the line items
+            ord.lineitems += lineitem(
+              quantity  =  1,
+              price     =  3_957_348.92
+              product   = '1928 Bentley Speed 6'
+            )
+
+            ord.lineitems += lineitem(
+              quantity  =  1,
+              price     =  12_154_788.79
+              product   = 'McLaren F1'
+            )
+
+            # Make the orders collection the customer's orders
+            # collection
+            cust.orders = ords
+
+            # Save the customer, the order and the order's lineitems
+            cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+            # The final lines assert that the reloaded customer matches
+            # the original.
+            eq(cust.id, cust1.id)
+
+            eq(cust.orders.first.id, cust1.orders.first.id)
+
+            # Get the lineitems for the original customer and the
+            # reloaded customer.
+            lis = cust.orders.first.lineitems
+            lis1 = cust1.orders.first.lineitems
+
+            # Assert that each line item matechs
+            for li, li1 in zip(lis.sorted('id'), lis1.sorted('id')):
+              eq(li.id,        li1.id)
+              eq(li.price,     li1.price)
+              eq(li.quantity,  li1.quantity)
+              eq(li.product,   li1.product)
+
+        print('''
+          In the above listing, Jay Leno is ording a couple of extra
+          cars for his collection. The important thing to note is that
+          the line, `cust.save()`, `INSERT`'s the customer, its
+          order and the order's two lineitems.
+
+          In the remaining lines, we assert that all four reconds made
+          it to the database and that we were able to retrieve them.
+        ''')
 
     with section('Custom properties'):
       ...
