@@ -3989,9 +3989,9 @@ with book('Hacking Carapacian Core'):
           class lineitem(orm.entity):
             """ A line item in an `order`.
             """
-            product = str
-            price = dec
-            quantity = int
+            product   =  str
+            price     =  dec
+            quantity  =  int
 
           # Recreate the order class
           class order(orm.entity):
@@ -4084,11 +4084,67 @@ with book('Hacking Carapacian Core'):
           In the above listing, Jay Leno is ording a couple of extra
           cars for his collection. The important thing to note is that
           the line, `cust.save()`, `INSERT`'s the customer, its
-          order and the order's two lineitems.
+          order and the order's two lineitems. So we have a
+          demonstration of a 3-level deep persistence operation &mdash;
+          though, no matter how deep the hierarchy of entity objects
+          get, atomic persistence operations will continue to work.
 
           In the remaining lines, we assert that all four reconds made
           it to the database and that we were able to retrieve them.
         ''')
+
+        with section('Saving constituents'):
+          print('''
+            In the above example, we have been saving the composite
+            (i.e., the `cust` object`) and allowing the persistence to
+            propogate down to its constituents. However, if we call
+            `save()` on a constituent, an attempt will be made to
+            persist its composite as well. Take the following code for
+            example:
+          ''')
+
+          with listing('Saving composites by saving constituent'):
+            # Override the security context
+            with orm.override(), orm.sudo()
+
+              # Create the customer
+              cust = customer()
+              cust.firstname = 'Stewie'
+              cust.lastname = 'Griffin'
+
+              # Create two order objects
+              ord = order()
+              ord1 = order()
+
+              # Append each order to the customers collection of orders.
+              cust.orders += ord
+              cust.orders += ord1
+
+              # Save ord1. This will result in `cust` being saved, as
+              # wel as `ord`
+              ord1.save()
+
+              # Reload ord1 and assign to ord1_0
+              ord1_0 = ord1.orm.reloaded()
+
+              # Get the reloaded order's customer composite and assign
+              # to cust1. Note that this customer object is a reloaded
+              # verision of `cust` because it comes from the reloaded
+              # ord1_0.
+              cust1 = ord1_0.customer
+
+              # Assert that the reloaded customer matches the original
+              # customer.
+              eq(cust.id, cust1.id)
+              eq(cust.firstname, cust1.firstname)
+              eq(cust.lastname, cust1.lastname)
+
+              # Assert that the reloaded ord1 matches the original ord1
+              eq(ord1.id, ord1_0.id)
+
+              # Assert that the reloaded customer's orders collection
+              # containes the original `ord` object.
+              true(cust.orders.first.id in cust1.orders.pluck('id'))
 
     with section('Custom properties'):
       ...
