@@ -349,9 +349,6 @@ class application:
                     body = ''
 
                 # Return the responses body to the browser
-                # XXX Make sure there is a linefeed at the end of `body`,
-                # if for no other reason than to make `curl` easier to
-                # use.
                 return iter([bytes(body, 'UTF-8')]) 
 
             request = None
@@ -1504,6 +1501,13 @@ class _response():
         # These lines are for XHR responses
         # body = json.dumps(body)
         # body = bytes(body, 'utf-8')
+
+        if isinstance(self._body, str):
+            if not self._body.endswith('\n'):
+                # Ensure a newline is at the end of the response body
+                # simply to make working with tools like the `curl`
+                # command more convenient.
+                self._body += '\n'
         return self._body
 
     @body.setter
