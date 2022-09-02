@@ -689,7 +689,7 @@ class tester(entities.entity):
                 self.html = req.html
                 return req
 
-            def get(self, pg, ws):
+            def get(self, pg, ws, hdrs):
                 """ Issues an HTTP GET request for the page `pg` to the
                 site `ws`. The responses object from the request is
                 returned.
@@ -698,7 +698,7 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
-                return self._request(pg=pg, ws=ws, meth='GET')
+                return self._request(pg=pg, ws=ws, meth='GET', hdrs)
 
             def xhr(self, pg, ws, json=None):
                 """ Issues an XHR (AJAX) request to a server. The
