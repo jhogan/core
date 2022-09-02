@@ -988,7 +988,7 @@ class tester(entities.entity):
                 self.site = ws
                 return res
 
-        ''' Class members '''
+        ''' Class members of browser'''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
         ):
