@@ -2098,6 +2098,18 @@ class headers(entities.entities):
                 accept_encoding': 'gzip, deflate, br'
             )
         """
+
+        # If the first argument is another instance of `headers`,
+        # convert it to a list<tuple> and populate this instance with
+        # its values just as if we were given a list<tuple>.
+        try:
+            hdrs = args[0]
+        except IndexError:
+            pass
+        else:
+            if isinstance(hdrs, headers):
+                args = [hdrs.list]
+
         args = list(args)
         try:
             d = args.pop(0)
