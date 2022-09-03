@@ -747,29 +747,29 @@ class page(tester.tester):
         msg = res['main .message'].html
         self.true('Page class needs main method' in msg)
 
-    def it_gets_page_using_HTTP_X_FORWARDED_FOR(self):
+    def it_gets_page_using_X_FORWARDED_FOR(self):
         ip = None
         class realip(pom.page):
             def main(self):
                 nonlocal ip
-                ip = req.ip
+                ip = req.ip.address
 
-        pg = realip()
         ws = foonet()
-        ws.pages += pg
+        ws.pages += realip()
 
         tab = self.browser().tab()
 
-        HTTP_X_FORWARDED_FOR = '84.90.32.84'
+        X_FORWARDED_FOR = '84.90.32.84'
 
         hdrs = { 
-            'HTTP_X_FORWARDED_FOR': HTTP_X_FORWARDED_FOR,
-            'REMOTE_ADDR': ''
+            'X_FORWARDED_FOR': X_FORWARDED_FOR,
         }
 
-        res = tab.get('/', ws, hdrs)
+        tab.browser.ip = None
+
+        res = tab.get('/en/realip', ws, hdrs)
         self.status(200, res)
-        self.eq(HTTP_X_FORWARDED_FOR, ip)
+        self.eq(X_FORWARDED_FOR, ip)
 
     def it_changes_lang_from_main(self):
         lang = uuid4().hex

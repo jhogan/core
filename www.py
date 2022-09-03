@@ -1047,7 +1047,13 @@ class _request:
             # XXX REMOTE_ADDR will be empty when using UNIX sockets. If
             # that's the case, fall back on HTTP_X_FORWARDED_FOR. Don't
             # forget to write tests.
-            ip = str(self.environment['REMOTE_ADDR'])
+            ip = self.environment['REMOTE_ADDR']
+
+            if not ip:
+                try:
+                    ip = self.environment['HTTP_X_FORWARDED_FOR']
+                except:
+                    ip = str()
             self._ip = ecommerce.ip(address=ip)
         return self._ip
 

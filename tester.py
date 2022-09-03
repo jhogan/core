@@ -689,7 +689,7 @@ class tester(entities.entity):
                 self.html = req.html
                 return req
 
-            def get(self, pg, ws, hdrs):
+            def get(self, pg, ws, hdrs=None):
                 """ Issues an HTTP GET request for the page `pg` to the
                 site `ws`. The responses object from the request is
                 returned.
@@ -698,7 +698,7 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
-                return self._request(pg=pg, ws=ws, meth='GET', hdrs)
+                return self._request(pg=pg, ws=ws, meth='GET', hdrs=hdrs)
 
             def xhr(self, pg, ws, json=None):
                 """ Issues an XHR (AJAX) request to a server. The
@@ -791,7 +791,9 @@ class tester(entities.entity):
                 :param: hdrs www.headers: A collection of headers to be
                 appended to the request.
                 """
-                arg_hdrs = hdrs
+                arg_hdrs = www.headers(hdrs) if hdrs else None
+                    
+
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):
                     raise TypeError(
