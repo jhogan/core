@@ -4084,7 +4084,7 @@ with book('Hacking Carapacian Core'):
           In the above listing, Jay Leno is ording a couple of extra
           cars for his collection. The important thing to note is that
           the line, `cust.save()`, `INSERT`'s the customer, its
-          order and the order's two lineitems. So we have a
+          order and the order's two `lineitems`. This gives us a
           demonstration of a 3-level deep persistence operation &mdash;
           though, no matter how deep the hierarchy of entity objects
           get, atomic persistence operations will continue to work.
@@ -4116,12 +4116,12 @@ with book('Hacking Carapacian Core'):
               ord = order()
               ord1 = order()
 
-              # Append each order to the customers collection of orders.
+              # Append each order to the customers collection of orders
               cust.orders += ord
               cust.orders += ord1
 
               # Save ord1. This will result in `cust` being saved, as
-              # wel as `ord`
+              # well as `ord`.
               ord1.save()
 
               # Reload ord1 and assign to ord1_0
@@ -4145,6 +4145,41 @@ with book('Hacking Carapacian Core'):
               # Assert that the reloaded customer's orders collection
               # containes the original `ord` object.
               true(cust.orders.first.id in cust1.orders.pluck('id'))
+
+          print('''
+            The above listing is similar to the other example we have
+            seen so far. However, instead of calling `save()` on the
+            `cust` object, i.e., the *composite*, we are call `save()`
+            on one of the `order` objects (`ord1`). Since the ORM knows
+            that the `cust` is the composite of `ord1`, an attempt
+            is made to persist (i.e., call its `save()` method) `cust`
+            as well.  This, in turn has the effect of persisting the
+            other `order` (`ord`) since it is a constituent of `cust`
+
+            Note alse that when we reload `ord1`, we are able to access
+            its composite `.customer`. Retriving a composite from a
+            newly loaded entity is a feature we haven't seen yet. For
+            the sake of clarity, this composite is a freshly loaded
+            `customer` since `ord1_0` is freshly loaded (i.e., it's not
+            derived from an in-memory cache somewhere). Also, it is
+            lazy-loaded: the database interaction to retrieve the data
+            for the composite is performed only when `.customer` is
+            called. That being said, it is a composite and you should
+            expect it to behave like any other composite in terms of
+            attribute access, persistence state management, and any
+            future persistence operations.
+
+            Once `ord1` has been reloaded, the final part of the listing
+            demonstrates through assertion that the `customer` and its
+            two `orders` were successfully saved to the database as
+            subsequently reloaded back into new entity objects.
+
+            Normally, you will call `save()` on the highest level
+            composite and allow the persistence to propogated down to
+            the constituents. However, it's important to know that the
+            ORM is keeping track of these hierarchies and will try to
+            persist upwards as well as downwards.
+          ''')
 
     with section('Custom properties'):
       ...
