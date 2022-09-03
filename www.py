@@ -2048,14 +2048,14 @@ class headers(entities.entities):
     
     Headers are components of HTTP requests and responses messages and,
     therefore, are constiuents of the ``request`` and ``response``
-    objects (viz. www.request.headers and www.response.headers.).
+    objects (viz. www.request.headers and www.response.headers).
     """
     def __init__(self, *args, **kwargs):
-        """ Creates a headers collection.
+        """ Creates a `headers` collection.
 
         :param: d sequence: There are a number of ways to initialize the
         headers collection. For example, the following produces the same
-        headers collection::
+        headers collection:
 
             # list<tuple>
             hdrs = headers([
@@ -2069,11 +2069,17 @@ class headers(entities.entities):
                 ('Accept-Encoding', 'gzip, deflate, br')
             })
 
-            # Dict
+            # dict
             hdrs = headers({
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip, deflate, br'
             })
+
+            # headers
+            hdrs = headers(headers([
+                ('Content-Type', 'application/json'), 
+                ('Accept-Encoding', 'gzip, deflate, br')
+            ]))
 
         :param: kwargs dict: You can also use **kwargs::
 
