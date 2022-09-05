@@ -1044,11 +1044,11 @@ class _request:
         the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
-            # XXX REMOTE_ADDR will be empty when using UNIX sockets. If
-            # that's the case, fall back on HTTP_X_FORWARDED_FOR. Don't
-            # forget to write tests.
             ip = self.environment['REMOTE_ADDR']
 
+            # REMOTE_ADDR will be empty when using a reverse proxy like
+            # Nginx. If that's the case, fall back on
+            # HTTP_X_FORWARDED_FOR.
             if not ip:
                 try:
                     ip = self.environment['HTTP_X_FORWARDED_FOR']
