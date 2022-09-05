@@ -1110,7 +1110,7 @@ with book('Hacking Carapacian Core'):
               return the first dog that matches the name:
             ''')
 
-            with listing('Retriving item by name property'):
+            with listing('Retrieving item by name property'):
               spot = dgs['spot']
               eq('spot', spot)
 
@@ -1121,7 +1121,7 @@ with book('Hacking Carapacian Core'):
               work:
             ''')
 
-            with listing('Retriving item by id property'):
+            with listing('Retrieving item by id property'):
               try:
                 # Get spot
                 spot = dgs['spot']
@@ -4156,8 +4156,8 @@ with book('Hacking Carapacian Core'):
             as well.  This, in turn has the effect of persisting the
             other `order` (`ord`) since it is a constituent of `cust`
 
-            Note alse that when we reload `ord1`, we are able to access
-            its composite `.customer`. Retriving a composite from a
+            Note also that when we reload `ord1`, we are able to access
+            its composite `.customer`. Retrieving a composite from a
             newly loaded entity is a feature we haven't seen yet. For
             the sake of clarity, this composite is a freshly loaded
             `customer` since `ord1_0` is freshly loaded (i.e., it's not
@@ -4171,15 +4171,39 @@ with book('Hacking Carapacian Core'):
 
             Once `ord1` has been reloaded, the final part of the listing
             demonstrates through assertion that the `customer` and its
-            two `orders` were successfully saved to the database as
+            two `orders` were successfully saved to the database and
             subsequently reloaded back into new entity objects.
 
             Normally, you will call `save()` on the highest level
             composite and allow the persistence to propogated down to
-            the constituents. However, it's important to know that the
-            ORM is keeping track of these hierarchies and will try to
-            persist upwards as well as downwards.
+            the constituents. This is a more intuitive approach to
+            writing persistence logic, after all. However, it's
+            important to know that the ORM is keeping track of these
+            hierarchies and will try to persist upwards as well as
+            downwards.
           ''')
+
+      with section('ORM Data types'):
+        print('''
+          As you have seen, defining an attributes type is rather
+          simple. Types in the ORM attempt behave as much like Python
+          types as possible to make their use easy for the developer.
+          For example, to define an attribute, we use a reference to the
+          builtin Python class `str` instead of creating a new, ORM
+          specific reference (such as `orm.string`). Additionally,
+          attributes defined as `str` default to empty because that is
+          the default for Python `str`.
+
+          The simplicity of the typing system so far would seem to
+          ignore the need to define typical database constraints (such
+          as a maximum length given to the `varchar` type) or the
+          precision and scale of a float. On the contrary, these
+          additional parameters can be defined during class definition. It
+          turns out, however, that they are almost never needed because
+          the default constraints are suffecient. However, when the need
+          arises to provide additional parameters to the data types to
+          improved database performence, that capability does exist.
+        ''')
 
     with section('Custom properties'):
       ...
@@ -4187,8 +4211,6 @@ with book('Hacking Carapacian Core'):
     with section('Imperitive attributes'):
       ...
 
-    with section('ORM types'):
-      ...
 
     with section('Testing ORM entities'):
       ...
