@@ -4186,23 +4186,63 @@ with book('Hacking Carapacian Core'):
       with section('ORM Data types'):
         print('''
           As you have seen, defining an attributes type is rather
-          simple. Types in the ORM attempt behave as much like Python
-          types as possible to make their use easy for the developer.
+          simple. Types in the ORM behave as much like Python
+          types as possible in order to make their use easy for the developer.
           For example, to define an attribute, we use a reference to the
           builtin Python class `str` instead of creating a new, ORM
           specific reference (such as `orm.string`). Additionally,
-          attributes defined as `str` default to empty because that is
-          the default for Python `str`.
+          attributes defined as `str` default to empty strings because
+          that is the default for a Python `str`.
 
           The simplicity of the typing system so far would seem to
-          ignore the need to define typical database constraints (such
-          as a maximum length given to the `varchar` type) or the
+          ignore the need to define typical database constraints such
+          as a maximum length given to the `varchar` type, or the
           precision and scale of a float. On the contrary, these
           additional parameters can be defined during class definition. It
           turns out, however, that they are almost never needed because
-          the default constraints are suffecient. However, when the need
+          the default constraints are sufficient. Consider that under
+          most circumstances, you just want your variable to be a
+          string, integer, decimal or Boolean.  However, when the need
           arises to provide additional parameters to the data types to
           improved database performence, that capability does exist.
+        ''')
+
+        with section ('`str` attributes'):
+          
+          with listing('Example'):
+            
+            class persons(orm.entities):
+              pass
+
+            class person(orm.entity):
+              name = str
+
+            per = person()
+
+            # Defaults to an empty string
+            empty(per.name)
+
+            # Assign a sting to the attribute with surrounding
+            # whitespace.
+            per.name = '   Peter Griffin    '
+
+            # Note that the surrounding whitespace is removed
+            eq('Peter Griffin', per.name)
+
+        print('''
+          `str` attributes are empty strings (`''`) by default.
+
+          By default, they are converted to `varchar(255)`. Like all
+          all types, they can be set to `None` which will be saved to the
+          database as `null`.
+
+          Notably, `str` attributes automatically strip and surrounding
+          whitespace since this is virtually always what you want to do
+          with surrounding whitespace (except for rare cases, such as
+          with a password). This makes it possible to accept user input
+          which may have accidental whitespace at the begining or end.
+          This way, you don't have to remember to call `str.strip`
+          yourself before sending it to the ORM for persistence.
         ''')
 
     with section('Custom properties'):
