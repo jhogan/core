@@ -747,6 +747,9 @@ class page(tester.tester):
         msg = res['main .message'].html
         self.true('Page class needs main method' in msg)
 
+    def it_fallsback_to_domain(self):
+        req = www.request(www.application())
+
     def it_gets_page_using_X_FORWARDED_FOR(self):
         ip = None
         class realip(pom.page):
