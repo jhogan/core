@@ -63,16 +63,20 @@ class connection(entitiesmod.entity):
 
     def __repr__(self):
         conn = self._connection
-        return '%s (Open: %s)' % (self.account.url, str(bool(conn.open)))
+        args = self.account.url, str(bool(conn.open))
+        return '%s (Open: %s)' % args
 
     @property
     def _connection(self):
         if not self._conn:
             acct = self.account
-            self._conn = MySQLdb.connect(acct.host, acct.username, 
-                                         acct.password, acct.database, 
-                                         port=acct.port, charset='utf8mb4',
-                                         use_unicode=True)
+            self._conn = MySQLdb.connect(
+                acct.host, acct.username, acct.password, acct.database, 
+                port = acct.port, 
+                charset = 'utf8mb4', 
+                use_unicode = True
+            )
+
         return self._conn                
 
     def kill(self):
