@@ -4243,6 +4243,29 @@ with book('Hacking Carapacian Core'):
           which may have accidental whitespace at the begining or end.
           This way, you don't have to remember to call `str.strip`
           yourself before sending it to the ORM for persistence.
+
+          `str` attributes fully support unicode characters in terms of
+          in-memory use as well as persistence.
+
+          `str` attributes use the `str()` function to convert
+          non-`str` Python data types to `str` data types. For example,
+          if we assign an integer to a `str` attribute, it will
+          immediately be converted a `str`.
+
+          `str` attributes must, by default at least 1 characters
+          for their entity object to be considered valid (`.isvalid`)
+          (even though `str` attributes defalut to empty).  This is
+          because empty `str` attributes are rarely meaningful and are
+          often synonymous with `None` (`null') values. If you intend to
+          indicate that there is no value for the given attribute (e.g.,
+          the user has chosen to leave the field blank in the user
+          interface), it is recommended that you set the `str` attribute
+          to `None`.
+
+          Since the database type for a `str` attribute is, by default,
+          `varchar(255)`, you would be correct in guessing that 255 is
+          the maximum number of characters the attribute can have for
+          the entity to be considered valid.
         ''')
 
     with section('Custom properties'):
