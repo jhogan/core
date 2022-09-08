@@ -716,14 +716,37 @@ class _request:
             # `site` class, so get that class and use it to instantiate
             # a site object.
             if isinstance(ws, str):
-                # XXX When we hit 'https://www.carapacian.com', the
-                # below will try to import 'www_carapacian_com.py' which
-                # doesn't exist. We should strip any preceding 'www.' if
-                # there is an excepting during the import and try again.
                 host, sep, port = ws.partition(':')
-                host = host.replace('.', '_')
-                mod = __import__(host,  globals(), locals())
-                ws = getattr(mod, 'site')()
+
+                # Split host name on '.'
+                hosts = host.split('.')
+
+                # Loop to fallback on less specific domains, i.e, try
+                # x.x.example.com, then try x.example.tld, then try
+                # example.tld, then raise ModuleNotFoundError none were
+                # successfully imported.
+                while len(hosts):
+                    # Convert host name from . seperate to _ seperated
+                    # since modules can't have dots in them (they can,
+                    # but it can be problematic).
+                    host = '_'.join(hosts)
+
+                    try:
+                        # Try to import `host` module
+                        mod = __import__(host,  globals(), locals())
+                    except ModuleNotFoundError:
+                        if len(hosts) > 2:
+                            # Pop the first subdomain off the list and
+                            # try again
+                            hosts.pop(0)
+                        else:
+                            # There are no subdomains, so accept that we
+                            # can't import host
+                            raise
+                    else:
+                        # Instantiate the site object in the host module
+                        ws = getattr(mod, 'site')()
+                        break
 
             if isinstance(ws, pom.site):
                 self._site =  ws

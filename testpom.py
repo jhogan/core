@@ -748,8 +748,24 @@ class page(tester.tester):
         self.true('Page class needs main method' in msg)
 
     def it_fallsback_to_domain(self):
-        req = www.request(www.application())
+        import carapacian_com
 
+        req = www._request(www.application())
+        req.app.environment = {'HTTP_HOST': 'carapacian.com'}
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
+
+        req = www._request(www.application())
+        req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
+
+        req = www._request(www.application())
+        req.app.environment = {
+            'HTTP_HOST': '380753fc.www.carapacian.com'
+        }
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
     def it_gets_page_using_X_FORWARDED_FOR(self):
         ip = None
         class realip(pom.page):
