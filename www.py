@@ -1071,7 +1071,12 @@ class _request:
 
             # REMOTE_ADDR will be empty when using a reverse proxy like
             # Nginx. If that's the case, fall back on
-            # HTTP_X_FORWARDED_FOR.
+            # HTTP_X_FORWARDED_FOR. NOTE This is true when using UNIX
+            # sockets. It's not clear to me what REMOTE_ADDR would be if
+            # Gunicorn were listening on an IP socket. From Gunicorn's
+            # documentation, it would likely be the the IP of the Nginx
+            # proxy Thus the following logic would need to change if,
+            # for some reason, we switch from UNIX to IP sockets.
             if not ip:
                 try:
                     ip = self.environment['HTTP_X_FORWARDED_FOR']
