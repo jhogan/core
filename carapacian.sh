@@ -4,23 +4,23 @@
 # steps should be taken to set up a server that allows developers to
 # create Gunicorn UNIX sockets that can be read and written to by Nginx.
 
-# Use /run/core to put Gunicorn's UNIX sockets in
-mkdir -p /run/core
+# Use /run/carapacian.com/ to put Gunicorn's UNIX sockets in
+mkdir -p /run/carapacian.com
 
 # The directory should be accessable by Nginx so allow www-data access
 # to it.
-chgrp www-data /run/core
-chown 770 /run/core
+chgrp www-data /run/carapacian.com
+chown 770 /run/carapacian.com
 
 # Create a Gunicorn process like this. You can access it through Nginx
 # with a URL like http://3b6b9aae.carapacian.com
-gunicorn -b unix:/run/core/3b6b9aae.sock
+gunicorn -b unix:/run/carapacian.com/3b6b9aae.sock
 
 # Put it in the www-data group so Nginx can r/w it
-chgrp www-data /run/core/3b6b9aae.sock
+chgrp www-data /run/carapacian.com/3b6b9aae.sock
 
 # Adjust the socket so users in the www-data group can r/w it. 
-chmod 770 /run/core/3b6b9aae.sock
+chmod 770 /run/carapacian.com/3b6b9aae.sock
 
 # Make sure that developers are in the www-data group so they can create
 # the sockets when they run `gunicorn' as we did above.
