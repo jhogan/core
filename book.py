@@ -4222,12 +4222,26 @@ with book('Hacking Carapacian Core'):
             # Defaults to an empty string
             empty(per.name)
 
+            # The minimum number of characters a str attribute can be is
+            # 1, so the entity starts out as invalid
+            invalid(per)
+
             # Assign a sting to the attribute with surrounding
             # whitespace.
             per.name = '   Peter Griffin    '
 
+            # Now that the attribute has a non-empty str, it is valid
+            valid(per)
+
             # Note that the surrounding whitespace is removed
             eq('Peter Griffin', per.name)
+
+            # The str() function is used to convert non-str values 
+            per.name = 123
+
+            eq('123', per.name)
+            type(str, per.name)
+
 
         print('''
           `str` attributes are empty strings (`''`) by default.
@@ -4250,26 +4264,61 @@ with book('Hacking Carapacian Core'):
           `str` attributes use the `str()` function to convert
           non-`str` Python data types to `str` data types. For example,
           if we assign an integer to a `str` attribute, it will
-          immediately be converted a `str`.
+          immediately be converted a `str`. `str` attributes always
+          return a value of type `str` no matter what they are assigned
+          (unless, of course, the attribute's value is `None`).
 
-          `str` attributes must, by default at least 1 characters
-          for their entity object to be considered valid (`.isvalid`)
-          (even though `str` attributes defalut to empty).  This is
-          because empty `str` attributes are rarely meaningful and are
-          often synonymous with `None` (`null') values. If you intend to
-          indicate that there is no value for the given attribute (e.g.,
-          the user has chosen to leave the field blank in the user
-          interface), it is recommended that you set the `str` attribute
-          to `None`.
+          `str` attributes must, by default, contain at least 1
+          character for their entity object to be considered valid
+          (`.isvalid`) (even though `str` attributes defalut to empty).
+          This is because empty `str` attributes are rarely meaningful
+          and are often synonymous with `None` (`null') values. If you
+          intend to indicate that there is no value for a given
+          `str` attribute (e.g., the user has chosen to leave the field
+          blank in the user interface), it is recommended that you set
+          the attribute to `None`.
 
           Since the database type for a `str` attribute is, by default,
           `varchar(255)`, you would be correct in guessing that 255 is
           the maximum number of characters the attribute can have for
           the entity to be considered valid.
+
+          We can change the minimum and maximum size for a `str`
+          attributes in the declaration:
         ''')
+
+        with listing('Change minimum and maximum size of a str'):
+            class person(orm.entity):
+              # Declare that `name` is a str that can be a minimum of 0
+              # characters and a maximum of 50 characters.
+              name = str, 0, 50
+
+            per = person()
+
+            # The default empty string is now valid since the minimum
+            # number of characters is 0
+            valid(per)
+
+            # More than 50 characters makes the entity invalid
+            per.name = 'X' * 51
+            invalid(per)
+
+            # 50 characters (or less) and the entity is valid again
+            per.name = 'X' * 50
+            valid(per)
+
+        print('''
+        ''')
+
+
+
 
     with section('Custom properties'):
       ...
+
+    with section('Indexes'):
+        with section('Full text indexes'):
+            ...
 
     with section('Imperitive attributes'):
       ...
