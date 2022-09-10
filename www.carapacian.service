@@ -1,6 +1,6 @@
 [Unit]
 Description=www.carapacian.com gunicorn daemon
-Requires=wwww.carapacian.socket
+Requires=www.carapacian.socket
 After=network.target
 
 [Service]
