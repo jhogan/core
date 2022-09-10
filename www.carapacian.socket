@@ -9,8 +9,9 @@ ListenStream=/run/carapacian.com/www.sock
 
 SocketUser=www-data
 
-# Optionally restrict the socket permissions even more.
-SocketMode=600
+# Only allow www-data to r/w. We also set the x because the Nginx config file
+# uses -e to test for the socket's existence.
+SocketMode=700
 
 [Install]
 WantedBy=sockets.target
