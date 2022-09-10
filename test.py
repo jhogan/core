@@ -549,7 +549,6 @@ class artist(orm.entity):
 
         attr(v)
 
-
     def clear(self):
         self.locations.clear()
         self.presentations.clear()
