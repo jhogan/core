@@ -4246,17 +4246,25 @@ with book('Hacking Carapacian Core'):
         print('''
           `str` attributes are empty strings (`''`) by default.
 
-          By default, they are converted to `varchar(255)`. Like all
-          all types, they can be set to `None` which will be saved to the
-          database as `null`.
+          By default, a `varchar(255)` column will be created for `str`
+          attributes in the entity's database table. Like all all types,
+          they can be set to `None` which will be saved to the database
+          as `null`. `varchar` will be used for all `str` attributes
+          except when the developer specifies a minimum and maximum size
+          of equal value. In that case, a `char` is used. In the listing
+          below, we can see how a developers can specify the minimum and
+          maximum value. However, if you want a fixed-length string, it
+          is recommended you use the [chr](#fe56ed82) pseudotype
+          instead.
 
-          Notably, `str` attributes automatically strip and surrounding
-          whitespace since this is virtually always what you want to do
-          with surrounding whitespace (except for rare cases, such as
-          with a password). This makes it possible to accept user input
-          which may have accidental whitespace at the begining or end.
-          This way, you don't have to remember to call `str.strip`
-          yourself before sending it to the ORM for persistence.
+          Notably, `str` attributes automatically strip any surrounding
+          whitespace in a string they are assigned. This is virtually
+          always what you want (except for rare cases, such as with a
+          password). This makes it possible to accept user input which
+          may have accidental whitespace at the begining or end.  This
+          way, you don't have to remember to call `str.strip` yourself
+          before sending it to the ORM for persistence. Currently, there
+          is no way to disable this automatic stripping.
 
           `str` attributes fully support unicode characters in terms of
           in-memory use as well as persistence.
@@ -4270,7 +4278,7 @@ with book('Hacking Carapacian Core'):
 
           `str` attributes must, by default, contain at least 1
           character for their entity object to be considered valid
-          (`.isvalid`) (even though `str` attributes defalut to empty).
+          (`.isvalid`) (even though `str` attributes default to empty).
           This is because empty `str` attributes are rarely meaningful
           and are often synonymous with `None` (`null') values. If you
           intend to indicate that there is no value for a given
@@ -4288,27 +4296,40 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with listing('Change minimum and maximum size of a str'):
-            class person(orm.entity):
-              # Declare that `name` is a str that can be a minimum of 0
-              # characters and a maximum of 50 characters.
-              name = str, 0, 50
+          class person(orm.entity):
+            # Declare that `name` is a str that can be a minimum of 0
+            # characters and a maximum of 50 characters.
+            name = str, 0, 50
 
-            per = person()
+          per = person()
 
-            # The default empty string is now valid since the minimum
-            # number of characters is 0
-            valid(per)
+          # The default empty string is now valid since the minimum
+          # number of characters is 0
+          valid(per)
 
-            # More than 50 characters makes the entity invalid
-            per.name = 'X' * 51
-            invalid(per)
+          # More than 50 characters makes the entity invalid
+          per.name = 'X' * 51
+          invalid(per)
 
-            # 50 characters (or less) and the entity is valid again
-            per.name = 'X' * 50
-            valid(per)
+          # 50 characters (or less) and the entity is valid again
+          per.name = 'X' * 50
+          valid(per)
 
         print('''
+          It's rare that you would need to specify the size of the `str`
+          attribute however. If you need a an attribute that can contain
+          more text than 255, you should consider a [text](#0822acc6)
+          attribute instead.
         ''')
+
+        with section ('`chr` attributes', id='fe56ed82')
+          ...
+
+        with section ('`text` attributes', id='0822acc6'):
+          ...
+
+        with section ('`int` attributes'):
+          ...
 
 
 
