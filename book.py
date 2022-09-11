@@ -4244,10 +4244,12 @@ with book('Hacking Carapacian Core'):
 
 
         print('''
-          `str` attributes are empty strings (`''`) by default.
+          `str` attributes can contain (and reliabily persist) any
+          string of unicode character. By default they are empty strings
+          (`''`).
 
           By default, a `varchar(255)` column will be created for `str`
-          attributes in the entity's database table. Like all all types,
+          attributes in the entity's database table. Like all types,
           they can be set to `None` which will be saved to the database
           as `null`. `varchar` will be used for all `str` attributes
           except when the developer specifies a minimum and maximum size
@@ -4263,11 +4265,8 @@ with book('Hacking Carapacian Core'):
           password). This makes it possible to accept user input which
           may have accidental whitespace at the begining or end.  This
           way, you don't have to remember to call `str.strip` yourself
-          before sending it to the ORM for persistence. Currently, there
-          is no way to disable this automatic stripping.
-
-          `str` attributes fully support unicode characters in terms of
-          in-memory use as well as persistence.
+          before assigning it to the attribute. Currently, there is no
+          way to disable this automatic stripping.
 
           `str` attributes use the `str()` function to convert
           non-`str` Python data types to `str` data types. For example,
@@ -4282,14 +4281,14 @@ with book('Hacking Carapacian Core'):
           This is because empty `str` attributes are rarely meaningful
           and are often synonymous with `None` (`null') values. If you
           intend to indicate that there is no value for a given
-          `str` attribute (e.g., the user has chosen to leave the field
-          blank in the user interface), it is recommended that you set
-          the attribute to `None`.
+          `str` attribute (e.g., because a  user has chosen to leave a
+          field blank in the user interface), it is recommended that you
+          set the attribute to `None`.
 
           Since the database type for a `str` attribute is, by default,
           `varchar(255)`, you would be correct in guessing that 255 is
-          the maximum number of characters the attribute can have for
-          the entity to be considered valid.
+          the maximum number of characters the attribute can have in
+          order for the entity to be considered valid.
 
           We can change the minimum and maximum size for a `str`
           attributes in the declaration:
@@ -4317,13 +4316,43 @@ with book('Hacking Carapacian Core'):
 
         print('''
           It's rare that you would need to specify the size of the `str`
-          attribute however. If you need a an attribute that can contain
-          more text than 255, you should consider a [text](#0822acc6)
-          attribute instead.
+          attribute, however. If you need a an attribute that can
+          contain more text than 255, you should consider a
+          [text](#0822acc6) attribute instead.
         ''')
 
         with section ('`chr` attributes', id='fe56ed82')
-          ...
+          print('''
+            Occasionally, you will want to store a fixed-width string. A
+            fixed-width string is one where the only valid value is on
+            that contains a pre-declared number of characters. In that
+            case, the `chr` attribute is handy.
+          ''')
+
+          with listing('`chr` example'):
+            class debit(orm.entity):
+              """ Represents a debit card.
+              """
+
+              # The pin number for the debit card
+              pin = chr(4)
+
+            dbt = debit()
+
+            # Assign the pin a number
+            dbt.pin = 12345
+
+            # Note that the pin gets converted to a str
+            eq('12345', dbt.pin)
+
+            # The pin number must be exactly 4 characters.
+            invalid(dbt)
+
+            # Assign the pin attribute a valid number
+            dbt.pin = 1234
+
+            # Now the entity is valid
+            valid(per)
 
         with section ('`text` attributes', id='0822acc6'):
           ...
