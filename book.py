@@ -4324,12 +4324,15 @@ with book('Hacking Carapacian Core'):
         with section ('`chr` attributes', id='fe56ed82')
           print('''
             Occasionally, you will want to store a fixed-width string. A
-            fixed-width string is one where the only valid value is on
-            that contains a pre-declared number of characters. In that
-            case, the `chr` attribute is handy.
+            fixed-width string is one where the only valid value is one
+            that contains an exact number of  pre-declared characters.
+            In that case, the `chr` attribute is handy.
           ''')
 
           with listing('`chr` example'):
+            class debits(orm.entities):
+              pass
+
             class debit(orm.entity):
               """ Represents a debit card.
               """
@@ -4345,7 +4348,8 @@ with book('Hacking Carapacian Core'):
             # Note that the pin gets converted to a str
             eq('12345', dbt.pin)
 
-            # The pin number must be exactly 4 characters.
+            # However, the pin number must be exactly 4 characters so
+            # this debit card is "invalid"
             invalid(dbt)
 
             # Assign the pin attribute a valid number
@@ -4354,10 +4358,40 @@ with book('Hacking Carapacian Core'):
             # Now the entity is valid
             valid(per)
 
+          print('''
+            In the above example, a `debit` card class is declared with
+            a `pin` number that must be exactly 4 characters. Since pin
+            numbers (at least in this example) must be 4 characters,
+            using `chr(4)` is a convenient choice to enforce this
+            constraint. Anything more or less that 4 characters would
+            make the `debit` card entity invalid.
+
+            Since `chr` types are fixed-width unicode strings, they are
+            stored as `char` types in the database.
+
+            Note that `chr` types are considered pseudotypes since they
+            are just a shorthand for declaring a fixed with `str`
+            attribute. For example, the above `debit` card class could
+            have been written:
+
+              class debit(orm.entity)
+                pin = str, 4, 4
+
+            However, by using the `chr` pseudotype, we are better able
+            to express the fact that `pin` numbers are fixed-width
+            &mdash; and we can do so with fewer characters.
+          ''')
+
         with section ('`text` attributes', id='0822acc6'):
           ...
 
         with section ('`int` attributes'):
+          ...
+
+        with section ('`date` attributes'):
+          ...
+
+        with section ('`span` attributes'):
           ...
 
 
