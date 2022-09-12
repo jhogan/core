@@ -9,8 +9,8 @@ mkdir -p /run/carapacian.com
 
 # The directory should be accessable by Nginx so allow www-data access
 # to it.
-chgrp www-data /run/carapacian.com
-chown 770 /run/carapacian.com
+chown www-data:www-data /run/carapacian.com
+chmod 770 /run/carapacian.com
 
 # Create a Gunicorn process like this. You can access it through Nginx
 # with a URL like http://3b6b9aae.carapacian.com
