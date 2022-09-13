@@ -4246,18 +4246,22 @@ with book('Hacking Carapacian Core'):
         print('''
           `str` attributes can contain (and reliabily persist) any
           string of unicode character. By default they are empty strings
-          (`''`).
+          (`''`).  Like all types, `str` attributes can be set to `None`
+          which will be saved to the database as `null`.  
 
           By default, a `varchar(255)` column will be created for `str`
-          attributes in the entity's database table. Like all types,
-          they can be set to `None` which will be saved to the database
-          as `null`. `varchar` will be used for all `str` attributes
-          except when the developer specifies a minimum and maximum size
-          of equal value. In that case, a `char` is used. In the listing
-          below, we can see how a developers can specify the minimum and
-          maximum value. However, if you want a fixed-length string, it
-          is recommended you use the [chr](#fe56ed82) pseudotype
-          instead.
+          attributes in the entity's database table. If we declare the
+          maximum character to be more than 4000, the database type
+          becomes a `longtext`. If the number of maximum characters is
+          below 4000 and the minimum number of characters equals the
+          maximum number of characters, a database type of `char` is
+          used.  In the listing below, we can see how a developers can
+          specify the minimum and maximum value. However, if you want a
+          fixed-length string, it is recommended you use the
+          [chr](#fe56ed82) pseudotype instead. If you want to store
+          really long strings of text, such as a user's bio, or a blog
+          entry, it is recommend that you use the `text`
+          pseudotypes](#0822acc6) instead of specify a large maximum.
 
           Notably, `str` attributes automatically strip any surrounding
           whitespace in a string they are assigned. This is virtually
@@ -4266,14 +4270,16 @@ with book('Hacking Carapacian Core'):
           may have accidental whitespace at the begining or end.  This
           way, you don't have to remember to call `str.strip` yourself
           before assigning it to the attribute. Currently, there is no
-          way to disable this automatic stripping.
+          way to disable this automatic stripping (although it shouldn't
+          be difficult to develop a way, possibly with the use of a
+          context manager).
 
-          `str` attributes use the `str()` function to convert
-          non-`str` Python data types to `str` data types. For example,
-          if we assign an integer to a `str` attribute, it will
-          immediately be converted a `str`. `str` attributes always
-          return a value of type `str` no matter what they are assigned
-          (unless, of course, the attribute's value is `None`).
+          `str` attributes use the `str()` function to convert non-`str`
+          Python data types to `str` data types. For example, if we
+          assign an integer to a `str` attribute, it will immediately be
+          converted to a `str`. `str` attributes always return a value
+          of type `str` no matter what they are assigned (unless, of
+          course, the attribute's value is `None`).
 
           `str` attributes must, by default, contain at least 1
           character for their entity object to be considered valid
@@ -4383,7 +4389,20 @@ with book('Hacking Carapacian Core'):
           ''')
 
         with section ('`text` attributes', id='0822acc6'):
-          ...
+          print('''
+            The `text` is pseudotype attribute is similar to the `str` attribute but
+            is useful for situations where the attribute needs to store
+            large amounts of text. 
+
+            `text` attributes must have at least
+            one character. If the attribute contains an empty str, its
+            entity is considered invalid. If you need to indicate that
+            there is no text for the attribute, assign it a `None`
+            value. 
+
+            The maximun number of =
+            
+          ''')
 
         with section ('`int` attributes'):
           ...
