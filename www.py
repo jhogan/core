@@ -56,6 +56,11 @@ import traceback
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 
+# TODO:24129f2a When a request is made, check the `hits` entity to see
+# if an IP address has made too many requests in a given timeframe. If
+# so, retun a 429 Too Many Requests response. Otherwise, the site is
+# vulnerable to anyone using `ab` or `hey`.
+
 class application:
     """ Represents a WSGI application.
     """

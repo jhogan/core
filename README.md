@@ -30,6 +30,8 @@ line:
 TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
     
     self.testers.breakonexception = True
+
+XXX: Discuss using tidy
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
