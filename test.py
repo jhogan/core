@@ -549,7 +549,6 @@ class artist(orm.entity):
 
         attr(v)
 
-
     def clear(self):
         self.locations.clear()
         self.presentations.clear()
@@ -10784,7 +10783,6 @@ class orm_(tester):
                 for aa in art.artist_artifacts:
                     titles.append(f"'{aa.artifact.title}'")
                
-
             factwhere = 'title %s IN (%s)' % (op, ', '.join(titles[:4]))
 
             arts1 = artists(artwhere, ()) & artifacts(factwhere, ())

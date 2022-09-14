@@ -390,15 +390,16 @@ ideal. However, the [log.py](log.py) module should be used to log locally
 <a id="assets-configuration"></a>
 ### Configuration ###
 Configuration of the environment is made in two files. The first,
-[configuration.py](configuration.py) is a versioned file which contains no secret
-information, such as database passwords, but does provide a default
-configuration through its `configuration` singleton. 
+[configuration.py](configuration.py) is a versioned file (a file tracked
+by Git) which contains no secret information, such as database
+passwords, but does provide a default configuration through its
+`configuration` singleton. 
 
-The second file, [config.py](config.py) is an unversioned file which contains a
-class called `config` which inherits from `configuration`. This file
-overrides the default version and can contain secrete information and
-therefore **should never be committed to the Git repository**.  This file
-should also have restrictive file permissions:
+The second file, [config.py](config.py) is an untracked file which
+contains a class called `config` which inherits from `configuration`.
+This file overrides the default version and can contain secrete
+information and therefore **should never be committed to the Git
+repository**.  This file should also have restrictive file permissions:
 
     chmod 400 config.py
 

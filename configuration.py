@@ -9,6 +9,20 @@
 # TODO Add a `store` property. This is already being implemented in
 # config.py. See file.inode.store.
 
+# TODO Add a postmark property that raises a NotImplementedError. It
+# should be overridden by config.py and return the postmark account from
+# the `accounts` collection.
+
+# TODO Reevaluate whether or not this needs to be a singlton. In
+# retrospect, it doesn't appear that this adds much value. If it dose,
+# use the __new__ method to manager the singleton and get rid of
+# `getinstance`.
+
+# TODO Determine whther this class should be abstract, that is to say,
+# should we permit code to instantiate it. I don't think so. Code should
+# only instantiate the `config` class. That way, the code will be taking
+# advantage of custom configurations.
+
 # TODO Create a constuctor that requires a 'bypass' argument. The gaol
 # is to discourage use from non-subclasses. We want to prevent code like
 # thi:
@@ -25,13 +39,13 @@ from dbg import B
 
 class configuration:
     """ This is the base configuration class. It contains configuration
-    date that can and should be stored in version-control system.
-    However, it is never instantiated directly by application code. A
-    subclass of ``configuration``, which is conventionally called
-    ``config``, subclasses ``configuration`` to provide sensitive
-    information to ``configuration``'s values.  ``config`` is the class
-    that is used by application code despite never being versioned. A
-    typical implementation of ``config`` might look like::
+    date that is stored in the version-control system.  However, it is
+    never instantiated directly by application code. A subclass of
+    ``configuration``, which is conventionally called ``config``,
+    subclasses ``configuration`` to provide sensitive information to
+    ``configuration``'s values.  ``config`` is the class that is used by
+    application code despite never being versioned. A typical
+    implementation of ``config`` might look like::
 
         from configuration import configuration
 
@@ -57,6 +71,10 @@ class configuration:
     don't have it, ask a team member.
     """
     recaptcha_key = '<RECAPTCHA-KEY>'
+
+    # TODO Force the environment veriable to be set in the `config` class
+    # by providing an environment @property here that raises
+    # NotImplementedError
     environment = 'development'
 
     @property
@@ -94,7 +112,7 @@ class configuration:
 
     @property
     def log(self):
-        """ The configuration writting to syslogd.
+        """ The configuration writing to syslogd.
         """
         return {
             'addr': '/dev/log', 
