@@ -285,7 +285,6 @@ class users(tester.tester):
         self.eq(party.company.CarapacianId, anon.proprietor__partyid)
         self.eq(ecommerce.users.RootUserId, anon.owner__userid)
 
-
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

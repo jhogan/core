@@ -2900,6 +2900,7 @@ class orm_(tester):
         self.two(chrons)
 
         # FIXME This happend today: Jun 7, 2020
+        # And today: 13 Sep 2022 
         B(chrons.count != 2)
         self._chrons(art, 'create')
         self._chrons(pres, 'create')
