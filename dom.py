@@ -9175,9 +9175,10 @@ class event(entities.event):
     """ Represents an event for DOM objects.
 
     DOM objects need events in the same way that all entities.entities
-    need events. However, DOM object are unique in that their events can
-    be handled on the server side. This subclass of entities.event
-    supports that option.
+    and entities.entity objects need events. However, DOM object are
+    unique in that their events, though triggered by the client, can be
+    handled on the server side. This subclass of entities.event supports
+    that option.
     """
 
     """
@@ -9198,17 +9199,20 @@ class event(entities.event):
         </html>
 
     Elements that need event handling have two attributes that are named
-    after this pattern: data-<event>-handler and data-<event>-fragments.
-    The <event> is the name of the event that should be handled; in the
-    above example, the 'click' event' of the <button> is being handled.
-    The data-<event>-handler attribute indicates which method on the
-    page object is the server-side event handler. The
-    data-<event>-fragments attribute indicates the id value(s) of the
-    element's in the document that should be sent to the server-side
-    event handler. The element(s) outerHTML is sent. The server-side
-    handler is free to view and modifier these HTML fragments. The
-    modified versions are returned to the browser and are used to
-    replace the original version.
+    after the following pattern: data-<event>-handler and
+    data-<event>-fragments.  The <event> is the name of the event that
+    should be handled; in the above example, the 'click' event' of the
+    <button> is being handled.  The data-<event>-handler attribute
+    indicates which method on the page object is the server-side event
+    handler. The data-<event>-fragments attribute indicates the id
+    value(s) of the element's in the document that should be sent to the
+    server-side event handler. The element(s) outerHTML is sent. The
+    server-side handler is free to view and modifier these HTML
+    fragments. The modified versions are returned to the browser and are
+    used to replace the original version.
+
+    XXX Correct the below paragraph to indicate that the JavaScript
+    implementation exists (once it does).
 
     This process will be managed by JavaScript in a real browser,
     however, a Python implementation for this process already exists at

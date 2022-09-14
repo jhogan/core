@@ -494,6 +494,9 @@ class tester(entities.entity):
                     :param: this str|dom.selector A CSS selector that
                     identifies a unique element in self that should be
                     replaced.
+
+                    :param: that dom.elements The elements to tha will
+                    replace `this`.
                     """
 
                     # Find the element object
@@ -572,7 +575,7 @@ class tester(entities.entity):
                     for i, id in enumerate(ids):
                         replace(id, res.html[i])
 
-            # TODO The ability for a tab to maintain it's own internal
+            # TODO The ability for a tab to maintain its own internal
             # DOM should exist in the browser.tab base class in `www.py`
             # as well as here.
             @property
