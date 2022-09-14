@@ -264,6 +264,9 @@ class users(tester.tester):
         mods = 'party', 'ecommerce',
         super().__init__(mods=mods, *args, **kwargs)
 
+        if self.testers.rebuildtables:
+            ecommerce.users._anon = None
+
     def it_calls_anonymous(self):
         # Call twice to make sure anonymous is being memoized
         anon = ecommerce.users.anonymous
