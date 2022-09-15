@@ -1198,7 +1198,7 @@ event) and 'eargs' the event arguments (see entities.eventargs).
     # Create a carrots collection and a carrot compliment
     class carrots:
 
-        # The event proprety returns a lazy-loaded, memoized event.
+        # The event property returns a lazy-loaded, memoized event.
         # Lazy-loading events can sometimes be a real performance boast
         # so is considered the better choice.
         @property

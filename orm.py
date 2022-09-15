@@ -2032,7 +2032,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         It's possible, but not unlikely, that an entities' orm attribute
         is accessed before the entities' complement has had its
-        `entities` proprety run. 
+        `entities` property run. 
 
         If `cls` is indeed a class referenc, we search through all the
         `entity` classes to find the complement and return that
@@ -8134,7 +8134,7 @@ class orm:
         # TODO Don't allow to run unless apriori.model has been run
 
         # FIXME:f6c7d0f1 There is a design flaw inherent in this
-        # property.  This proprety was created so we could lazy-load the
+        # property.  This property was created so we could lazy-load the
         # association between an entity and its complement. However,
         # lazy-loading this means that the `orm` reference on the
         # entities class won't exist until this property has been run on

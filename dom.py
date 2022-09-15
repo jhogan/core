@@ -31,7 +31,7 @@ document.
 This implementation is similar to the WHATWG DOM standarded implemented
 in web browsers to read and manipulate DOM objects with JavaScript,
 although no effort is made to conform to that standard. The API is
-similar to other object models in the Core, making use of @proprety
+similar to other object models in the Core, making use of @property
 methods, indexers (__getitem__), operator overloading (+=), etc.
 
 Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
@@ -75,13 +75,13 @@ The following is an example of how to create a basic HTML5 document::
     body.attributes['bgcolor'] = 'black'
 
     # The HTML string for this can be captured using the ``html``
-    # proprety.
+    # property.
     print(html.html)
 
     # The above wouldn't have linefeeds or tabs and would be suitable
     # for consumption by a program like a browser or some other parser.
     # To get a nice output for human consumption, use the ``pretty``
-    # proprety::
+    # property::
     >>> print(html.pretty)
     <html>
         <head>
@@ -2986,7 +2986,7 @@ class a(element):
         # a correct (relative) url. As a side note, we should also
         # except body as ecommerce.url for obvious reason. We should
         # also test if body is file.resource because, in that case, we
-        # do have a url proprety that would be appropriate for self.href
+        # do have a url property that would be appropriate for self.href
         # assuming body.local is False.
         if isinstance(body, file.file):
             self.href = body.path
@@ -8739,7 +8739,7 @@ class selector(entities.entity):
                             # the 2 in :nth-child(1n+2)(
                             b = int(gs[2] + gs[3])
 
-                # Make a and b the corresponding proprety values of this
+                # Make a and b the corresponding property values of this
                 # object.
                 self._a, self._b = a, b
 
@@ -8774,7 +8774,7 @@ class selector(entities.entity):
             # Init the value
             self.value = None
 
-            # Set the arguments proprety to an instance of `argument`
+            # Set the arguments property to an instance of `argument`
             self.arguments = selector.pseudoclass.arguments(self)
 
         def clone(self):
@@ -9381,20 +9381,20 @@ class event(entities.event):
         super().append(f)
 
 class eventargs(entities.eventargs):
-    """ The eventargs class for DOM events. This object is ud to move
-    data from the browser to the server-sied event handler.
+    """ The eventargs class for DOM events. This object is used to move
+    data from the browser to the server-side event handler.
     """
 
     def __init__(self, 
         el=None, trigger=None, hnd=None, src=None, html=None
     ):
-        """ Create an eventargs class.
+        """ Create an eventargs object.
 
         :param: el dom.element: The element that is causing
         the event.  This is usualy a DOM object running in a browser
         that is the subject of an event.
 
-        :param: trigger str: The name of the method that triggers the
+        :param: trigger str: The name of the method that triggered the
         event. Usually, events happen to elements, but an element can
         fire it's own event with a method. Consider:
 
@@ -9410,7 +9410,7 @@ class eventargs(entities.eventargs):
         event.
 
         :param: html dom.elements: A collection of DOM objects from
-        the browser's DOM that the event handler would like view or
+        the browser's DOM that the event handler would like to view or
         manipulate.
         """
 

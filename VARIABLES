@@ -13,7 +13,7 @@ ex
         except Exception as ex:
             ...
 v 
-    Value. Used in @proprety setters as the argument that contains the
+    Value. Used in @property setters as the argument that contains the
     value the property should be set to.
 
 x

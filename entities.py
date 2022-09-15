@@ -656,7 +656,7 @@ class entities:
         Python.
 
         For example, given an entities collection of houses each with a
-        proprety called ``price``, we can get the priciest house in the
+        property called ``price``, we can get the priciest house in the
         collection by doing the following::
 
             priciest = houses.max(key=lambda x: x.price)
@@ -676,7 +676,7 @@ class entities:
         Python.
 
         For example, given an entities collection of houses each with a
-        proprety called ``price``, we can get the cheapest house in the
+        property called ``price``, we can get the cheapest house in the
         collection by doing the following::
 
             cheapest = houses.min(key=lambda x: x.price)
