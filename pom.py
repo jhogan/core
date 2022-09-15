@@ -492,6 +492,9 @@ class site(asset.asset):
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
+        B()
+        self._head += dom.script(self._eventjs())
+
         # TODO Consolidate with page.head
         for res in self.resources:
             src = res.relative if res.local else str(res.url)
@@ -517,6 +520,12 @@ class site(asset.asset):
         if not self._header:
             self._header = header(site=self)
         return self._header
+
+    @classmethod
+    def _eventjs(cls):
+        return '''
+        /* Hi, I'm some JavaScirpt */
+        '''
 
 class forms:
     """ ``forms`` acts as a namespace to get to standard forms that a
