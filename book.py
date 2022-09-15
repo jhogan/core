@@ -4215,23 +4215,26 @@ with book('Hacking Carapacian Core'):
               pass
 
             class person(orm.entity):
+              # Declare a str called `name`
               name = str
+
+              # Declare a `phone` number property that must be at least
+              # 7 characters, and can be a maximum of 9.
+              number = str, 7, 9
 
             per = person()
 
+            ''' Test the name property '''
             # Defaults to an empty string
             empty(per.name)
 
-            # The minimum number of characters a str attribute can be is
-            # 1, so the entity starts out as invalid
+            # Bothe `name` and `number` are emtpy str's by default so
+            # the `per` objects starts life as invalid.
             invalid(per)
 
-            # Assign a sting to the attribute with surrounding
+            # Assign a sting to the name attribute with surrounding
             # whitespace.
             per.name = '   Peter Griffin    '
-
-            # Now that the attribute has a non-empty str, it is valid
-            valid(per)
 
             # Note that the surrounding whitespace is removed
             eq('Peter Griffin', per.name)
@@ -4242,12 +4245,36 @@ with book('Hacking Carapacian Core'):
             eq('123', per.name)
             type(str, per.name)
 
+            ''' Test the number property '''
 
+            # Defaults to an empty string
+            empty(per.phone)
+
+            # Set the phone number property to a valid value
+            per.number = 2053921  # 7 characters
+
+            # Notice the conversion to a str value
+            eq('2053921', per.number)
+            type(str, per.number)
+
+            # Now that the attributes are non-empty str, `per` is valid
+            valid(per)
+
+            # Make `per` invalid again by assigning an invalid sting to
+            # `number`
+            per.number = 1234567890  # 10 characters; to short
+            invalid(per)
+            
+            per.number = 123456  # 6 characters; too short
+            invalid(per)
+
+            per.number = 123456789  # 9 characters; just right
+            valid(per)
         print('''
           `str` attributes can contain (and reliabily persist) any
-          string of unicode character. By default they are empty strings
-          (`''`).  Like all types, `str` attributes can be set to `None`
-          which will be saved to the database as `null`.  
+          string of unicode character. By default, `str` attributes are
+          empty strings (`''`).  Like all types, `str` attributes can be
+          set to `None` which will be saved to the database as `null`.  
 
           By default, a `varchar(255)` column will be created for `str`
           attributes in the entity's database table. If we declare the
@@ -4255,24 +4282,24 @@ with book('Hacking Carapacian Core'):
           becomes a `longtext`. If the number of maximum characters is
           below 4000 and the minimum number of characters equals the
           maximum number of characters, a database type of `char` is
-          used.  In the listing below, we can see how a developers can
+          used.  In the listing abavo, we can see how a developers can
           specify the minimum and maximum value. However, if you want a
           fixed-length string, it is recommended you use the
-          [chr](#fe56ed82) pseudotype instead. If you want to store
-          really long strings of text, such as a user's bio, or a blog
-          entry, it is recommend that you use the `text`
+          [chr](#fe56ed82) type-alias instead. If you want to store
+          really long strings of text, such as for a user's bio, or a
+          blog entry, it is recommend that you use the `text`
           pseudotypes](#0822acc6) instead of specify a large maximum.
 
           Notably, `str` attributes automatically strip any surrounding
           whitespace in a string they are assigned. This is virtually
           always what you want (except for rare cases, such as with a
           password). This makes it possible to accept user input which
-          may have accidental whitespace at the begining or end.  This
-          way, you don't have to remember to call `str.strip` yourself
-          before assigning it to the attribute. Currently, there is no
-          way to disable this automatic stripping (although it shouldn't
-          be difficult to develop a way, possibly with the use of a
-          context manager).
+          may have accidental whitespace at the begining or end without
+          having to remember to call `str.strip` yourself before
+          assigning it to the attribute. Currently, there is no way to
+          disable this automatic stripping (although it shouldn't be
+          difficult to develop a way, possibly with the use of a context
+          manager).
 
           `str` attributes use the `str()` function to convert non-`str`
           Python data types to `str` data types. For example, if we
@@ -4289,42 +4316,20 @@ with book('Hacking Carapacian Core'):
           intend to indicate that there is no value for a given
           `str` attribute (e.g., because a  user has chosen to leave a
           field blank in the user interface), it is recommended that you
-          set the attribute to `None`.
+          set the attribute to `None`. In cases where you do need to
+          have the option of assiging a `str` attribute both empty
+          `str`'s and `None` values, just specify a minimum value of 0.
 
           Since the database type for a `str` attribute is, by default,
           `varchar(255)`, you would be correct in guessing that 255 is
           the maximum number of characters the attribute can have in
-          order for the entity to be considered valid.
-
-          We can change the minimum and maximum size for a `str`
-          attributes in the declaration:
-        ''')
-
-        with listing('Change minimum and maximum size of a str'):
-          class person(orm.entity):
-            # Declare that `name` is a str that can be a minimum of 0
-            # characters and a maximum of 50 characters.
-            name = str, 0, 50
-
-          per = person()
-
-          # The default empty string is now valid since the minimum
-          # number of characters is 0
-          valid(per)
-
-          # More than 50 characters makes the entity invalid
-          per.name = 'X' * 51
-          invalid(per)
-
-          # 50 characters (or less) and the entity is valid again
-          per.name = 'X' * 50
-          valid(per)
-
-        print('''
-          It's rare that you would need to specify the size of the `str`
-          attribute, however. If you need a an attribute that can
-          contain more text than 255, you should consider a
-          [text](#0822acc6) attribute instead.
+          order for the entity to be considered valid. As you can see in
+          the listing above, we can change the minimum and maximum size
+          for a `str` attributes in the declaration: It's rare that you
+          would need to specify the size of the `str` attribute,
+          however. If you need a an attribute that can contain more text
+          than 255, you should consider a [text](#0822acc6) attribute
+          instead.
         ''')
 
         with section ('`chr` attributes', id='fe56ed82')
@@ -4400,7 +4405,7 @@ with book('Hacking Carapacian Core'):
             there is no text for the attribute, assign it a `None`
             value. 
 
-            The maximun number of =
+            The maximum number of =
             
           ''')
 
