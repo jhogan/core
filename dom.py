@@ -1238,8 +1238,8 @@ class element(entities.entity):
         raise AttributeError(f"Attribute '{attr}' not found")
 
     def _on(self, ev):
-        """ Return or set a memoized dom.event object for the event
-        named by `ev`.
+        """ Return a memoized dom.event object for the event named by
+        `ev`.
 
         :param: ev str: The name of the event, e.g., 'focus', 'blur'.
         """

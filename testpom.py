@@ -634,6 +634,11 @@ class site(tester.tester):
         with orm.proprietor(ass.proprietor):
             self.expect(None, ass.orm.reloaded)
 
+# XXX Get 
+#
+#    ./testpom page -T 
+#
+# to work
 class page(tester.tester):
     def __init__(self, *args, **kwargs):
         # We will be testing with foonet so set it as the ORM's
@@ -766,6 +771,7 @@ class page(tester.tester):
         }
         with orm.sudo(), orm.proprietor(party.company.carapacian):
             self.type(carapacian_com.site, req.site)
+
     def it_gets_page_using_X_FORWARDED_FOR(self):
         ip = None
         class realip(pom.page):
