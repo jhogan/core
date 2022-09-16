@@ -1199,9 +1199,11 @@ class element(entities.entity):
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
     # keydown/onkeydown), Make sure you add the trigger to the
     # Triggers tuple above.
+
     @property
     def onclick(self):
-        # XXX Add docstrings for these
+        """ Returns the `onclick` event for this element.
+        """
         return self._on('click')
 
     @onclick.setter
@@ -1209,10 +1211,14 @@ class element(entities.entity):
         setattr(self, '_onclick', v)
 
     def click(self):
+        """ Triggers the `click` event for this element.
+        """
         return self._trigger('click')()
 
     @property
     def onfocus(self):
+        """ Returns the `onfocus` event for this element.
+        """
         return self._on('focus')
 
     @onfocus.setter
@@ -1220,10 +1226,14 @@ class element(entities.entity):
         setattr(self, '_onfocus', v)
 
     def focus(self):
+        """ Triggers the `focus` event for this element.
+        """
         return self._trigger('focus')()
 
     @property
     def onblur(self):
+        """ Returns the `onblur` event for this element.
+        """
         return self._on('blur')
 
     @onblur.setter
@@ -1231,10 +1241,12 @@ class element(entities.entity):
         setattr(self, '_onblur', v)
 
     def blur(self):
+        """ Triggers the `focus` event for this element.
+        """
         return self._trigger('blur')()
 
     def _on(self, ev):
-        """ Return a memoized dom.event object for the event named by
+        """ Return a memoized dom.event object for this event named by
         `ev`.
 
         :param: ev str: The name of the event, e.g., 'focus', 'blur'.
@@ -5831,8 +5843,14 @@ class script(element):
     def __init__(self, body=None, *args, **kwargs):
         """ Create a script element.
 
-        :param: body file.resource: An optional file resource object used
-        to set the script's src attribute to.
+        :param: body str|file.resource: 
+
+            if str:
+                `body` will be the text within the script tag.
+            
+            if file.resource:
+                A file resource object used to set the
+                script's `src` attribute.
         """
         # If a file.resource was given
         if isinstance(body, file.resources):

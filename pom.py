@@ -493,6 +493,8 @@ class site(asset.asset):
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
+        # Add the JavaScript event handling code as a script tag. We
+        # make the `id` a UUID so it can be referenced in tests.
         self._head += dom.script(
             self._eventjs, id = 'A0c3ac31e55d48a68d49ad293f4f54e31'
         )
@@ -525,6 +527,8 @@ class site(asset.asset):
 
     @classproperty
     def _eventjs(cls):
+        '"" XXX Add docstring.
+        """
         return '''
         /* Hi, I'm some JavaScirpt */
         '''
