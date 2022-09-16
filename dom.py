@@ -5828,14 +5828,16 @@ class script(element):
     The <script> element can also be used with other languages, such as
     WebGL's GLSL shader programming language and JSON.
     """
-    def __init__(self, res=None, *args, **kwargs):
+    def __init__(self, body=None, *args, **kwargs):
         """ Create a script element.
 
-        :param: res file.resource: An optional file resource object used
+        :param: body file.resource: An optional file resource object used
         to set the script's src attribute to.
         """
         # If a file.resource was given
-        if res:
+        if isinstance(body, file.resources):
+            res = body
+            body = None
             self.site.resources &= res
             self.src = res.url
             if res.local:
@@ -5846,7 +5848,7 @@ class script(element):
             self.integrity = res.integrity
             self.crossorigin = res.crossorigin
             
-        super().__init__(*args, **kwargs)
+        super().__init__(body, *args, **kwargs)
 
     @property
     def crossorigin(self):

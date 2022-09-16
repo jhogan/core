@@ -11,6 +11,7 @@
 from contextlib import suppress
 from dbg import B, PM
 from uuid import UUID, uuid4
+from entities import classproperty
 import asset, ecommerce
 import datetime
 import db
@@ -492,8 +493,9 @@ class site(asset.asset):
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
-        B()
-        self._head += dom.script(self._eventjs())
+        self._head += dom.script(
+            self._eventjs, id = 'A0c3ac31e55d48a68d49ad293f4f54e31'
+        )
 
         # TODO Consolidate with page.head
         for res in self.resources:
@@ -521,7 +523,7 @@ class site(asset.asset):
             self._header = header(site=self)
         return self._header
 
-    @classmethod
+    @classproperty
     def _eventjs(cls):
         return '''
         /* Hi, I'm some JavaScirpt */

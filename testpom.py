@@ -796,6 +796,22 @@ class page(tester.tester):
         self.status(200, res)
         self.eq(X_FORWARDED_FOR, ip)
 
+    def it_gets_webpage_with_eventjs(self):
+        class eventful(pom.page):
+            def main(self):
+                pass
+
+        pg = eventful()
+        ws = foonet()
+        ws.pages += pg
+
+        tab = self.browser().tab()
+        res = tab.get('/en/eventful', ws)
+        self.status(200, res)
+
+        script = res['#A0c3ac31e55d48a68d49ad293f4f54e31'].only
+        print(script)
+
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
         class stats(pom.page):
