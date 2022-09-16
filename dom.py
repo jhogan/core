@@ -1092,16 +1092,6 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
-    # A tuple of supported trigger methods. These correspond to DOM
-    # methods, such as element.focus(), which trigger a corresponding
-    # event (onfocus).
-    Triggers = (
-        'click', 'focus', 'blur',
-    )
-
-    # A tuple of supported DOM events such as onfocus or onkeydown
-    Events = tuple('on' + x for x in Triggers)
-
     @staticmethod
     def _getblocklevelelements():
         """ Returns a tuple of block-level, HTML5 ``element`` classes
@@ -1199,43 +1189,49 @@ class element(entities.entity):
             # Add kwargs to attributes collection
             self.attributes += kwargs
 
-    def __getattr__(self, attr):
-        """ Captures attemps to get trigger methods (i.e.,
-        element.click, element.focus, etc) as well as event properties
-        (element.onclick, element.oninput).  """
+    ''' The event triggers and handlers for any dom.element. '''
 
-        # NOTE for those who get here even though the attribute exists:
-        #
-        # Obviously, __getattr__ methods like this are only entered
-        # when an attribute doesn't exist. 
-        #
-        #     el.idontexist
-        #
-        # Actually, the determination of whether or not an attribute
-        # exist is made by calling the attribute and checking whether or
-        # not an AttributeError is raised. Therefore, even though a
-        # property like `children` exists on `element`, were it or any
-        # of the methods it calls to raise an AttributeError, we would
-        # still get here. So if execution leads you here, even though
-        # the attribute exists, check whether the attribute itself
-        # raised AttributeError.
+    # A tuple of supported trigger methods. These correspond to DOM
+    # methods, such as element.focus(), which trigger a corresponding
+    # event (onfocus).
+    Triggers = 'click', 'focus', 'blur', 
 
-        # Are we trying to get an event property such as
-        # element.onclick.
-        if attr in self.Events:
-            # Strip the 'on'
-            ev = attr[2:]
+    # NOTE If you need to add a new trigger/event (e.g., input/oninput,
+    # keydown/onkeydown), Make sure you add the trigger to the
+    # Triggers tuple above.
+    @property
+    def onclick(self):
+        # XXX Add docstrings for these
+        return self._on('click')
 
-            # Return the dom.eventarg for the event
-            return self._on(ev)
+    @onclick.setter
+    def onclick(self, v):
+        setattr(self, '_onclick', v)
 
-        # Are we trying to get a trigger callable
-        if attr in self.Triggers:
-            # Return a callable that, when invoked, will trigger the
-            # event.
-            return self._trigger(trigger=attr)
+    def click(self):
+        return self._trigger('click')()
 
-        raise AttributeError(f"Attribute '{attr}' not found")
+    @property
+    def onfocus(self):
+        return self._on('focus')
+
+    @onfocus.setter
+    def onfocus(self, v):
+        setattr(self, '_onfocus', v)
+
+    def focus(self):
+        return self._trigger('focus')()
+
+    @property
+    def onblur(self):
+        return self._on('blur')
+
+    @onblur.setter
+    def onblur(self, v):
+        setattr(self, '_onblur', v)
+
+    def blur(self):
+        return self._trigger('blur')()
 
     def _on(self, ev):
         """ Return a memoized dom.event object for the event named by
@@ -1271,6 +1267,8 @@ class element(entities.entity):
             onevent(self, eargs)
 
         return f
+
+    ''' end of triggers and handlers '''
 
     def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
