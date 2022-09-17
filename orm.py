@@ -284,7 +284,7 @@ class alias:
 class text(alias):
     """ An alias for:
 
-            str, 1, 65535
+        str, 1, 65535
 
     Many entity objects in the GEM simply want what would be
     equivalent to a MySQL ``text`` date type. This alias allows a
