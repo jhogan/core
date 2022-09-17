@@ -4334,10 +4334,11 @@ with book('Hacking Carapacian Core'):
 
         with section ('`chr` attributes', id='fe56ed82')
           print('''
-            Occasionally, you will want to store a fixed-width string. A
-            fixed-width string is one where the only valid value is one
-            that contains an exact number of  pre-declared characters.
-            In that case, the `chr` attribute is handy.
+            Occasionally, you will want an attribute that can only
+            contain a fixed-width string. A fixed-width string is one
+            where the only valid value is one that contains an exact
+            number of  pre-declared characters.  In that case, the `chr`
+            attribute is handy.
           ''')
 
           with listing('`chr` example'):
@@ -4380,7 +4381,7 @@ with book('Hacking Carapacian Core'):
             Since `chr` types are fixed-width unicode strings, they are
             stored as `char` types in the database.
 
-            Note that `chr` types are considered pseudotypes since they
+            Note that `chr` types are considered alias-types since they
             are just a shorthand for declaring a fixed with `str`
             attribute. For example, the above `debit` card class could
             have been written:
@@ -4388,26 +4389,56 @@ with book('Hacking Carapacian Core'):
               class debit(orm.entity)
                 pin = str, 4, 4
 
-            However, by using the `chr` pseudotype, we are better able
-            to express the fact that `pin` numbers are fixed-width
-            &mdash; and we can do so with fewer characters.
+            As far as the ORM is concerned, the above notation is
+            equivalent to using `chr(4)'. However, by using the `chr`
+            alias-type, we are better able to express the fact that
+            `pin` numbers are fixed-width &mdash; and we can do so with
+            fewer characters.
           ''')
 
         with section ('`text` attributes', id='0822acc6'):
           print('''
-            The `text` is pseudotype attribute is similar to the `str` attribute but
+            The `text` data type is similar to the `str` data type but
             is useful for situations where the attribute needs to store
-            large amounts of text. 
+            large amounts of text. Text attributes are good for things
+            like user bio's, blog posts, news articles, etc.
 
-            `text` attributes must have at least
-            one character. If the attribute contains an empty str, its
-            entity is considered invalid. If you need to indicate that
-            there is no text for the attribute, assign it a `None`
-            value. 
+            `text` attributes must have at least one character and a
+            maximum of 65535 characters. If the attribute contains an
+            empty str, its entity is considered invalid. If you need to
+            indicate that there is no text for the attribute, assign
+            `None` value to it. 
 
-            The maximum number of =
-            
+            `text` attributes are store `longtext` columns in the
+            database.
+
+            `text` attrubutes are alias-types: using the `text` database
+            is equivelent to using 
+              
+              str 1, 65535
+
+            Though most types are denoted by builtin Python types (e.g.,
+            the `str` ORM type is denoted by the Python `str` type),
+            `text` types are denoted by referencing the internal `orm`
+            class `orm.text`.
           ''')
+
+          with listing('Using `text` attributes'):
+            
+            # Create a person entity
+            class person(orm.entity):
+              # Create a text field
+              bio = orm.text
+
+            per = person()
+
+            # 65535 is a valid number of characters
+            per.bio = 'X' * 65535
+            valid(per)
+
+            # Any more characters and the person becomes invalid
+            per.bio += 'X'
+            invalid(per)
 
         with section ('`int` attributes'):
           ...
