@@ -1456,6 +1456,12 @@ class tester(entities.entity):
             
             self._failures += failure()
 
+    def ok(self, res):
+        if res.status != 200:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
     tests.
