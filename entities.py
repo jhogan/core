@@ -1767,7 +1767,7 @@ class entities:
         # TODO Write tests for this property's logic
         if not self.issingular:
             raise ValueError(
-                'The `only` property demands exactly one element; '
+                'The `only` property demands exactly one element but '
                 f'{self.count} were found'
             )
         return self.first

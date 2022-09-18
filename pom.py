@@ -527,8 +527,9 @@ class site(asset.asset):
 
     @classproperty
     def _eventjs(cls):
-        '"" XXX Add docstring.
+        """ XXX Add docstring.
         """
+
         return '''
         /* Hi, I'm some JavaScirpt */
         '''

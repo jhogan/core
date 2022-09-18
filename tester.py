@@ -610,7 +610,7 @@ class tester(entities.entity):
                     
                 targets = v[sels]
 
-                # We need to remove te duplicates because of the bug
+                # We need to remove the duplicates because of the bug
                 # 9aec36b4
                 targets = set(targets)
 
@@ -625,8 +625,7 @@ class tester(entities.entity):
                             ev = getattr(target, ev)
                             ev.append(obj=self.element_event)
 
-
-                # Subscript to element_event for each anchor tag's click
+                # Subscribe to element_event for each anchor tag's click
                 # event.
                 as_ = v['nav>ul>li>a']
                 for a in as_:
@@ -696,6 +695,12 @@ class tester(entities.entity):
                 """ Issues an HTTP GET request for the page `pg` to the
                 site `ws`. The responses object from the request is
                 returned.
+
+                Note that `get` will not alter the `tab`'s internal DOM
+                (afterall, browser tab's make requests all the time that
+                don't alter the HTML structure of the DOM). If you want
+                to point the `tab` to a URl for it to GET and load into
+                its internal DOM, use the `navigate` method.
                 
                 :param: pg pom.page|str: The page to GET.
 
