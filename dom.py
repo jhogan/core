@@ -1881,8 +1881,19 @@ class element(entities.entity):
         if type(el) is str:
             el = text(el)
 
-        if not isinstance(el, element) and not isinstance(el, elements):
-            raise ValueError('Invalid element type: ' + str(type(el)))
+        # XXX Comment this logic and add `sequence` as a new type in the
+        # docstring for el
+        pass_ = False
+        if isinstance(el, element):
+            pass_ = True
+        elif isinstance(el, elements):
+            pass_ = True
+        elif hasattr(el, '__iter__'):
+            if all(isinstance(x, element) for x in el):
+                pass_ = True
+
+        if not pass_:
+            raise TypeError('Invalid element type: ' + str(type(el)))
 
         self.elements += el
         return self
