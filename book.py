@@ -4400,22 +4400,22 @@ with book('Hacking Carapacian Core'):
           print('''
             The `text` data type is similar to the `str` data type but
             is useful for situations where the attribute needs to store
-            large amounts of text. Text attributes are good for things
+            large amounts of text. `text` attributes are good for things
             like user bio's, blog posts, news articles, etc.
 
             `text` attributes must have at least one character and a
-            maximum of 65535 characters. If the attribute contains an
+            maximum of 65,535 characters. If the attribute contains an
             empty str, its entity is considered invalid. If you need to
-            indicate that there is no text for the attribute, assign
+            indicate that there is no text for the attribute, assign the
             `None` value to it. 
 
-            `text` attributes are store `longtext` columns in the
-            database.
+            `text` attributes are stored in MySQL `longtext` columns in
+            the database.
 
-            `text` attrubutes are alias-types: using the `text` database
-            is equivelent to using 
+            `text` attributes are alias-types: using the `text` data
+            type is equivelent to using:
               
-              str 1, 65535
+              str 1, 65_535
 
             Though most types are denoted by builtin Python types (e.g.,
             the `str` ORM type is denoted by the Python `str` type),
@@ -4427,7 +4427,7 @@ with book('Hacking Carapacian Core'):
             
             # Create a person entity
             class person(orm.entity):
-              # Create a text field
+              # Create a text attribute
               bio = orm.text
 
             per = person()
@@ -4440,10 +4440,53 @@ with book('Hacking Carapacian Core'):
             per.bio += 'X'
             invalid(per)
 
+        with section ('bool` attributes'):
+          print('''
+            `bool` attributes are used to store `True`/`False` values.
+            They are also nullable, meaning you can assign a value of
+            `None` to them.
+
+            Like the Python `bool` types, `bool` attributes default to
+            `False`.
+
+            The MySQL database type for `bool` attributes is `bit`.
+          ''')
+
+          with listing('Using `bool` attributes'):
+            # Create a person entity
+            class person(orm.entity):
+              # Create a bool field
+              active = bool
+
+            per = person()
+
+            false(per.active)
+
+            per.active = True
+
+            true(per.active)
+
+            per.active = None
+
+            none(per.active)
+
         with section ('`int` attributes'):
+          print('''
+            
+          ''')
+        with section ('`float` attributes'):
+          ...
+
+        with section ('`decimal` attributes'):
+          ...
+
+        with section ('`bytes` attributes'):
           ...
 
         with section ('`date` attributes'):
+          ...
+
+        with section ('`timespan` attributes'):
           ...
 
         with section ('`span` attributes'):
