@@ -7287,8 +7287,11 @@ class fieldmapping(mapping):
                     pass
 
             elif self.isbool:
+                # FIXME We need to us `bool()` to convert non-boolean
+                # values to `bool` values. See the try:except block for
+                # self.isint below.
                 if type(self._value) is bytes:
-                    # Convert the bytes string from MySQL's byytes type
+                    # Convert the bytes string from MySQL's bytes type
                     # to a bool.
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
