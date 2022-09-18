@@ -98,6 +98,24 @@ class tickets(tester.tester):
         res = tab.get('/en/index/tickets', ws)
         self.startswith(Title, res['html>head>title'].text)
 
+    def it_responds_to_button_click(self):
+        tab = self.browser().tab()
+        ws = carapacian_com.site()
+
+
+        res = tab.navigate('/en/tickets', ws)
+        print(tab)
+        self.ok(res)
+        btn = tab.html['button.clicktest'].only
+
+        p = tab.html['p.clicktest'].only
+        self.empty(p.text)
+
+        btn.click()
+
+        p = tab.html['p.clicktest'].only
+
+        self.eq('CLICKED', p.text)
+
 if __name__ == '__main__':
     tester.cli().run()
-

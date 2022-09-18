@@ -216,3 +216,12 @@ class tickets(pom.page):
     def main(self):
         self.main += dom.p('Carapacian Tickets')
 
+        btn = dom.button(class_='clicktest')
+        p = dom.p(class_='clicktest')
+
+        btn.onclick += self.btnclicker_onclick, p
+
+        self.main += btn, p
+
+    def btnclicker_onclick(self, src, eargs):
+        eargs.html['p'].only.text = 'CLICKED'
