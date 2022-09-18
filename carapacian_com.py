@@ -35,6 +35,7 @@ class site(pom.site):
         self.title = 'Carapacian Sustainable Software'
 
         self.pages += home()
+        self.pages += tickets()
 
     @property
     def Proprietor(self):
@@ -92,7 +93,6 @@ class site(pom.site):
 class home(pom.page):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.pages += tickets()
             
     def main(self):
         ''' <header> '''
