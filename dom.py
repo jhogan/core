@@ -1879,7 +1879,19 @@ class element(entities.entity):
         # element.append and element.insertbefore (which don't actually
         # exist at the time of this writing).
         if type(el) is str:
-            el = text(el)
+            
+            # If we are appending a text node to a <script> tag, we
+            # don't want to do any HTML escaping. Escaping the contents
+            # of a <script> tag (e.g., JavaScript, JSON, etc) means the
+            # quotes and angle brakets would be garbled thus rending the
+            # script uninterpretable, e.g.,
+            # console.log(&#x27;Hello, world&#x27;)
+            if isinstance(self, script):
+                esc = False
+            else:
+                esc = True
+
+            el = text(el, esc=esc)
 
         # XXX Comment this logic and add `sequence` as a new type in the
         # docstring for el
