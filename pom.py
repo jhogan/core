@@ -531,7 +531,13 @@ class site(asset.asset):
         """
 
         return '''
-        /* Hi, I'm some JavaScirpt */
+            document.addEventListener("DOMContentLoaded",
+                function(ev) {
+                    console.log('here');
+                    hnds = document.querySelectorAll('[data-click-handler]');
+                    console.log(hnds);
+                }
+            );
         '''
 
 class forms:
