@@ -61,25 +61,20 @@ class site(pom.site):
                 content = 'Interdum et malesuada fames ac ante ipsum'
             )
 
-            csss = [
-             'https://carapacian.com/css/brightlight-green.css',
-             'https://carapacian.com/css/carapacian.css',
-            ]
-
-            for css in csss:
-                hd += dom.link(rel='stylesheet', href=css)
-
         return self._head
 
     @property
     def header(self):
         hdr = super().header
 
+        # FIXME Add logo
+        '''
         hdr.logo = pom.logo(
             'Carapacian Logo',
             href = 'https://carapacian.com',
             img  = 'https://carapacian.com/images/logo.png',
         )
+        '''
 
         hdr.menu = pom.menu(name='main')
 
