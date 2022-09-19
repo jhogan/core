@@ -6943,7 +6943,7 @@ class fieldmapping(mapping):
 
         elif self.isint:
             if self._min is None:
-                return -2147483648
+                return -2_147_483_648
 
         elif self.isfloat:
             if self._min is None:
@@ -7032,7 +7032,7 @@ class fieldmapping(mapping):
 
         elif self.isint:
             if self._max is None:
-                return 2147483647
+                return 2_147_483_647
             else:
                 return self._max
 

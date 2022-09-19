@@ -364,22 +364,22 @@ class concert(presentation):
     record = orm.fieldmapping(str)
 
     # tinyint
-    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
+    ticketprice  =  int, -128, 127
 
     # mediumint
-    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
+    attendees    =  int, -8_388_608, 8_388_607
 
     # tinyint unsigned
-    duration     =  orm.fieldmapping(int,  min=0,         max=255)
+    duration     =  int, 0, 255
 
     # mediumint unsigned
-    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
+    capacity     =  int, 0,  16_777_215
 
     # int unsigned
-    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
+    externalid   =  int, 0, 4_294_967_295
 
     # bigint unsigned
-    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+    externalid1  =  int, 0, (2**64)-1
 
 class exhibition(presentation):
     @staticmethod
