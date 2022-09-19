@@ -6853,7 +6853,7 @@ class orm_(tester):
             signed  =  const['signed']
 
             if 'double' in type:
-                pytype =  float
+                pytype = float
             elif 'decimal' in type:
                 pytype = dec
             elif 'int' in type:

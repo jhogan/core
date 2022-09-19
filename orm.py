@@ -7297,10 +7297,14 @@ class fieldmapping(mapping):
                     self._value = bool.from_bytes(v, byteorder='little')
 
             elif self.isint:
+                # TODO Replace try-except's with 
+                #
+                #   `with suppress(Exception)`
                 try:
                     self._value = int(self._value)
                 except:
                     pass
+
             elif self.isfloat:
                 try:
                     self._value = round(float(self._value), self.scale)
