@@ -4472,8 +4472,24 @@ with book('Hacking Carapacian Core'):
 
         with section ('`int` attributes'):
           print('''
+            The `int` data type is a common type to use when you need to
+            store a non-decimal number.
+
+            By default, their database columns are of `INT SIGNED`. This
+            means that any number equalt to or greater than
+            -2_147_483_648 and less than 2_147_483_647 is a valid value.
             
+            `int` is a good data type when you just need a (non-decimal)
+            number. However, changing the minimum and maximum number
+            will result in differente database types.
+            <!-- TODO continue -->
           ''')
+
+          with listing('Using `int` attributes'):
+
+            class person(orm.entity):
+              # Create an int
+              myint = int
         with section ('`float` attributes'):
           ...
 
