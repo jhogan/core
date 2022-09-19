@@ -1874,7 +1874,7 @@ class element(entities.entity):
                 The el will simply be pushed onto the child elements
                 collection.
         """
-        # TODO There is some redunancy between this and __lshift__.
+        # XXX There is some redunancy between this and __lshift__.
         # Also, shouldn't this redundent logic be put in the overrides
         # element.append and element.insertbefore (which don't actually
         # exist at the time of this writing).

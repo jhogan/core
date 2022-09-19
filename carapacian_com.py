@@ -211,7 +211,7 @@ class tickets(pom.page):
     def main(self):
         self.main += dom.p('Carapacian Tickets')
 
-        btn = dom.button(class_='clicktest')
+        btn = dom.button('Clickme', class_='clicktest')
         p = dom.p(class_='clicktest')
 
         btn.onclick += self.btnclicker_onclick, p

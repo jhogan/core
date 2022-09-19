@@ -99,6 +99,9 @@ class tickets(tester.tester):
         self.startswith(Title, res['html>head>title'].text)
 
     def it_responds_to_button_click(self):
+        # NOTE This test is intended for the development of basic AJAX
+        # functionality in a real browser. As /en/tickets evolves, we
+        # will need to remove this test and the "Click Me" button logic.
         tab = self.browser().tab()
         ws = carapacian_com.site()
 
