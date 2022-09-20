@@ -530,15 +530,41 @@ class site(asset.asset):
         """ XXX Add docstring.
         """
 
-        return '''
+        r = '''
+            function xhr(e){
+                frag = e.target.getAttribute('data-click-fragments')
+                els = document.querySelectorAll(frag)
+                d = {
+                    'handler': 'TODO'
+                }
+
+                for(el of els)
+                    d['html'] = el.outerHTML
+
+
+                console.log('d', d)
+            }
+
             document.addEventListener("DOMContentLoaded",
                 function(ev) {
-                    console.log('here');
-                    hnds = document.querySelectorAll('[data-click-handler]');
-                    console.log(hnds);
+        '''
+
+        for trig in dom.element.Triggers:
+            r += f'''
+                els = document.querySelectorAll(
+                    '[data-{trig}-handler]'
+                );
+
+                for(el of els)
+                    el.addEventListener('{trig}', xhr)
+
+            '''
+
+        r += '''
                 }
             );
         '''
+        return r
 
 class forms:
     """ ``forms`` acts as a namespace to get to standard forms that a
