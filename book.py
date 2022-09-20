@@ -4472,28 +4472,82 @@ with book('Hacking Carapacian Core'):
 
         with section ('`int` attributes'):
           print('''
-            The `int` data type is a common type to use when you need to
-            store a non-decimal number.
+            `int` data type are used when there is a need to store a
+            non-decimal, numeric value.
 
             By default, their database columns are of `INT SIGNED`. This
-            means that any number equalt to or greater than
-            -2_147_483_648 and less than 2_147_483_647 is a valid value.
-            
-            `int` is a good data type when you just need a (non-decimal)
-            number. However, changing the minimum and maximum number
-            will result in differente database types.
-            <!-- TODO continue -->
+            means that any number equal to or greater than
+            -2_147_483_648 and less than or equal to 2_147_483_647 is a
+            valid value. However, it is possible to change the minimum
+            and maximun value in which case the database type will
+            change accordingly. For example, if you declare an `int` as
+            follows:
+
+              class myclass(orm.entity):
+                myattr = int, -128, 127
+
+            The underlying database type will be a `TINYINT` because a
+            database field declared as such could hold an integer
+            between -128 and 127. The ORM tries to find the smallest
+            database type for a given range of values when deciding upon
+            an integer-based data type. The ORM will may choose between
+            `TINYINT`, `SMALLINT`, MEDIUMINT`, `INT` and `BIGINT`.
+            Additionally, it will only cause them to be `SIGNED` if the
+            range allows for a negative value, otherwise they will be
+            declared as `UNSIGNED`. This may be important information
+            when trying to find ways to improve the performance of the
+            database. However, as an ORM user, it shouldn't concern you
+            much since the only thing that will matter when programming
+            ORM entity objects will be the range of allowable values.
+            Typically, you can start with a regular `int` remembering to
+            resist the temptation to optimize prematurely.
           ''')
 
           with listing('Using `int` attributes'):
 
             class person(orm.entity):
-              # Create an int
-              myint = int
-        with section ('`float` attributes'):
-          ...
+              age = int
 
-        with section ('`decimal` attributes'):
+            per = person()
+
+            # 44 is a valid `int`
+            per.age = 44
+            valid(per)
+
+            # -2_147_483_648-1 would be invalid
+            per.age = -2_147_483_648 - 1
+            invalid(per)
+
+        with section ('`float` attributes'):
+          print('''
+            `float` attributes represent floating point numbers. They
+            are similar to Python `float`s but conform to MySQL
+            `double`s since that is their underlying database type.
+
+            The `doubles` have a default precision of 12 and a default
+            scale of 2. If needed these values can be change using the
+            following notation:
+
+              class myentity(orm.entity):
+                myflt = float, 13, 3
+
+            Above, `myflt` has a precision of 13 and a scale of 3.
+
+            `floats` are useful in scientific applications but can cause
+            problems in business applications due to the fact that they
+            store approximate values but not exact value. You can easily
+            see this problem by multipling .3 by 3 in the Python REPL:
+
+              >>> .3 * 3
+              0.8999999999999999
+
+            Due to the lack of precision, you don't get the .9 you would
+            expect. Consequently, `float`s are rarley used by the GEM;
+            [`decimal`](#794f2ac1) data types are preferred since they
+            don't have this problem.
+          ''')
+
+        with section ('`decimal` attributes', id'794f2ac1'):
           ...
 
         with section ('`bytes` attributes'):
