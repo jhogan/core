@@ -531,18 +531,35 @@ class site(asset.asset):
         """
 
         r = '''
-            function xhr(e){
+            function ajax(e){
                 frag = e.target.getAttribute('data-click-fragments')
                 els = document.querySelectorAll(frag)
+
+                // TODO Parameterize
+                hnd = e.target.getAttribute('data-click-handler')
+                src = e.target.outerHTML
                 d = {
-                    'handler': 'TODO'
+                    'hnd':      hnd,
+                    'src':      src,
+                    'trigger':  e.type
                 }
 
                 for(el of els)
                     d['html'] = el.outerHTML
 
-
-                console.log('d', d)
+                xhr = new XMLHttpRequest()
+                xhr.onreadystatechange = function() {
+                    console.log('readyState', this.readyState)
+                    if (this.readyState == 4){
+                        if (this.status >= 400){
+                            console.log('AJAX ERROR')
+                        }
+                        console.log('responseText', xhr.responseText)
+                    }
+                };
+                xhr.open("POST", window.location.href)
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(d); 
             }
 
             document.addEventListener("DOMContentLoaded",
@@ -556,7 +573,7 @@ class site(asset.asset):
                 );
 
                 for(el of els)
-                    el.addEventListener('{trig}', xhr)
+                    el.addEventListener('{trig}', ajax)
 
             '''
 
