@@ -4520,11 +4520,11 @@ with book('Hacking Carapacian Core'):
 
         with section ('`float` attributes'):
           print('''
-            `float` attributes represent floating point numbers. They
+            `float` attributes represent floating-point numbers. They
             are similar to Python `float`s but conform to MySQL
-            `double`s since that is their underlying database type.
+            `DOUBLE`s since that is their underlying database type.
 
-            The `doubles` have a default precision of 12 and a default
+            The `DOUBLE`s have a default precision of 12 and a default
             scale of 2. If needed these values can be change using the
             following notation:
 
@@ -4542,13 +4542,68 @@ with book('Hacking Carapacian Core'):
               0.8999999999999999
 
             Due to the lack of precision, you don't get the .9 you would
-            expect. Consequently, `float`s are rarley used by the GEM;
-            [`decimal`](#794f2ac1) data types are preferred since they
-            don't have this problem.
+            expect. Consequently, `float`s are never used by the GEM.
+            [`Decimal`](#794f2ac1) data types are preferred since they
+            don't have this precision problem.
           ''')
 
-        with section ('`decimal` attributes', id'794f2ac1'):
-          ...
+          with listing('Using `float` attributes'):
+            class person(orm.entity):
+              weight = float
+
+            per = person()
+
+            # Assign a valid floating-point number
+            per.weight = 166.66
+            eq(166.66, per.weight)
+            valid(per)
+
+        with section ('`Decimal` attributes', id'794f2ac1'):
+          print('''
+            The `Decimal` data type is used to store numeric values that
+            can contain decimal point. Unlike the `float` data type, the
+            `Decimal` data type presevers exact precision. `Decimal`
+            types are used whenever precision needs to be preserve, for
+            example, when money is invoved.
+
+            The underlyind database type for `Decimal` values is
+            `DECIMAL(12,2)` (a precision of 12 and a scale of 2.
+            Consequently, numbers between -999,9999,999.99' and 
+            9,999,999,999.99' are valid.
+
+            If the precision or scale needs to be change, the following
+            syntax can be used:
+
+              class myentity(orm.entity):
+                mydec = decimal.Decimal, 14, 3
+
+            Above, we have declaed `mydec` to have a precision of 14 and
+            a scale of 3.
+
+            As you can see in the above example, the `Decimal` types are
+            denoted by the `Decimal` class in the `decimal` module. This
+            is also the Python type that is used to store the actual
+            value. It's convential to `import` `Decimal` as an alias:
+
+              from decimal import Decimal as dec
+
+            This we we can use `dec` to denote the `Decimal` type. This
+            the above example should have been written.
+
+              from decimal import Decimal as dec
+
+              class myentity(orm.entity):
+                mydec = dec, 14, 3
+            
+            Though the attribute always returns a `decimal.Decimal`
+            Python type, you can assign Python `str`s, `int`'s or `floats`
+            to the attributes. Internally, it will convert these values
+            using the `decimal.Decimal` constructor after stringifying
+            them first.
+
+              decimal.Decimal(str(x))
+
+          ''')
 
         with section ('`bytes` attributes'):
           ...
