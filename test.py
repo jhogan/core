@@ -36,6 +36,8 @@ import budget
 import codecs
 import dateutil
 import db
+
+# TODO use an alias here
 import decimal; dec=decimal.Decimal
 import effort
 import entities
@@ -6899,8 +6901,8 @@ class orm_(tester):
             setattr(obj, attr, str(v))
             self.eq(pytype(v), getattr(obj, attr))
 
-            # Test given a float/decimal as a str. This also ensures that floats and
-            # Decimals round to their scales.
+            # Test given a float/decimal as a str. This also ensures
+            # that floats and Decimals round to their scales.
             if pytype is not int:
                 v = round(uniform(float(min), float(max)), map.scale)
                 setattr(obj, attr, str(v))
