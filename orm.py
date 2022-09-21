@@ -6969,20 +6969,23 @@ class fieldmapping(mapping):
         fieldmapping.scale) which represents the number of digits that
         can be stored following the decimal point.
 
-        Scale applied to floats, decimal and date types.
+        Scale applies to floats, decimal and date types.
 
         For datetime fieldmappings, this is 6 because in MySQL:
+
             > A DATETIME or TIMESTAMP value can include a trailing
             > fractional seconds part in up to microseconds (6 digits)
             > precision.
 
         For floats, the precision value is the second argument in an
         attribute declaration. In the example below, 8 is the precision
-        of float::
+        of float:
 
             class component(orm.entity):
-                weight  =  float,  8,   7
+                weight = float, 8, 7
         """
+        # FIXME This seems to be a typo: the comma below should probably
+        # be `or`.
         if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
 
