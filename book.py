@@ -4566,29 +4566,31 @@ with book('Hacking Carapacian Core'):
             types are used whenever precision needs to be preserve, for
             example, when money is invoved.
 
-            The underlyind database type for `Decimal` values is
-            `DECIMAL(12,2)` (a precision of 12 and a scale of 2.
+            The underlying database type for `Decimal` values is
+            `DECIMAL(12,2)` (a precision of 12 and a scale of 2).
             Consequently, numbers between -999,9999,999.99' and 
             9,999,999,999.99' are valid.
 
             If the precision or scale needs to be change, the following
             syntax can be used:
 
+              import decimal
               class myentity(orm.entity):
                 mydec = decimal.Decimal, 14, 3
 
-            Above, we have declaed `mydec` to have a precision of 14 and
-            a scale of 3.
+            Above, we have declared `mydec` to have a precision of 14
+            and a scale of 3.
 
             As you can see in the above example, the `Decimal` types are
             denoted by the `Decimal` class in the `decimal` module. This
             is also the Python type that is used to store the actual
-            value. It's convential to `import` `Decimal` as an alias:
+            value in memory. It's convential to `import` `Decimal` as an
+            alias:
 
               from decimal import Decimal as dec
 
-            This we we can use `dec` to denote the `Decimal` type. This
-            the above example should have been written.
+            This way we can use `dec` to denote the `Decimal` type.
+            Thus the above example should have been written.
 
               from decimal import Decimal as dec
 
@@ -4602,11 +4604,46 @@ with book('Hacking Carapacian Core'):
             them first.
 
               decimal.Decimal(str(x))
-
           ''')
 
+          with listing('Using `float` attributes'):
+            from decimal import Decimal as dec
+            class person(orm.entity):
+              weight = dec
+
+            per = person()
+
+            # Set with an int
+            per.weight = 166
+
+            # Returns a Decimal value of 166
+            eq(dec('166'), per.weight)
+
+            # Always returns a Decimal type
+            type(dec, per.weight)
+
+            # Set with a float
+            per.weight = 166.66
+            eq(dec('166.66'), per.weight)
+            type(dec, per.weight)
+
+            # Set with a str
+            per.weight = '167.66'
+            eq(dec('167.66'), per.weight)
+            type(dec, per.weight)
+
+            # Set with another Decimal
+            per.weight = dec(168.66)
+            eq(dec('168.66'), per.weight)
+            type(dec, per.weight)
+
         with section ('`bytes` attributes'):
-          ...
+          print('''
+            The `bytes` data type is analogous to the Python's native
+            `bytes` data type. This type contains a string of binary
+            values (or a sequence of integers depending on how you like
+            to think about it).
+          ''')
 
         with section ('`date` attributes'):
           ...
