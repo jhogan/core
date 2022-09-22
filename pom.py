@@ -554,12 +554,25 @@ class site(asset.asset):
                         if (this.status >= 400){
                             console.log('AJAX ERROR')
                         }
-                        console.log('responseText', xhr.responseText)
+                        parser = new DOMParser()
+
+                        els = parser.parseFromString(
+                            xhr.responseText, "text/html"
+                        )
+
+                        els = els.querySelectorAll('html>body>*')
+
+                        for(replacement of els){
+                            console.log('element', el)
+                            old = document.querySelector('#' + el.id)
+                            old.parentNode.replaceChild(replacement, old)
+                        }
+
                     }
                 };
                 xhr.open("POST", window.location.href)
                 xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.send(d); 
+                xhr.send(JSON.stringify(d));
             }
 
             document.addEventListener("DOMContentLoaded",

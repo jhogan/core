@@ -211,12 +211,15 @@ class tickets(pom.page):
     def main(self):
         self.main += dom.p('Carapacian Tickets')
 
-        btn = dom.button('Clickme', class_='clicktest')
-        p = dom.p(class_='clicktest')
+        btn1 = dom.button('Clickme One')
+        btn2 = dom.button('Clickme Two')
+        p = dom.p()
 
-        btn.onclick += self.btnclicker_onclick, p
+        btn1.onclick += self.btnclicker_onclick, p
+        btn2.onclick += self.btnclicker_onclick, p
 
-        self.main += btn, p
+        self.main += btn1, btn2, p
 
     def btnclicker_onclick(self, src, eargs):
-        eargs.html['p'].only.text = 'CLICKED'
+        import primative
+        eargs.html['p'].only.text = str(primative.datetime.utcnow())
