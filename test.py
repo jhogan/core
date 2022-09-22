@@ -6326,6 +6326,7 @@ class orm_(tester):
             self.type(bytes, comp.digest)
             self.true(saveok(comp, 'digest'))
 
+        # TODO We may want to update this to use artist.getvalid 
         # Test bytes attribute as a binary (min != max)
         art = artist()
         art.firstname = uuid4().hex
