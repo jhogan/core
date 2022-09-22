@@ -505,6 +505,12 @@ class tester(entities.entity):
                     # Get the parent
                     rent = this.parent
 
+                    # TODO The below could be done in one line. Taking
+                    # insperation from the *real* DOM (the
+                    # JavaScript-based one in browsers), which has a
+                    # `node.replaceChild` method,  we could add a
+                    # `replacechild` method to `dom.element`.
+
                     # Get the ordinal index of this as a child of it
                     # parent.
                     ix = rent.elements.getindex(this)

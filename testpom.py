@@ -2309,7 +2309,7 @@ class page(tester.tester):
     def it_replaces_correct_fragment(self):
         """ This was written due to a bug found in
         tester._browser._tab.element_event which incorrectly patched the
-        DOM object. Instead of replacing the element in it's current
+        DOM object. Instead of replacing the element in its current
         position, it removed the old element and appended the new
         element to the end.  This is obviously wrong because it can
         result in elements getting ordered incorrectly in the DOM. This
