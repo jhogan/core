@@ -4642,8 +4642,39 @@ with book('Hacking Carapacian Core'):
             The `bytes` data type is analogous to the Python's native
             `bytes` data type. This type contains a string of binary
             values (or a sequence of integers depending on how you like
-            to think about it).
+            to think about it). Thus the `bytes` data type is used when
+            there is a need to store binary values.
+
+            By default, the database type for `bytes` is
+            `VARBINARY(255)', tus a maximum of 255 bytes are allowed by
+            default. This can be change using the following syntax:
+
+              class myentity(orm.entity):
+                mybytes = bytes, 1, 10
+
+            In the above code, `mybytes` will be able to contain 1 to 10
+            bytes. Any more or less would make a `myentity` invalid.
+
+            If the `bytes` attribute is declared to have a minimum and
+            maximum which is equal to one another, then the `BINARY`
+            database type will be used. For example, if `mybytes` were
+            redeclared as:
+
+              class myentity(orm.entity):
+                mybytes = bytes, 10, 10
+
+            The database type would be `BINARY(10)`
           ''')
+
+          with listing('Using `bytes` attributes'):
+            from uuid import uuid4
+            class person(orm.entity):
+              # A univeral identifier for a person (note that this would
+              # be redundent with the person's `id` property)
+              uuid = bytes 16, 16
+
+            # Assign a binary representation of a UUID
+            per.uuid = uuid4().bytes
 
         with section ('`date` attributes'):
           ...
