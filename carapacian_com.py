@@ -211,15 +211,50 @@ class tickets(pom.page):
     def main(self):
         self.main += dom.p('Carapacian Tickets')
 
+        ''' Two widgets; one handler; one fragment '''
         btn1 = dom.button('Clickme One')
         btn2 = dom.button('Clickme Two')
         p = dom.p()
+        p1 = dom.p()
 
         btn1.onclick += self.btnclicker_onclick, p
-        btn2.onclick += self.btnclicker_onclick, p
 
-        self.main += btn1, btn2, p
+        # XXX This is a bug in the event handling logic. If we add the
+        # same element (p) as a fragment twice, p will get a new `id`
+        # value. This means the original event handler (in the
+        # JavaScript code) will reference a fragment that doesn't exist
+        # anymore because the fragment's id has changed.
+        #btn2.onclick += self.btnclicker_onclick, p
+        btn2.onclick += self.btnclicker_onclick, p1
+
+        self.main += btn1, btn2, p, p1
+
+        ''' No fragment '''
+        btn3 = dom.button('No fragments')
+        btn3.onclick += self.btnclicker_onclick2
+        self.main += dom.hr(), btn3
+
+        ''' No fragment '''
+        btn4 = dom.button('Multiple fragments')
+        hello = dom.code('Hello,')
+        world = dom.code('World')
+        p = dom.p()
+        btn4.onclick += self.btnclicker_onclick4, hello, world, p
+        self.main += (
+            dom.hr(), btn4, dom.br(), hello, dom.span(' + '), world, p
+        )
 
     def btnclicker_onclick(self, src, eargs):
         import primative
         eargs.html['p'].only.text = str(primative.datetime.utcnow())
+
+    def btnclicker_onclick2(self, src, eargs):
+        ''' No fragment to process '''
+
+        # Quick test; use a breakpoint
+        #B()
+        pass
+
+    def btnclicker_onclick4(self, src, eargs):
+        ''' No fragment to process '''
+        eargs.html['p'].only.text = eargs.html['code'].text

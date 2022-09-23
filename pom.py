@@ -538,18 +538,18 @@ class site(asset.asset):
                 // TODO Parameterize
                 hnd = e.target.getAttribute('data-click-handler')
                 src = e.target.outerHTML
+                html = ''
+                for(el of els)
+                    html += el.outerHTML
                 d = {
                     'hnd':      hnd,
                     'src':      src,
-                    'trigger':  e.type
+                    'trigger':  e.type,
+                    'html':     html     
                 }
-
-                for(el of els)
-                    d['html'] = el.outerHTML
 
                 xhr = new XMLHttpRequest()
                 xhr.onreadystatechange = function() {
-                    console.log('readyState', this.readyState)
                     if (this.readyState == 4){
                         if (this.status >= 400){
                             console.log('AJAX ERROR')
@@ -562,10 +562,10 @@ class site(asset.asset):
 
                         els = els.querySelectorAll('html>body>*')
 
-                        for(replacement of els){
+                        for(el of els){
                             console.log('element', el)
                             old = document.querySelector('#' + el.id)
-                            old.parentNode.replaceChild(replacement, old)
+                            old.parentNode.replaceChild(el, old)
                         }
 
                     }
@@ -587,7 +587,6 @@ class site(asset.asset):
 
                 for(el of els)
                     el.addEventListener('{trig}', ajax)
-
             '''
 
         r += '''
