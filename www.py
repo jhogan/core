@@ -871,6 +871,9 @@ class _request:
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
+            # XXX If you query `isxhr` using a SELECT, the value is ^A
+            # on XHR POSTs. It should (obviously) just be the number
+            # 1.
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
                 isxhr      =  self.isxhr,
@@ -940,6 +943,10 @@ class _request:
                 # datetime and HTTP status.
                 if hit.inprogress:
                     hit.end = now
+
+                    # XXX When viewing status in the database, it is 255
+                    # for XHR requests, 223 when the status should bo
+                    # 200, and 135 when the status should be 500. 
                     hit.status = response.status
                 else:
                     hit.begin = now
