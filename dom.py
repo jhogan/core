@@ -1142,9 +1142,15 @@ class element(entities.entity):
         that is not required.
 
         """
-        # TODO If self.isvoid, the `body` parameter would be
-        # meaningless. In this case, if body is not None, we should
-        # throw a TypeError.
+        if self.isvoid  and body is not None:
+            # If self.isvoid, the `body` parameter would be meaningless.
+            # In this case, if body is not None, we should raise an
+            # exception.
+            # XXX Test this feature
+            raise ValueError(
+                f'{type(self)} elements can not accept a body because '
+                'it is void'
+            )
 
         try:
             id = kwargs['id']
