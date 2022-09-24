@@ -532,19 +532,27 @@ class site(asset.asset):
 
         r = '''
             function ajax(e){
-                frag = e.target.getAttribute('data-click-fragments')
+                trigger = e.type
+                target = e.target
+
+                if (target.type == 'text'){
+                    target.setAttribute('value', target.value)
+                }
+
+                frag = target.getAttribute('data-' + trigger + '-fragments')
                 els = document.querySelectorAll(frag)
 
-                // TODO Parameterize
-                hnd = e.target.getAttribute('data-click-handler')
-                src = e.target.outerHTML
+                hnd = target.getAttribute('data-' + trigger + '-handler')
+                src = target.outerHTML
+
                 html = ''
                 for(el of els)
                     html += el.outerHTML
+
                 d = {
                     'hnd':      hnd,
                     'src':      src,
-                    'trigger':  e.type,
+                    'trigger':  trigger,
                     'html':     html     
                 }
 

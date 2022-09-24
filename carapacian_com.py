@@ -234,7 +234,7 @@ class tickets(pom.page):
         btn3.onclick += self.btnclicker_onclick2
         self.main += dom.hr(), btn3
 
-        ''' No fragment '''
+        ''' Multiple fragments'''
         btn4 = dom.button('Multiple fragments')
         hello = dom.code('Hello,')
         world = dom.code('World')
@@ -252,10 +252,25 @@ class tickets(pom.page):
         )
 
         ''' Different events '''
-        inp = dom.input('Exception')
         span = dom.span()
-        inp.oninput += self.inp_oninput
-        self.main += dom.hr(), span, inp
+        lbl = dom.label('Input: ')
+        inp = dom.input()
+        inp.oninput += self.inp_oninput, span
+        self.main += dom.hr(), span, dom.br(), lbl, inp
+
+        ''' Multiple handlers'''
+        # This probably shouldn't work because it would mean multiple
+        # XHR call, or extra routing logic on the server-side. That
+        # could be implemented, of course, but having multiple handlers
+        # for one event seems like a bad idea, so we probably shouldn't
+        # go out of our way to encourage it.
+        #span = dom.span()
+        #span1 = dom.span()
+        #lbl = dom.label('Encode: ')
+        #inp = dom.input()
+        #inp.oninput += self.inp_oninput1, span
+        #inp.oninput += self.inp_oninput2, span1
+        #self.main += dom.hr(), span, dom.br(), span1, dom.br(), lbl, inp
 
     def btnclicker_onclick(self, src, eargs):
         import primative
@@ -276,7 +291,17 @@ class tickets(pom.page):
         raise Exception('Derp')
 
     def inp_oninput(self, src, eargs):
-        span = eargs.html['span']
-        inp = eargs.html['input']
-        B()
+        span = eargs.html['span'].only
+
+        inp = src
+        span.text = inp.value
+
+    def inp_oninput1(self, src, eargs):
+        span = eargs.html['span'].first
+        span.text = inp.value
+
+    def inp_oninput2(self, src, eargs):
+        span = eargs.html['span'].first
+
+        inp = src
         span.text = inp.value
