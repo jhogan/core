@@ -530,7 +530,8 @@ class site(asset.asset):
         """ XXX Add docstring.
         """
 
-        r = '''
+        # XXX Comment the javascript
+        r = ''
             function ajax(e){
                 trigger = e.type
                 target = e.target

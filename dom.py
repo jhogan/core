@@ -4601,7 +4601,7 @@ class caption(element):
     """
 
 class inputs(elements):
-    """ A class used to contain a collection of ``caption`` elements.
+    """ A class used to contain a collection of ``input`` elements.
     """
 
 class input(element):
@@ -4613,6 +4613,7 @@ class input(element):
     number of combinations of input types and attributes.
     """
     isvoid = True
+
     @property
     def min(self):
         """ Valid for date, month, week, time, datetime-local, number,
