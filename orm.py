@@ -7131,16 +7131,22 @@ class fieldmapping(mapping):
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
+
         elif self.isdatetime:
             return 'datetime'
+
         elif self.isdate:
             return 'date'
+
         elif self.isbool:
             return 'bit'
+
         elif self.isfloat:
             return 'double'
+
         elif self.isdecimal:
             return 'decimal'
+
         elif self.isbytes:
             if self.isfixed:
                 return 'binary'
@@ -7208,16 +7214,22 @@ class fieldmapping(mapping):
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
+
         elif self.isdatetime:
             return 'datetime(6)'
+
         elif self.isdate:
             return 'date'
+
         elif self.isbool:
             return 'bit'
+
         elif self.isfloat:
             return 'double(%s, %s)' % (self.precision, self.scale)
+
         elif self.isdecimal:
             return 'decimal(%s, %s)' % (self.precision, self.scale)
+
         elif self.isbytes:
             if self.isfixed:
                 return 'binary(%s)' % self.max
