@@ -4646,7 +4646,7 @@ with book('Hacking Carapacian Core'):
             there is a need to store binary values.
 
             By default, the database type for `bytes` is
-            `VARBINARY(255)', tus a maximum of 255 bytes are allowed by
+            `VARBINARY(255)', thus a maximum of 255 bytes are allowed by
             default. This can be change using the following syntax:
 
               class myentity(orm.entity):
@@ -4676,7 +4676,19 @@ with book('Hacking Carapacian Core'):
             # Assign a binary representation of a UUID
             per.uuid = uuid4().bytes
 
+          print('''
+            In the above code, we add a `uuid` field to capture a
+            UUID for the `person`. The `.bytes` property of the UUID
+            object gives us a 16 byte binary value. Note that this is
+            pretty much equivelent to how the `id` attributes already
+            work, except for the fact that the `id` attribute is
+            assigned a UUID on entity creation.
+          ''')
+
         with section ('`date` attributes'):
+          ...
+
+        with section ('`datetime` attributes'):
           ...
 
         with section ('`timespan` attributes'):
