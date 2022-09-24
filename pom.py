@@ -551,23 +551,30 @@ class site(asset.asset):
                 xhr = new XMLHttpRequest()
                 xhr.onreadystatechange = function() {
                     if (this.readyState == 4){
-                        if (this.status >= 400){
-                            console.log('AJAX ERROR')
+                        if (this.status < 400){
+                            parser = new DOMParser()
+
+                            els = parser.parseFromString(
+                                xhr.responseText, "text/html"
+                            )
+
+                            els = els.querySelectorAll('html>body>*')
+
+                            for(el of els){
+                                console.log('element', el)
+                                old = document.querySelector('#' + el.id)
+                                old.parentNode.replaceChild(el, old)
+                            }
+                        }else{
+                            els = document.querySelectorAll('.exception')
+                            els.forEach(e => e.remove())
+
+                            main = document.querySelector('main')
+                            main.insertAdjacentHTML(
+                                'afterbegin', xhr.responseText
+                            )
+
                         }
-                        parser = new DOMParser()
-
-                        els = parser.parseFromString(
-                            xhr.responseText, "text/html"
-                        )
-
-                        els = els.querySelectorAll('html>body>*')
-
-                        for(el of els){
-                            console.log('element', el)
-                            old = document.querySelector('#' + el.id)
-                            old.parentNode.replaceChild(el, old)
-                        }
-
                     }
                 };
                 xhr.open("POST", window.location.href)

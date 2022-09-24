@@ -1194,7 +1194,7 @@ class element(entities.entity):
     # A tuple of supported trigger methods. These correspond to DOM
     # methods, such as element.focus(), which trigger a corresponding
     # event (onfocus).
-    Triggers = 'click', 'focus', 'blur', 
+    Triggers = 'click', 'focus', 'blur', 'input',
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
     # keydown/onkeydown), Make sure you add the trigger to the
@@ -1241,9 +1241,24 @@ class element(entities.entity):
         setattr(self, '_onblur', v)
 
     def blur(self):
-        """ Triggers the `focus` event for this element.
+        """ Triggers the `blur` event for this element.
         """
         return self._trigger('blur')()
+
+    @property
+    def oninput(self):
+        """ Returns the `oninput` event for this element.
+        """
+        return self._on('input')
+
+    @oninput.setter
+    def oninput(self, v):
+        setattr(self, '_oninput', v)
+
+    def input(self):
+        """ Triggers the `input` event for this element.
+        """
+        return self._trigger('input')()
 
     def _on(self, ev):
         """ Return a memoized dom.event object for this event named by

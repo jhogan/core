@@ -244,6 +244,19 @@ class tickets(pom.page):
             dom.hr(), btn4, dom.br(), hello, dom.span(' + '), world, p
         )
 
+        ''' Exception '''
+        btn5 = dom.button('Exception')
+        btn5.onclick += self.btnclicker_onclick5
+        self.main += (
+            dom.hr(), btn5
+        )
+
+        ''' Different events '''
+        inp = dom.input('Exception')
+        span = dom.span()
+        inp.oninput += self.inp_oninput
+        self.main += dom.hr(), span, inp
+
     def btnclicker_onclick(self, src, eargs):
         import primative
         eargs.html['p'].only.text = str(primative.datetime.utcnow())
@@ -258,3 +271,12 @@ class tickets(pom.page):
     def btnclicker_onclick4(self, src, eargs):
         ''' No fragment to process '''
         eargs.html['p'].only.text = eargs.html['code'].text
+
+    def btnclicker_onclick5(self, src, eargs):
+        raise Exception('Derp')
+
+    def inp_oninput(self, src, eargs):
+        span = eargs.html['span']
+        inp = eargs.html['input']
+        B()
+        span.text = inp.value
