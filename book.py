@@ -4667,7 +4667,7 @@ with book('Hacking Carapacian Core'):
           ''')
 
           with listing('Using `bytes` attributes'):
-            from uuid import uuid4
+            from uuid import uuid4, UUID
             class person(orm.entity):
               # A univeral identifier for a person (note that this would
               # be redundent with the person's `id` property)
@@ -4675,6 +4675,9 @@ with book('Hacking Carapacian Core'):
 
             # Assign a binary representation of a UUID
             per.uuid = uuid4().bytes
+
+            type(UUID, per.uuid)
+            type(UUID, per.id)
 
           print('''
             In the above code, we add a `uuid` field to capture a
@@ -4686,7 +4689,60 @@ with book('Hacking Carapacian Core'):
           ''')
 
         with section ('`date` attributes'):
-          ...
+          print('''
+            The `date` attribute is used for date values which do not
+            require a time component. `date` attributes are stored in
+            MySQL as `DATE` data types thus a valid date can be between
+            between '1000-01-01' to '9999-12-31'. This is convenient
+            because it means that the ORM is free of any Y2K or Y38 
+            problems (at least not for a really long time).
+
+            A nice feature of the `date` attribute is that it can parse
+            date stings (using the
+            [dateutile.parser](https://dateutil.readthedocs.io/en/stable/parser.html)
+            class). This means than reasonably unabigious date string
+            formats, such as "2006/01/01", "Jan 2, 2001" will be parsed
+            intelligently without the need for a format string.
+          ''')
+
+          with listing('Using `date` attributes'):
+            import primative
+            from datetime import date
+
+            class person(orm.entity):
+              dob = date
+
+            per = person()
+            
+            # Assign the dob using a string
+            per.dob = '2006-01-01'
+
+            # A `primative.date` type is always returned (unless the
+            # value is None)
+            self.type(primative.date, per.dob)
+            self.eq(primative.date(2006, 1, 1), per.dob)
+
+            # However, the returned value will also be equivalent to a
+            # regular Python `date` object with the same date
+            # parameters 
+            self.eq(date(2006, 1, 1), per.dob)
+
+
+            # We can also assign a `date` object or a `primative.date`
+            # object.
+            per.dob = primative.date(2006, 1, 2)
+
+            # The above assertions will still work with the new value
+            self.type(primative.date, per.dob)
+            self.eq(primative.date(2006, 1, 2), per.dob)
+            self.eq(date(2006, 1, 2), per.dob)
+
+          print('''
+            As you can see, the return type is the framework`s own date
+            object `primative.date`. However, since this is just a
+            subclass of Python's `date` class, either can be used to
+            evaluate the return value.
+          ''')
 
         with section ('`datetime` attributes'):
           ...
