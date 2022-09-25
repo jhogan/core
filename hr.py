@@ -56,6 +56,8 @@ class fulfillment_positions(orm.associations):  pass
 class responsibilities(orm.entities):           pass
 class responsibilitytypes(apriori.types):       pass
 class validresponsibilities(apriori.types):     pass
+
+# TODO Shouldn't this be "positionstatuses"
 class positionstatusus(party.statuses):         pass
 class position_positions(orm.associations):     pass
 class periodtypes(apriori.types):               pass

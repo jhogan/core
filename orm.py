@@ -1753,7 +1753,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             arts = artists('firstname = %s', ('Jeff',))
 
         The above queries are parameterized, i.e., the SQL and the
-        values are seperated to protected against SQL injection. It's
+        values are seperated to protect against SQL injection. It's
         possible to use unparameterized queries, but the following will
         result in a ValueError::
 
@@ -2018,13 +2018,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         onafterload event is raised in orm.collect(). 
         """
 
-        # Get a reference to the chronicler single ton
+        # Get a reference to the chronicler singleton
         chron = db.chronicler.getinstance()
 
         # Add a chonicle instance to the chronicler as a way of
         # recording, in memory, the database interaction (i.e., the SQL
         # and operation type, that occured.
-        chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
+        chron += db.chronicle(
+          eargs.entity, eargs.op, eargs.sql, eargs.args
+        )
 
     @classproperty
     def orm(cls):
@@ -5614,6 +5616,8 @@ class mappings(entitiesmod.entities):
 
         return ixs
 
+    # TODO:18725bb1 getinsert, getupdate and getdelete should be defined
+    # on the `orm` class.
     def getinsert(self):
         """ Returns a tuple whose first element is an INSERT INTO
         statement and whose second element is the parameterized
@@ -7643,7 +7647,7 @@ def proprietor(propr):
     propr1 = sec.proprietor
     try:
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # Set the proprietor to `propr` and yield immediatly
+        # Set the proprietor to `propr` and yield immediately
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sec.proprietor = propr
         yield
@@ -7853,8 +7857,9 @@ class security:
 
         When override is True, accessibility methods, such as
         creatability, retrievability, updatability and deletability are
-        ignored. This is useful for unit test developers who want to
-        ignore the accessibility methods for the sake of convenience.
+        ignored. This is useful for developers of automated tests who
+        want to ignore the accessibility methods for the sake of
+        convenience. Should not be used in production code.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if self._override:
@@ -9577,6 +9582,39 @@ class orm:
                     break
 
         ress = None
+
+        # FIXME At the below line, we get this message if the client has
+        # been left running for a while. Apparently, we need to catch
+        # this exception and try a reconnect. This is urgent because
+        # this happens after gunicorn runs for a while.
+        '''
+        Traceback (most recent call last):
+          File "/home/jhogan/var/work/core/db.py", line 492, in execute
+            self._execute(cur)
+          File "/home/jhogan/var/work/core/orm.py", line 9500, in exec
+            # Create a callable to execute the SQL
+          File "/usr/lib/python3/dist-packages/MySQLdb/cursors.py", line 209, in execute
+            res = self._query(query)
+          File "/usr/lib/python3/dist-packages/MySQLdb/cursors.py", line 315, in _query
+            db.query(q)
+          File "/usr/lib/python3/dist-packages/MySQLdb/connections.py", line 226, in query
+            _mysql.connection.query(self, query)
+        MySQLdb._exceptions.InterfaceError: (0, '')
+
+        During handling of the above exception, another exception occurred:
+
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+          File "/home/jhogan/var/work/core/orm.py", line 3376, in __init__
+            res = self_orm.load(o)
+          File "/home/jhogan/var/work/core/orm.py", line 9513, in load
+            lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+          File "/home/jhogan/var/work/core/db.py", line 550, in execute
+            conn.rollback()
+          File "/home/jhogan/var/work/core/db.py", line 115, in rollback
+            return self._connection.rollback()
+        MySQLdb._exceptions.InterfaceError: (0, '')
+        '''
 
         # Create a callable to execute the SQL
         def exec(cur):

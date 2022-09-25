@@ -31,7 +31,6 @@ TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
     
     self.testers.breakonexception = True
 
-XXX: Discuss using tidy
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
@@ -390,15 +389,16 @@ ideal. However, the [log.py](log.py) module should be used to log locally
 <a id="assets-configuration"></a>
 ### Configuration ###
 Configuration of the environment is made in two files. The first,
-[configuration.py](configuration.py) is a versioned file which contains no secret
-information, such as database passwords, but does provide a default
-configuration through its `configuration` singleton. 
+[configuration.py](configuration.py) is a versioned file (a file tracked
+by Git) which contains no secret information, such as database
+passwords, but does provide a default configuration through its
+`configuration` singleton. 
 
-The second file, [config.py](config.py) is an unversioned file which contains a
-class called `config` which inherits from `configuration`. This file
-overrides the default version and can contain secrete information and
-therefore **should never be committed to the Git repository**.  This file
-should also have restrictive file permissions:
+The second file, [config.py](config.py) is an untracked file which
+contains a class called `config` which inherits from `configuration`.
+This file overrides the default version and can contain secrete
+information and therefore **should never be committed to the Git
+repository**.  This file should also have restrictive file permissions:
 
     chmod 400 config.py
 
@@ -635,7 +635,6 @@ interface directly, you can run the Green Unicorn HTTP/WSGI server and
 hit the services from a browser or some other user-agent like `curl`. To
 run the service, you can `cd` into the framework's source directory and
 run the command:
-<!-- XXX Change to use unix sockets -->
 
    gunicorn -b carapacian.com:8000 --reload --timeout 0 'www:application()' 
 
@@ -669,6 +668,14 @@ you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
 the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
+
+Note that the output from `curl` will be HTML intended for computer
+consumption, i.e., it will not have linefeeds or indentation. You can
+pipe the output to `tidy` to make the HTML easier to read:
+
+    # Lots of flags have to be given to tidy to keep it from printing
+    # warning messages and stuff. You may want to create an alias.
+    curl carapacian.com:8000 | tidy -iq --tidy-mark no --show-warnings no --show-info no 2>/dev/null
 
 <!-- TODO Recommend using `nmap` with Vim. Also, recommend using a
 `sleep .5` before the `curl` command in order to allow time for the
