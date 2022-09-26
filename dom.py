@@ -1029,8 +1029,20 @@ class elements(entities.entities):
             raise MoveError('Parent already set')
         self._parent = v
 
-    def _text2element(self, obj):
-        if type(obj) is str:
+    def _text2element(self, txt):
+        """ Convert a str (txt) to a text node and return it. 
+
+        Used by self.append and self.unshift.
+
+        :param: txt str|element: 
+            if str:
+                The text to convert to a node.
+
+            if element:
+                Simply return the element that was passed in.
+        """
+
+        if type(txt) is str:
             # If we are appending a text node to a <script> tag, we
             # don't want to do any HTML escaping. Escaping the
             # contents of a <script> tag (e.g., JavaScript, JSON,
@@ -1042,10 +1054,18 @@ class elements(entities.entities):
             else:
                 esc = True
 
-            return text(obj, esc=esc)
-        return obj
+            return text(txt, esc=esc)
+
+        return txt
 
     def _demandadditions(self, obj):
+        """ Raise exception is there is an issue obj being appended to
+        self.elements. 
+
+        Used by self.append and self.unshift.
+
+        :param: obj element|sequence: The element(s) to append.
+        """
         if isinstance(self.parent, text):
             raise NotImplementedError(
                 "Can't append to a text node"
@@ -1062,18 +1082,48 @@ class elements(entities.entities):
             raise TypeError('Invalid element type: ' + str(type(obj)))
 
     def append(self, obj, *args, **kwargs):
-        """ Appends an element to this collection.
-        XXX Complete docstring
+        """ Appends an element to this object's `elements` collection.
+
+        :param: obj str|element|sequence The element to append.
+
+            if str:
+                Convert to text node and append the node.
+
+            if element:
+                Append the element.
+
+            if sequence:
+                Append each element in the sequence.
+
         """
 
+        # Convert object to text node if it is a str
         obj = self._text2element(obj)
+
+        # Raise exception if the obj is invalid
         self._demandadditions(obj)
 
         super().append(obj, *args, **kwargs)
 
     def unshift(self, obj):
-        # XXX Docstring
+        """ Prepend an element to this object's `elements` collection.
+
+        :param: obj str|element|sequence The element to preappend.
+
+            if str:
+                Convert to text node and prepend the node.
+
+            if element:
+                Prepend the element.
+
+            if sequence:
+                Prepend each element in the sequence.
+        """
+
+        # Convert object to text node if it is a str
         obj = self._text2element(obj)
+
+        # Raise exception if the obj is invalid
         self._demandadditions(obj)
 
         # TODO: Return entities object to indicate what was unshifted
