@@ -1896,7 +1896,8 @@ class element(entities.entity):
         self._attributes = v
 
     def __lshift__(self, el):
-        """ Inserts ``el` at the begining of the elements collection.
+        """ Overrides the << operator to insert ``el` at the begining of
+        this element's `elements` collection.
 
         :param: el str|element:
             if el is str:
@@ -1914,7 +1915,7 @@ class element(entities.entity):
     def __iadd__(self, el):
         """ Push ``el` at the top of the elements collection.
 
-        :param: el str|element:
+        :param: el str|element|sequence:
             if el is str:
                 A new text node will be created with el as the text
                 node's text property. The text node will be unshfted
@@ -1924,6 +1925,11 @@ class element(entities.entity):
                 The el will simply be pushed onto the child elements
                 collection.
 
+            if el is sequence:
+                If el is a sequence, such as a tuple or an elements
+                collection, each element in the sequence will be
+                appended to the child elements collection.
+        """
         self.elements += el
         return self
 
