@@ -106,6 +106,20 @@ class dom_elements(tester.tester):
         self.zero(bs)
 
 class dom_element(tester.tester):
+    def it_raises_when_body_is_given_to_void_elements(self):
+        ''' We want to get a ValueError when we add a body argument to
+        an element that is marked `isvoid`. Elements that are "void",
+        like <input>, <meta> and <hr> should not contain a body.
+        '''
+
+        # A tuple of void elements
+        clss = (
+            dom.link, dom.base, dom.img, dom.input, dom.meta, dom.hr,
+        )
+
+        for cls in clss:
+            self.expect(ValueError, lambda: cls('some body text'))
+
     def it_gets_text(self):
         # FIXME:fa4e6674 This is a non-trivial problem
         return
