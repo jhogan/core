@@ -325,6 +325,53 @@ class dom_element(tester.tester):
         id = primative.uuid(base64=p.id)
         self.isinstance(id, uuid.UUID)
 
+    def it_appends(self):
+        p = dom.p()
+        em = dom.em()
+
+        ''' It appends element '''
+        p += em
+
+        self.true(em in p.elements)
+
+        ''' It appends text '''
+        txt = 'text for p'
+        p += txt
+
+        self.eq(txt, p.text)
+
+        ''' It appends sequence '''
+        hr = dom.hr()
+        br = dom.hr()
+
+        p += hr, br
+        self.is_(p.elements.penultimate, hr)
+        self.is_(p.elements.ultimate, br)
+
+    def it_unshifts(self):
+        p = dom.p()
+        em = dom.em()
+        span = dom.span()
+        p += span
+
+        self.one(p.elements)
+
+        ''' It prepends/unshifts element '''
+        p << em
+
+        self.two(p.elements)
+        self.is_(em, p.elements.first)
+        self.is_(span, p.elements.second)
+
+        ''' It prepends/unshifts text '''
+        txt = 'text for p'
+        p << txt
+
+        self.three(p.elements)
+        self.eq(txt, p.text)
+        self.is_(em, p.elements.second)
+        self.is_(span, p.elements.third)
+
 class test_comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'

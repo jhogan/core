@@ -1029,15 +1029,55 @@ class elements(entities.entities):
             raise MoveError('Parent already set')
         self._parent = v
 
-    def append(self, *args, **kwargs):
-        """ Appends an element to this collection.
-        """
+    def _text2element(self, obj):
+        if type(obj) is str:
+            # If we are appending a text node to a <script> tag, we
+            # don't want to do any HTML escaping. Escaping the
+            # contents of a <script> tag (e.g., JavaScript, JSON,
+            # etc) means the quotes and angle brakets would be
+            # garbled thus rending the script uninterpretable, e.g.,
+            # console.log(&#x27;Hello, world&#x27;)
+            if isinstance(self, script):
+                esc = False
+            else:
+                esc = True
+
+            return text(obj, esc=esc)
+        return obj
+
+    def _demandadditions(self, obj):
         if isinstance(self.parent, text):
             raise NotImplementedError(
                 "Can't append to a text node"
             )
 
-        super().append(*args, **kwargs)
+        pass_ = False
+        if isinstance(obj, element):
+            pass_ = True
+        elif hasattr(obj, '__iter__'):
+            # NOTE This could be elements, lists or generators.
+            pass_ = True
+
+        if not pass_:
+            raise TypeError('Invalid element type: ' + str(type(obj)))
+
+    def append(self, obj, *args, **kwargs):
+        """ Appends an element to this collection.
+        XXX Complete docstring
+        """
+
+        obj = self._text2element(obj)
+        self._demandadditions(obj)
+
+        super().append(obj, *args, **kwargs)
+
+    def unshift(self, obj):
+        # XXX Docstring
+        obj = self._text2element(obj)
+        self._demandadditions(obj)
+
+        # TODO: Return entities object to indicate what was unshifted
+        super().unshift(e=obj)
         
 class element(entities.entity):
     """ An abstract class from which all HTML5 elements inherit.
@@ -1869,16 +1909,6 @@ class element(entities.entity):
                 The el will simply be unshifted onto the child elements
                 collection.
         """
-
-        # TODO We could probably override unshift instead. That way the
-        # ``unshift()`` method and the << operate would work. As it
-        # stands, ``unshift()`` would not use the overridden behavior.
-        if type(el) is str:
-            el = text(el)
-
-        if not isinstance(el, element) and not isinstance(el, elements):
-            raise ValueError('Invalid element type: ' + str(type(el)))
-
         self.elements << el
         return self
 
@@ -1894,39 +1924,6 @@ class element(entities.entity):
             if el is element:
                 The el will simply be pushed onto the child elements
                 collection.
-        """
-        # XXX There is some redunancy between this and __lshift__.
-        # Also, shouldn't this redundent logic be put in the overrides
-        # element.append and element.insertbefore (which don't actually
-        # exist at the time of this writing).
-        if type(el) is str:
-            
-            # If we are appending a text node to a <script> tag, we
-            # don't want to do any HTML escaping. Escaping the contents
-            # of a <script> tag (e.g., JavaScript, JSON, etc) means the
-            # quotes and angle brakets would be garbled thus rending the
-            # script uninterpretable, e.g.,
-            # console.log(&#x27;Hello, world&#x27;)
-            if isinstance(self, script):
-                esc = False
-            else:
-                esc = True
-
-            el = text(el, esc=esc)
-
-        # XXX Comment this logic and add `sequence` as a new type in the
-        # docstring for el
-        pass_ = False
-        if isinstance(el, element):
-            pass_ = True
-        elif isinstance(el, elements):
-            pass_ = True
-        elif hasattr(el, '__iter__'):
-            if all(isinstance(x, element) for x in el):
-                pass_ = True
-
-        if not pass_:
-            raise TypeError('Invalid element type: ' + str(type(el)))
 
         self.elements += el
         return self
