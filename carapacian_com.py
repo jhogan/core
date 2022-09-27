@@ -272,6 +272,20 @@ class tickets(pom.page):
         #inp.oninput += self.inp_oninput2, span1
         #self.main += dom.hr(), span, dom.br(), span1, dom.br(), lbl, inp
 
+       ''' Multiple events, single widget '''
+       # XXX
+       
+       '''
+            <input 
+                data-blur-handler="inp_onfocuschange" 
+                data-blur-fragments="#xBGH5zf5WRmqyP_QT4l2vqw" 
+                data-focus-handler="inp_onfocuschange" 
+                data-focus-fragments="#xphe7_ybRSeSgxK_PGrPZ2A"
+            >
+            <div id="xphe7_ybRSeSgxK_PGrPZ2A"></div>
+            <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
+       '''
+
     def btnclicker_onclick(self, src, eargs):
         import primative
         eargs.html['p'].only.text = str(primative.datetime.utcnow())

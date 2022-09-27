@@ -9294,7 +9294,7 @@ class event(entities.event):
     and entities.entity objects need events. However, DOM object are
     unique in that their events, though triggered by the client, can be
     handled on the server side. This subclass of entities.event supports
-    that option.
+    that ability.
     """
 
     """
@@ -9320,22 +9320,22 @@ class event(entities.event):
     should be handled; in the above example, the 'click' event' of the
     <button> is being handled.  The data-<event>-handler attribute
     indicates which method on the page object is the server-side event
-    handler. The data-<event>-fragments attribute indicates the id
+    handler. The data-<event>-fragments attribute contain the id
     value(s) of the element's in the document that should be sent to the
-    server-side event handler. The element(s) outerHTML is sent. The
+    server-side event handler. The element(s)'s outerHTML is sent. The
     server-side handler is free to view and modifier these HTML
     fragments. The modified versions are returned to the browser and are
     used to replace the original version.
 
-    XXX Correct the below paragraph to indicate that the JavaScript
-    implementation exists (once it does).
+    In real browsers, this process is managed by the JavaScript that is
+    returned from pom.site._eventjs.  Additionally, a Python
+    implementation for this logic is available at
+    tester.browser._tab.element_event. This Python-only implementation
+    makes it possible to write automated tests to ensure events are
+    handled correctly.
 
-    This process will be managed by JavaScript in a real browser,
-    however, a Python implementation for this process already exists at
-    `tester.browser._tab.element_event`
-
-    This example shows two different <button>s sending their click event
-    to the same server-side event handler:
+    This example shows two different <button>s declared to send their
+    click event to the same server-side event handler:
 
         <main>
             <button 
@@ -9371,8 +9371,8 @@ class event(entities.event):
             <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
         </main>
 
-    Here, we have the onblur and onfocus event sent to the
-    inp_onfocuschange server side event handler. These different events
+    Here, we have the onblur and onfocus events sent to the
+    inp_onfocuschange server-side event handler. These different events
     are able to send different HTML fragments as can be seen above.
     """
     def __init__(self, el, name, *args, **kwargs):
