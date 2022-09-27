@@ -882,7 +882,7 @@ class _request:
                 size       =  self.size,
             )
 
-            # Conditionally assign theses hit attributes because of
+            # Conditionally assign these hit attributes because of
             # 6028ce62
             if ref := self.referer:
                 self._hit.url = ref

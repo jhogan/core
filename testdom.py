@@ -82,6 +82,7 @@ class dom_elements(tester.tester):
                     pass
                 else:
                     del x.attributes['id']
+
         htmlmin = dom.html(TestHtmlMin)
         rm_uuids(htmlmin)
 

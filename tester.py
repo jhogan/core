@@ -4,6 +4,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
+"The only way to go fast is to go well"
+# Robert C. Martin
+
 from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
