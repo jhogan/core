@@ -1278,6 +1278,11 @@ class page(tester.tester):
         self.eq(comment, textarea.first.text)
 
     def it_raises_im_a_teapot(self):
+        rec = None
+        def onlog(src, eargs):
+            nonlocal rec
+            rec = eargs.record
+
         ws = foonet()
 
         class pour(pom.page):
@@ -1294,6 +1299,7 @@ class page(tester.tester):
                         'Appearently, I am a tea pot'
                     )
 
+        logs.log().onlog += onlog
         pg = pour()
         ws.pages += pg
         tab = self.browser().tab()
@@ -1309,6 +1315,13 @@ class page(tester.tester):
         self.four(main['article.traceback>div'])
         self.one(res['main[data-path="/error"]'])
 
+        ''' Ensure the exception was logged '''
+        self.eq(
+            "418 I'm a teapot - Appearently, I am a tea pot", 
+            rec.message
+        )
+        
+        self.eq('ERROR', rec.levelname)
     def it_raises_404(self):
         class derpnets(pom.sites):
             pass

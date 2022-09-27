@@ -233,7 +233,9 @@ class application:
                 )
 
         except Exception as ex:
-            # XXX Should we log exceptions here?
+            # Log exception to syslog
+            logs.exception(ex)
+            
             # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
                 # Immediatly raise to tester's exception handler
