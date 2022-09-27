@@ -327,7 +327,7 @@ class attributes(entities.entities):
         if not isinstance(key, str):
             super().__setitem__(key, item)
             
-        for attr in self:
+        for attr in self._ls:
             if attr.name == key:
                 break
         else:
@@ -1417,10 +1417,11 @@ class element(entities.entity):
         untested functionality.
         """
 
-        # Set to a random identifier. Prepend an x because HTML5's
-        # specification dosen't allow id attributes to start with
-        # numbers.
-        self.id = 'x' + primative.uuid().base64
+        if not self.id:
+            # Set to a random identifier. Prepend an x because HTML5's
+            # specification dosen't allow id attributes to start with
+            # numbers.
+            self.id = 'x' + primative.uuid().base64
 
         if not recursive:
             return
