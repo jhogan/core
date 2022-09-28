@@ -630,13 +630,12 @@ class site(asset.asset):
                             )
                         }
                     }
-                };
-                // XXX Remove semicolons
+                }
 
                 // POST to the current URL
                 xhr.open("POST", window.location.href)
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.send(JSON.stringify(d));
+                xhr.setRequestHeader('Content-Type', 'application/json')
+                xhr.send(JSON.stringify(d))
             }
 
             // Once content has been loaded (DOMContentLoaded), we can
