@@ -264,19 +264,27 @@ class tickets(pom.page):
         #inp.oninput += self.inp_oninput2, span1
         #self.main += dom.hr(), span, dom.br(), span1, dom.br(), lbl, inp
 
-       ''' Multiple events, single widget '''
-       # XXX
-       
-       '''
-            <input 
-                data-blur-handler="inp_onfocuschange" 
-                data-blur-fragments="#xBGH5zf5WRmqyP_QT4l2vqw" 
-                data-focus-handler="inp_onfocuschange" 
-                data-focus-fragments="#xphe7_ybRSeSgxK_PGrPZ2A"
-            >
-            <div id="xphe7_ybRSeSgxK_PGrPZ2A"></div>
-            <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
-       '''
+        ''' Multiple events, single widget '''
+        span = dom.span()
+        span1 = dom.span()
+        lbl = dom.label('Enter only numbers: ')
+        inp = dom.input()
+        inp.oninput += self.inp_oninput3, span
+        inp.onblur += self.inp_onblur, span1
+        self.main += span, span
+        self.main += dom.hr(), lbl, dom.br(), span, dom.br(), inp, dom.br(), span
+
+
+        '''
+        <input 
+        data-blur-handler="inp_onfocuschange" 
+        data-blur-fragments="#xBGH5zf5WRmqyP_QT4l2vqw" 
+        data-focus-handler="inp_onfocuschange" 
+        data-focus-fragments="#xphe7_ybRSeSgxK_PGrPZ2A"
+        >
+        <div id="xphe7_ybRSeSgxK_PGrPZ2A"></div>
+        <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
+        '''
 
     def btnclicker_onclick(self, src, eargs):
         import primative
@@ -311,3 +319,15 @@ class tickets(pom.page):
 
         inp = src
         span.text = inp.value
+
+    def inp_oninput3(self, src, eargs):
+        span = eargs.html['span'].first
+
+        inp = src
+        span.text = inp.value
+
+    def inp_onblur(self, src, eargs):
+        span = eargs.html['span'].first
+        inp = src
+
+        span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
