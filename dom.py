@@ -1049,11 +1049,7 @@ class elements(entities.entities):
             # etc) means the quotes and angle brakets would be
             # garbled thus rending the script uninterpretable, e.g.,
             # console.log(&#x27;Hello, world&#x27;)
-            if isinstance(self, script):
-                esc = False
-            else:
-                esc = True
-
+            esc = not isinstance(self.parent, script)
             return text(txt, esc=esc)
 
         return txt

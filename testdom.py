@@ -408,7 +408,15 @@ class test_comment(tester.tester):
         expect = '<!--%s-->' % txt
         self.eq(expect, com.html)
 
-class dom_paragraph(tester.tester):
+class dom_script(tester.tester):
+    def it_does_not_escape(self):
+        body = 'A <string> with HTML "escapable" characters'
+
+        script = dom.script(body)
+        expect = f'<script>{body}</script>'
+        self.eq(expect, script.html)
+
+class dom_p(tester.tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
         hex1, hex2 = [x.hex for x in (uuid4(), uuid4())]
