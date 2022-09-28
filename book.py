@@ -4691,11 +4691,12 @@ with book('Hacking Carapacian Core'):
         with section ('`date` attributes'):
           print('''
             The `date` attribute is used for date values which do not
-            require a time component. `date` attributes are stored in
-            MySQL as `DATE` data types thus a valid date can be between
-            between '1000-01-01' to '9999-12-31'. This is convenient
-            because it means that the ORM is free of any Y2K or Y38 
-            problems (at least not for a really long time).
+            require a time component. `date` attributes default to
+            `None`.`date` attributes are stored in MySQL as `DATE` data
+            types thus a valid date can be between between '1000-01-01'
+            to '9999-12-31'. This is convenient because it means that
+            the ORM is free of any Y2K or Y38 problems (at least not for
+            a really long time).
 
             A nice feature of the `date` attribute is that it can parse
             date stings (using the
@@ -4745,7 +4746,27 @@ with book('Hacking Carapacian Core'):
           ''')
 
         with section ('`datetime` attributes'):
-          ...
+          print('''
+            `datetime` attributes are used whenever you need to store a
+            precices date and time together. They are based on the
+            `datetime` class in Python. `datetime` attributes defaults
+            to `None` and can store up to 6 digits of microsecond
+            precision. They have a minimum value of '1000-01-01
+            00:00:00' to '9999-12-31 23:59:59'. Their database data type
+            is `DATETIME` which imposes this range (Python's `datetime`
+            can be as low a the 1 CE).
+
+            An important feature of `datetime` attributes is that they
+            are always UTC. If the attribute is set to a datetime that
+            has no timezone information, the UTC timezone will
+            automatically be added. If the datetime has a non-UTC
+            timezone, it will be converted to UTC. You can depend on the
+            ORM given you a UTC timezone. Of course, the end user will
+            usually want want to work with datetimes in their own
+            timezones. It is up to the user interface logic to convert
+            UTC timezones to the user's local timezone.
+
+          ''')
 
         with section ('`timespan` attributes'):
           ...
