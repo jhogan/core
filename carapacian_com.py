@@ -215,19 +215,11 @@ class tickets(pom.page):
         btn1 = dom.button('Clickme One')
         btn2 = dom.button('Clickme Two')
         p = dom.p()
-        #p1 = dom.p()
 
         btn1.onclick += self.btnclicker_onclick, p
-
-        # XXX This is a bug in the event handling logic. If we add the
-        # same element (p) as a fragment twice, p will get a new `id`
-        # value. This means the original event handler (in the
-        # JavaScript code) will reference a fragment that doesn't exist
-        # anymore because the fragment's id has changed.
         btn2.onclick += self.btnclicker_onclick, p
-        #btn2.onclick += self.btnclicker_onclick, p1
 
-        self.main += btn1, btn2, p # , p1
+        self.main += btn1, btn2, p
 
         ''' No fragment '''
         btn3 = dom.button('No fragments')
