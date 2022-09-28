@@ -7467,7 +7467,8 @@ class orm_(tester):
         # Test invalid date times
         art = art.getvalid()
         
-        # Python can do a 1 CE, but MySQL can't so this should break validation.
+        # Python can do a 1 CE, but MySQL can't so this should break
+        # validation.
         art.dob = datetime(1, 1, 1)
         self.one(art.brokenrules)
         self.broken(art, 'dob', 'fits')
