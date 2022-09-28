@@ -1070,12 +1070,20 @@ class elements(entities.entities):
         pass_ = False
         if isinstance(obj, element):
             pass_ = True
+            if obj in self:
+                raise ValueError('Non uniq')
         elif hasattr(obj, '__iter__'):
             # NOTE This could be elements, lists or generators.
             pass_ = True
+            for el in obj:
+                if obj in self:
+                    raise ValueError('Non uniq')
 
         if not pass_:
             raise TypeError('Invalid element type: ' + str(type(obj)))
+
+        if obj in self:
+            raise ValueError('Non uniq')
 
     def append(self, obj, *args, **kwargs):
         """ Appends an element to this object's `elements` collection.
@@ -1956,6 +1964,9 @@ class element(entities.entity):
                 The el will simply be unshifted onto the child elements
                 collection.
         """
+        # XXX Prevent the same element from being added twice. Write
+        # tests. Explain why this needs to happen here instead of in
+        # elements.append
         self.elements << el
         return self
 
@@ -1977,6 +1988,9 @@ class element(entities.entity):
                 collection, each element in the sequence will be
                 appended to the child elements collection.
         """
+        # XXX Prevent the same element from being added twice. Write
+        # tests. Explain why this needs to happen here instead of in
+        # elements.append
         self.elements += el
         return self
 
