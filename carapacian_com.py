@@ -271,7 +271,6 @@ class tickets(pom.page):
         inp = dom.input()
         inp.oninput += self.inp_oninput3, span
         inp.onblur += self.inp_onblur, span1
-        self.main += span, span
         self.main += dom.hr(), lbl, dom.br(), span, dom.br(), inp, dom.br(), span
 
 

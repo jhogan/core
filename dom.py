@@ -1457,10 +1457,21 @@ class element(entities.entity):
         el._setparent(self)
 
     def _elements_onbefore(self, src, eargs):
-        """ XXX
+        """ Occurs before an element is added to this element's
+        `elements` collection.
         """
+        # Raise exception if the element being added already exists in
+        # self._elements. 
+        #
+        # NOTE We need to use the private _elements collection because
+        # an infinite recursion exception will occur otherwise. This is
+        # because the subclasses of element override its `elements`
+        # collection. In side these overrides, children are added thus
+        # causing us to get here. Then, calling `self.elements` here
+        # recurses back into the override, thus causing the infinite
+        # recursion.
         if hasattr(self, '_elements'):
-            if eargs.entity in self._elements._ls:
+            if eargs.entity in self._elements:
                 raise ValueError(
                     'Cannot add the same child node twice'
                 )
@@ -1967,9 +1978,6 @@ class element(entities.entity):
                 The el will simply be unshifted onto the child elements
                 collection.
         """
-        # XXX Prevent the same element from being added twice. Write
-        # tests. Explain why this needs to happen here instead of in
-        # elements.append
         self.elements << el
         return self
 
@@ -1991,9 +1999,6 @@ class element(entities.entity):
                 collection, each element in the sequence will be
                 appended to the child elements collection.
         """
-        # XXX Prevent the same element from being added twice. Write
-        # tests. Explain why this needs to happen here instead of in
-        # elements.append
         self.elements += el
         return self
 
