@@ -1178,6 +1178,7 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
+    # TODO Put beneath constructor
     @staticmethod
     def _getblocklevelelements():
         """ Returns a tuple of block-level, HTML5 ``element`` classes
