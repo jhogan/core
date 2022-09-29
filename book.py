@@ -4726,7 +4726,7 @@ with book('Hacking Carapacian Core'):
             # However, the returned value will also be equivalent to a
             # regular Python `date` object with the same date
             # parameters 
-            self.eq(date(2006, 1, 1), per.dob)
+            elf.eq(date(2006, 1, 1), per.dob)
 
 
             # We can also assign a `date` object or a `primative.date`
@@ -4748,24 +4748,32 @@ with book('Hacking Carapacian Core'):
         with section ('`datetime` attributes'):
           print('''
             `datetime` attributes are used whenever you need to store a
-            precices date and time together. They are based on the
-            `datetime` class in Python. `datetime` attributes defaults
+            precices date and time together. They are based on Python's
+            `datetime` class. `datetime` attributes default
             to `None` and can store up to 6 digits of microsecond
-            precision. They have a minimum value of '1000-01-01
+            precision. They have a range of '1000-01-01
             00:00:00' to '9999-12-31 23:59:59'. Their database data type
             is `DATETIME` which imposes this range (Python's `datetime`
-            can be as low a the 1 CE).
+            can be as low as 1 CE). This expansive range ensures that
+            datetime values are not prone to the Y2038 bug (using
+            MySQL's `TIMESTAMP` data type currently would make
+            applications using the ORM subject to the Y2038 problem).
 
             An important feature of `datetime` attributes is that they
-            are always UTC. If the attribute is set to a datetime that
-            has no timezone information, the UTC timezone will
-            automatically be added. If the datetime has a non-UTC
-            timezone, it will be converted to UTC. You can depend on the
-            ORM given you a UTC timezone. Of course, the end user will
-            usually want want to work with datetimes in their own
-            timezones. It is up to the user interface logic to convert
-            UTC timezones to the user's local timezone.
-
+            are always UTC. If the attribute is set to a datetime object
+            that has no time zone information, the UTC time zone will be
+            added. If the datetime has a non-UTC time zone, the value
+            will be converted to UTC and the UTC time zone will be added
+            to the value. (Note that time zones aren't stored in the
+            database, they are just assumed to be UTC.) Through this,
+            the ORM always stores datetime values as UTC. Of course, the
+            end user will usually want want to work with datetimes in
+            their own time zone. It is up to the user interface's logic
+            to capture the user's time zone so that time zone aware
+            datetimes are given to the ORM.  Likewise, when presenting a
+            datetime to the user, the user interface logic must make
+            sure that the datetime is converted to the user's local time
+            zone from UTC (if necessary).  
           ''')
 
         with section ('`timespan` attributes'):
