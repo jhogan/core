@@ -106,7 +106,46 @@ class dom_elements(tester.tester):
         bs = html['strong']
         self.zero(bs)
 
-class dom_element(tester.tester):
+class element(tester.tester):
+    def it_raises_when_same_child_is_added_more_than_once(self):
+        ''' Add child to element '''
+        p = dom.p()
+        span = dom.span()
+
+        def append():
+            nonlocal p
+            p += span
+
+        append()
+
+        self.expect(ValueError, append)
+
+        def append():
+            nonlocal p
+            p << span
+
+        self.expect(ValueError, append)
+
+        ''' elements collections themselves should probably not be
+        constrained from having identical elements added more than once
+        '''
+        ps = dom.ps()
+        span = dom.span()
+
+        ps += span
+        ps += span
+        ps << span
+        ps.append(span)
+        ps.unshift(span)
+        ps.insert(0, span)
+        ps.insertbefore(0, span)
+        ps.insertafter(0, span)
+        ps.push(span)
+
+        self.nine(ps)
+        self.all(type(x) is dom.span for x in ps)
+
+        
     def it_raises_when_body_is_given_to_void_elements(self):
         ''' We want to get a ValueError when we add a body argument to
         an element that is marked `isvoid`. Elements that are "void",

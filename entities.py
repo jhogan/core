@@ -1197,10 +1197,13 @@ class entities:
 
         :param: e entity: The entity to be inserted.
         """
+        eargs = entityaddeventargs(e)
+        self.onbeforeadd(self, eargs)
+
         # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
-            self.onadd(self, entityaddeventargs(e))
+            self.onadd(self, eargs)
         except AttributeError as ex:
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
