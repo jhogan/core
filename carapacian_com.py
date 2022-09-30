@@ -215,11 +215,12 @@ class tickets(pom.page):
         btn1 = dom.button('Clickme One')
         btn2 = dom.button('Clickme Two')
         p = dom.p()
+        p1 = dom.p()
 
         btn1.onclick += self.btnclicker_onclick, p
-        btn2.onclick += self.btnclicker_onclick, p
+        btn2.onclick += self.btnclicker_onclick, p1
 
-        self.main += btn1, btn2, p
+        self.main += btn1, btn2, p, p1
 
         ''' No fragment '''
         btn3 = dom.button('No fragments')
@@ -271,19 +272,12 @@ class tickets(pom.page):
         inp = dom.input()
         inp.oninput += self.inp_oninput3, span
         inp.onblur += self.inp_onblur, span1
-        self.main += dom.hr(), lbl, dom.br(), span, dom.br(), inp, dom.br(), span
-
-
-        '''
-        <input 
-        data-blur-handler="inp_onfocuschange" 
-        data-blur-fragments="#xBGH5zf5WRmqyP_QT4l2vqw" 
-        data-focus-handler="inp_onfocuschange" 
-        data-focus-fragments="#xphe7_ybRSeSgxK_PGrPZ2A"
-        >
-        <div id="xphe7_ybRSeSgxK_PGrPZ2A"></div>
-        <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
-        '''
+        self.main += (
+            dom.hr(), 
+            lbl, dom.br(), span, dom.br(), 
+            inp, dom.br(),
+            span1
+        )
 
     def btnclicker_onclick(self, src, eargs):
         import primative
