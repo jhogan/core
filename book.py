@@ -4777,6 +4777,62 @@ with book('Hacking Carapacian Core'):
           ''')
 
         with section ('`timespan` attributes'):
+          print('''
+            Often times when writing entity classes, you will need to
+            declare a **begin** and **end** datetimes. For example, a
+            `user` class may have a `begin` and `end` field which
+            indicate when the user is active.
+
+              class user(orm.entity):
+                  # The date the user became active
+                  begin = datetime
+
+                  # The date the user became inactive
+                  end = datetime
+
+            This basic need for to indicate a general time range for an
+            entity is so common that it the framework provides a
+            shorthand syntax to denote the above:
+          ''')
+
+          with listing('Using the `timespan` attribute'):
+            from orm import timespan
+
+            class user(orm.entity):
+                span = timespan
+
+          print('''
+            The above declaration of `user` is equivalent to the
+            original declaration in that it gives us a `begin` and `end`
+            datetime attributes.
+          ''')
+
+          with listing('Demonstrating the `timespan` attribute'):
+            
+            usr = user()
+            usr.begin = '2001-01-01 10:10 PM'
+            usr.end = '2012-12-12 12:12 PM'
+            type(primative.datetime, usr.begin)
+            type(primative.datetime, usr.end)
+
+          print('''
+            `timespan` attributes can also tell us if a given date is
+            falls within the date range. We declared the name of the
+            `timespan` to be simply `span`. We can ask whether on not a
+            given datetime falls within the `span`.
+          ''')
+
+          with listing(
+            'Demonstrating the `in` operator with the `timespan` attribute'
+          ):
+            true('2010-10-10' in usr.span)
+            fals('2020-10-10' in usr.span)
+            
+          print('''
+            
+          ''')
+
+        with section ('`datespan` attributes'):
           ...
 
         with section ('`span` attributes'):
