@@ -35,6 +35,7 @@ from pprint import pprint
 import apriori
 import auth
 import dom
+import ecommerce
 import entities
 import exc
 import file
@@ -42,7 +43,7 @@ import json
 import logs
 import orm
 import os
-import party, ecommerce
+import party
 import pdb
 import pom
 import primative
@@ -235,7 +236,7 @@ class application:
         except Exception as ex:
             # Log exception to syslog
             logs.exception(ex)
-            
+
             # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
                 # Immediatly raise to tester's exception handler
