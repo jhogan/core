@@ -57,7 +57,7 @@ TODOs:
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
 
-    TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
+    TODO Add bytes(n) as data type. Having to type `bytes, 16, 16` is not
     fun.
     
     FIXME:1de11dc0 There is an issue with the way superentities
@@ -178,7 +178,7 @@ TODOs:
         assert direct_report.position_positions.ispopulated
 
     TODO Instead of ``decimal``, we may want to create a ``currency``
-    datatype. Currently, it's assumed that the values stored in decimal
+    data type. Currently, it's assumed that the values stored in decimal
     attributes are dollars, but obviously this will not always be the
     case.
 
@@ -365,8 +365,8 @@ class span:
     The user class will now expose three attributes:
 
         u = user()
-        assert type(u.beginactive) is primative date
-        assert type(u.endactive) is primative date
+        assert type(u.beginactive) is primative.date
+        assert type(u.endactive) is primative.date
         assert type(u.active) is datespan
 
     The `active` atttribute is a ``datespan`` object that exposes the
@@ -386,8 +386,8 @@ class span:
     field on the entity.
 
     The above used the ``datespan`` subclass. A ``timespan`` subclass is
-    similar but uses a datetime datatype instead of a date datatype to
-    include the time.
+    similar but uses a datetime data type instead of a date data type in
+    order to include the time.
     """
     
     def __init__(self, prefix=None, suffix=None, e=None):
@@ -528,8 +528,8 @@ class span:
         setattr(self.entity, self.str_end, v)
 
     def __contains__(self, dt):
-        """ Answers the qustion: is ``dt`` within this timespan. If
-        true, return True; False otherwise.
+        """ Answers the qustion: is ``dt`` within (inclusive) this
+        timespan. If so, return True, otherwise return False.
 
         :param: dt datetime: The datetime in question.
         """
@@ -555,13 +555,13 @@ class span:
         return '%s(begin=%s, end=%s)' % (name, begin, end)
 
 class datespan(span):
-    """ A time span where that begins with a date datatype and ends with
-    a date datatype. See the super class ``span`` for more.
+    """ A time span where that begins with a date data type and ends with
+    a date data type. See the super class ``span`` for more.
     """
 
 class timespan(span):
-    """ A time span where that begins with a datetime datatype and ends
-    with a datetime datatype. See the super class ``span`` for more.
+    """ A time span that begins with a datetime data type and ends
+    with a datetime data type. See the super class ``span`` for more.
     """
 
 class undef:
