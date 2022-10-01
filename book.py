@@ -4778,7 +4778,7 @@ with book('Hacking Carapacian Core'):
 
         with section ('`timespan` attributes'):
           print('''
-            Often times when writing entity classes, you will need to
+            Oftentimes when writing entity classes, you will need to
             declare a **begin** and **end** datetimes. For example, a
             `user` class may have a `begin` and `end` field which
             indicate when the user is active.
@@ -4791,15 +4791,16 @@ with book('Hacking Carapacian Core'):
                   end = datetime
 
             This basic need for to indicate a general time range for an
-            entity is so common that it the framework provides a
-            shorthand syntax to denote the above:
+            entity is so common that the framework provides a
+            shorthand syntax that is equivalent to the above:
           ''')
 
           with listing('Using the `timespan` attribute'):
             from orm import timespan
 
             class user(orm.entity):
-                span = timespan
+              # A timesspan to indicate when the user account was active
+              active = timespan
 
           print('''
             The above declaration of `user` is equivalent to the
@@ -4816,24 +4817,70 @@ with book('Hacking Carapacian Core'):
             type(primative.datetime, usr.end)
 
           print('''
-            `timespan` attributes can also tell us if a given date is
-            falls within the date range. We declared the name of the
-            `timespan` to be simply `span`. We can ask whether on not a
+            `timespan` attributes can also tell us if a given date
+            falls within this date range. We declared the name of the
+            `timespan` to be `active`. We can ask whether on not a
             given datetime falls within the `span`.
           ''')
 
           with listing(
-            'Demonstrating the `in` operator with the `timespan` attribute'
+            'Demonstrating the `in` operator with the '
+            '`timespan` attribute'
           ):
-            true('2010-10-10' in usr.span)
-            fals('2020-10-10' in usr.span)
+            true('2010-10-10' in usr.active)
+            fals('2020-10-10' in usr.active)
             
           print('''
-            
+            Usually, an entity will need only one timespan. However, if
+            you need multiple timespans, you can add a `prefix` to
+            additional timespans attributes:
           ''')
 
-        with section ('`datespan` attributes'):
-          ...
+          with listing('Using multiple timespans'):
+            class user(orm.entity):
+              # A timesspan to indicate when the user account was active
+              active = timespan
+
+              # A timespan to indicate when the user subscribed to the
+              # for-pay services
+              subscribed = timespan(prefix='subscribed')
+
+            usr = user()
+
+            # Set the datetime range for when the user was *active*
+            usr.begin = '2001-01-01 10:10 PM'
+            usr.end = '2012-12-12 12:12 PM'
+
+            # Set the datetime range for when the user was *subscribe*
+            usr.subscribedbegin = '2001-02-01 10:10 PM'
+            usr.subscribedend = '2012-12-12 12:12 PM'
+
+          print('''
+          The above syntak works find, but an even better way to access
+          the attributes would be like the following
+          ''')
+
+          with listing('Using the timespan attribute'):
+            # Set the datetime range for when the user was *active*
+            usr.active.begin = '2001-01-01 10:10 PM'
+            usr.active.end = '2012-12-12 12:12 PM'
+
+            # Set the datetime range for when the user was *subscribe*
+            usr.subscribed.begin = '2001-02-01 10:10 PM'
+            usr.subscribed.begin = '2012-12-12 12:12 PM'
+
+          print('''
+            The above takes advantage of the fact that the timespans can
+            be distinguished by the attritubet names (i.e., `active` and
+            `subscribed`)
+
+            The prefix is still needed because the ORM wants to ensure
+            that the less verbose notation works. Note that a `suffix`
+            parameter is available which can be used to append a suffix
+            to the end of the attribute name. Thus, had we used `suffix`
+            instead of `prefix`, the attributes would have been
+            `usr.beginsubscribed` and usr.endsubscribed'.
+          ''')
 
         with section ('`span` attributes'):
           ...
