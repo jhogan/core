@@ -60,6 +60,7 @@ def model():
     import product
     import shipment
     import third
+    import carapacian_com
 
 class requirements(orm.entities):  pass
 class logs(orm.entities):          pass
