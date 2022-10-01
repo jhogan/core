@@ -9103,7 +9103,7 @@ class orm:
             e.orm.recreate()
             
     def _recreate(self, 
-        cur=None, recursive=False, ascend=False, guestbook=None
+        cur=None, recursive=False, ascend=False, descend=True, guestbook=None
     ):
         """ Drop and recreate the table for the orm ``self``. 
 
@@ -9182,6 +9182,12 @@ class orm:
                 if sup := self.super:
                     sup.orm.recreate(
                         cur=cur, ascend=True, guestbook=guestbook
+                    )
+
+            if descend:
+                for sub in self.subentities:
+                    sub.orm.recreate(
+                        cur=cur, ascend=True, guestbook=guestbook,
                     )
                             
         except Exception as ex:
