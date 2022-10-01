@@ -370,6 +370,24 @@ class tester(entities.entity):
         # Rebuild tables in `mods`
         if mods and self.rebuildtables:
             logs.info(f'Rebuilding tables for {mods}')
+            
+            for mod in mods:
+                mod = __import__(mod,  globals(), locals())
+                print(mod)
+
+                for name, obj in inspect.getmembers(mod):
+                    try:
+                        mro = obj.__mro__
+                    except AttributeError:
+                        continue
+                    else:
+                        if orm.entity in mro:
+                            obj.orm.recreate(descend=True)
+                        
+
+
+
+            return
             # Get the list of orm.entity classes.
             es = orm.orm.getentityclasses(includeassociations=True)
 
@@ -377,7 +395,7 @@ class tester(entities.entity):
             for e in es:
                 # DROP then CREATE the table for that entity
                 if e.__module__ in mods:
-                    e.orm.recreate()
+                    e.orm.recreate(recursive=True)
 
         # Create and set principles at ORM level for testing
         sec = orm.security()
