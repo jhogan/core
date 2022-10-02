@@ -4790,9 +4790,10 @@ with book('Hacking Carapacian Core'):
                   # The date the user became inactive
                   end = datetime
 
-            This basic need for to indicate a general time range for an
-            entity is so common that the framework provides a
-            shorthand syntax that is equivalent to the above:
+            This basic need to indicate a general time range for an
+            entity is so common that the framework provides a shorthand
+            that can do the above with only one attribute declaration
+            instead of two:
           ''')
 
           with listing('Using the `timespan` attribute'):
@@ -4804,7 +4805,7 @@ with book('Hacking Carapacian Core'):
 
           print('''
             The above declaration of `user` is equivalent to the
-            original declaration in that it gives us a `begin` and `end`
+            original declaration in that we still get `begin` and `end`
             datetime attributes.
           ''')
 
@@ -4817,9 +4818,12 @@ with book('Hacking Carapacian Core'):
             type(primative.datetime, usr.end)
 
           print('''
+            The name `active` doesn't really matter to much at this
+            point. We still get the `begin` and `end` attributes.
+
             `timespan` attributes can also tell us if a given date
-            falls within this date range. We declared the name of the
-            `timespan` to be `active`. We can ask whether on not a
+            falls within this date range. Since we declared the name of
+            the `timespan` to be `active`, we can ask whether on not a
             given datetime falls within the `span`.
           ''')
 
@@ -4856,7 +4860,7 @@ with book('Hacking Carapacian Core'):
             usr.subscribedend = '2012-12-12 12:12 PM'
 
           print('''
-          The above syntak works find, but an even better way to access
+          The above syntax works fine, but an even better way to access
           the attributes would be like the following
           ''')
 
@@ -4871,7 +4875,7 @@ with book('Hacking Carapacian Core'):
 
           print('''
             The above takes advantage of the fact that the timespans can
-            be distinguished by the attritubet names (i.e., `active` and
+            be distinguished by the attribute names (i.e., `active` and
             `subscribed`)
 
             The prefix is still needed because the ORM wants to ensure
@@ -4882,10 +4886,39 @@ with book('Hacking Carapacian Core'):
             `usr.beginsubscribed` and usr.endsubscribed'.
           ''')
 
-        with section ('`span` attributes'):
-          ...
+        with section ('`datespan` attributes'):
+          print('''
+            The `datespan` attribute works just like the timespan
+            attribute except that the `begin` and `end` attributes that
+            are provided are of type `date` instead of `datetime`
+            &mdash; thus `datespan`s don't store time information; only
+            dates.
+          ''')
 
+          with listing('Using multiple datespan'):
+            from orm import datespan
 
+            class user(orm.entity):
+              # A timesspan to indicate when the user account was active
+              active = datespan
+
+              # A timespan to indicate when the user subscribed to the
+              # for-pay services
+              subscribed = datespan(prefix='subscribed')
+
+            usr = user()
+
+            # Set the date range for when the user was *active*
+            usr.active.begin = '2001-01-01'
+            usr.active.end = '2012-12-12'
+            eq(primative.date(2001, 01, 01, usr.active.end)
+            eq(primative.date(2012, 12, 12, usr.active.end)
+
+            # Set the date range for when the user was *subscribe*
+            usr.subscribed.begin = '2001-02-01'
+            usr.subscribed.end = '2012-12-12'
+            eq(primative.date(2001, 02, 01, usr.subscribed.end)
+            eq(primative.date(2012, 12, 12, usr.subscribed.end)
 
 
     with section('Custom properties'):
