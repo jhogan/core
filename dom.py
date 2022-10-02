@@ -1472,8 +1472,11 @@ class element(entities.entity):
         # recursion.
         if hasattr(self, '_elements'):
             if eargs.entity in self._elements:
+                rent = type(self._elements.parent)
+                child = type(eargs.entity)
                 raise ValueError(
-                    'Cannot add the same child node twice'
+                    f'Cannot add the same child node ({child}) twice to '
+                    f'parent {rent}'
                 )
         
     def __getitem__(self, ix):
