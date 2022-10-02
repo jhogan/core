@@ -1967,6 +1967,9 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def __contains__(self, el):
+        return el in self.elements
+
     def __lshift__(self, el):
         """ Overrides the << operator to insert ``el` at the begining of
         this element's `elements` collection.
