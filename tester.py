@@ -385,7 +385,20 @@ class tester(entities.entity):
                         continue
                     else:
                         if orm.entity in mro:
-                            obj.orm.recreate(descend=True)
+                            cls.orm.recreate(descend=True)
+
+                        if cls is ecommerce.user:
+                            try:
+                                # If we have rebuilt the users table, we
+                                # will want to invalidate reference to
+                                # user objects
+                                del ecommerce.users._root
+                            except AttributeError:
+                                # ecommerce.users._root is
+                                # monkey-patched on memoization, so it
+                                # want necessarily be there (see
+                                # ecommerce.users.root)
+                                pass
                         
         # Create and set principles at ORM level for testing
         sec = orm.security()
