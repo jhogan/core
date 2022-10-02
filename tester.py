@@ -373,30 +373,20 @@ class tester(entities.entity):
             
             for mod in mods:
                 mod = __import__(mod,  globals(), locals())
-                print(mod)
+                logs.info(f'Rebulidng for module: {mod}')
+                
 
-                for name, obj in inspect.getmembers(mod):
+                for _, cls in inspect.getmembers(mod):
                     try:
-                        mro = obj.__mro__
+                        mro = cls.__mro__
                     except AttributeError:
+                        # Many member of a module (basically anything
+                        # that's not a class) will not have a __mro__.
                         continue
                     else:
                         if orm.entity in mro:
                             obj.orm.recreate(descend=True)
                         
-
-
-
-            return
-            # Get the list of orm.entity classes.
-            es = orm.orm.getentityclasses(includeassociations=True)
-
-            # For each orm.entity class
-            for e in es:
-                # DROP then CREATE the table for that entity
-                if e.__module__ in mods:
-                    e.orm.recreate(recursive=True)
-
         # Create and set principles at ORM level for testing
         sec = orm.security()
         sec.user       = user  if user  else self.user
