@@ -28,7 +28,7 @@ def clear():
 
     party.company._carapacian = None
 
-class test_bot(tester.tester):
+class bot_(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'bot', 'message', 'apriori', 'party', 'ecommerce',
         super().__init__(mods=mods, *args, **kwargs)

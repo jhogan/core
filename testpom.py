@@ -663,6 +663,8 @@ class page(tester.tester):
             import carapacian_com
             carapacian_com.site.orm.recreate()
 
+        # XXX Do we need this now that we descend on table recreation
+        # above?
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
         party.company.orm.recreate(ascend=True)
