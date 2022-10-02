@@ -9679,8 +9679,13 @@ class orm:
         #
 
         # If the `id` exists, we should only get one record back from
-        # the database. If that's not the case, raise a
-        # db.RecordNotFoundError.
+        # the database. If that's not the case, raise
+        # RecordNotFoundError.
+        if not ress.issingular:
+            raise db.RecordNotFoundError(
+                'Unable to find record for '
+                f'{type(self.instance)}:{id.hex}'
+            )
         ress.demandhasone()
 
         # We are only interested in the first
