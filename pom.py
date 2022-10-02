@@ -1667,8 +1667,16 @@ class page(dom.html):
 
         self.main._setparent(None)
 
-        self.body += self.main
-        self.body += self.sidebars
+        main = self.main
+        body = self.body
+        sbs = self.sidebars
+
+        if main not in body:
+            body += main
+
+        if sbs not in body:
+            body += sbs
+
         return els
 
     @property
