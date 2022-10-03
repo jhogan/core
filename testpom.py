@@ -657,12 +657,6 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-        # XXX Do we need this now that we descend on table recreation
-        # above?
-        # Unconditionally recreate foonet's tables and supers
-        foonet.orm.recreate(ascend=True)
-        party.company.orm.recreate(ascend=True)
-
         # Clear radix cache
         with suppress(AttributeError):
             del file.directory._radix
