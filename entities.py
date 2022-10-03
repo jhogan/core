@@ -1274,7 +1274,7 @@ class entities:
         self.clear()
 
     def __contains__(self, e):
-        """ Returns True if ``e`` is in ``es``::
+        """ Returns True if e is in self:
 
             assert e not in es
 
@@ -1282,7 +1282,21 @@ class entities:
 
             assert e in es
 
-        :param e entity: The entity being sought.
+        :param e entity|str|int|iterable: The entity being sought.
+            if entity:
+                Simply return True if the entity is in self.
+
+            if iterable:
+                Iterate over each entity. If all entity are in self,
+                return True, False otherwise.
+
+            if int:
+                Use e as an index value. If the index is found, return
+                True.
+
+            if str:
+                Detremine if an entity in self with an `id` or `name`
+                attribute equals e. If so, return True, False otherwise.
         """
         if type(e) in (int, str):
             e = self(e)
