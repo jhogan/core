@@ -4776,7 +4776,7 @@ with book('Hacking Carapacian Core'):
             zone from UTC (if necessary).  
           ''')
 
-        with section ('`timespan` attributes'):
+        with section ('`timespan` attributes', id='39672a76'):
           print('''
             Oftentimes when writing entity classes, you will need to
             declare a **begin** and **end** datetimes. For example, a
@@ -4892,17 +4892,18 @@ with book('Hacking Carapacian Core'):
             attribute except that the `begin` and `end` attributes that
             are provided are of type `date` instead of `datetime`
             &mdash; thus `datespan`s don't store time information; only
-            dates.
+            dates. See the section on [`timespan attributes`](#39672a76)
+            for more.
           ''')
 
-          with listing('Using multiple datespan'):
+          with listing('Using datespan'):
             from orm import datespan
 
             class user(orm.entity):
-              # A timesspan to indicate when the user account was active
+              # A datespan to indicate when the user account was active
               active = datespan
 
-              # A timespan to indicate when the user subscribed to the
+              # A datespan to indicate when the user subscribed to the
               # for-pay services
               subscribed = datespan(prefix='subscribed')
 
@@ -4911,15 +4912,14 @@ with book('Hacking Carapacian Core'):
             # Set the date range for when the user was *active*
             usr.active.begin = '2001-01-01'
             usr.active.end = '2012-12-12'
-            eq(primative.date(2001, 01, 01, usr.active.end)
-            eq(primative.date(2012, 12, 12, usr.active.end)
+            eq(primative.date(2001, 01, 01), usr.active.end)
+            eq(primative.date(2012, 12, 12), usr.active.end)
 
             # Set the date range for when the user was *subscribe*
             usr.subscribed.begin = '2001-02-01'
             usr.subscribed.end = '2012-12-12'
-            eq(primative.date(2001, 02, 01, usr.subscribed.end)
-            eq(primative.date(2012, 12, 12, usr.subscribed.end)
-
+            eq(primative.date(2001, 02, 01), usr.subscribed.end)
+            eq(primative.date(2012, 12, 12), usr.subscribed.end)
 
     with section('Custom properties'):
       ...
