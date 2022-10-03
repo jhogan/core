@@ -337,9 +337,17 @@ class application:
                 # str(ex) through html.escape(). 
 
                 # TODO Add traceback to output
-                res.body = dom.dedent('''
-                <p>Error processing exception: %s</p>
-                ''' % str(ex))
+                # TODO Add tests to ensure excepiton messages are
+                # escaped properly
+                cls = type(ex).__name__
+                msg = html.escape(str(ex))
+                res.body = dom.dedent(
+                    f'''
+                        <p>
+                            <strong>{cls}</strong>: {msg}
+                        </p>
+                    '''
+                )
 
         finally:
             if not break_:
