@@ -1301,6 +1301,9 @@ class entities:
         if type(e) in (int, str):
             e = self(e)
 
+        elif hasattr(e, '__iter__'):
+            return len(e) and all(x in self for x in e)
+
         if self.index:
             return self.indexes['identity'](e).ispopulated
 
