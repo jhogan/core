@@ -115,11 +115,11 @@ class site(asset.asset):
 
     def _ensure(self):
         """ Ensure that the site object is stored in the database as
-        well as it's proprietor and its association with its proprietor.
+        well as its proprietor and its association with its proprietor.
         Normaly, these data will need to be saved once.
 
         This method is called by the constructor to ensure that every
-        time a site is instantiated, it's data is saved in the database.
+        time a site is instantiated, its data is saved in the database.
         """
 
         # Only _ensure subtypes of `site`

@@ -158,7 +158,6 @@ class pom_menu_items(tester.tester):
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
 
-
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
         mnu.items.pretty, etc. were returning the same HTML but with
