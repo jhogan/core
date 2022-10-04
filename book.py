@@ -3272,939 +3272,28 @@ with book('Hacking Carapacian Core'):
           entity.
         ''')
 
-    with section('Using ORM entities collections'):
-        with section(
-          'Collecting and saving with ORM entities collections'
-        ):
-          print('''
-            So far we have worked with individual entity objects. As you may
-            remember from the [Class complement](#547592d9) section, each
-            entity class requires a corresponding entities collection class.
-            Earlier, we had created a `dogs` collection class to serve as
-            the complement to the `dog` entity class. We can use that class
-            to collect `dog` entity objects and use the collection's
-            `save()` method to save all the collected objects.
-          ''')
-
-            with listing():
-              # Create a dogs collection
-              ds = dogs()
-
-              # Create and collect three dog entity objects
-              ds += dog()
-              ds.last.name = 'Rex'
-
-              ds += dog()
-              ds.last.name = 'Bandit'
-
-              ds += dog()
-              ds.last.name = 'Benji'
-
-              # Save the dogs
-              ds.save()
-
-              # Assert that the dogs made it to the database
-              for d in ds:
-                expect(None, d.orm.reloaded)
-
-          print('''
-            This listing is similar to the one before except this time,
-            instead of using variables to store the `dog` instances, we
-            append them to a collection. We access the last appended `dog`
-            via the `last` attribute of the collection to set its `name`
-            attribute. Instead of saving each dog one-by-one, we can
-            simply call the `save()` method on the `dogs` entities
-            collection. 
-
-            Like the previous listing, this `save()` operation will be
-            performed in an atomic transaction so that, if there is an
-            exception at any point in the saving process, the entire
-            transaction will rollback, and the code that calls `save()`
-            will have the opportunity to `except` the `Exception`, e.g.,:
-              
-              try:
-                  ds.save()
-              except Exception as ex:
-                  # Find out what went wrong
-                  ...
-
-            In the listing, each `dog` was *new*, and therefore a `save()`
-            would have resulted in three `INSERT`s to the database.  However,
-            it is important to remember that, calling the `save()` on the
-            collection calls the `save()` method on each of the entity objects
-            in the collection. Thus, calling `save()` on a collection could
-            end up being a mixture of `INSERT`s, `UPDATE`s and `DELETE`s being
-            sent to the database depending on the persistence state of the
-            given entity object.  Also, calling `save()` on an entity
-            collection could result in no database interaction if the entity's
-            persistence state indicates that nothing should be done.
-
-            The `dogs` class is an entities collection class which means
-            it inherits from `orm.entities` which  inherits from
-            `entities.entities` which we discussed at length in the [Using
-            entities classses](#eca3195f) section of the [Entity and
-            entities objects](#64baaf7a) chapter. Thus, `orm.entities`
-            classes inherits the rich feature-set of `entities.entities`
-            with some of those features being overridden to suit the
-            needs of ORM collection classes. In this section, we will
-            discuss these features in detail.
-
-          ''')
-
-        with section('Querying with collection entities'):
-          print('''
-            One of the most powerful feature of ORM entities is that they can
-            query the database through their constructor. As we've seen: 
-            passing no arguments to the entities constructor does nothing
-            more than provide us with an empty collection object. However,
-            through the constructor we are able to specify arguments that
-            are used to generate a `SELECT` statement which will be sent to
-            the database. The results from the `SELECT` will be used to
-            populate the collection.
-
-            Though we will see that we can give full Boolean expressions
-            (similar to `WHERE` clauses) to the constructor, let's start
-            with what is perhaps the simplest type of query: a simple
-            equality test:
-          ''')
-
-          with listing('Performing a simple equality query'):
-            # Query the database for all dogs that have the name "Rex"
-            dgs = dogs('name', 'Rex')
-
-            # Assert that only one was found
-            one(dgs)
-
-            # Assert that its name is indeed Rex
-            eq('Rex', dgs.only.name)
-
-        print('''
-          From a previous listing, we had saved a `dog` to the database
-          that we named "Rex". The above construction of the `dogs`
-          collection searches for any `dog` in the `dogs` table with the
-          name of "Rex". The SQL it generates is similar to:
-
-            SELECT *
-            FROM dogs
-            WHERE name = 'Rex';
-
-          Since there is only one `dog` with that name, the collection
-          ends up containing only one dog object which we access through
-          the `only` attribute. Had there been more `dogs` named "Rex",
-          we would have ended up with more `dog` objects in the
-          collection.
-
-          Of coures, the filter criteria of queries need to be much more
-          expressive than the above two-argument form would allow.
-          However, since simple equality tests like this are pretty
-          common, the two-argument form is provided by the ORM as a
-          convenience. Below we will cover more expressive ways to query
-          entities.  These forms are more verbose but also more powerful.
-
-          Note that interaction with the database to load entities does
-          not occure during instantiation but rather when an attribute
-          is called on the the entities collection. So, in the above
-          listing, the line:
-
-            dgs = dogs('name', 'Rex')
-
-          doesn't actually cause a `SELECT` to be sent to the database.
-          It mearly constructs the collection with the parameters that
-          will be used in the `WHERE` clause.  It's the following line,
-          in the above example, that actually causes the `SELECT`
-          statement to be sent to the database:
-
-            one(dgs)
-
-          This is because `one()` will call an attribute of the
-          collection (i.e., `dgs.count`). This is refered to as
-          **defered execution**. The ORM uses defered execution 
-          to support sorting which will be cover later in the
-          [Sorting](#9141f618) section &mdash; although you may find
-          it useful for certain performance optimization strategies
-          &mdash; such as contructing multiple collections then later
-          loading only a subset of them based some condition.
-
-          You can explicitly load an entities collection by calling
-          `orm.collect()` on it: 
-
-            dgs = dogs('name', 'Rex')
-            dgs.orm.collect()
-
-          However, this is rarely necessary and would be functionally
-          equivalent to calling any other attribute on it.
-
-          Lets rewrite the above listing to use the more the Boolean
-          expression query form:
-        ''')
-
-        with listing(
-          'Using a Boolean expression for a simple equality query'
-        ):
-          # Query the database for all dogs that have the name "Rex"
-          dgs = dogs("name = %s", 'Rex')
-
-          # Assert that only one was found
-          one(dgs)
-
-          # Assert that its name is indeed Rex
-          eq('Rex', dgs.only.name)
-
-      print('''
-        This listing does the same thing as the prior listing, however
-        here we are using a Boolean expression (the kind of thing you
-        would use in a `WHERE` clause). 
-
-        In this query, a placeholder (%s) is used to seperate the value
-        "Rex" from the query string.  This is an important feature to
-        prevent against SQL injection attacts, particularly when the
-        data being replaced is a variable which contains user input.
-
-        We can use as many placeholders and their corresponding values
-        as wee need. For example, we could change the query to search
-        for any dog whose name is "Rex" or "Bandit" like this:
-      ''')
-
-        with listing(
-          'Using a Boolean expression for multiple equality tests'
-        ):
-          # Query the database for all dogs that have the name "Rex"
-          dgs = dogs("name = %s or name = %s", 'Rex', 'Bandit')
-
-          # Assert that only one was found
-          two(dgs)
-
-          # Sort the dogs based on name
-          dgs.sort('name')
-
-          # Assert that its name is indeed Rex
-          eq('Bandit', dgs.first.name)
-          eq('Rex'   , dgs.Second.name)
-
-        print('''
-          The above construction produces a query similar to this SQL:
-
-            SELECT *
-            FROM dogs
-            WHERE name = 'Rex' or name = 'Bandit';
-
-          In this construction, we have two placeholders (%s)
-          which will be substituted for the two values: 'Rex' and
-          'Bandit'. We can add as many placeholders and corresponding
-          substitution values as we like.
-
-          Note that we are able to use the in-memory `sort()` derived
-          from the `entities.entities` base class to sort the `dog`
-          elements by name. This allows us to make assertions about
-          which element is which. Without the call to `sort()`, the
-          order of the elements would be indeterminate.
-
-          The Boolean expressions we are able to use for construction
-          are similar to the the `WHERE` clauses used in SQL, however
-          they are not identical. The framework parses the queries
-          (which it calls "predicates") and stores them in internal data
-          structures which are later used to generate actual 'WHERE'
-          clause arguments. 
-
-          That being said, the syntax is nearly identical to the type of
-          expressions you would give to a `WHERE` clause. All the
-          standard comparative operator are supported. Also, using
-          paranthesis to nest expressions works. However, you shouldn't
-          expect MySQL function such as `TRIM()` or `LENGTH()` to work
-          nor should you expect non-comparative operators, such as
-          those used in arthmatic expessions, to work.
-
-          If you want to see the SQL that the entities collection will
-          produce, you can `print` out the collection's `where` object.
-
-            dgs = dogs('name IN (%s, %s)', ('Rex', 'Bandit'))
-
-          In this example, we used the IN operator which you will be
-          familiar with from SQL. Let's see what SQL the ORM will
-          issue to the database for this query. If we print the `where`
-          object:
-
-            print(dgs.orm.where)
-
-          we will receive the following output.
-
-            name IN (%s, %s)
-            ['Rex', 'Bandit']
-
-          The first line contains the SQL. As you can see, the SQL
-          matches our query expression exactly. The second line contains
-          our arguments. for the parameterized SQL of the first line.
-          To see the entire SQL statement, you can use:
-
-            print(*dgs.orm.select)
-
-          This will give us the entire select statement:
-
-						SELECT
-								`t_d`.id AS `t_d.id`,
-								`t_d`.proprietor__partyid AS `t_d.proprietor__partyid`,
-								`t_d`.owner__userid AS `t_d.owner__userid`,
-								`t_d`.createdat AS `t_d.createdat`,
-								`t_d`.updatedat AS `t_d.updatedat`,
-								`t_d`.name AS `t_d.name`,
-								`t_d`.dob AS `t_d.dob`
-						FROM main_dogs AS `t_d`
-						WHERE (`t_d`.name IN (%s, %s)) ['Rex', 'Bandit']
-
-          Here we can see the `WHERE` clause in the context of the full
-          `SELECT` statement.
-        ''')
-
-        with section('Using the conjunctive-kwargs form'):
-          print('''
-            We can also use the conjunctive-kwargs form. This is where we
-            pass in one or more keyword arguments to form a chain of
-            conjunctive (AND) tests. For example, we can use this form to
-            search for dogs named "Rex":
-          ''')
-
-          with listing(
-            'Using the conjunctive-kwargs form'
-          ):
-            # Query the database for all dogs that have the name "Rex"
-            dgs = dogs(name = 'Rex')
-
-            # Assert that only one was found
-            one(dgs)
-
-            # Assert that its name is indeed Rex
-            eq('Rex', dgs.only.name)
-
-          print('''
-            As you can see, we are using Python's kwargs notation to
-            express a query for `dogs` named "Rex". In this example, we
-            are denote only one equality test, so there isn't any
-            conjoining going on. Let's look for `dogs` named "Rex" and who
-            have a `dob` of None.
-          ''')
-
-          with listing(
-            'Using the conjunctive-kwargs form with multiple kwargs'
-          ):
-            # Query the database for all dogs that have the name "Rex"
-            dgs = dogs(name = 'Rex', dob = None)
-
-            # Assert that only one was found
-            one(dgs)
-
-            # Assert that its name is indeed Rex
-            eq('Rex', dgs.only.name)
-
-          print('''
-            Above we get search for all the `dogs` with a name of "Rex"
-            and a `dob` of None. Since we didn't specify a date when we
-            created "Rex", it will default to None (or `null` in the
-            database). Thus, we will receive the same "Rex" `dog` as
-            before from the `only` property. 
-
-            The SQL generated by this construction looks like this:
-
-              SELECT *
-              FROM dogs
-              WHERE name = 'Rex' AND dob is null;
-
-            The conjuntive-kwargs form is nice because it requires fewer
-            characters ("name" and "dob" don't need to be in quotes).
-            However, it's a bit of a hack because we are using Python's
-            kwargs in a tricky way. Thus, the only comparative operator we
-            can use is Python's assignment (=) operator. Don't expect
-            other comparative operators to work. For example, the
-            following won't work:
-
-              dgs = dogs(name != 'Rex')
-
-              dgs = dogs(name < 'Rex')
-
-              dgs = dogs(dob is None)
-          ''')
-
-      with section('Sorting', id='9141f618'):
-        ...
-
-    with section('Debugging ORM entities'):
-      print('''
-        When it isn't clear why the ORM is behaving in a certain way, it
-        is often useful to look under the hood and see what SQL is being
-        sent to the database. You have already seen the methods that get
-        the `INSERT`, `SELECT`, `UPDATE` and `DELETE` statement:
-
-            sql, args = d.orm.getinsert()
-            sql, args = d.orm.select
-            sql, args = d.orm.mappings.getupdate()
-            sql, args = d.orm.mappings.getdelete()
-
-        Each of the above returns a tuple where the first element is a
-        parameterized SQL statement and the second element is a list of
-        arguments used to replace the placeholders (`%s`) in the
-        parameterized SQL.
-
-        These can be useful, but they don't tell you the actual SQL that
-        is being sent the database when a given ORM operation is
-        invoked. Whenever the ORM interacts with the database, it
-        chronicles the SQL to the `db.chronicles` singleton. This
-        object keeps track of the last 20 SQL statements that were sent
-        to the database (or whatever `db.chronicler.getinstance().max`
-        equals). You can view these statements with a line like the
-        following:
-
-          import db
-          print(db.chronicler.getinstance().chronicles)
-
-        However, this technique is a little imprecise since it doesn't
-        tell us exactly which chronicled SQL statements correspond to
-        which lines were executed. A better way is to use the
-        `snapshot()` context manager to see what SQL a particular line
-        of Python is causing to be sent to the database:
-
-          d = dog()
-          d.name = 'Rex'
-          d.dob = 'Jun 10, 1998'
-
-          with db.chronicler.snapshot():
-            d.save()
-
-        In the above example, the `INSERT` statement resulting from the
-        `save()` method will be printed to `stdout`. Obviously, the
-        snapshot() should only be used when debugging and the line
-        should be remove altogether before merging a feature branch
-        into 'main'. If for some reason you don't want the SQL to be
-        printed to stdout, you can suppress this behaviour and still
-        capture the SQL being sent to the database by passing `False` to
-        the `snapshot` method:
-
-          with db.chronicler.snapshot(False) as chrs:
-            d.save()
-
-            # chrs is a chronicler object
-            type(db.chronicler, chrs)
-
-            # We can stringify a chronicler object to get the SQL
-            # statements as a string.
-            sql_statements = str(chrs)
-      ''')
-
-    with section('Relationships'):
-
-      with section('One-to-many'):
-        print('''
-          Defining a one-to-many relationship between to classes is
-          pretty straightforward. Let's say that we are building an
-          order entry system. In the system, we want to model customers
-          and sales orders. Each customer can have zero or more sales
-          orders. Lets define those class and the one-to-many
-          relationship between them:
-        ''')
-
-        with listing('Defining a one-to-many relationship'):
-
-          ''' Define the collection classes first. '''
-          class customers(orm.entities):
-            """ Represents a collection of customers.
-            """
-
-          class orders(orm.entities):
-            """ Represents a collection of orders.
-            """
-
-          ''' Define the entity classes '''
-          class customer(orm.entity):
-            """ Represents person who can place orders.
-            """
-            # The customer's names
-            firstname = str
-            lastname = str
-
-            # This line establishes the relationship.
-            orders = orders
-
-          class order(orm.entity):
-            """ Represents a sales order
-            """
-            # The date and time the order was placed
-            placed = datetime
-
-            # Will be True if order is canceled
-            canceled = bool
-
-        print('''
-          Above we have created a `customer` and `order` entity along
-          with their collection complements. Importantly, we defined the
-          collections first. This allows us to reference the `orders`
-          collection class from the `customer` class definition:
-
-            class customer(orm.entity):
-              ...
-              orders = orders
-
-          With this line, the ORM can see that we want the `customer`
-          entity to have an attribute called `orders` which contains a
-          collection of `order` objects thus establishing the
-          one-to-many relationship between the two objects.
-
-          Note that this object model will need a `lineitem` entity as
-          well as a `product` entity in order for us to represent a real
-          order. We will create those entity classes later. For now, we
-          will just focus on the one-to-many relatioship between
-          `customers` and `orders`.
-
-          Now that we have our classes defined, lets write some code
-          that creates a `customer` with some orders associated with it.
-        ''')
-
-        with listing('Using a one-to-many relationship'):
-          # Ensure that the tables are created in the database
-          customer.orm.recreate()
-          orders.orm.recreate()
-
-          # Override the security context
-          with orm.override(), orm.sudo()
-
-            # Create the customer
-            cust = customer()
-            cust.firstname = 'Johnny'
-            cust.lastname = 'Rotten'
-
-            # Create two order objects
-            ord = order()
-            ord1 = order()
-
-            # Assert that the order objects have no customer associated
-            # with them
-            none(ord.customer)
-            none(ord1.customer)
-
-            # Append each order to the customers collection of orders.
-            cust.orders += ord
-            cust.orders += ord1
-
-            # By appending the orders to the customer's order
-            # collection, each order knows its customer via the
-            # `customer` property.
-            is_(cust, ord.customer)
-            is_(cust, ord1.customer)
-
-        print('''
-          First we run the `orm.recreate()` method to issue the `CREATE
-          TABLE` commands to the database so there will be database
-          tables to save the entity objects to. The `with` statement
-          sets up the security context &mdash; however, you can ignore
-          this for now.
-
-          Next we create a `customer` object and assign some values to
-          its attributes. Then we create two `orders` objects. Because
-          of the one-to-many relationship we defined in the class
-          definitions, `customer` objects will expose an `orders`
-          attributes which returns the `customer`'s own collection of
-          `orders`. We used this collection to append our two `order`
-          objects to it using the `+=` operator thus associating the
-          `orders` with the `customer`. 
-
-          The collection objects on the *many* side of a one-to-many
-          relationship are called **constituent**. The object on the
-          *one* side is called the **composite**. So in this example,
-          the ``orders`` are *constiuents* of the `customer`, while the
-          `customer` is a *composite* of each of the `order` objects.
-
-          Now that the `orders` have been appended, the `customer`
-          object has access to them through its `orders` collection.
-          Also, as we assert above, the `order` object have access to
-          the `customer` object they have been assigned to through their
-          `customer` property. The ORM is able to infer the need for a
-          `customer` property here because it knows that `order` is on
-          the *many* of a one-to-many relationship.
-
-          At this point, we have 3 new objects: the `customer` and its
-          two `orders`. However, they are not in the database yet. Let's
-          save them now.
-        ''')
-
-        with listing('Saving an object and its constiuents'):
-
-          # Override the security context
-          with orm.override(), orm.sudo()
-            
-            # Save the customer object along with its constituents,
-            # i.e., the two order objects.
-            cust.save()
-
-            # Reload the customer from the database
-            cust1 = cust.orm.reloaded()
-
-          # Sort the orders of the original customer by id
-          cust.orders.sort('id')
-
-          # Sort the orders of the reloaded customer by id
-          cust1.orders.sort('id')
-
-
-          # Assert the reloaded customer, and its orders, match the
-          # original 
-          eq(cust.id, cust1)
-          eq(cust.orders.first.id, cust1.orders.first.id)
-          eq(cust.orders.second.id, cust1.orders.second.id)
-          two(cust.orders)
-
-        print('''
-          Conveniently, all we needed to do to save the customer and its
-          constituents (i.e., its `order` objects), was to call `save()` on
-          the `cust` object. This results in `INSERT` statements being
-          sent to the database to persist all three objects. 
-
-          The `INSERT`s are performed in an atomic transaction so if any
-          of them fail, the entire transaction will be rolled back and
-          the exception that caused the problem will be raised.
-
-          Later in the listing, we reload the `customer` entity from the
-          database. As we've seen in prior example, we can use this
-          technique to prove that the `customer` object made it to the
-          database. However, what's novel above this example is that the
-          reloaded `cust1` object contains reloaded `orders`.  (as we
-          assert in the final lines of the listing). 
-
-          Importantly, the `customer`'s `orders` collection is
-          lazy-loaded. That is to say, when we reloaded the `customer`
-          object, the `orders` objecs were not loaded (they may have not
-          been needed). It's only when `cust1.orders` is called that the
-          `order` entities are actually loaded from the database. When
-          they are loaded, they are memoized meaning additional calls to
-          `cust1.orders` will not result in database activity because
-          the `orders` have been cached in memory.
-
-          In the above example, all the mutations were `INSERT`s.
-          However, they could have been any mixture of the other
-          mutations, viz. `UPDATE` and `DELETE`. To demonstrate, the
-          following listing will `UPDATE` the `customer` object,
-          `INSERT` a new order, and `DELETE` an existing `order`.
-        ''')
-
-        with listing('Update an object and its constiuents'):
-          # Change the attributes of the customer (i.e., `UPDATE`)
-          cust.firstname = 'John'
-          cust.lastname = 'Lydon'
-
-          # Get a reference to the customer's orders collection
-          ords = cust.orders
-
-          # Remove the first order from the colection causing it to be
-          # marked for deletion (i.e., DELETE). Assign the removed order
-          # to `rmord`.
-          rmord = ords.pop()
-
-          # Assert that rmord is marked for deletion as a consequence of
-          # the pop()
-          true(rmord.orm.ismarkedfordeletion)
-
-          # Instantiate a new order object and append it to the
-          # customer's collection of orders (i.e., INSERT)
-          ords += order()
-
-          # Override the security context
-          with orm.override(), orm.sudo()
-            # Save the customer object. This will UPDATE the customer,
-            # DELETE its first order, and INSERT a new order for the
-            # customer.
-            cust.save()
-
-            # Reload the customer from the database
-            cust1 = cust.orm.reloaded()
-
-          # Sort the orders of the original customer by id
-          cust.orders.sort('id')
-
-          # Sort the orders of the reloaded customer by id
-          cust1.orders.sort('id')
-
-          # Assert the reloaded customer, and its orders, match the
-          # original 
-          eq('John', cust1.firstname)
-          eq('Lydon', cust1.lastname)
-
-          # Assign the reloaded customer orders to `ords1' to make the
-          # forthcoming lines shorter
-          ords1 = cust1.orders
-
-          # Assert the removed order was not reloaded since it was
-          # deleted.
-          false(rmord.id in ords1.pluck('id'))
-
-          # Assert that the reloaded orders match the non-deleted orders
-          # from the original collection
-          eq(ords.first.id, ords1.first.id)
-          eq(ords.second.id, ords1.second.id)
-
-          # Assert there isn't a third order lingering around
-          two(ords)
-
-        print('''
-          In the above listing, we take the original `customer` object
-          and change its attributes. Then we remove (`.pop()`)  the
-          last `order` off the 'customer`'s collection of `orders`. Not
-          only does this have the effect of removing the order from the
-          collection, but it also marks the order for deletion. Next we
-          append an `order` to the `customer`'s `orders` collection.
-
-          However, no database interaction happens until we call the
-          `save()` method on `cust`. At that point, the `customer` is
-          `UPDATE`ed, the removed order is `DELETE`ed, and the newly
-          appenderd `order` is `INSERT`ed all in an atomic transaction.
-
-          Later, we reload the `customer` and assert that the reloaded
-          version contains the updates as well as the new `order`. We
-          also assert that the removed order is not in the reloaded
-          `orders` collection.
-
-          Note that any operation that removes an object from a an ORM
-          collection (e.g., `.remove()`, `shift()`, `del`, `-=`) marks
-          it for deletion. Likewise, any append apperation (e.g.,
-          `.append()`, `unshift()`, `<<`, `+=`, `|=`) would have
-          resulted in the object being `INSERT`ed into the database
-          (assuming it was a new object, i.e., `orm.isnew is True`).
-          Regardless, its `save()` method will be called to ensure it is
-          persisted.
-
-          We can see that the ORM provides us a convenient way to modify
-          and persist all objects involed in a one-to-many relationship.
-          So far we've only dealt with a one-to-many relatioship of a
-          single depth. However, relationships can be set up with an
-          n-level of depth and an invocation of the `save()` method will
-          ensure that all objects in the hierarchy are persisted.
-
-          Let's create a line item collection so we can add
-          products to our orders. We will recreate the `order` entity so
-          we can establish a one-to-many relationship between it and the
-          line items collection:
-        ''')
-
-        from decimal import Decimal as dec
-        with listing('Add a lineitem entity'):
-          class lineitems(orm.entities):
-            """ A collection of line items of an order.
-            """
-
-          class lineitem(orm.entity):
-            """ A line item in an `order`.
-            """
-            product   =  str
-            price     =  dec
-            quantity  =  int
-
-          # Recreate the order class
-          class order(orm.entity):
-            """ Represents a sales order
-            """
-            # The date and time the order was placed
-            placed = datetime
-
-            # Will be True if order is canceled
-            canceled = bool
-
-            # Establish the one-to-many relationship between orders and
-            # line items.
-            lineitems = lineitems
-
-        print('''
-          Above we have create a `lineitem` entity which will store the
-          product's that a user has ordered. 
-
-          (Normally, a product would be its own entity, but since we
-          haven't discussed many-to-many relationships yet, we will just
-          be satisfied with a simple `str` to represent which product is
-          ordered.)
-
-          In the final line of the listing, we inform the ORM that
-          `order` and `lineitems` have one-to-many relationship with
-          each other.
-
-          Let's create a new `customer`, add an `order` to it, and this time
-          we will include `lineitems`
-        ''')
-
-        with listing('Persisting n-levels deap'):
-          # Create the lineitem table
-          lineitem.orm.recreate()
-
-          # Override the security context
-          with orm.override(), orm.sudo()
-
-            # Create the customer
-            cust = customer()
-            cust.firstname = 'Jay'
-            cust.lastname = 'Leno'
-
-            # Create the order
-            ord = order()
-
-            # Create the line items
-            ord.lineitems += lineitem(
-              quantity  =  1,
-              price     =  3_957_348.92
-              product   = '1928 Bentley Speed 6'
-            )
-
-            ord.lineitems += lineitem(
-              quantity  =  1,
-              price     =  12_154_788.79
-              product   = 'McLaren F1'
-            )
-
-            # Make the orders collection the customer's orders
-            # collection
-            cust.orders = ords
-
-            # Save the customer, the order and the order's lineitems
-            cust.save()
-
-            # Reload the customer from the database
-            cust1 = cust.orm.reloaded()
-
-            # The final lines assert that the reloaded customer matches
-            # the original.
-            eq(cust.id, cust1.id)
-
-            eq(cust.orders.first.id, cust1.orders.first.id)
-
-            # Get the lineitems for the original customer and the
-            # reloaded customer.
-            lis = cust.orders.first.lineitems
-            lis1 = cust1.orders.first.lineitems
-
-            # Assert that each line item matechs
-            for li, li1 in zip(lis.sorted('id'), lis1.sorted('id')):
-              eq(li.id,        li1.id)
-              eq(li.price,     li1.price)
-              eq(li.quantity,  li1.quantity)
-              eq(li.product,   li1.product)
-
-        print('''
-          In the above listing, Jay Leno is ording a couple of extra
-          cars for his collection. The important thing to note is that
-          the line, `cust.save()`, `INSERT`'s the customer, its
-          order and the order's two `lineitems`. This gives us a
-          demonstration of a 3-level deep persistence operation &mdash;
-          though, no matter how deep the hierarchy of entity objects
-          get, atomic persistence operations will continue to work.
-
-          In the remaining lines, we assert that all four reconds made
-          it to the database and that we were able to retrieve them.
-        ''')
-
-        with section('Saving constituents'):
-          print('''
-            In the above example, we have been saving the composite
-            (i.e., the `cust` object`) and allowing the persistence to
-            propogate down to its constituents. However, if we call
-            `save()` on a constituent, an attempt will be made to
-            persist its composite as well. Take the following code for
-            example:
-          ''')
-
-          with listing('Saving composites by saving constituent'):
-            # Override the security context
-            with orm.override(), orm.sudo()
-
-              # Create the customer
-              cust = customer()
-              cust.firstname = 'Stewie'
-              cust.lastname = 'Griffin'
-
-              # Create two order objects
-              ord = order()
-              ord1 = order()
-
-              # Append each order to the customers collection of orders
-              cust.orders += ord
-              cust.orders += ord1
-
-              # Save ord1. This will result in `cust` being saved, as
-              # well as `ord`.
-              ord1.save()
-
-              # Reload ord1 and assign to ord1_0
-              ord1_0 = ord1.orm.reloaded()
-
-              # Get the reloaded order's customer composite and assign
-              # to cust1. Note that this customer object is a reloaded
-              # verision of `cust` because it comes from the reloaded
-              # ord1_0.
-              cust1 = ord1_0.customer
-
-              # Assert that the reloaded customer matches the original
-              # customer.
-              eq(cust.id, cust1.id)
-              eq(cust.firstname, cust1.firstname)
-              eq(cust.lastname, cust1.lastname)
-
-              # Assert that the reloaded ord1 matches the original ord1
-              eq(ord1.id, ord1_0.id)
-
-              # Assert that the reloaded customer's orders collection
-              # containes the original `ord` object.
-              true(cust.orders.first.id in cust1.orders.pluck('id'))
-
-          print('''
-            The above listing is similar to the other example we have
-            seen so far. However, instead of calling `save()` on the
-            `cust` object, i.e., the *composite*, we are call `save()`
-            on one of the `order` objects (`ord1`). Since the ORM knows
-            that the `cust` is the composite of `ord1`, an attempt
-            is made to persist (i.e., call its `save()` method) `cust`
-            as well.  This, in turn has the effect of persisting the
-            other `order` (`ord`) since it is a constituent of `cust`
-
-            Note also that when we reload `ord1`, we are able to access
-            its composite `.customer`. Retrieving a composite from a
-            newly loaded entity is a feature we haven't seen yet. For
-            the sake of clarity, this composite is a freshly loaded
-            `customer` since `ord1_0` is freshly loaded (i.e., it's not
-            derived from an in-memory cache somewhere). Also, it is
-            lazy-loaded: the database interaction to retrieve the data
-            for the composite is performed only when `.customer` is
-            called. That being said, it is a composite and you should
-            expect it to behave like any other composite in terms of
-            attribute access, persistence state management, and any
-            future persistence operations.
-
-            Once `ord1` has been reloaded, the final part of the listing
-            demonstrates through assertion that the `customer` and its
-            two `orders` were successfully saved to the database and
-            subsequently reloaded back into new entity objects.
-
-            Normally, you will call `save()` on the highest level
-            composite and allow the persistence to propogated down to
-            the constituents. This is a more intuitive approach to
-            writing persistence logic, after all. However, it's
-            important to know that the ORM is keeping track of these
-            hierarchies and will try to persist upwards as well as
-            downwards.
-          ''')
-
-      with section('ORM Data types'):
+      with section('ORM data types'):
         print('''
           As you have seen, defining an attributes type is rather
           simple. Types in the ORM behave as much like Python
-          types as possible in order to make their use easy for the developer.
-          For example, to define an attribute, we use a reference to the
-          builtin Python class `str` instead of creating a new, ORM
-          specific reference (such as `orm.string`). Additionally,
-          attributes defined as `str` default to empty strings because
-          that is the default for a Python `str`.
+          types as possible in order to make using them easy for the
+          developer.  For example, to define an attribute, we use a
+          reference to the builtin Python class `str` instead of
+          creating a new, ORM-specific reference (such as `orm.string`).
+          Additionally, attributes defined as `str` default to empty
+          strings because that is the default for a Python `str`.
 
-          The simplicity of the typing system so far would seem to
-          ignore the need to define typical database constraints such
-          as a maximum length given to the `varchar` type, or the
-          precision and scale of a float. On the contrary, these
-          additional parameters can be defined during class definition. It
-          turns out, however, that they are almost never needed because
-          the default constraints are sufficient. Consider that under
-          most circumstances, you just want your variable to be a
-          string, integer, decimal or Boolean.  However, when the need
-          arises to provide additional parameters to the data types to
-          improved database performence, that capability does exist.
+          The simplicity of the typing system, so far, would seem to
+          ignore the need to define typical database constraints such as
+          a maximum length given to the `varchar` type, or the precision
+          and scale of a float. On the contrary, these additional
+          parameters can be defined during class definition. It turns
+          out, however, that they are almost never needed because the
+          default constraints are sufficient. Consider that under most
+          circumstances, you just want your variable to be a string,
+          integer, decimal or Boolean.  However, when the need arises to
+          provide additional constaints to the data types (for example,
+          to improved performence) that capability does exist.
         ''')
 
         with section ('`str` attributes'):
@@ -4920,6 +4009,925 @@ with book('Hacking Carapacian Core'):
             usr.subscribed.end = '2012-12-12'
             eq(primative.date(2001, 02, 01), usr.subscribed.end)
             eq(primative.date(2012, 12, 12), usr.subscribed.end)
+
+    with section('Using ORM entities collections'):
+        with section(
+          'Collecting and saving with ORM entities collections'
+        ):
+          print('''
+            So far we have worked with individual entity objects. As you may
+            remember from the [Class complement](#547592d9) section, each
+            entity class requires a corresponding entities collection class.
+            Earlier, we had created a `dogs` collection class to serve as
+            the complement to the `dog` entity class. We can use that class
+            to collect `dog` entity objects and use the collection's
+            `save()` method to save all the collected objects.
+          ''')
+
+            with listing():
+              # Create a dogs collection
+              ds = dogs()
+
+              # Create and collect three dog entity objects
+              ds += dog()
+              ds.last.name = 'Rex'
+
+              ds += dog()
+              ds.last.name = 'Bandit'
+
+              ds += dog()
+              ds.last.name = 'Benji'
+
+              # Save the dogs
+              ds.save()
+
+              # Assert that the dogs made it to the database
+              for d in ds:
+                expect(None, d.orm.reloaded)
+
+          print('''
+            This listing is similar to the one before except this time,
+            instead of using variables to store the `dog` instances, we
+            append them to a collection. We access the last appended `dog`
+            via the `last` attribute of the collection to set its `name`
+            attribute. Instead of saving each dog one-by-one, we can
+            simply call the `save()` method on the `dogs` entities
+            collection. 
+
+            Like the previous listing, this `save()` operation will be
+            performed in an atomic transaction so that, if there is an
+            exception at any point in the saving process, the entire
+            transaction will rollback, and the code that calls `save()`
+            will have the opportunity to `except` the `Exception`, e.g.,:
+              
+              try:
+                  ds.save()
+              except Exception as ex:
+                  # Find out what went wrong
+                  ...
+
+            In the listing, each `dog` was *new*, and therefore a `save()`
+            would have resulted in three `INSERT`s to the database.  However,
+            it is important to remember that, calling the `save()` on the
+            collection calls the `save()` method on each of the entity objects
+            in the collection. Thus, calling `save()` on a collection could
+            end up being a mixture of `INSERT`s, `UPDATE`s and `DELETE`s being
+            sent to the database depending on the persistence state of the
+            given entity object.  Also, calling `save()` on an entity
+            collection could result in no database interaction if the entity's
+            persistence state indicates that nothing should be done.
+
+            The `dogs` class is an entities collection class which means
+            it inherits from `orm.entities` which  inherits from
+            `entities.entities` which we discussed at length in the [Using
+            entities classses](#eca3195f) section of the [Entity and
+            entities objects](#64baaf7a) chapter. Thus, `orm.entities`
+            classes inherits the rich feature-set of `entities.entities`
+            with some of those features being overridden to suit the
+            needs of ORM collection classes. In this section, we will
+            discuss these features in detail.
+
+          ''')
+
+        with section('Querying with collection entities'):
+          print('''
+            One of the most powerful feature of ORM entities is that they can
+            query the database through their constructor. As we've seen: 
+            passing no arguments to the entities constructor does nothing
+            more than provide us with an empty collection object. However,
+            through the constructor we are able to specify arguments that
+            are used to generate a `SELECT` statement which will be sent to
+            the database. The results from the `SELECT` will be used to
+            populate the collection.
+
+            Though we will see that we can give full Boolean expressions
+            (similar to `WHERE` clauses) to the constructor, let's start
+            with what is perhaps the simplest type of query: a simple
+            equality test:
+          ''')
+
+          with listing('Performing a simple equality query'):
+            # Query the database for all dogs that have the name "Rex"
+            dgs = dogs('name', 'Rex')
+
+            # Assert that only one was found
+            one(dgs)
+
+            # Assert that its name is indeed Rex
+            eq('Rex', dgs.only.name)
+
+        print('''
+          From a previous listing, we had saved a `dog` to the database
+          that we named "Rex". The above construction of the `dogs`
+          collection searches for any `dog` in the `dogs` table with the
+          name of "Rex". The SQL it generates is similar to:
+
+            SELECT *
+            FROM dogs
+            WHERE name = 'Rex';
+
+          Since there is only one `dog` with that name, the collection
+          ends up containing only one dog object which we access through
+          the `only` attribute. Had there been more `dogs` named "Rex",
+          we would have ended up with more `dog` objects in the
+          collection.
+
+          Of coures, the filter criteria of queries need to be much more
+          expressive than the above two-argument form would allow.
+          However, since simple equality tests like this are pretty
+          common, the two-argument form is provided by the ORM as a
+          convenience. Below we will cover more expressive ways to query
+          entities.  These forms are more verbose but also more powerful.
+
+          Note that interaction with the database to load entities does
+          not occure during instantiation but rather when an attribute
+          is called on the the entities collection. So, in the above
+          listing, the line:
+
+            dgs = dogs('name', 'Rex')
+
+          doesn't actually cause a `SELECT` to be sent to the database.
+          It mearly constructs the collection with the parameters that
+          will be used in the `WHERE` clause.  It's the following line,
+          in the above example, that actually causes the `SELECT`
+          statement to be sent to the database:
+
+            one(dgs)
+
+          This is because `one()` will call an attribute of the
+          collection (i.e., `dgs.count`). This is refered to as
+          **defered execution**. The ORM uses defered execution 
+          to support sorting which will be cover later in the
+          [Sorting](#9141f618) section &mdash; although you may find
+          it useful for certain performance optimization strategies
+          &mdash; such as contructing multiple collections then later
+          loading only a subset of them based some condition.
+
+          You can explicitly load an entities collection by calling
+          `orm.collect()` on it: 
+
+            dgs = dogs('name', 'Rex')
+            dgs.orm.collect()
+
+          However, this is rarely necessary and would be functionally
+          equivalent to calling any other attribute on it.
+
+          Lets rewrite the above listing to use the more the Boolean
+          expression query form:
+        ''')
+
+        with listing(
+          'Using a Boolean expression for a simple equality query'
+        ):
+          # Query the database for all dogs that have the name "Rex"
+          dgs = dogs("name = %s", 'Rex')
+
+          # Assert that only one was found
+          one(dgs)
+
+          # Assert that its name is indeed Rex
+          eq('Rex', dgs.only.name)
+
+      print('''
+        This listing does the same thing as the prior listing, however
+        here we are using a Boolean expression (the kind of thing you
+        would use in a `WHERE` clause). 
+
+        In this query, a placeholder (%s) is used to seperate the value
+        "Rex" from the query string.  This is an important feature to
+        prevent against SQL injection attacts, particularly when the
+        data being replaced is a variable which contains user input.
+
+        We can use as many placeholders and their corresponding values
+        as wee need. For example, we could change the query to search
+        for any dog whose name is "Rex" or "Bandit" like this:
+      ''')
+
+        with listing(
+          'Using a Boolean expression for multiple equality tests'
+        ):
+          # Query the database for all dogs that have the name "Rex"
+          dgs = dogs("name = %s or name = %s", 'Rex', 'Bandit')
+
+          # Assert that only one was found
+          two(dgs)
+
+          # Sort the dogs based on name
+          dgs.sort('name')
+
+          # Assert that its name is indeed Rex
+          eq('Bandit', dgs.first.name)
+          eq('Rex'   , dgs.Second.name)
+
+        print('''
+          The above construction produces a query similar to this SQL:
+
+            SELECT *
+            FROM dogs
+            WHERE name = 'Rex' or name = 'Bandit';
+
+          In this construction, we have two placeholders (%s)
+          which will be substituted for the two values: 'Rex' and
+          'Bandit'. We can add as many placeholders and corresponding
+          substitution values as we like.
+
+          Note that we are able to use the in-memory `sort()` derived
+          from the `entities.entities` base class to sort the `dog`
+          elements by name. This allows us to make assertions about
+          which element is which. Without the call to `sort()`, the
+          order of the elements would be indeterminate.
+
+          The Boolean expressions we are able to use for construction
+          are similar to the the `WHERE` clauses used in SQL, however
+          they are not identical. The framework parses the queries
+          (which it calls "predicates") and stores them in internal data
+          structures which are later used to generate actual 'WHERE'
+          clause arguments. 
+
+          That being said, the syntax is nearly identical to the type of
+          expressions you would give to a `WHERE` clause. All the
+          standard comparative operator are supported. Also, using
+          paranthesis to nest expressions works. However, you shouldn't
+          expect MySQL function such as `TRIM()` or `LENGTH()` to work
+          nor should you expect non-comparative operators, such as
+          those used in arthmatic expessions, to work.
+
+          If you want to see the SQL that the entities collection will
+          produce, you can `print` out the collection's `where` object.
+
+            dgs = dogs('name IN (%s, %s)', ('Rex', 'Bandit'))
+
+          In this example, we used the IN operator which you will be
+          familiar with from SQL. Let's see what SQL the ORM will
+          issue to the database for this query. If we print the `where`
+          object:
+
+            print(dgs.orm.where)
+
+          we will receive the following output.
+
+            name IN (%s, %s)
+            ['Rex', 'Bandit']
+
+          The first line contains the SQL. As you can see, the SQL
+          matches our query expression exactly. The second line contains
+          our arguments. for the parameterized SQL of the first line.
+          To see the entire SQL statement, you can use:
+
+            print(*dgs.orm.select)
+
+          This will give us the entire select statement:
+
+						SELECT
+								`t_d`.id AS `t_d.id`,
+								`t_d`.proprietor__partyid AS `t_d.proprietor__partyid`,
+								`t_d`.owner__userid AS `t_d.owner__userid`,
+								`t_d`.createdat AS `t_d.createdat`,
+								`t_d`.updatedat AS `t_d.updatedat`,
+								`t_d`.name AS `t_d.name`,
+								`t_d`.dob AS `t_d.dob`
+						FROM main_dogs AS `t_d`
+						WHERE (`t_d`.name IN (%s, %s)) ['Rex', 'Bandit']
+
+          Here we can see the `WHERE` clause in the context of the full
+          `SELECT` statement.
+        ''')
+
+        with section('Using the conjunctive-kwargs form'):
+          print('''
+            We can also use the conjunctive-kwargs form. This is where we
+            pass in one or more keyword arguments to form a chain of
+            conjunctive (AND) tests. For example, we can use this form to
+            search for dogs named "Rex":
+          ''')
+
+          with listing(
+            'Using the conjunctive-kwargs form'
+          ):
+            # Query the database for all dogs that have the name "Rex"
+            dgs = dogs(name = 'Rex')
+
+            # Assert that only one was found
+            one(dgs)
+
+            # Assert that its name is indeed Rex
+            eq('Rex', dgs.only.name)
+
+          print('''
+            As you can see, we are using Python's kwargs notation to
+            express a query for `dogs` named "Rex". In this example, we
+            are denote only one equality test, so there isn't any
+            conjoining going on. Let's look for `dogs` named "Rex" and who
+            have a `dob` of None.
+          ''')
+
+          with listing(
+            'Using the conjunctive-kwargs form with multiple kwargs'
+          ):
+            # Query the database for all dogs that have the name "Rex"
+            dgs = dogs(name = 'Rex', dob = None)
+
+            # Assert that only one was found
+            one(dgs)
+
+            # Assert that its name is indeed Rex
+            eq('Rex', dgs.only.name)
+
+          print('''
+            Above we get search for all the `dogs` with a name of "Rex"
+            and a `dob` of None. Since we didn't specify a date when we
+            created "Rex", it will default to None (or `null` in the
+            database). Thus, we will receive the same "Rex" `dog` as
+            before from the `only` property. 
+
+            The SQL generated by this construction looks like this:
+
+              SELECT *
+              FROM dogs
+              WHERE name = 'Rex' AND dob is null;
+
+            The conjuntive-kwargs form is nice because it requires fewer
+            characters ("name" and "dob" don't need to be in quotes).
+            However, it's a bit of a hack because we are using Python's
+            kwargs in a tricky way. Thus, the only comparative operator we
+            can use is Python's assignment (=) operator. Don't expect
+            other comparative operators to work. For example, the
+            following won't work:
+
+              dgs = dogs(name != 'Rex')
+
+              dgs = dogs(name < 'Rex')
+
+              dgs = dogs(dob is None)
+          ''')
+
+      with section('Sorting', id='9141f618'):
+        ...
+
+    with section('Debugging ORM entities'):
+      print('''
+        When it isn't clear why the ORM is behaving in a certain way, it
+        is often useful to look under the hood and see what SQL is being
+        sent to the database. You have already seen the methods that get
+        the `INSERT`, `SELECT`, `UPDATE` and `DELETE` statement:
+
+            sql, args = d.orm.getinsert()
+            sql, args = d.orm.select
+            sql, args = d.orm.mappings.getupdate()
+            sql, args = d.orm.mappings.getdelete()
+
+        Each of the above returns a tuple where the first element is a
+        parameterized SQL statement and the second element is a list of
+        arguments used to replace the placeholders (`%s`) in the
+        parameterized SQL.
+
+        These can be useful, but they don't tell you the actual SQL that
+        is being sent the database when a given ORM operation is
+        invoked. Whenever the ORM interacts with the database, it
+        chronicles the SQL to the `db.chronicles` singleton. This
+        object keeps track of the last 20 SQL statements that were sent
+        to the database (or whatever `db.chronicler.getinstance().max`
+        equals). You can view these statements with a line like the
+        following:
+
+          import db
+          print(db.chronicler.getinstance().chronicles)
+
+        However, this technique is a little imprecise since it doesn't
+        tell us exactly which chronicled SQL statements correspond to
+        which lines were executed. A better way is to use the
+        `snapshot()` context manager to see what SQL a particular line
+        of Python is causing to be sent to the database:
+
+          d = dog()
+          d.name = 'Rex'
+          d.dob = 'Jun 10, 1998'
+
+          with db.chronicler.snapshot():
+            d.save()
+
+        In the above example, the `INSERT` statement resulting from the
+        `save()` method will be printed to `stdout`. Obviously, the
+        snapshot() should only be used when debugging and the line
+        should be remove altogether before merging a feature branch
+        into 'main'. If for some reason you don't want the SQL to be
+        printed to stdout, you can suppress this behaviour and still
+        capture the SQL being sent to the database by passing `False` to
+        the `snapshot` method:
+
+          with db.chronicler.snapshot(False) as chrs:
+            d.save()
+
+            # chrs is a chronicler object
+            type(db.chronicler, chrs)
+
+            # We can stringify a chronicler object to get the SQL
+            # statements as a string.
+            sql_statements = str(chrs)
+      ''')
+
+    with section('Relationships'):
+
+      with section('One-to-many relationships'):
+        print('''
+          Defining a one-to-many relationship between to classes is
+          pretty straightforward. Let's say that we are building an
+          order entry system. In the system, we want to model customers
+          and sales orders. Each customer can have zero or more sales
+          orders. Lets define those class and the one-to-many
+          relationship between them:
+        ''')
+
+        with listing('Defining a one-to-many relationship'):
+          ''' Define the collection classes first. '''
+          class customers(orm.entities):
+            """ Represents a collection of customers.
+            """
+
+          class orders(orm.entities):
+            """ Represents a collection of orders.
+            """
+
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            """ Represents person who can place orders.
+            """
+            # The customer's names
+            firstname = str
+            lastname = str
+
+            # This line establishes the relationship.
+            orders = orders
+
+          class order(orm.entity):
+            """ Represents a sales order
+            """
+            # The date and time the order was placed
+            placed = datetime
+
+            # Will be True if order is canceled
+            canceled = bool
+
+        print('''
+          Above we have created a `customer` and `order` entity along
+          with their collection complements. Importantly, we defined the
+          collections first. This allows us to reference the `orders`
+          collection class from the `customer` class definition:
+
+            class customer(orm.entity):
+              ...
+              orders = orders
+
+          With this line, the ORM can see that we want the `customer`
+          entity to have an attribute called `orders` which contains a
+          collection of `order` objects thus establishing the
+          one-to-many relationship between the two objects.
+
+          Note that this object model will need a `lineitem` entity as
+          well as a `product` entity in order for us to represent a real
+          order. We will create those entity classes later. For now, we
+          will just focus on the one-to-many relatioship between
+          `customers` and `orders`.
+
+          Now that we have our classes defined, lets write some code
+          that creates a `customer` with some orders associated with it.
+        ''')
+
+        with listing('Using a one-to-many relationship'):
+          # Ensure that the tables are created in the database
+          customer.orm.recreate()
+          orders.orm.recreate()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+
+            # Create the customer
+            cust = customer()
+            cust.firstname = 'Johnny'
+            cust.lastname = 'Rotten'
+
+            # Create two order objects
+            ord = order()
+            ord1 = order()
+
+            # Assert that the order objects have no customer associated
+            # with them
+            none(ord.customer)
+            none(ord1.customer)
+
+            # Append each order to the customers collection of orders.
+            cust.orders += ord
+            cust.orders += ord1
+
+            # By appending the orders to the customer's order
+            # collection, each order knows its customer via the
+            # `customer` property.
+            is_(cust, ord.customer)
+            is_(cust, ord1.customer)
+
+        print('''
+          First we run the `orm.recreate()` method to issue the `CREATE
+          TABLE` commands to the database so there will be database
+          tables to save the entity objects to. The `with` statement
+          sets up the security context &mdash; however, you can ignore
+          this for now.
+
+          Next we create a `customer` object and assign some values to
+          its attributes. Then we create two `orders` objects. Because
+          of the one-to-many relationship we defined in the class
+          definitions, `customer` objects will expose an `orders`
+          attributes which returns the `customer`'s own collection of
+          `orders`. We used this collection to append our two `order`
+          objects to it using the `+=` operator thus associating the
+          `orders` with the `customer`. 
+
+          The collection objects on the *many* side of a one-to-many
+          relationship are called **constituent**. The object on the
+          *one* side is called the **composite**. So in this example,
+          the ``orders`` are *constiuents* of the `customer`, while the
+          `customer` is a *composite* of each of the `order` objects.
+
+          Now that the `orders` have been appended, the `customer`
+          object has access to them through its `orders` collection.
+          Also, as we assert above, the `order` object have access to
+          the `customer` object they have been assigned to through their
+          `customer` property. The ORM is able to infer the need for a
+          `customer` property here because it knows that `order` is on
+          the *many* of a one-to-many relationship.
+
+          At this point, we have 3 new objects: the `customer` and its
+          two `orders`. However, they are not in the database yet. Let's
+          save them now.
+        ''')
+
+        with listing('Saving an object and its constiuents'):
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+            
+            # Save the customer object along with its constituents,
+            # i.e., the two order objects.
+            cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+          # Sort the orders of the original customer by id
+          cust.orders.sort('id')
+
+          # Sort the orders of the reloaded customer by id
+          cust1.orders.sort('id')
+
+
+          # Assert the reloaded customer, and its orders, match the
+          # original 
+          eq(cust.id, cust1)
+          eq(cust.orders.first.id, cust1.orders.first.id)
+          eq(cust.orders.second.id, cust1.orders.second.id)
+          two(cust.orders)
+
+        print('''
+          Conveniently, all we needed to do to save the customer and its
+          constituents (i.e., its `order` objects), was to call `save()` on
+          the `cust` object. This results in `INSERT` statements being
+          sent to the database to persist all three objects. 
+
+          The `INSERT`s are performed in an atomic transaction so if any
+          of them fail, the entire transaction will be rolled back and
+          the exception that caused the problem will be raised.
+
+          Later in the listing, we reload the `customer` entity from the
+          database. As we've seen in prior example, we can use this
+          technique to prove that the `customer` object made it to the
+          database. However, what's novel above this example is that the
+          reloaded `cust1` object contains reloaded `orders`.  (as we
+          assert in the final lines of the listing). 
+
+          Importantly, the `customer`'s `orders` collection is
+          lazy-loaded. That is to say, when we reloaded the `customer`
+          object, the `orders` objecs were not loaded (they may have not
+          been needed). It's only when `cust1.orders` is called that the
+          `order` entities are actually loaded from the database. When
+          they are loaded, they are memoized meaning additional calls to
+          `cust1.orders` will not result in database activity because
+          the `orders` have been cached in memory.
+
+          In the above example, all the mutations were `INSERT`s.
+          However, they could have been any mixture of the other
+          mutations, viz. `UPDATE` and `DELETE`. To demonstrate, the
+          following listing will `UPDATE` the `customer` object,
+          `INSERT` a new order, and `DELETE` an existing `order`.
+        ''')
+
+        with listing('Update an object and its constiuents'):
+          # Change the attributes of the customer (i.e., `UPDATE`)
+          cust.firstname = 'John'
+          cust.lastname = 'Lydon'
+
+          # Get a reference to the customer's orders collection
+          ords = cust.orders
+
+          # Remove the first order from the colection causing it to be
+          # marked for deletion (i.e., DELETE). Assign the removed order
+          # to `rmord`.
+          rmord = ords.pop()
+
+          # Assert that rmord is marked for deletion as a consequence of
+          # the pop()
+          true(rmord.orm.ismarkedfordeletion)
+
+          # Instantiate a new order object and append it to the
+          # customer's collection of orders (i.e., INSERT)
+          ords += order()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+            # Save the customer object. This will UPDATE the customer,
+            # DELETE its first order, and INSERT a new order for the
+            # customer.
+            cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+          # Sort the orders of the original customer by id
+          cust.orders.sort('id')
+
+          # Sort the orders of the reloaded customer by id
+          cust1.orders.sort('id')
+
+          # Assert the reloaded customer, and its orders, match the
+          # original 
+          eq('John', cust1.firstname)
+          eq('Lydon', cust1.lastname)
+
+          # Assign the reloaded customer orders to `ords1' to make the
+          # forthcoming lines shorter
+          ords1 = cust1.orders
+
+          # Assert the removed order was not reloaded since it was
+          # deleted.
+          false(rmord.id in ords1.pluck('id'))
+
+          # Assert that the reloaded orders match the non-deleted orders
+          # from the original collection
+          eq(ords.first.id, ords1.first.id)
+          eq(ords.second.id, ords1.second.id)
+
+          # Assert there isn't a third order lingering around
+          two(ords)
+
+        print('''
+          In the above listing, we take the original `customer` object
+          and change its attributes. Then we remove (`.pop()`)  the
+          last `order` off the 'customer`'s collection of `orders`. Not
+          only does this have the effect of removing the order from the
+          collection, but it also marks the order for deletion. Next we
+          append an `order` to the `customer`'s `orders` collection.
+
+          However, no database interaction happens until we call the
+          `save()` method on `cust`. At that point, the `customer` is
+          `UPDATE`ed, the removed order is `DELETE`ed, and the newly
+          appenderd `order` is `INSERT`ed all in an atomic transaction.
+
+          Later, we reload the `customer` and assert that the reloaded
+          version contains the updates as well as the new `order`. We
+          also assert that the removed order is not in the reloaded
+          `orders` collection.
+
+          Note that any operation that removes an object from a an ORM
+          collection (e.g., `.remove()`, `shift()`, `del`, `-=`) marks
+          it for deletion. Likewise, any append apperation (e.g.,
+          `.append()`, `unshift()`, `<<`, `+=`, `|=`) would have
+          resulted in the object being `INSERT`ed into the database
+          (assuming it was a new object, i.e., `orm.isnew is True`).
+          Regardless, its `save()` method will be called to ensure it is
+          persisted.
+
+          We can see that the ORM provides us a convenient way to modify
+          and persist all objects involed in a one-to-many relationship.
+          So far we've only dealt with a one-to-many relatioship of a
+          single depth. However, relationships can be set up with an
+          n-level of depth and an invocation of the `save()` method will
+          ensure that all objects in the hierarchy are persisted.
+
+          Let's create a line item collection so we can add
+          products to our orders. We will recreate the `order` entity so
+          we can establish a one-to-many relationship between it and the
+          line items collection:
+        ''')
+
+        from decimal import Decimal as dec
+        with listing('Add a lineitem entity'):
+          class lineitems(orm.entities):
+            """ A collection of line items of an order.
+            """
+
+          class lineitem(orm.entity):
+            """ A line item in an `order`.
+            """
+            product   =  str
+            price     =  dec
+            quantity  =  int
+
+          # Recreate the order class
+          class order(orm.entity):
+            """ Represents a sales order
+            """
+            # The date and time the order was placed
+            placed = datetime
+
+            # Will be True if order is canceled
+            canceled = bool
+
+            # Establish the one-to-many relationship between orders and
+            # line items.
+            lineitems = lineitems
+
+        print('''
+          Above we have create a `lineitem` entity which will store the
+          product's that a user has ordered. 
+
+          (Normally, a product would be its own entity, but since we
+          haven't discussed many-to-many relationships yet, we will just
+          be satisfied with a simple `str` to represent which product is
+          ordered.)
+
+          In the final line of the listing, we inform the ORM that
+          `order` and `lineitems` have one-to-many relationship with
+          each other.
+
+          Let's create a new `customer`, add an `order` to it, and this time
+          we will include `lineitems`
+        ''')
+
+        with listing('Persisting n-levels deap'):
+          # Create the lineitem table
+          lineitem.orm.recreate()
+
+          # Override the security context
+          with orm.override(), orm.sudo()
+
+            # Create the customer
+            cust = customer()
+            cust.firstname = 'Jay'
+            cust.lastname = 'Leno'
+
+            # Create the order
+            ord = order()
+
+            # Create the line items
+            ord.lineitems += lineitem(
+              quantity  =  1,
+              price     =  3_957_348.92
+              product   = '1928 Bentley Speed 6'
+            )
+
+            ord.lineitems += lineitem(
+              quantity  =  1,
+              price     =  12_154_788.79
+              product   = 'McLaren F1'
+            )
+
+            # Make the orders collection the customer's orders
+            # collection
+            cust.orders = ords
+
+            # Save the customer, the order and the order's lineitems
+            cust.save()
+
+            # Reload the customer from the database
+            cust1 = cust.orm.reloaded()
+
+            # The final lines assert that the reloaded customer matches
+            # the original.
+            eq(cust.id, cust1.id)
+
+            eq(cust.orders.first.id, cust1.orders.first.id)
+
+            # Get the lineitems for the original customer and the
+            # reloaded customer.
+            lis = cust.orders.first.lineitems
+            lis1 = cust1.orders.first.lineitems
+
+            # Assert that each line item matechs
+            for li, li1 in zip(lis.sorted('id'), lis1.sorted('id')):
+              eq(li.id,        li1.id)
+              eq(li.price,     li1.price)
+              eq(li.quantity,  li1.quantity)
+              eq(li.product,   li1.product)
+
+        print('''
+          In the above listing, Jay Leno is ording a couple of extra
+          cars for his collection. The important thing to note is that
+          the line, `cust.save()`, `INSERT`'s the customer, its
+          order and the order's two `lineitems`. This gives us a
+          demonstration of a 3-level deep persistence operation &mdash;
+          though, no matter how deep the hierarchy of entity objects
+          get, atomic persistence operations will continue to work.
+
+          In the remaining lines, we assert that all four reconds made
+          it to the database and that we were able to retrieve them.
+        ''')
+
+        with section('Saving constituents'):
+          print('''
+            In the above example, we have been saving the composite
+            (i.e., the `cust` object`) and allowing the persistence to
+            propagate down to its constituents. However, if we call
+            `save()` on a constituent, an attempt will be made to
+            persist its composite as well. Take the following code for
+            example:
+          ''')
+
+          with listing('Saving composites by saving constituent'):
+            # Override the security context
+            with orm.override(), orm.sudo()
+
+              # Create the customer
+              cust = customer()
+              cust.firstname = 'Stewie'
+              cust.lastname = 'Griffin'
+
+              # Create two order objects
+              ord = order()
+              ord1 = order()
+
+              # Append each order to the customers collection of orders
+              cust.orders += ord
+              cust.orders += ord1
+
+              # Save ord1. This will result in `cust` being saved, as
+              # well as `ord`.
+              ord1.save()
+
+              # Reload ord1 and assign to ord1_0
+              ord1_0 = ord1.orm.reloaded()
+
+              # Get the reloaded order's customer composite and assign
+              # to cust1. Note that this customer object is a reloaded
+              # verision of `cust` because it comes from the reloaded
+              # ord1_0.
+              cust1 = ord1_0.customer
+
+              # Assert that the reloaded customer matches the original
+              # customer.
+              eq(cust.id, cust1.id)
+              eq(cust.firstname, cust1.firstname)
+              eq(cust.lastname, cust1.lastname)
+
+              # Assert that the reloaded ord1 matches the original ord1
+              eq(ord1.id, ord1_0.id)
+
+              # Assert that the reloaded customer's orders collection
+              # containes the original `ord` object.
+              true(cust.orders.first.id in cust1.orders.pluck('id'))
+
+          print('''
+            The above listing is similar to the other example we have
+            seen so far. However, instead of calling `save()` on the
+            `cust` object, i.e., the *composite*, we are call `save()`
+            on one of the `order` objects (`ord1`). Since the ORM knows
+            that the `cust` is the composite of `ord1`, an attempt
+            is made to persist (i.e., call its `save()` method) `cust`
+            as well.  This, in turn has the effect of persisting the
+            other `order` (`ord`) since it is a constituent of `cust`
+
+            Note also that when we reload `ord1`, we are able to access
+            its composite `.customer`. Retrieving a composite from a
+            newly loaded entity is a feature we haven't seen yet. For
+            the sake of clarity, this composite is a freshly loaded
+            `customer` since `ord1_0` is freshly loaded (i.e., it's not
+              derived from an in-memory cache somewhere). Also, it is
+            lazy-loaded: the database interaction to retrieve the data
+            for the composite is performed only when `.customer` is
+            called. That being said, it is a composite and you should
+            expect it to behave like any other composite in terms of
+            attribute access, persistence state management, and any
+            future persistence operations.
+
+            Once `ord1` has been reloaded, the final part of the listing
+            demonstrates, through assertion, that the `customer` and its
+            two `orders` were successfully saved to the database and
+            subsequently reloaded back into new entity objects.
+
+            Normally, you will call `save()` on the highest level
+            composite and allow the persistence to propagated down to
+            the constituents since this is a more intuitive approach to
+            writing persistence logic. However, it's important to know
+            that the ORM is keeping track of these hierarchies and will
+            try to persist upwards as well as downwards.
+          ''')
+
+      with section('Many-to-many relationships (or associations)'):
+        print('''
+          
+        ''')
+        with section('Reflexive associations'):
+          ...
+
+      with section('Many-to-one relationships'):
+
 
     with section('Custom properties'):
       ...
