@@ -30,6 +30,7 @@ line:
 TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
     
     self.testers.breakonexception = True
+
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
@@ -667,6 +668,14 @@ you PDB`s full capacity to debug the code at the breakpoint. When you
 are ready for the request to complete, just enter the command `c` into
 the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
+
+Note that the output from `curl` will be HTML intended for computer
+consumption, i.e., it will not have linefeeds or indentation. You can
+pipe the output to `tidy` to make the HTML easier to read:
+
+    # Lots of flags have to be given to tidy to keep it from printing
+    # warning messages and stuff. You may want to create an alias.
+    curl carapacian.com:8000 | tidy -iq --tidy-mark no --show-warnings no --show-info no 2>/dev/null
 
 <!-- TODO Recommend using `nmap` with Vim. Also, recommend using a
 `sleep .5` before the `curl` command in order to allow time for the

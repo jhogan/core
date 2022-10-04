@@ -264,6 +264,9 @@ class users(tester.tester):
         mods = 'party', 'ecommerce',
         super().__init__(mods=mods, *args, **kwargs)
 
+        if self.testers.rebuildtables:
+            ecommerce.users._anon = None
+
     def it_calls_anonymous(self):
         # Call twice to make sure anonymous is being memoized
         anon = ecommerce.users.anonymous
@@ -284,7 +287,6 @@ class users(tester.tester):
         # (although, maybe there should be a "commons" that owns anon)
         self.eq(party.company.CarapacianId, anon.proprietor__partyid)
         self.eq(ecommerce.users.RootUserId, anon.owner__userid)
-
 
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):

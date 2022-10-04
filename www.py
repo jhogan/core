@@ -56,6 +56,11 @@ import traceback
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 
+# TODO:24129f2a When a request is made, check the `hits` entity to see
+# if an IP address has made too many requests in a given timeframe. If
+# so, retun a 429 Too Many Requests response. Otherwise, the site is
+# vulnerable to anyone using `ab` or `hey`.
+
 class application:
     """ Represents a WSGI application.
     """
@@ -717,9 +722,36 @@ class _request:
             # a site object.
             if isinstance(ws, str):
                 host, sep, port = ws.partition(':')
-                host = host.replace('.', '_')
-                mod = __import__(host,  globals(), locals())
-                ws = getattr(mod, 'site')()
+
+                # Split host name on '.'
+                hosts = host.split('.')
+
+                # Loop to fallback on less specific domains, i.e, try
+                # x.x.example.com, then try x.example.tld, then try
+                # example.tld, then raise ModuleNotFoundError none were
+                # successfully imported.
+                while len(hosts):
+                    # Convert host name from . seperate to _ seperated
+                    # since modules can't have dots in them (they can,
+                    # but it can be problematic).
+                    host = '_'.join(hosts)
+
+                    try:
+                        # Try to import `host` module
+                        mod = __import__(host,  globals(), locals())
+                    except ModuleNotFoundError:
+                        if len(hosts) > 2:
+                            # Pop the first subdomain off the list and
+                            # try again
+                            hosts.pop(0)
+                        else:
+                            # There are no subdomains, so accept that we
+                            # can't import host
+                            raise
+                    else:
+                        # Instantiate the site object in the host module
+                        ws = getattr(mod, 'site')()
+                        break
 
             if isinstance(ws, pom.site):
                 self._site =  ws
@@ -1040,7 +1072,21 @@ class _request:
         the REMOTE_ADDR WSGI environment variblable.
         """
         if not self._ip:
-            ip = str(self.environment['REMOTE_ADDR'])
+            ip = self.environment['REMOTE_ADDR']
+
+            # REMOTE_ADDR will be empty when using a reverse proxy like
+            # Nginx. If that's the case, fall back on
+            # HTTP_X_FORWARDED_FOR. NOTE This is true when using UNIX
+            # sockets. It's not clear to me what REMOTE_ADDR would be if
+            # Gunicorn were listening on an IP socket. From Gunicorn's
+            # documentation, it would likely be the the IP of the Nginx
+            # proxy Thus the following logic would need to change if,
+            # for some reason, we switch from UNIX to IP sockets.
+            if not ip:
+                try:
+                    ip = self.environment['HTTP_X_FORWARDED_FOR']
+                except:
+                    ip = str()
             self._ip = ecommerce.ip(address=ip)
         return self._ip
 
@@ -1494,6 +1540,13 @@ class _response():
         # These lines are for XHR responses
         # body = json.dumps(body)
         # body = bytes(body, 'utf-8')
+
+        if isinstance(self._body, str):
+            if not self._body.endswith('\n'):
+                # Ensure a newline is at the end of the response body
+                # simply to make working with tools like the `curl`
+                # command more convenient.
+                self._body += '\n'
         return self._body
 
     @body.setter
@@ -2028,14 +2081,14 @@ class headers(entities.entities):
     
     Headers are components of HTTP requests and responses messages and,
     therefore, are constiuents of the ``request`` and ``response``
-    objects (viz. www.request.headers and www.response.headers.).
+    objects (viz. www.request.headers and www.response.headers).
     """
     def __init__(self, *args, **kwargs):
-        """ Creates a headers collection.
+        """ Creates a `headers` collection.
 
         :param: d sequence: There are a number of ways to initialize the
         headers collection. For example, the following produces the same
-        headers collection::
+        headers collection:
 
             # list<tuple>
             hdrs = headers([
@@ -2049,11 +2102,17 @@ class headers(entities.entities):
                 ('Accept-Encoding', 'gzip, deflate, br')
             })
 
-            # Dict
+            # dict
             hdrs = headers({
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip, deflate, br'
             })
+
+            # headers
+            hdrs = headers(headers([
+                ('Content-Type', 'application/json'), 
+                ('Accept-Encoding', 'gzip, deflate, br')
+            ]))
 
         :param: kwargs dict: You can also use **kwargs::
 
@@ -2072,6 +2131,18 @@ class headers(entities.entities):
                 accept_encoding': 'gzip, deflate, br'
             )
         """
+
+        # If the first argument is another instance of `headers`,
+        # convert it to a list<tuple> and populate this instance with
+        # its values just as if we were given a list<tuple>.
+        try:
+            hdrs = args[0]
+        except IndexError:
+            pass
+        else:
+            if isinstance(hdrs, headers):
+                args = [hdrs.list]
+
         args = list(args)
         try:
             d = args.pop(0)

@@ -747,6 +747,49 @@ class page(tester.tester):
         msg = res['main .message'].html
         self.true('Page class needs main method' in msg)
 
+    def it_fallsback_to_domain(self):
+        import carapacian_com
+
+        req = www._request(www.application())
+        req.app.environment = {'HTTP_HOST': 'carapacian.com'}
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
+
+        req = www._request(www.application())
+        req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
+
+        req = www._request(www.application())
+        req.app.environment = {
+            'HTTP_HOST': '380753fc.www.carapacian.com'
+        }
+        with orm.sudo(), orm.proprietor(party.company.carapacian):
+            self.type(carapacian_com.site, req.site)
+    def it_gets_page_using_X_FORWARDED_FOR(self):
+        ip = None
+        class realip(pom.page):
+            def main(self):
+                nonlocal ip
+                ip = req.ip.address
+
+        ws = foonet()
+        ws.pages += realip()
+
+        tab = self.browser().tab()
+
+        X_FORWARDED_FOR = '84.90.32.84'
+
+        hdrs = { 
+            'X_FORWARDED_FOR': X_FORWARDED_FOR,
+        }
+
+        tab.browser.ip = None
+
+        res = tab.get('/en/realip', ws, hdrs)
+        self.status(200, res)
+        self.eq(X_FORWARDED_FOR, ip)
+
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
         class stats(pom.page):
@@ -1034,7 +1077,7 @@ class page(tester.tester):
         ws.pages += pg
         tab = self.browser().tab()
         res = tab.head('/en/time', ws)
-        self.empty(res.body)
+        self.eq('\n', res.body)
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):

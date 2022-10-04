@@ -1,0 +1,17 @@
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/run/carapacian.com/www.sock
+# Our service won't need permissions for the socket, since it
+# inherits the file descriptor by socket activation
+# only the nginx daemon will need access to the socket
+
+SocketUser=www-data
+
+# Only allow www-data to r/w. We also set the x because the Nginx config file
+# uses -e to test for the socket's existence.
+SocketMode=700
+
+[Install]
+WantedBy=sockets.target

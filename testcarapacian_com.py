@@ -76,6 +76,28 @@ class home(tester.tester):
         res = tab.get('/', ws)
         self.startswith(Title, res['html>head>title'].text)
 
+class tickets(tester.tester):
+    def it_call_name(self):
+        pg = carapacian_com.tickets()
+        self.eq('tickets', pg.name)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.get('/en/index/tickets', ws)
+        self.status(200, res)
+
+        self.eq(f'{ws.title} | Tickets', res['html>head>title'].text)
+
+    def it_has_correct_title(self):
+        Title = 'Carapacian Sustainable Software | Tickets'
+
+        tab = self.browser().tab()
+        ws = carapacian_com.site()
+        res = tab.get('/en/index/tickets', ws)
+        self.startswith(Title, res['html>head>title'].text)
+
 if __name__ == '__main__':
     tester.cli().run()
 

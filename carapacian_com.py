@@ -29,7 +29,7 @@ class site(pom.site):
         self.title = 'Carapacian Sustainable Software'
 
         self.pages += home()
-    
+
     @property
     def Proprietor(self):
         # TODO Originally this was a constant. However, this caused
@@ -84,6 +84,10 @@ class site(pom.site):
         return hdr
 
 class home(pom.page):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pages += tickets()
+            
     def main(self):
         ''' <header> '''
         hdr = dom.header()
@@ -201,3 +205,8 @@ class home(pom.page):
     @property
     def name(self):
         return 'index'
+
+class tickets(pom.page):
+    def main(self):
+        self.main += dom.p('Carapacian Tickets')
+
