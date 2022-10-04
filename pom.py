@@ -248,7 +248,9 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
-                self.orm.mappings['proprietor']._value = propr
+
+                #self.orm.mappings['proprietor']._value = propr
+                self.proprietor = propr
 
             # Save the association between the site and its proprietor
             self.save()
