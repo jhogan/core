@@ -14840,15 +14840,10 @@ Test General Entities Model (GEM)
 
 class gem_shipment(tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'product', 'shipment', 'order', 'party', 'ecommerce'
+        super().__init__(mods=mods, *args, **kwargs)
+
         orm.security().override = True
-
-        if self.rebuildtables:
-            mods = ('shipment', 'order', 'party', 'ecommerce')
-            for e in orm.orm.getentityclasses(includeassociations=True):
-                if e.__module__ in mods:
-                    e.orm.recreate()
-
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
@@ -15269,15 +15264,8 @@ class gem_shipment(tester):
 
 class gem_effort(tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        orm.security().override = True
-        if self.rebuildtables:
-            for e in orm.orm.getentityclasses(includeassociations=True):
-                if e.__module__ in (
-                    'effort', 'apriori', 'party', 'asset', 'order'
-                ):
-                    e.orm.recreate()
+        mods = 'product', 'effort', 'apriori', 'party', 'asset', 'order'
+        super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().owner = ecommerce.users.root
 
@@ -16057,14 +16045,10 @@ class gem_effort(tester):
 
 class gem_invoice(tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        mods = 'product', 'invoice', 'party', 'apriori'
+        super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().override = True
-
-        if self.rebuildtables:
-            for e in orm.orm.getentityclasses(includeassociations=True):
-                if e.__module__ in ('invoice', 'party', 'apriori'):
-                    e.orm.recreate()
 
         orm.security().owner = ecommerce.users.root
 
