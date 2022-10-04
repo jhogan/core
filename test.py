@@ -3451,7 +3451,7 @@ class orm_(tester):
         # Note that the it_removes_reflexive_associations test will also
         # need to be updated when this bug has been corrected.
         #
-        # UPDATE:32d39bee When removing the pseudocollection orm code,
+        # UPDATE:32d39bee When removing the pseudocollection ORM code,
         # the deletes started to correctly not cascade. The test now
         # only seems to remove the association object and not the
         # constituent (artifact) or its constituents (compontents). I'm
@@ -5773,13 +5773,13 @@ class orm_(tester):
         # It was noticed that reflexive associations have an issue when
         # an additional entity reference is added. The party.role_role's
         # ``priority`` entity reference cause an issues since the orm
-        # logic assumed it was part of the reflexive association. THis
+        # logic assumed it was part of the reflexive association. This
         # was fixed in 40a1451b3c5b265b743424cfc23e6f2485c4bddb. The
         # following test ensures that there is no problem with having an
         # entity reference (programmer_issuerole.programmer_issuerole)
         # alongside the associated reference in programmer_issue
-        # (programmer and issue). No issues had to be fixed after the test
-        # was written. This seems to mean that an association can
+        # (programmer and issue). No issues had to be fixed after the
+        # test was written. This seems to mean that an association can
         # associated two or more entities.
             
         iss = issue.getvalid()
@@ -7057,7 +7057,8 @@ class orm_(tester):
         self.true('2010-1-15'  in  fact1.lifespan)
         self.false(max in fact1.lifespan)
 
-        # If beginlife and endlife are None, then no date is too early or late
+        # If beginlife and endlife are None, then no date is too early
+        # or late
         fact1.endlife = None
         self.true(min in fact1.lifespan)
         self.true('2010-1-15' in fact1.lifespan)
@@ -7072,7 +7073,7 @@ class orm_(tester):
         self.true(max in  fact1.lifespan)
 
     def it_calls_timespan_attr_on_association(self):
-        # NOTE artist_artifact hase a timespan str already. Here we are
+        # NOTE artist_artifact has a timespan str already. Here we are
         # testing the `span` property which is an orm.timespan and its
         # corresponding `begin` and `end' maps.
         maps = artist_artifacts.orm.mappings
@@ -7083,7 +7084,7 @@ class orm_(tester):
         self.true(maps['end'].isdatetime)
 
         # Set up an instance of artist_artifact with a `begin` and an
-        # `end that correspond to the `span`.:w
+        # `end` that correspond to the `span`.
         art = artist.getvalid()
         fact = artifact.getvalid()
 
@@ -7207,7 +7208,7 @@ class orm_(tester):
         """ Test "named" timespans. Normally a timespan will default to
         a begin and end datetime attribute. "Named" timespans have
         prefix and suffix parameters that surround the "begin" and
-        "end". In this instance artist_artifact has a timespan called
+        "end". In this instance, artist_artifact has a timespan called
         `active` with a prefix of `active`. The datetime values can be
         access like this
 
