@@ -4919,10 +4919,75 @@ with book('Hacking Carapacian Core'):
             try to persist upwards as well as downwards.
           ''')
 
+      with section('Recursive relationships'):
+        ...
+        
       with section('Many-to-many relationships (or associations)'):
         print('''
-          
+          Many-to-many relationships between entities are established
+          and supported by **associations**. `association` objects are a
+          special type of `orm.entity'. They act as a bridge between two
+          other entity objects. Like regular entity classes, association
+          classes map to an associative table in the database. Like
+          association entities, these tables link the tables of the two
+          entity classes..
+
+          Let's see an example of how we can use an association class to
+          model movies and the many-to-many relatioship they have with
+          people.
         ''')
+
+        with listing('Example of an association'):
+          ''' Create the person entity '''
+          class persons(orm.entities):
+            pass
+
+          class person(orm.entity):
+            # The name of the person
+            name = str
+
+          ''' Create the movie entity '''
+          class movies(orm.entity):
+            pass
+
+          class movie(orm.entity):
+            # The name of the movie
+            name = str
+
+          ''' Create the movie_person association entity '''
+          class movie_persons(orm.associations):
+            pass
+
+          class movie_person(orm.association):
+            # The `person` side of the relatioship
+            persons = persons
+
+            # The `movies` side of the relatioship
+            movies = movies
+
+            # The role a person plays in the creation of the movie
+            role = str
+
+        print('''
+          In the above listing, we've established two simple entity
+          classes: `person` and `movie`. Note that within their
+          declaration there is nothing to suggest that they have a
+          many-to-many relatioship with one another.
+
+          The listing ends with the declaration of the `movie_person`
+          association. Notice that it shares a lot in common with
+          regulare `entity` classes. First, it needs a pluralized form
+          (`movie_persons`) which inherits from the `orm.associations`,
+          while the singular for inherits from `orm.association`. It
+          also contains within it declaration of a primative attribute
+          (`role`) as well as the two collection classes `persons` and
+          `movies`. This similarity is important because, later on, you
+          will see that working with associations is much like working
+          with regular entity objects.
+        ''')
+
+
+
         with section('Reflexive associations'):
           ...
 
