@@ -1211,7 +1211,9 @@ class party_address(orm.association):
     Note that this is modeled after the PARTY POSTAL ADDRESS entity in
     "The Data Model Resource Book".
     """
+    # TODO I believe this could be removed
     entities  =  party_addresses
+
     party     =  party
     address   =  address
     span      =  datespan
