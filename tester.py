@@ -457,27 +457,27 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
-                # We not in SPA mode by default. The `inspa`
+                # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
                 # like a global JavaScript varibale. The user may be
                 # given the option of turing SPA mode on or off. This
-                # would be a useful option to give user for a number of
+                # would be a useful option to give users for a number of
                 # reasons:
                 #
                 #   * They are using a text-based browser like `links`
-                #   that has no JavaScript support.
+                #     that has no JavaScript support.
                 #
-                #   * They are usinga a legacy browser that has poor
-                #   Javascript support
+                #   * They are using a legacy browser that has poor
+                #     JavaScript support
                 #   
                 #   * They have JavaScript support disable, perhaps for
-                #   security reasons.
+                #     security reasons.
                 # 
                 #   * The "browser" is actually a bot, such as a web
-                #   crawler, whose willingness to execute JavaScript is
-                #   not well understood. In this case, you may want to
-                #   let the crawler index the page as if the site were a
-                #   multi-page application.
+                #     crawler, whose willingness to execute JavaScript is
+                #     not well understood. In this case, you may want to
+                #     let the crawler index the page as if the site were a
+                #     multi-page application.
                 self.inspa     =  False
 
             def element_event(self, src, eargs):
@@ -568,8 +568,8 @@ class tester(entities.entity):
 
                 # If the "user" "clicked" on a link that was intended to
                 # navigate the tab to a different URL, and the tab isn't
-                # in SPA mode (not `self.inspa`), then we should do a
-                # traditional page navigation to the new page.
+                # in SPA mode (i.e., `not self.inspa`), then we should
+                # do a traditional page navigation to the new page.
                 if not self.inspa and isnav:
                     self.navigate(pg=pg, ws=self.site)
                     return
@@ -594,9 +594,9 @@ class tester(entities.entity):
                     # (res.html)
                     replace(this='main', that=res.html)
                 else:
-                    # No HTML fragments were sent, so there can be
-                    # nothing to replace.
+                    # If no HTML fragments were sent... 
                     if not eargs.html:
+                        # ... there can be nothing to replace
                         return
 
                     # Get the fragement of html in the tab that is the
@@ -830,7 +830,6 @@ class tester(entities.entity):
                 appended to the request.
                 """
                 arg_hdrs = www.headers(hdrs) if hdrs else None
-                    
 
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):

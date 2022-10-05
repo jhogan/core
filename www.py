@@ -863,10 +863,19 @@ class _request:
             # Finish of the hit log
             self.log()
 
+        # If the request if for an event...
         if self.isevent:
+            # If the request is for new SPA page (e.g., a click on a
+            # <nav> that results in an XHR request made...
             if self.isspa:
+                # Return only the <main> element of the SPA page. When
+                # requesting a single page in an SPA context, only the
+                # <main> element is being requested by the client.
                 return self.page.main.html
+
             else:
+                # Return the event HTML elements as handled by the event
+                # handler -- if there are any.
                 if eargs.html:
                     return eargs.html.html
 

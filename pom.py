@@ -534,7 +534,6 @@ class site(asset.asset):
 
         See the docstring at dom.event for details on DOM event
         processing.
-
         """
 
         #// NOTE: To improve readability, you can set you editor to do
@@ -544,9 +543,7 @@ class site(asset.asset):
 
         r = '''
             function ajax(e){
-                /*
-                    Process the event for the given control.
-                */
+                /* Process the event for the given control.  */
 
                 // The event trigger (e.g., "blur", "click", etc.)
                 trigger = e.type
