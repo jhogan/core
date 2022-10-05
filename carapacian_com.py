@@ -36,6 +36,7 @@ class site(pom.site):
 
         self.pages += home()
         self.pages += tickets()
+        self.pages += ticketsspa()
 
     @property
     def Proprietor(self):
@@ -324,3 +325,19 @@ class tickets(pom.page):
         inp = src
 
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
+
+class ticketsspa(pom.page):
+    def main(self):
+        self.main += dom.p('Carapacian Tickets SPA')
+
+        ''' SPA Menu '''
+        mnuspa = pom.menu(name='spa')
+        self.header.menus += mnuspa
+
+        mnuspa.items += dom.a('Backlog', href='backlog')
+        mnuspa.items += dom.a('New Ticket', href='new')
+        mnuspa.items += dom.a('Search', href='search')
+
+    class backlog(dom.main):
+        pass
+        
