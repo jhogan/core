@@ -648,7 +648,7 @@ class site(asset.asset):
         for trig in dom.element.Triggers:
             r += f'''
                 els = document.querySelectorAll(
-                    '[data-{trig}-handler]'
+                    '[data-{trig}-handler], header>section>nav a'
                 );
 
                 for(el of els)
