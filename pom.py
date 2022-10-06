@@ -562,37 +562,47 @@ class site(asset.asset):
                 trigger = e.type
 
                 // The control that the event happened to
-                target = e.target
+                src = e.target
+
+                isnav = is_nav_link(src)
+
+                if (isnav){
+                    e.preventDefault()
+                }
 
                 // If we have an <input> with a type of "text"...
-                if (target.type == 'text'){
+                if (src.type == 'text'){
                     // Ensure the value of the <input>'s `value` attribute
                     // is set to the actually in the textbox. This
                     // ensures that, when it's HTML is transmitted, the
                     // "value" is send as well.
-                    target.setAttribute('value', target.value)
+                    src.setAttribute('value', src.value)
                 }
 
-                // Get all alements that are fragments for the target.
-                frag = target.getAttribute('data-' + trigger + '-fragments')
+                // Get all alements that are fragments for the src.
+                frag = src.getAttribute('data-' + trigger + '-fragments')
                 els = document.querySelectorAll(frag)
 
                 // Get the name of the event handler of the trigger
-                hnd = target.getAttribute('data-' + trigger + '-handler')
+                hnd = src.getAttribute('data-' + trigger + '-handler')
 
-                // Set src to the HTML of the target
-                src = target.outerHTML
+                if (isnav){
+                    html = null
+                    href = src.getAttribute('href')
+                    pg = window.location.pathname + '/' + href 
+                }else{
+                    // Concatenate the fragment's HTML
+                    html = ''
+                    for(el of els)
+                        html += el.outerHTML
 
-
-                // Concatenate the fragment's HTML
-                html = ''
-                for(el of els)
-                    html += el.outerHTML
+                    pg = window.location.href
+                }
 
                 // Create the dictionary to send to the server
                 d = {
                     'hnd':      hnd,
-                    'src':      src,
+                    'src':      src.outerHTML,
                     'trigger':  trigger,
                     'html':     html     
                 }
@@ -645,7 +655,7 @@ class site(asset.asset):
                 }
 
                 // POST to the current URL
-                xhr.open("POST", window.location.href)
+                xhr.open("POST", pg)
                 xhr.setRequestHeader('Content-Type', 'application/json')
                 xhr.send(JSON.stringify(d))
             }
@@ -656,20 +666,30 @@ class site(asset.asset):
                 function(ev) {
         '''
 
-        #// For each currently supported trigger (you may have to update
-        #// Triggers if the event you want to support doesn't exist
-        for trig in dom.element.Triggers:
-            r += f'''
-                els = document.querySelectorAll(
-                    '[data-{trig}-handler], header>section>nav a'
-                );
-
-                for(el of els)
-                    el.addEventListener('{trig}', ajax)
-            '''
+        r += f'''
+                    trigs = {list(dom.element.Triggers)}
+        '''
 
         r += '''
-                }
+                    // For each currently supported trigger (you may
+                    // have to update Triggers if the event you want to
+                    // support doesn't exist
+                    for (trig of trigs){
+                        els = document.querySelectorAll(
+                            '[data-' + trig + '-handler]'
+                        )
+
+                        for(el of els)
+                            el.addEventListener(trig, ajax)
+                    }
+
+                    els = document.querySelectorAll(
+                        'header>section>nav>ul>li a'
+                    )
+
+                    for(el of els)
+                        el.addEventListener('click', ajax)
+                    }
             );
         '''
 
