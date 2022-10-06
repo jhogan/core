@@ -779,10 +779,15 @@ class entities:
         def __eq__(self, e): return (self is e)
 
     # TODO Test reverse parameter
-    # TODO It would be cool if ``key`` could be a nested attribute the
-    # way rgetattr() works:
+    # TODO:9141f618 It would be cool if ``key`` could be a nested
+    # attribute the way rgetattr() works:
     #
     #     inv.terms.sort('termtype.name')
+    #
+    # UPDATE This actually does work - presumably because we are using
+    # func.getattr instead of builtins.getattr.
+    # We should update the docstring to indicate that this behavior is
+    # suported
     def sort(self, key, reverse=False):
         """ Sort the items of the collection in place.
 
