@@ -4929,15 +4929,15 @@ with book('Hacking Carapacian Core'):
           special type of `orm.entity'. They act as a bridge between two
           other entity objects. Like regular entity classes, association
           classes map to an associative table in the database. Like
-          association entities, these tables link the tables of the two
-          entity classes..
+          association entities, this table links the tables of the two
+          entity classes.
 
           Let's see an example of how we can use an association class to
           model movies and the many-to-many relatioship they have with
           people.
         ''')
 
-        with listing('Example of an association'):
+        with listing('An simple object model that uses association'):
           ''' Create the person entity '''
           class persons(orm.entities):
             pass
@@ -4947,7 +4947,7 @@ with book('Hacking Carapacian Core'):
             name = str
 
           ''' Create the movie entity '''
-          class movies(orm.entity):
+          class movies(orm.entities):
             pass
 
           class movie(orm.entity):
@@ -4984,9 +4984,43 @@ with book('Hacking Carapacian Core'):
           `movies`. This similarity is important because, later on, you
           will see that working with associations is much like working
           with regular entity objects.
+
+          Let's use these classe to record the relationships people had
+          with *Monty Python and the Holy Grail*.
         ''')
 
+        with listing(
+          'Using an object model that contains an association'
+        ):
+          # Ensure the tables exists and are empty
+          person.orm.recreate()
+          movie.orm.recreate()
+          movie_person.orm.recreate()
 
+          mov     = movie(name="Monty Python and the Holy Grail")
+          chapman = person(name='Graham Chapman')
+          cleese  = person(name='John Cleese')
+
+          mov.movie_persons += movie_person(
+            person = chapman, role='actor'
+          )
+
+          mov.movie_persons += movie_person(
+            person = cleese, role='actor'
+          )
+
+          mov.save()
+
+          mov1 = mov.orm.reloaded()
+
+          eq(mov.id, mov1.id)
+          eq(mov.name, mov1.name)
+
+          two(mov.movie_persons)
+
+          mov.movie_persons.sort('person.name')
+          eq(chapman.id, mov1.movie_persons.first.person.id)
+          eq(cleese.id, mov1.movie_persons.second.person.id)
 
         with section('Reflexive associations'):
           ...
