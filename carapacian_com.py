@@ -334,9 +334,9 @@ class ticketsspa(pom.page):
         mnuspa = pom.menu(name='spa')
         self.header.menus += mnuspa
 
-        mnuspa.items += dom.a('Backlog', href='backlog')
-        mnuspa.items += dom.a('New Ticket', href='new')
-        mnuspa.items += dom.a('Search', href='search')
+        mnuspa.items  +=  pom.menu.item('Backlog',  'backlog')
+        mnuspa.items  +=  pom.menu.item('New',      'new')
+        mnuspa.items  +=  pom.menu.item('Search',   'search')
 
     class backlog(dom.main):
         pass
