@@ -542,6 +542,19 @@ class site(asset.asset):
         #//     set syn=javascript
 
         r = '''
+            function is_nav_link(e){
+                tree = ['A', 'LI', 'UL', 'NAV']
+
+                for(tag of tree){
+                    if (e.tagName != tag)
+                        return false
+
+                    e = e.parentNode
+                }
+
+                return true
+            }
+
             function ajax(e){
                 /* Process the event for the given control.  */
 
