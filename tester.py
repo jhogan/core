@@ -460,7 +460,7 @@ class tester(entities.entity):
                 # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
                 # like a global JavaScript varibale. The user may be
-                # given the option of turing SPA mode on or off. This
+                # given the option of turning SPA mode on or off. This
                 # would be a useful option to give users for a number of
                 # reasons:
                 #
