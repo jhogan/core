@@ -327,6 +327,14 @@ class tickets(pom.page):
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
 
 class ticketsspa(pom.page):
+    class new(pom.page):
+        def main(self):
+            self.main += dom.p('Create a ticket')
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pages += ticketsspa.new()
+
     def main(self):
         self.main += dom.p('Carapacian Tickets SPA')
 
