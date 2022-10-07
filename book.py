@@ -4978,12 +4978,12 @@ with book('Hacking Carapacian Core'):
           association. Notice that it shares a lot in common with
           regulare `entity` classes. First, it needs a pluralized form
           (`movie_persons`) which inherits from the `orm.associations`,
-          while the singular for inherits from `orm.association`. It
-          also contains within it declaration of a primative attribute
-          (`role`) as well as the two collection classes `persons` and
-          `movies`. This similarity is important because, later on, you
-          will see that working with associations is much like working
-          with regular entity objects.
+          while the singular form (`movie_person`) inherits from
+          `orm.association`. It also contains within it a declaration of
+          a primative attribute (`role`) as well as the two collection
+          classes `persons` and `movies`. These last two  declaration
+          establish the many-to-many relatioship between `movies` and
+          `person`. 
 
           Let's use these classe to record the relationships people had
           with *Monty Python and the Holy Grail*.
@@ -4997,28 +4997,56 @@ with book('Hacking Carapacian Core'):
           movie.orm.recreate()
           movie_person.orm.recreate()
 
-          mov     = movie(name="Monty Python and the Holy Grail")
+          # Create the movie object
+          mov = movie(name="Monty Python and the Holy Grail")
+
+          # Create two person person objects
           chapman = person(name='Graham Chapman')
           cleese  = person(name='John Cleese')
 
+          # Create an association (movie_person) where chapman is the
+          # person and his role is 'actor'. Append it to the movie's
+          # `movie_persons` collection of associations.
           mov.movie_persons += movie_person(
             person = chapman, role='actor'
           )
 
+          # Assert that the new association's `person` attribute is
+          # indeed chapman. Also note that its `movie` attribute is
+          # `mov` even though we did not explicitly make the assignment.
+          # The append operation was smart enough to do that for us.
+          is_(chapman, mov.movie_persons.last.person)
+          is_(mov, mov.movie_persons.last.movie)
+
+          # Add another association stating that cleese was an "actor"
+          # in `mov` as wel.
           mov.movie_persons += movie_person(
             person = cleese, role='actor'
           )
 
+          # Save `mov`. Persistent operations propogate so this will
+          # have effect of saving `mov` and its two constinuents association
+          # (movie_persons) as well as the associated `person` entity
+          # objects chapman and clees.
           mov.save()
 
+          # Reload the movie. This should give us a movie object that
+          # will have its own associations loaded from the database.
           mov1 = mov.orm.reloaded()
 
+          # Assert the movie was correctly reloaded
           eq(mov.id, mov1.id)
           eq(mov.name, mov1.name)
 
+          # Assert the two associations were loaded
           two(mov.movie_persons)
 
+          # Sort the assocaitions collection by its persons' names in
+          # situ
           mov.movie_persons.sort('person.name')
+
+          # Assert that the association objects contain the correct
+          # person objects.
           eq(chapman.id, mov1.movie_persons.first.person.id)
           eq(cleese.id, mov1.movie_persons.second.person.id)
 
