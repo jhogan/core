@@ -537,7 +537,7 @@ class site(asset.asset):
         """
 
         #// NOTE: To improve readability, you can set you editor to do
-        #// syntax highlighting for JavaScript. In vim, you can use:
+        #// syntax highlighting for JavaScript. In Vim, you can use:
         #//
         #//     set syn=javascript
 
