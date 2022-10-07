@@ -566,6 +566,8 @@ class site(asset.asset):
 
                 isnav = is_nav_link(src)
 
+                inspa = isnav
+
                 if (isnav){
                     e.preventDefault()
                 }
@@ -628,13 +630,35 @@ class site(asset.asset):
                             // fragments.
                             els = els.querySelectorAll('html>body>*')
 
-                            // Iterate over each element and replace
-                            // their client-side counterpart
-                            for(el of els){
-                                // Use the fragment's id to find and
-                                // replace
-                                old = document.querySelector('#' + el.id)
-                                old.parentNode.replaceChild(el, old)
+                            if(inspa){
+                                mains = document.getElementsByTagName(
+                                    'main'
+                                )
+                                if (mains.length > 1){
+                                    console.error(
+                                        'Multiple <main> tags ' + 
+                                        'were found'
+                                    )
+                                }else if (!mains.length){
+                                    console.error(
+                                        'No <main> tags were found'
+                                    )
+                                }
+
+                                old = mains[0]
+                                new_ = els[0]
+
+                                old.parentNode.replaceChild(new_, old)
+                            }else{ // Not inspa
+
+                                // Iterate over each element and replace
+                                // their client-side counterpart
+                                for(el of els){
+                                    // Use the fragment's id to find and
+                                    // replace
+                                    old = document.querySelector('#' + el.id)
+                                    old.parentNode.replaceChild(el, old)
+                                }
                             }
                         }else{ // If there was an error...
                             // Remove any elements with a class of
