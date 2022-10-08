@@ -527,6 +527,9 @@ class site(asset.asset):
             self._header = header(site=self)
         return self._header
 
+    # XXX Investigate the console warning "This page is in Quirks Mode.
+    # Page layout may be impacted. For Standards Mode use “<!DOCTYPE
+    # html>”."
     @classproperty
     def _eventjs(cls):
         """ Returns the JavasScript a browser will use to process
