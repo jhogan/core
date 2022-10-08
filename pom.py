@@ -617,6 +617,8 @@ class site(asset.asset):
                 xhr.onreadystatechange = function() {
                     if (this.readyState == 4){
 
+                        main = document.querySelector('main')
+
                         // If success
                         if (this.status < 400){
 
@@ -634,24 +636,13 @@ class site(asset.asset):
                             els = els.querySelectorAll('html>body>*')
 
                             if(inspa){
-                                mains = document.getElementsByTagName(
-                                    'main'
-                                )
-                                if (mains.length > 1){
-                                    console.error(
-                                        'Multiple <main> tags ' + 
-                                        'were found'
-                                    )
-                                }else if (!mains.length){
-                                    console.error(
-                                        'No <main> tags were found'
-                                    )
-                                }
-
-                                old = mains[0]
                                 new_ = els[0]
+                                url = new_.getAttribute('data-path')
 
-                                old.parentNode.replaceChild(new_, old)
+                                main.parentNode.replaceChild(new_, main)
+                                window.history.pushState(
+                                    new_.outerHTML, null, pg
+                                )
                             }else{ // Not inspa
 
                                 // Iterate over each element and replace
@@ -673,7 +664,6 @@ class site(asset.asset):
                             // first element under <main>. The response
                             // HTML will have a parent element with an
                             // "exception" class.
-                            main = document.querySelector('main')
                             main.insertAdjacentHTML(
                                 'afterbegin', xhr.responseText
                             )
@@ -715,7 +705,29 @@ class site(asset.asset):
 
                     for(el of els)
                         el.addEventListener('click', ajax)
-                    }
+
+                    window.addEventListener('popstate', (e) => {
+                        // Parse the HTML response
+                        parser = new DOMParser()
+
+                        new_ = parser.parseFromString(
+                            e.state, "text/html"
+                        )
+
+                        new_ = new_.querySelector('html>body>main')
+
+                        old = document.querySelector('main')
+
+                        old.parentNode.replaceChild(new_, old)
+                        console.log('popstate', e)
+                    });
+
+                    main = document.querySelector('main')
+                    window.history.pushState(
+                        main.outerHTML, null, window.location.pathname
+                    )
+                }
+
             );
         '''
 
