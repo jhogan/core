@@ -5000,9 +5000,13 @@ with book('Hacking Carapacian Core'):
           # Create the movie object
           mov = movie(name="Monty Python and the Holy Grail")
 
-          # Create two person person objects
+          # Create two person objects
           chapman = person(name='Graham Chapman')
           cleese  = person(name='John Cleese')
+
+          # `mov.movie_persons` returns a `movie_persons` association
+          # collection
+          type(movie_persons, mov.movie_persons)
 
           # Create an association (movie_person) where chapman is the
           # person and his role is 'actor'. Append it to the movie's
@@ -5025,9 +5029,9 @@ with book('Hacking Carapacian Core'):
           )
 
           # Save `mov`. Persistent operations propogate so this will
-          # have effect of saving `mov` and its two constinuents association
-          # (movie_persons) as well as the associated `person` entity
-          # objects chapman and clees.
+          # have effect of saving `mov` and its two constinuents
+          # association (movie_persons) as well as the associated
+          # `person` entity objects `chapman` and `clees`.
           mov.save()
 
           # Reload the movie. This should give us a movie object that
@@ -5041,7 +5045,7 @@ with book('Hacking Carapacian Core'):
           # Assert the two associations were loaded
           two(mov.movie_persons)
 
-          # Sort the assocaitions collection by its persons' names in
+          # Sort the association collection by its persons' names in
           # situ
           mov.movie_persons.sort('person.name')
 
@@ -5049,6 +5053,34 @@ with book('Hacking Carapacian Core'):
           # person objects.
           eq(chapman.id, mov1.movie_persons.first.person.id)
           eq(cleese.id, mov1.movie_persons.second.person.id)
+
+        print('''
+          Above we have created a `movie` object, `mov`, to represent
+          *Monty Python and the Holy Grail*. The first think to note is
+          that it provides us with a `movie_persons` attribute. This
+          attribute, unsurprisingly, returns an association of type
+          `movie_persons`. It is this collection where we append
+          `association` objects. 
+
+          The `association` objects we append are assigned a reference
+          to the `person` entity of the association as well as a value
+          for the `role`. We don't need to specify the `movie` entity in
+          the association's construction.  It will be added for us when
+          the association is appended to `mov.movie_person`.
+          
+          Later in the listing, we call the `save()` method on the `mov`
+          object. In addition to saving the `movie`, the association
+          objects are saved as well as well as the `person` objects they
+          reference. As always, these mutations are done in an atomic
+          transaction.
+
+          The listing ends with the movie object being reloaded. We are
+          able to compare it to the original movie object that was
+          saved thus proving that the movie made it to the database. We
+          are also able to reload the movie's associations and the
+          entity objects (person and movie) that they reference.
+          Assertions are made to prove this happened successfully.
+        ''')
 
         with section('Reflexive associations'):
           ...
