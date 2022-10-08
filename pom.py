@@ -539,200 +539,189 @@ class site(asset.asset):
         processing.
         """
 
-        # XXX Format sutch that the JavaScript's first line is not
-        # indented
-
         #// NOTE: To improve readability, you can set you editor to do
         #// syntax highlighting for JavaScript. In Vim, you can use:
         #//
         #//     set syn=javascript
 
         r = '''
-            function is_nav_link(e){
-                tree = ['A', 'LI', 'UL', 'NAV']
+function is_nav_link(e){
+    tree = ['A', 'LI', 'UL', 'NAV']
 
-                for(tag of tree){
-                    if (e.tagName != tag)
-                        return false
+    for(tag of tree){
+        if (e.tagName != tag)
+            return false
 
-                    e = e.parentNode
-                }
+        e = e.parentNode
+    }
 
-                return true
-            }
+    return true
+}
 
-            function ajax(e){
-                /* Process the event for the given control.  */
+function ajax(e){
+    /* Process the event for the given control.  */
 
-                // The event trigger (e.g., "blur", "click", etc.)
-                trigger = e.type
+    // The event trigger (e.g., "blur", "click", etc.)
+    trigger = e.type
 
-                // The control that the event happened to
-                src = e.target
+    // The control that the event happened to
+    src = e.target
 
-                isnav = is_nav_link(src)
+    isnav = is_nav_link(src)
 
-                inspa = isnav
+    inspa = isnav
 
-                if (isnav){
-                    e.preventDefault()
-                }
+    if (isnav){
+        e.preventDefault()
+    }
 
-                // If we have an <input> with a type of "text"...
-                if (src.type == 'text'){
-                    // Ensure the value of the <input>'s `value` attribute
-                    // is set to the actually in the textbox. This
-                    // ensures that, when it's HTML is transmitted, the
-                    // "value" is send as well.
-                    src.setAttribute('value', src.value)
-                }
+    // If we have an <input> with a type of "text"...
+    if (src.type == 'text'){
+        // Ensure the value of the <input>'s `value` attribute is set to
+        // the actually in the textbox. This ensures that, when it's
+        // HTML is transmitted, the "value" is send as well.
+        src.setAttribute('value', src.value)
+    }
 
-                // Get all alements that are fragments for the src.
-                frag = src.getAttribute('data-' + trigger + '-fragments')
-                els = document.querySelectorAll(frag)
+    // Get all alements that are fragments for the src.
+    frag = src.getAttribute('data-' + trigger + '-fragments')
+    els = document.querySelectorAll(frag)
 
-                // Get the name of the event handler of the trigger
-                hnd = src.getAttribute('data-' + trigger + '-handler')
+    // Get the name of the event handler of the trigger
+    hnd = src.getAttribute('data-' + trigger + '-handler')
 
-                if (isnav){
-                    html = null
-                    href = src.getAttribute('href')
-                    pg = window.location.pathname + '/' + href 
-                }else{
-                    // Concatenate the fragment's HTML
-                    html = ''
-                    for(el of els)
-                        html += el.outerHTML
+    if (isnav){
+        html = null
+        href = src.getAttribute('href')
+        pg = window.location.pathname + '/' + href 
+    }else{
+        // Concatenate the fragment's HTML
+        html = ''
+        for(el of els)
+            html += el.outerHTML
 
-                    pg = window.location.href
-                }
+        pg = window.location.href
+    }
 
-                // Create the dictionary to send to the server
-                d = {
-                    'hnd':      hnd,
-                    'src':      src.outerHTML,
-                    'trigger':  trigger,
-                    'html':     html     
-                }
+    // Create the dictionary to send to the server
+    d = {
+        'hnd':      hnd,
+        'src':      src.outerHTML,
+        'trigger':  trigger,
+        'html':     html     
+    }
 
-                // Use XMLHttpRequest to send the XHR request 
-                xhr = new XMLHttpRequest()
-                xhr.onreadystatechange = function() {
-                    if (this.readyState == 4){
+    // Use XMLHttpRequest to send the XHR request 
+    xhr = new XMLHttpRequest()
+    xhr.onreadystatechange = function() {
+        if (this.readyState == 4){
 
-                        main = document.querySelector('main')
+            main = document.querySelector('main')
 
-                        // If success
-                        if (this.status < 400){
+            // If success
+            if (this.status < 400){
 
-                            // Parse the HTML response
-                            parser = new DOMParser()
+                // Parse the HTML response
+                parser = new DOMParser()
 
-                            els = parser.parseFromString(
-                                xhr.responseText, "text/html"
-                            )
+                els = parser.parseFromString(
+                    xhr.responseText, "text/html"
+                )
 
-                            // Get the direct children under the <body>
-                            // tag of the HTML. These are the HTML
-                            // fragments that will replace current HTML
-                            // fragments.
-                            els = els.querySelectorAll('html>body>*')
+                // Get the direct children under the <body> tag of the
+                // HTML. These are the HTML fragments that will replace
+                // current HTML fragments.
+                els = els.querySelectorAll('html>body>*')
 
-                            if(inspa){
-                                new_ = els[0]
-                                url = new_.getAttribute('data-path')
+                if(inspa){
+                    new_ = els[0]
+                    url = new_.getAttribute('data-path')
 
-                                main.parentNode.replaceChild(new_, main)
-                                window.history.pushState(
-                                    new_.outerHTML, null, pg
-                                )
-                            }else{ // Not inspa
+                    main.parentNode.replaceChild(new_, main)
+                    window.history.pushState(
+                        new_.outerHTML, null, pg
+                    )
+                }else{ // Not inspa
 
-                                // Iterate over each element and replace
-                                // their client-side counterpart
-                                for(el of els){
-                                    // Use the fragment's id to find and
-                                    // replace
-                                    old = document.querySelector('#' + el.id)
-                                    old.parentNode.replaceChild(el, old)
-                                }
-                            }
-                        }else{ // If there was an error...
-                            // Remove any elements with a class of
-                            // 'exception'
-                            els = document.querySelectorAll('.exception')
-                            els.forEach(e => e.remove())
-
-                            // Insert the response HTML making it the
-                            // first element under <main>. The response
-                            // HTML will have a parent element with an
-                            // "exception" class.
-                            main.insertAdjacentHTML(
-                                'afterbegin', xhr.responseText
-                            )
-                        }
+                    // Iterate over each element and replace their
+                    // client-side counterpart
+                    for(el of els){
+                        // Use the fragment's id to find and replace
+                        old = document.querySelector('#' + el.id)
+                        old.parentNode.replaceChild(el, old)
                     }
                 }
+            }else{ // If there was an error...
+                // Remove any elements with a class of 'exception'
+                els = document.querySelectorAll('.exception')
+                els.forEach(e => e.remove())
 
-                // POST to the current URL
-                xhr.open("POST", pg)
-                xhr.setRequestHeader('Content-Type', 'application/json')
-                xhr.send(JSON.stringify(d))
+                // Insert the response HTML making it the first element
+                // under <main>. The response HTML will have a parent
+                // element with an "exception" class.
+                main.insertAdjacentHTML(
+                    'afterbegin', xhr.responseText
+                )
             }
+        }
+    }
 
-            // Once content has been loaded (DOMContentLoaded), we can
-            // add listeners to the controls.
-            document.addEventListener("DOMContentLoaded", function(ev) {
-        '''
+    // POST to the current URL
+    xhr.open("POST", pg)
+    xhr.setRequestHeader('Content-Type', 'application/json')
+    xhr.send(JSON.stringify(d))
+}
 
-        r += f'''
-                    trigs = {list(dom.element.Triggers)}
-        '''
+// Once content has been loaded (DOMContentLoaded), we can add listeners
+// to the controls.
+document.addEventListener("DOMContentLoaded", function(ev) {
+'''
+
+        r += f'    trigs = {list(dom.element.Triggers)}'
 
         r += '''
-                    // For each currently supported trigger (you may
-                    // have to update Triggers if the event you want to
-                    // support doesn't exist
-                    for (trig of trigs){
-                        els = document.querySelectorAll(
-                            '[data-' + trig + '-handler]'
-                        )
+    // For each currently supported trigger (you may
+    // have to update Triggers if the event you want to
+    // support doesn't exist
+    for (trig of trigs){
+        els = document.querySelectorAll(
+            '[data-' + trig + '-handler]'
+        )
 
-                        for(el of els)
-                            el.addEventListener(trig, ajax)
-                    }
+        for(el of els)
+            el.addEventListener(trig, ajax)
+    }
 
-                    els = document.querySelectorAll(
-                        'header>section>nav>ul>li a'
-                    )
+    els = document.querySelectorAll(
+        'header>section>nav>ul>li a'
+    )
 
-                    for(el of els)
-                        el.addEventListener('click', ajax)
+    for(el of els)
+        el.addEventListener('click', ajax)
 
-                    window.addEventListener('popstate', (e) => {
-                        // Parse the HTML response
-                        parser = new DOMParser()
+    window.addEventListener('popstate', (e) => {
+        // Parse the HTML response
+        parser = new DOMParser()
 
-                        new_ = parser.parseFromString(
-                            e.state, "text/html"
-                        )
+        new_ = parser.parseFromString(
+            e.state, "text/html"
+        )
 
-                        new_ = new_.querySelector('html>body>main')
+        new_ = new_.querySelector('html>body>main')
 
-                        old = document.querySelector('main')
+        old = document.querySelector('main')
 
-                        old.parentNode.replaceChild(new_, old)
-                        console.log('popstate', e)
-                    });
+        old.parentNode.replaceChild(new_, old)
+        console.log('popstate', e)
+    });
 
-                    main = document.querySelector('main')
-                    window.history.pushState(
-                        main.outerHTML, null, window.location.pathname
-                    )
-                }
-
-            );
-        '''
+    main = document.querySelector('main')
+    window.history.pushState(
+        main.outerHTML, null, window.location.pathname
+    )
+    }
+);
+'''
 
         #// Return the JavaScript
         return r
