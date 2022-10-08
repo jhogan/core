@@ -536,6 +536,9 @@ class site(asset.asset):
         processing.
         """
 
+        # XXX Format sutch that the JavaScript's first line is not
+        # indented
+
         #// NOTE: To improve readability, you can set you editor to do
         #// syntax highlighting for JavaScript. In Vim, you can use:
         #//
@@ -686,8 +689,7 @@ class site(asset.asset):
 
             // Once content has been loaded (DOMContentLoaded), we can
             // add listeners to the controls.
-            document.addEventListener("DOMContentLoaded",
-                function(ev) {
+            document.addEventListener("DOMContentLoaded", function(ev) {
         '''
 
         r += f'''
