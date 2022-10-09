@@ -195,7 +195,7 @@ class site(asset.asset):
                     if not isinstance(map, orm.fieldmapping):
                         continue
 
-                    setattr(self, map.name, getattr(wssup, map.name))
+                    setattr(sup, map.name, getattr(wssup, map.name))
 
                 # Make sure that self and its supers aren't flag as new,
                 # dirty or markedfordeletion
