@@ -5001,26 +5001,33 @@ with book('Hacking Carapacian Core'):
           mov = movie(name="Monty Python and the Holy Grail")
 
           # Create two person objects
-          chapman = person(name='Graham Chapman')
+          gilliam = person(name='Terry Gilliam')
           cleese  = person(name='John Cleese')
 
           # `mov.movie_persons` returns a `movie_persons` association
           # collection
           type(movie_persons, mov.movie_persons)
 
-          # Create an association (movie_person) where chapman is the
+          # Create an association (movie_person) where gilliam is the
           # person and his role is 'actor'. Append it to the movie's
           # `movie_persons` collection of associations.
           mov.movie_persons += movie_person(
-            person = chapman, role='actor'
+            person = gilliam, role='actor'
           )
 
           # Assert that the new association's `person` attribute is
-          # indeed chapman. Also note that its `movie` attribute is
+          # indeed gilliam. Also note that its `movie` attribute is
           # `mov` even though we did not explicitly make the assignment.
           # The append operation was smart enough to do that for us.
-          is_(chapman, mov.movie_persons.last.person)
+          is_(gilliam, mov.movie_persons.last.person)
           is_(mov, mov.movie_persons.last.movie)
+
+          # In addition to acting in the movie, Gilliam also co-directed
+          # it. Create an additional association for his role in
+          # directing the movie.
+          mov.movie_persons += movie_person(
+            person = gilliam, role='director'
+          )
 
           # Add another association stating that cleese was an "actor"
           # in `mov` as wel.
@@ -5029,9 +5036,9 @@ with book('Hacking Carapacian Core'):
           )
 
           # Save `mov`. Persistent operations propogate so this will
-          # have effect of saving `mov` and its two constinuents
+          # have effect of saving `mov` and its three constinuents
           # association (movie_persons) as well as the associated
-          # `person` entity objects `chapman` and `clees`.
+          # `person` entity objects `gilliam` and `clees`.
           mov.save()
 
           # Reload the movie. This should give us a movie object that
@@ -5042,8 +5049,8 @@ with book('Hacking Carapacian Core'):
           eq(mov.id, mov1.id)
           eq(mov.name, mov1.name)
 
-          # Assert the two associations were loaded
-          two(mov.movie_persons)
+          # Assert the three associations were loaded
+          three(mov1.movie_persons)
 
           # Sort the association collection by its persons' names in
           # situ
@@ -5051,16 +5058,24 @@ with book('Hacking Carapacian Core'):
 
           # Assert that the association objects contain the correct
           # person objects.
-          eq(chapman.id, mov1.movie_persons.first.person.id)
-          eq(cleese.id, mov1.movie_persons.second.person.id)
+
+          # Get a collection of both movie_persons sorted by id
+          mps = mov.movie_persons.sorted()
+          mps1 = mov.movie_persons1.sorted()
+
+          # Assert the associations were reloaded correctly
+          for mp, mp1 in zip(mps, mps1):
+            eq(mp.person.id,  mp1.person.id)
+            eq(mp.movie.id,   mp1.movie.id)
+            eq(mp.role,       mp1.role)
 
         print('''
           Above we have created a `movie` object, `mov`, to represent
-          *Monty Python and the Holy Grail*. The first think to note is
+          *Monty Python and the Holy Grail*. The first thing to note is
           that it provides us with a `movie_persons` attribute. This
           attribute, unsurprisingly, returns an association of type
           `movie_persons`. It is this collection where we append
-          `association` objects. 
+          `movie_person` `association` objects. 
 
           The `association` objects we append are assigned a reference
           to the `person` entity of the association as well as a value
@@ -5070,7 +5085,7 @@ with book('Hacking Carapacian Core'):
           
           Later in the listing, we call the `save()` method on the `mov`
           object. In addition to saving the `movie`, the association
-          objects are saved as well as well as the `person` objects they
+          objects are saved as well as the `person` objects they
           reference. As always, these mutations are done in an atomic
           transaction.
 
@@ -5089,6 +5104,12 @@ with book('Hacking Carapacian Core'):
 
 
     with section('Custom properties'):
+      ...
+
+    with section('Sorting'):
+      # Gover the nested sorting capabilities of composite-constiuents:
+      #
+      #    custs.sort('orders.createdat')
       ...
 
     with section('Indexes'):
