@@ -85,7 +85,7 @@ class tickets(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.get('/en/index/tickets', ws)
+        res = tab.get('/en/tickets', ws)
         self.status(200, res)
 
         self.eq(f'{ws.title} | Tickets', res['html>head>title'].text)
@@ -95,7 +95,7 @@ class tickets(tester.tester):
 
         tab = self.browser().tab()
         ws = carapacian_com.site()
-        res = tab.get('/en/index/tickets', ws)
+        res = tab.get('/en/tickets', ws)
         self.startswith(Title, res['html>head>title'].text)
 
     def it_responds_to_button_click(self):
