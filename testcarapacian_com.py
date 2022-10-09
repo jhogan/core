@@ -107,7 +107,6 @@ class tickets(tester.tester):
 
 
         res = tab.navigate('/en/tickets', ws)
-        print(tab)
         self.ok(res)
         btn = tab.html['button.clicktest'].only
 

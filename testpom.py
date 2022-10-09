@@ -637,7 +637,7 @@ class site(tester.tester):
 #
 #    ./testpom page -T 
 #
-# to work
+# to work. Running multiple times produces different errors.
 class page(tester.tester):
     def __init__(self, *args, **kwargs):
         # We will be testing with foonet so set it as the ORM's

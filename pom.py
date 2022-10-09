@@ -197,8 +197,8 @@ class site(asset.asset):
 
                     setattr(self, map.name, getattr(wssup, map.name))
 
-                # Make sure that self and its supers aren't flag as new
-                # dirty are markedfordeletion
+                # Make sure that self and its supers aren't flag as new,
+                # dirty or markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
                 sup = sup.orm._super
@@ -247,7 +247,6 @@ class site(asset.asset):
                     while sup:
                         sup.owner = root
                         sup = sup.orm.super
-
 
                 #self.orm.mappings['proprietor']._value = propr
                 self.proprietor = propr
