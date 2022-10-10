@@ -5095,7 +5095,55 @@ with book('Hacking Carapacian Core'):
           are also able to reload the movie's associations and the
           entity objects (person and movie) that they reference.
           Assertions are made to prove this happened successfully.
+
+          So far, we've appendend `person` objects to a `movie`
+          object. This is similar to the one-to-many
+          relationships we used above above. Additionally, we've record
+          the `role` that the `persons` played in the movie.
+          Furthermare, we are able to use associations to associate the
+          same `person` more than one time with a movie &mdash; we were
+          able to record that Terry Gilliam played an *acting* `role` in
+          the movie as well a a *directing* role (he co-directed the
+          movie with Terry Jones).
+
+          These abilities would give associations a significant
+          advantage over the one-to-many relationship. But the real need
+          for `association` objects arise of the need to establish
+          many-to-many relationships. It's not enough, in other words,
+          to associate a collection of persons with a movie. We need to
+          go the other way around and association a colection of
+          movies with a person since a person can act in (and direct)
+          zero or more movies. The next listing will record Terry
+          Gilliam's roles in the movies *Monty Python's The Meaning of
+          Life* and *Monty Python's Life of Brian*.
         ''')
+
+        with listing('The other side of the association'):
+          # Reload gilliam so we no know are working with a fresh copy
+          gilliam = gilliam.orm.reloaded()
+
+          # Like `movie` objects, `person` objects also have a
+          # `movie_persons` attribute that returns its `movie_persons`
+          # association.
+          type(movie_persons, gilliam.movie_persons)
+
+          # gilliam is already associated with Monty Python and the
+          # Holy Grail from the previous listing - once as an actor and
+          # once as a director
+          mps = gilliam.movie_persons
+          two(mps)
+
+          # Both associations were for the movie Monty Python and the
+          # Holy Grail
+          for mp in mps:
+            eq('Monty Python and the Holy Grail', mp.movie.name)
+
+          # One of the associations was for the role of actor
+          one(mps.where(lambda x: x.role == 'actor'))
+
+          # The other association was for the role of director
+          one(mps.where(lambda x: x.role == 'director'))
+
 
         with section('Reflexive associations'):
           ...
@@ -5152,7 +5200,8 @@ with book('Hacking Carapacian Core'):
       ...
 
   with chapter('The General Entity Model') as sec:
-    ...
+    with section('Using aprori.model()') as sec:
+      ...
 
   with chapter("Authoring DOM objects", id='22ee9373') as sec:
     ...
