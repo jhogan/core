@@ -548,7 +548,7 @@ class product_(tester.tester):
 
         good = self.getvalid(product.good, comment=1)
         reg = getvalidregion()
-        fac = party.facility(name='Area 51', footage=100000)
+        fac = party.facility(name='Area 51', footage=10_000)
         fac.save()
         org = getvalidcompany()
 
