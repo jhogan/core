@@ -399,6 +399,14 @@ class tester(entities.entity):
                                 # want necessarily be there (see
                                 # ecommerce.users.root)
                                 pass
+
+            # XXX Comment
+            if 'file' in mods:
+                # Clear radix cache
+                with suppress(AttributeError):
+                    del file.directory._radix
+
+
                         
         # Create and set principles at ORM level for testing
         sec = orm.security()

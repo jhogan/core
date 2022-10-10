@@ -656,10 +656,6 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-        # Clear radix cache
-        with suppress(AttributeError):
-            del file.directory._radix
-
         orm.security().override = True
         
     def it_calls__init__(self):
