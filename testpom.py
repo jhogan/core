@@ -1693,7 +1693,7 @@ class page(tester.tester):
 
         # Create user
         usr = ecommerce.user(
-            name = 'luser',
+            name = uuid4().hex,
             password = 'password1',
             site = ws,
         )
@@ -1705,8 +1705,8 @@ class page(tester.tester):
         frm = res1['form'].first
 
         # Set credentials
-        frm['input[name=username]'].first.value = 'luser'
-        frm['input[name=password]'].first.value = 'password1'
+        frm['input[name=username]'].first.value = usr.name
+        frm['input[name=password]'].first.value = usr.password
 
         # POST credentials to log in
         res1 = tab.post('/en/signon', ws=ws, frm=frm)
