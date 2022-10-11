@@ -1324,9 +1324,19 @@ class page(tester.tester):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
+        # We need to recreate all the tables involed in the tests below.
+        # This is because `derpnet` and `foonet` are being used at the
+        # same time which cause issues with the security subsystem, the
+        # file sytem, and the file system cache (radix).
+
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
         derpnet.orm.recreate(ascend=True)
+
+        # Delete all inodes and clear the _radix cache
+        file.inode.orm.recreate(descend=True)
+        with suppress(AttributeError):
+            del file.directory._radix
 
         try:
             ws = derpnet()
