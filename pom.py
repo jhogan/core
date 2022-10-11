@@ -334,7 +334,7 @@ class site(asset.asset):
         # ``site`` entity (e.g., siteid).
         # 
         #     site.get_users(name=name)
-        # STOPGAP: 8210b80c
+        # HACK: 8210b80c
         for map in ecommerce.users.orm.mappings.foreignkeymappings:
             if map.entity is site:
                 siteid = map.name

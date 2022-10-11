@@ -1307,6 +1307,7 @@ class page(tester.tester):
         )
         
         self.eq('ERROR', rec.levelname)
+
     def it_raises_404(self):
         class derpnets(pom.sites):
             pass
@@ -1329,6 +1330,7 @@ class page(tester.tester):
 
         try:
             ws = derpnet()
+
             with orm.proprietor(ws.proprietor):
                 tab = self.browser().tab()
                 res = tab.get('/en' + '/index', ws)
@@ -1542,7 +1544,6 @@ class page(tester.tester):
     def it_logs_hits(self):
         ''' Set up a page that tests the hit/logging facility '''
         class hitme(pom.page):
-
             def main(self):
                 req.hit.logs.write('Starting main')
                 dev = req.hit.useragent.devicetype
@@ -1552,7 +1553,6 @@ class page(tester.tester):
                 ''', class_='device')
 
                 req.hit.logs.write('Ending main')
-
 
         class signon(pom.page):
             def main(self):
@@ -1595,7 +1595,7 @@ class page(tester.tester):
 
         tab = brw.tab()
 
-        # NOTE The implicit variable `res` in the pages above collide
+        # NOTE The implicit variable `res` in the pages above collides
         # with the `res` variables I used below, so I change the below
         # ones to `res1`.
         ''' GET page '''
@@ -1677,8 +1677,9 @@ class page(tester.tester):
         ''' Log the authentication of a user '''
         # NOTE Authentication hit logging has a bit of a twist because
         # the request starts out with no JWT or authenticated user, but
-        # it ends up with one on completion of the request. The user that
-        # gets authenticated should be set in the hit entity (hit.user)
+        # it ends up with one on completion of the request. The user
+        # that gets authenticated should be set in the hit entity
+        # (hit.user)
 
         # Create user
         usr = ecommerce.user(
