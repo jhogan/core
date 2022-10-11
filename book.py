@@ -5061,7 +5061,7 @@ with book('Hacking Carapacian Core'):
 
           # Get a collection of both movie_persons sorted by id
           mps = mov.movie_persons.sorted()
-          mps1 = mov.movie_persons1.sorted()
+          mps1 = mov1.movie_persons.sorted()
 
           # Assert the associations were reloaded correctly
           for mp, mp1 in zip(mps, mps1):
@@ -5080,25 +5080,32 @@ with book('Hacking Carapacian Core'):
           The `association` objects we append are assigned a reference
           to the `person` entity of the association as well as a value
           for the `role`. We don't need to specify the `movie` entity in
-          the association's construction.  It will be added for us when
+          the association's construction;  it will be added for us when
           the association is appended to `mov.movie_person`.
           
           Later in the listing, we call the `save()` method on the `mov`
           object. In addition to saving the `movie`, the association
-          objects are saved as well as the `person` objects they
+          objects are saved as well as the `person` objects that they
           reference. As always, these mutations are done in an atomic
           transaction.
 
           The listing ends with the movie object being reloaded. We are
-          able to compare it to the original movie object that was
-          saved thus proving that the movie made it to the database. We
-          are also able to reload the movie's associations and the
-          entity objects (person and movie) that they reference.
-          Assertions are made to prove this happened successfully.
+          able to compare it to the original movie object that was saved
+          thus proving that the movie made it to the database and back
+          into the entity objects. We are also able to reload the
+          movie's associations and the entity objects (person and movie)
+          that they reference. Assertions are made to prove this
+          happened successfully.
+
+          Note that, as when accessing `entity` constituents, the
+          accessing of `associations` constituents
+          (`mov1.movie_persons`) causes the data to be lazy-loaded from
+          the database. The same is true when we access their entity
+          references (`mov1.movie_persons.first.person`).  
 
           So far, we've appendend `person` objects to a `movie`
           object. This is similar to the one-to-many
-          relationships we used above above. Additionally, we've record
+          relationships we used above. However, we've also recorded
           the `role` that the `persons` played in the movie.
           Furthermare, we are able to use associations to associate the
           same `person` more than one time with a movie &mdash; we were
@@ -5108,12 +5115,13 @@ with book('Hacking Carapacian Core'):
 
           These abilities would give associations a significant
           advantage over the one-to-many relationship. But the real need
-          for `association` objects arise of the need to establish
-          many-to-many relationships. It's not enough, in other words,
-          to associate a collection of persons with a movie. We need to
-          go the other way around and association a colection of
-          movies with a person since a person can act in (and direct)
-          zero or more movies. The next listing will record Terry
+          for `association` objects arise from the need to establish
+          many-to-many relationships between two entity classes. It's
+          not enough, in other words, to associate a collection of
+          persons with a movie. We need to go the other way around and
+          association a colection of movies with an individual person
+          since a person can act in (and direct) zero or more movies.
+          The next listing will demonstrate this by record Terry
           Gilliam's roles in the movies *Monty Python's The Meaning of
           Life* and *Monty Python's Life of Brian*.
         ''')
@@ -5127,9 +5135,9 @@ with book('Hacking Carapacian Core'):
           # association.
           type(movie_persons, gilliam.movie_persons)
 
-          # gilliam is already associated with Monty Python and the
-          # Holy Grail from the previous listing - once as an actor and
-          # once as a director
+          # gilliam is already associated with "Monty Python and the
+          # Holy Grail" from the previous listing - once as an actor and
+          # once as a director. Lets show that:
           mps = gilliam.movie_persons
           two(mps)
 
@@ -5143,6 +5151,41 @@ with book('Hacking Carapacian Core'):
 
           # The other association was for the role of director
           one(mps.where(lambda x: x.role == 'director'))
+
+          # Now lets associate two new movies to gilliam
+          lob = movie(name="Monty Python's Life of Brian")
+          mol = movie(name="Monty Python's The Meaning of Life")
+
+          # gilliam co-wrote Life of Brian
+          mps += movie_person(
+            movie = lob,
+            role = 'writer'
+          )
+
+          # gilliam directed Life of Brian
+          mps += movie_person(
+            movie = lob,
+            role = 'director'
+          )
+
+          # gilliam co-wrote The Meaning of Life
+          mps += movie_person(
+            movie = mol,
+            role = 'writer'
+          )
+
+          # gilliam acted in The Meaning of Life
+          mps += movie_person(
+            movie = mol,
+            role = 'actor'
+          )
+
+          # Save gilliam. gilliam itself won't be saved since it already
+          # exist in the database and we didn't make any updates to it.
+          # However, its collection of `movie_person` associations
+          # objects will be saved as well as the two new movies we
+          # created above since they are referenced by the associations.
+          gilliam.save()
 
 
         with section('Reflexive associations'):
