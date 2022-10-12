@@ -99,10 +99,25 @@ The following is an example of how to create a basic HTML5 document::
 
     # Both DOMs will produces the same HTML.
     assert html.html == html1.html
-"""
 
-"""
-.. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
+TODOs
+
+    TODO:10d9a676 Add a `document` class similar to the standard
+    JavaScrip DOM's `document` object. Currently, when we deal with
+    complete DOM objects, we use the `html` class (which represents the
+    <html> tag). For the most part this works because almost everything
+    in an HTML document comes under the <html> tag. However, it is
+    impossible to capture <!DOCTYPE> declarations using this structure
+    because <html> must be a sibling of <!DOCTYPE>. The JavaScript DOM
+    uses the `document` object to act as the parent object of <!DOCTYPE>
+    and <html>. Currently, to get the <!DOCTYPE> declaration in the HTML
+    that is emitted to the browser, there are some HACKs that prepend
+    "<!DOCTYPE html>" to the output. This works for the most part and
+    keeps browser consoles from complaining that the page is being
+    rendered in "quirks mode". However, being hacks these solutions
+    don't adequetly capture the abstraction of a DOM document. For
+    instance, there is no way to indicate which DTD needs to be used
+    (the hacks always defaults standard mode (`html`)).  
 """
 
 # References:

@@ -1136,7 +1136,7 @@ class dom_cssclass(tester.tester):
         rm = '%s %s' % (uuid4().hex, uuid4().hex)
         self.expect(IndexError, lambda: p.classes.remove(rm))
 
-class dom_html(tester.tester):
+class html(tester.tester):
     def it_calls_html_with_text_nodes(self):
         return 
         # TODO The first html prints .pretty with line feeds

@@ -373,7 +373,7 @@ class tester(entities.entity):
             
             for mod in mods:
                 mod = __import__(mod,  globals(), locals())
-                logs.info(f'Rebulidng for module: {mod}')
+                logs.info(f'Rebuilding for module: {mod}')
                 
 
                 for _, cls in inspect.getmembers(mod):
