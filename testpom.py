@@ -637,7 +637,7 @@ class site(tester.tester):
 #
 #    ./testpom page -T 
 #
-# to work
+# to work. Running multiple times produces different errors.
 class page(tester.tester):
     def __init__(self, *args, **kwargs):
         # We will be testing with foonet so set it as the ORM's
@@ -655,10 +655,6 @@ class page(tester.tester):
 
         if self.rebuildtables:
             fastnets.orm.recreate()
-
-        # Clear radix cache
-        with suppress(AttributeError):
-            del file.directory._radix
 
         orm.security().override = True
         
@@ -1311,6 +1307,7 @@ class page(tester.tester):
         )
         
         self.eq('ERROR', rec.levelname)
+
     def it_raises_404(self):
         class derpnets(pom.sites):
             pass
@@ -1327,12 +1324,23 @@ class page(tester.tester):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
+        # We need to recreate all the tables involed in the tests below.
+        # This is because `derpnet` and `foonet` are being used at the
+        # same time which cause issues with the security subsystem, the
+        # file sytem, and the file system cache (radix).
+
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
         derpnet.orm.recreate(ascend=True)
 
+        # Delete all inodes and clear the _radix cache
+        file.inode.orm.recreate(descend=True)
+        with suppress(AttributeError):
+            del file.directory._radix
+
         try:
             ws = derpnet()
+
             with orm.proprietor(ws.proprietor):
                 tab = self.browser().tab()
                 res = tab.get('/en' + '/index', ws)
@@ -1546,7 +1554,6 @@ class page(tester.tester):
     def it_logs_hits(self):
         ''' Set up a page that tests the hit/logging facility '''
         class hitme(pom.page):
-
             def main(self):
                 req.hit.logs.write('Starting main')
                 dev = req.hit.useragent.devicetype
@@ -1556,7 +1563,6 @@ class page(tester.tester):
                 ''', class_='device')
 
                 req.hit.logs.write('Ending main')
-
 
         class signon(pom.page):
             def main(self):
@@ -1599,7 +1605,7 @@ class page(tester.tester):
 
         tab = brw.tab()
 
-        # NOTE The implicit variable `res` in the pages above collide
+        # NOTE The implicit variable `res` in the pages above collides
         # with the `res` variables I used below, so I change the below
         # ones to `res1`.
         ''' GET page '''
@@ -1681,12 +1687,13 @@ class page(tester.tester):
         ''' Log the authentication of a user '''
         # NOTE Authentication hit logging has a bit of a twist because
         # the request starts out with no JWT or authenticated user, but
-        # it ends up with one on completion of the request. The user that
-        # gets authenticated should be set in the hit entity (hit.user)
+        # it ends up with one on completion of the request. The user
+        # that gets authenticated should be set in the hit entity
+        # (hit.user)
 
         # Create user
         usr = ecommerce.user(
-            name = 'luser',
+            name = uuid4().hex,
             password = 'password1',
             site = ws,
         )
@@ -1698,8 +1705,8 @@ class page(tester.tester):
         frm = res1['form'].first
 
         # Set credentials
-        frm['input[name=username]'].first.value = 'luser'
-        frm['input[name=password]'].first.value = 'password1'
+        frm['input[name=username]'].first.value = usr.name
+        frm['input[name=password]'].first.value = usr.password
 
         # POST credentials to log in
         res1 = tab.post('/en/signon', ws=ws, frm=frm)

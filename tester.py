@@ -20,8 +20,8 @@ import dbg
 import dom
 import ecommerce
 import entities
+import file
 import gc
-import time
 import inspect
 import io
 import json
@@ -33,6 +33,7 @@ import re
 import resource
 import sys
 import textwrap
+import time
 import timeit
 import uuid
 import www
@@ -374,7 +375,6 @@ class tester(entities.entity):
             for mod in mods:
                 mod = __import__(mod,  globals(), locals())
                 logs.info(f'Rebuilding for module: {mod}')
-                
 
                 for _, cls in inspect.getmembers(mod):
                     try:
@@ -399,6 +399,14 @@ class tester(entities.entity):
                                 # want necessarily be there (see
                                 # ecommerce.users.root)
                                 pass
+
+            # XXX Comment
+            if 'file' in mods:
+                # Clear radix cache
+                with suppress(AttributeError):
+                    del file.directory._radix
+
+
                         
         # Create and set principles at ORM level for testing
         sec = orm.security()

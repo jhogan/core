@@ -24,6 +24,9 @@ import string
 import sys
 import uuid
 
+"The Web is a detail."
+# Robert C. Martin
+
 """
 Contains classes that implement an object-oriented interface to HTML
 document.

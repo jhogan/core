@@ -22,6 +22,9 @@ import table as tblmod
 import uuid
 import warnings
 
+"The database is a detail."
+# Robert C. Martin
+
 # Some errors in MySQL are classified as "warnings" (such as 'SELECT
 # 0/0').  This means that no exception is raised; just an error message
 # is printed to stderr. We want these warnings to be proper exceptions

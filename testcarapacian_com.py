@@ -18,11 +18,18 @@ import pom
 import tester
 
 class sites(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'asset', 
+        super().__init__(mods=mods, *args, **kwargs)
     def it_inherits_from_pom_site(self):
         wss = carapacian_com.sites()
         self.isinstance(wss, pom.sites)
 
 class site(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'asset', 
+        super().__init__(mods=mods, *args, **kwargs)
+
     def it_has_correct_id(self):
         # Set constant
         Id = UUID(hex='c0784fca-3fe7-45e6-87f8-e2ebbc4e7bf4')
@@ -55,6 +62,10 @@ class site(tester.tester):
 ''' Page tests '''
 
 class home(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'asset', 
+        super().__init__(mods=mods, *args, **kwargs)
+
     def it_call_name(self):
         pg = carapacian_com.home()
         self.eq('index', pg.name)
@@ -77,6 +88,10 @@ class home(tester.tester):
         self.startswith(Title, res['html>head>title'].text)
 
 class tickets(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'asset', 
+        super().__init__(mods=mods, *args, **kwargs)
+
     def it_call_name(self):
         pg = carapacian_com.tickets()
         self.eq('tickets', pg.name)
@@ -85,7 +100,7 @@ class tickets(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.get('/en/index/tickets', ws)
+        res = tab.get('/en/tickets', ws)
         self.status(200, res)
 
         self.eq(f'{ws.title} | Tickets', res['html>head>title'].text)
@@ -95,7 +110,7 @@ class tickets(tester.tester):
 
         tab = self.browser().tab()
         ws = carapacian_com.site()
-        res = tab.get('/en/index/tickets', ws)
+        res = tab.get('/en/tickets', ws)
         self.startswith(Title, res['html>head>title'].text)
 
     def it_responds_to_button_click(self):
@@ -107,7 +122,6 @@ class tickets(tester.tester):
 
 
         res = tab.navigate('/en/tickets', ws)
-        print(tab)
         self.ok(res)
         btn = tab.html['button.clicktest'].only
 
