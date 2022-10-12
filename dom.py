@@ -6589,6 +6589,11 @@ class html(element):
                 The decl parameter will be the entire contents of the
                 declaration inside the <!...> markup (e.g. 'DOCTYPE html').
                 """
+                # HACK:10d9a676 we need to fully support DOCTYPEs, not
+                # just the standard mode doc type. See TODO:10d9a676.
+                if decl == 'DOCTYPE html':
+                    return
+
                 raise NotImplementedError(
                     'HTML doctype declaration are not implemented'
                 )

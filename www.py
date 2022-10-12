@@ -323,10 +323,14 @@ class application:
                         try:
                             pg = req.page
                         except Exception:
-                            res.body = p.html
+                            # HACK:10d9a676 We shoudn't have to prepend
+                            # DOCTYPE here. See TODO:10d9a676.
+                            res.body = f'<!DOCTYPE html>\n{p.html}'
                         else:
                             pg.flash(p)
-                            res.body = pg.html
+                            # HACK:10d9a676 We shoudn't have to prepend
+                            # DOCTYPE here. See TODO:10d9a676.
+                            res.body = f'<!DOCTYPE html>\n{pg.html}'
 
             # In there was an exception processing the exception,
             # ensure the response is 500 with a simple error message.
@@ -882,7 +886,7 @@ class _request:
             # If the browser didn't send HTML fragments, return None.
             return None
         else:
-            return self.page.html
+            return f'<!DOCTYPE html>\n{self.page.html}'
 
     @property
     def hit(self):
