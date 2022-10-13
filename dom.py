@@ -120,7 +120,9 @@ TODOs
     rendered in "quirks mode". However, being hacks these solutions
     don't adequetly capture the abstraction of a DOM document. For
     instance, there is no way to indicate which DTD needs to be used
-    (the hacks always defaults standard mode (`html`)).  
+    (the hacks always defaults standard mode (`html`)).  When correcting
+    this, be sure to grep for the snowflake 10d9a676 as there are
+    several other places that reference this TODO.
 """
 
 # References:

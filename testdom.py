@@ -1193,6 +1193,9 @@ class html(tester.tester):
         self.eq(TestHtmlMin, els.html)
 
     def it_doesnt_parse_decls(self):
+        # NOTE HTML declaration support is half implemented. The parser
+        # can handle standard mode (<!DOCTYPE html>), but nothing else.
+        # See TODO:10d9a676 for more
         html = '''
         <!DOCTYPE 
             HTML 
