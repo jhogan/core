@@ -1194,12 +1194,23 @@ class html(tester.tester):
 
     def it_doesnt_parse_decls(self):
         html = '''
+        <!DOCTYPE 
+            HTML 
+            PUBLIC "-//W3C//DTD HTML 4.01//EN"
+            "http://www.w3.org/TR/html4/strict.dtd"
+        >
+        <html>
+        </html>
+        '''
+        self.expect(NotImplementedError, lambda: dom.html(html))
+
+        html = '''
         <!DOCTYPE html>
         <html>
         </html>
         '''
+        self.expect(None, lambda: dom.html(html))
 
-        self.expect(NotImplementedError, lambda: dom.html(html))
 
     def it_doesnt_parse_unknown_decls(self):
         # TODO The below dosen't work. The fake uknown declaration is
