@@ -1197,10 +1197,8 @@ class tester(entities.entity):
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
-    # FIXME The assertions `gt`, `lt` and `le` are broken. they have the
-    # expect and actual mixed up. `ge` was corrected recently.
     def gt(self, expect, actual, msg=None):
-        if not (expect > actual): self._failures += failure()
+        if not (expect < actual): self._failures += failure()
 
     def assertGe(self, expect, actual, msg=None):
         if not (expect >= actual): self._failures += failure()
@@ -1214,6 +1212,8 @@ class tester(entities.entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
+    # FIXME The assertions `lt` and `le` are broken. they have the
+    # expect and actual mixed up. `ge` was corrected recently.
     def lt(self, expect, actual, msg=None):
         if not (expect < actual): self._failures += failure()
 
