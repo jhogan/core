@@ -15,6 +15,7 @@ import carapacian_com
 import orm
 import party
 import pom
+import primative
 import tester
 
 class sites(tester.tester):
@@ -120,19 +121,26 @@ class tickets(tester.tester):
         tab = self.browser().tab()
         ws = carapacian_com.site()
 
-
         res = tab.navigate('/en/tickets', ws)
         self.ok(res)
-        btn = tab.html['button.clicktest'].only
+        btn, btn1 = tab.html['.test1 button']
 
-        p = tab.html['p.clicktest'].only
-        self.empty(p.text)
+        p, p1 = tab.html['.test1 p']
+        self.empty(p.text + p1.text)
 
         btn.click()
+        btn1.click()
 
-        p = tab.html['p.clicktest'].only
+        p, p1 = tab.html['.test1 p']
 
-        self.eq('CLICKED', p.text)
+        dt = primative.datetime(p.text)
+        dt1 = primative.datetime(p1.text)
+        today = primative.datetime.utcnow().date
+        
+        self.gt(dt, dt1)
+        self.eq(dt.date, today)
+        self.eq(dt1.date, today)
+
 
 if __name__ == '__main__':
     tester.cli().run()

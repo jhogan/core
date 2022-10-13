@@ -213,6 +213,7 @@ class tickets(pom.page):
         self.main += dom.p('Carapacian Tickets')
 
         ''' Two widgets; one handler; one fragment '''
+        div = dom.div(class_='test1')
         btn1 = dom.button('Clickme One')
         btn2 = dom.button('Clickme Two')
         p = dom.p()
@@ -221,7 +222,9 @@ class tickets(pom.page):
         btn1.onclick += self.btnclicker_onclick, p
         btn2.onclick += self.btnclicker_onclick, p1
 
-        self.main += btn1, btn2, p, p1
+        div += btn1, btn2, p, p1
+        self.main += div
+
 
         ''' No fragment '''
         btn3 = dom.button('No fragments')
