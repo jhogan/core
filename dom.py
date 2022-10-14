@@ -1272,9 +1272,11 @@ class element(entities.entity):
         self._revs = None
 
         if body is not None:
-            if     not isinstance(body, element) \
-               and not isinstance(body, elements):
-
+            if isinstance(body, element):
+                pass
+            elif isinstance(body, elements):
+                pass
+            else:
                 body = str(body)
 
             self += body
