@@ -455,61 +455,7 @@ class dom_script(tester.tester):
         expect = f'<script>{body}</script>'
         self.eq(expect, script.html)
 
-class dom_p(tester.tester):
-    def it_calls__init___with_str_and_args(self):
-        ''' With str arg '''
-        hex1, hex2 = [x.hex for x in (uuid4(), uuid4())]
-        p = dom.paragraph('''
-        hex1: %s
-        hex2: %s
-        ''', hex1, hex2)
-        
-        expect = self.dedent('''
-        <p>
-          hex1: %s
-          hex2: %s
-        </p>
-        ''', hex1, hex2)
-
-        self.eq(expect, p.pretty)
-
-        ''' With element arg '''
-        txt = dom.text('Plain white sauce!')
-
-        strong = dom.strong('''
-            Plain white sauce will make your teeth
-        ''')
-
-        # Nest <span> into <strong>
-        span = dom.span('go grey.');
-        strong += span
-
-        # NOTE The spacing is botched. This should be corrected when we
-        # write tests for dom.text.
-        p = dom.paragraph(txt)
-        p += strong
-
-        expect = self.dedent('''
-        <p>
-          Plain white sauce!
-          <strong>
-            Plain white sauce will make your teeth
-            <span>
-              go grey.
-            </span>
-          </strong>
-        </p>
-        ''')
-
-        self.eq(expect, p.pretty)
-
-        # Expect a ValueError if *args are given for a non-str first
-        # argument
-        self.expect(
-          ValueError, 
-          lambda: dom.paragraph(txt, 'arg1', 'arg2')
-        )
-
+class p(tester.tester):
     def it_calls_html(self):
         p = dom.paragraph()
 

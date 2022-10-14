@@ -1214,7 +1214,7 @@ class element(entities.entity):
             table,     ul,
         )
 
-    def __init__(self, body=None, *args, **kwargs):
+    def __init__(self, body=None, **kwargs):
         """ Create an HTML5 DOM element.
 
         :param: str|element|elements: The body of the element. If str,
@@ -1276,11 +1276,6 @@ class element(entities.entity):
                and not isinstance(body, elements):
 
                 body = str(body)
-
-            if type(body) is str:
-                body %= args
-            elif args:
-                raise ValueError('No args allowed')
 
             self += body
 

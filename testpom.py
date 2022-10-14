@@ -1163,9 +1163,8 @@ class page(tester.tester):
         class time(pom.page):
             def main(self):
                 # Ensure we have access to the request object from page.
-                self.main +=  dom.p('''
-                    Query string from request: %s
-                    ''', www.request.qs
+                self.main += dom.p(
+                    f'Query string from request: {www.request.qs}'
                 )
 
         ws = foonet()
