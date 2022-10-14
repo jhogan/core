@@ -400,7 +400,9 @@ class tester(entities.entity):
                                 # ecommerce.users.root)
                                 pass
 
-            # XXX Comment
+            # If we are deleting all the tables it the file module,
+            # invalidate the radix cache since it will be a store of the
+            # data in those tables.
             if 'file' in mods:
                 # Clear radix cache
                 with suppress(AttributeError):
