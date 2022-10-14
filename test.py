@@ -2790,7 +2790,7 @@ class orm_(tester):
         expected = art.updatedat
         art.save()
         art1 = artist(art.id)
-        self.gt(art.updatedat, expected)
+        self.gt(expected, art.updatedat)
 
     def it_cant_instantiate_entities(self):
         ''' Since orm.entities() wouldn't have an orm property (since a
@@ -10714,7 +10714,7 @@ class orm_(tester):
 
             for art1 in arts1:
                 if op == 'NOT':
-                    self.gt(art1.weight, 1)
+                    self.gt(1, art1.weight)
                 else:
                     self.le(art1.weight, 1)
 
@@ -10723,7 +10723,7 @@ class orm_(tester):
                 self.notnone(fact1)
                 
                 if op == 'NOT':
-                    self.gt(fact1.weight, 11)
+                    self.gt(11, fact1.weight)
                 else:
                     self.le(fact1.weight, 11)
 
@@ -15095,8 +15095,8 @@ class gem_shipment(tester):
         for itm, itm1 in zip(itms, itms1):
             siois = itm.shipitem_orderitems.sorted()
             siois1 = itm1.shipitem_orderitems.sorted()
-            self.gt(siois.count, 0)
-            self.gt(siois1.count, 0)
+            self.gt(0, siois.count)
+            self.gt(0, siois1.count)
             self.eq(siois.count, siois1.count)
 
             for sioi, sioi1 in zip(siois, siois1):
