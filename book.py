@@ -5128,7 +5128,7 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with listing('The other side of the association'):
-          # Reload gilliam so we no know are working with a fresh copy
+          # Reload gilliam so we know we are working with a fresh copy
           gilliam = gilliam.orm.reloaded()
 
           # Like `movie` objects, `person` objects also have a
@@ -5194,22 +5194,26 @@ with book('Hacking Carapacian Core'):
           # Get a reference to its movie_persons collection
           mps1 = gilliam1.movie_persons
 
-          # It should have six associations; two for each movie
+          # Both movie_persons collections should have six association
+          # objects; two for each movie. 
+          six(mps)
           six(mps1)
 
           # Sort both association collections by id
           mps.sort()
           mps1.sort()
 
-          # Iterate over each collection
+          # Since both association collecions have six element and have
+          # been sorted by id, we can use zip() to iterate over them and
+          # ensure their attributes match each other.
           for mp, mp1 in zip(mps, mps1):
             # Assert that the reloaded association matches the original
             eq(mp.id, mp1.id)
 
             # Assert that the reloaded association's `role` matches the
             # original
-
             eq(mp.movie.id, mp1.movie.id)
+
             # Assert that the reloaded association's `person` matches
             # the original
             eq(mp.person.id, mp1.person.id)
@@ -5218,6 +5222,18 @@ with book('Hacking Carapacian Core'):
             # original
             eq(mp.movie.id, mp1.movie.id)
 
+        print('''
+          The above listing demontrates creating associations from
+          person-to-movie (as opposed to movie-to-person as in the prior
+          listing).  We were able reload the person object `gilliam` and
+          see that its associations from the prior listing were
+          successfully associated to it. Then we were able to add new
+          associations to two other movies gilliam had played a role in.
+          Like always, we saved the `person` object (thus saving its
+          constiuents), reloaded the `person`, and were able to
+          assert that the associations and the new movie objects were
+          saved to the database.
+        ''')
 
         with section('Reflexive associations'):
           ...
