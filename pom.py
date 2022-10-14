@@ -254,6 +254,26 @@ class site(asset.asset):
             # Save the association between the site and its proprietor
             self.save()
 
+    @property
+    def styles(self):
+        ''' This property can be overridden by subclasses to provide
+        zero ore more CSS-like objects. These object are added as
+        <style> elements to the <head> of `page` objects 
+        
+        A CSS-like object can be a simple string with some CSS in it.
+        Alternatively, it can be a dom.style object or some other
+        instance that the framework recognises (or is made to recognize)
+        as CSS-like (perhaps some sort SASS or LESS object that can be
+        complied to CSS). 
+
+        A single instance of a CSS-like object can be returned, or an
+        iterable object (such as a list or some other collection) of
+        such CSS-like objects can be returned. `None` can also be
+        returned implying that there are no CSS-like objects (this
+        is the default).
+        '''
+        return None
+
     @orm.attr(file.directory)
     def directory(self):
         """ Returns the site's main directory.
@@ -493,6 +513,14 @@ class site(asset.asset):
 
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
+
+        styles = self.styles
+        if styles:
+            if isinstance(styles, str):
+                styles = [styles]
+                
+            for style in styles:
+                self._head += dom.style(style)
 
         # Add the JavaScript event handling code as a script tag. We
         # make the `id` a UUID so it can be referenced in tests.
