@@ -4434,7 +4434,7 @@ with book('Hacking Carapacian Core'):
           pretty straightforward. Let's say that we are building an
           order entry system. In the system, we want to model customers
           and sales orders. Each customer can have zero or more sales
-          orders. Lets define those class and the one-to-many
+          orders. Let's define those class and the one-to-many
           relationship between them:
         ''')
 
@@ -4985,6 +4985,12 @@ with book('Hacking Carapacian Core'):
           establish the many-to-many relatioship between `movies` and
           `person`. 
 
+          Another thing to note is that we named the association class
+          `movie_person(s)` instead of `person_movie(s)`. Here we are
+          adhering to the convention that the association classes should
+          be named after the two entity classes they associate, and that
+          the ordering should be done alphabetically.
+
           Let's use these classe to record the relationships people had
           with *Monty Python and the Holy Grail*.
         ''')
@@ -5224,19 +5230,29 @@ with book('Hacking Carapacian Core'):
 
         print('''
           The above listing demontrates creating associations from
-          person-to-movie (as opposed to movie-to-person as in the prior
-          listing).  We were able reload the person object `gilliam` and
-          see that its associations from the prior listing were
-          successfully associated to it. Then we were able to add new
-          associations to two other movies gilliam had played a role in.
-          Like always, we saved the `person` object (thus saving its
-          constiuents), reloaded the `person`, and were able to
-          assert that the associations and the new movie objects were
-          saved to the database.
+          person-to-movie (as opposed to movie-to-person, as in the
+          prior listing).  We were able reload the person object
+          `gilliam` and see that its associations from the prior listing
+          were successfully associated to it. Then we were able to add
+          new associations to two other movies gilliam had played a role
+          in.  Like always, we saved the `person` object (thus saving
+          its constiuents), reloaded the `person`, and assert that the
+          associations and the new movie objects were saved to the
+          database.
         ''')
 
         with section('Reflexive associations'):
-          ...
+          print('''
+            A special type of association occures when the two entity
+            classes reference by the association are the same. These
+            associations are called reflexive.
+
+            Consider a social networking company. In this company, we
+            would have persons who needed to be associationed with other
+            persons (such as when you "friend" someone on Facebook).
+            This is an example of a many-to-many relationship between
+            members of the same class (`person`).
+          '''
 
       with section('Many-to-one relationships'):
 
