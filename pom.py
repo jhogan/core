@@ -11,6 +11,7 @@
 from contextlib import suppress
 from dbg import B, PM
 from uuid import UUID, uuid4
+from entities import classproperty
 import asset, ecommerce
 import datetime
 import db
@@ -114,11 +115,11 @@ class site(asset.asset):
 
     def _ensure(self):
         """ Ensure that the site object is stored in the database as
-        well as it's proprietor and its association with its proprietor.
+        well as its proprietor and its association with its proprietor.
         Normaly, these data will need to be saved once.
 
         This method is called by the constructor to ensure that every
-        time a site is instantiated, it's data is saved in the database.
+        time a site is instantiated, its data is saved in the database.
         """
 
         # Only _ensure subtypes of `site`
@@ -194,10 +195,10 @@ class site(asset.asset):
                     if not isinstance(map, orm.fieldmapping):
                         continue
 
-                    setattr(self, map.name, getattr(wssup, map.name))
+                    setattr(sup, map.name, getattr(wssup, map.name))
 
-                # Make sure that self and its supers aren't flag as new
-                # dirty are markedfordeletion
+                # Make sure that self and its supers aren't flag as new,
+                # dirty or markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
                 sup = sup.orm._super
@@ -247,10 +248,31 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
-                self.orm.mappings['proprietor']._value = propr
+                #self.orm.mappings['proprietor']._value = propr
+                self.proprietor = propr
 
             # Save the association between the site and its proprietor
             self.save()
+
+    @property
+    def styles(self):
+        ''' This property can be overridden by subclasses to provide
+        zero ore more CSS-like objects. These object are added as
+        <style> elements to the <head> of `page` objects 
+        
+        A CSS-like object can be a simple string with some CSS in it.
+        Alternatively, it can be a dom.style object or some other
+        instance that the framework recognises (or is made to recognize)
+        as CSS-like (perhaps some sort SASS or LESS object that can be
+        complied to CSS). 
+
+        A single instance of a CSS-like object can be returned, or an
+        iterable object (such as a list or some other collection) of
+        such CSS-like objects can be returned. `None` can also be
+        returned implying that there are no CSS-like objects (this
+        is the default).
+        '''
+        return None
 
     @orm.attr(file.directory)
     def directory(self):
@@ -332,7 +354,7 @@ class site(asset.asset):
         # ``site`` entity (e.g., siteid).
         # 
         #     site.get_users(name=name)
-        # STOPGAP: 8210b80c
+        # HACK: 8210b80c
         for map in ecommerce.users.orm.mappings.foreignkeymappings:
             if map.entity is site:
                 siteid = map.name
@@ -492,6 +514,20 @@ class site(asset.asset):
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
+        styles = self.styles
+        if styles:
+            if isinstance(styles, str):
+                styles = [styles]
+                
+            for style in styles:
+                self._head += dom.style(style)
+
+        # Add the JavaScript event handling code as a script tag. We
+        # make the `id` a UUID so it can be referenced in tests.
+        self._head += dom.script(
+            self._eventjs, id = 'A0c3ac31e55d48a68d49ad293f4f54e31'
+        )
+
         # TODO Consolidate with page.head
         for res in self.resources:
             src = res.relative if res.local else str(res.url)
@@ -517,6 +553,202 @@ class site(asset.asset):
         if not self._header:
             self._header = header(site=self)
         return self._header
+
+    @classproperty
+    def _eventjs(cls):
+        """ Returns the JavasScript a browser will use to process
+        dom.events.
+
+        See the docstring at dom.event for details on DOM event
+        processing.
+        """
+
+        #// NOTE: To improve readability, you can set you editor to do
+        #// syntax highlighting for JavaScript. In Vim, you can use:
+        #//
+        #//     set syn=javascript
+
+        r = '''
+function is_nav_link(e){
+    tree = ['A', 'LI', 'UL', 'NAV']
+
+    for(tag of tree){
+        if (e.tagName != tag)
+            return false
+
+        e = e.parentNode
+    }
+
+    return true
+}
+
+function ajax(e){
+    /* Process the event for the given control.  */
+
+    // The event trigger (e.g., "blur", "click", etc.)
+    trigger = e.type
+
+    // The control that the event happened to
+    src = e.target
+
+    isnav = is_nav_link(src)
+
+    inspa = isnav
+
+    if (isnav){
+        e.preventDefault()
+    }
+
+    // If we have an <input> with a type of "text"...
+    if (src.type == 'text'){
+        // Ensure the value of the <input>'s `value` attribute is set to
+        // the actually in the textbox. This ensures that, when it's
+        // HTML is transmitted, the "value" is send as well.
+        src.setAttribute('value', src.value)
+    }
+
+    // Get all alements that are fragments for the src.
+    frag = src.getAttribute('data-' + trigger + '-fragments')
+    els = document.querySelectorAll(frag)
+
+    // Get the name of the event handler of the trigger
+    hnd = src.getAttribute('data-' + trigger + '-handler')
+
+    if (isnav){
+        html = null
+        href = src.getAttribute('href')
+        pg = window.location.pathname + '/' + href 
+    }else{
+        // Concatenate the fragment's HTML
+        html = ''
+        for(el of els)
+            html += el.outerHTML
+
+        pg = window.location.href
+    }
+
+    // Create the dictionary to send to the server
+    d = {
+        'hnd':      hnd,
+        'src':      src.outerHTML,
+        'trigger':  trigger,
+        'html':     html     
+    }
+
+    // Use XMLHttpRequest to send the XHR request 
+    xhr = new XMLHttpRequest()
+    xhr.onreadystatechange = function() {
+        if (this.readyState == 4){
+
+            main = document.querySelector('main')
+
+            // If success
+            if (this.status < 400){
+
+                // Parse the HTML response
+                parser = new DOMParser()
+
+                els = parser.parseFromString(
+                    xhr.responseText, "text/html"
+                )
+
+                // Get the direct children under the <body> tag of the
+                // HTML. These are the HTML fragments that will replace
+                // current HTML fragments.
+                els = els.querySelectorAll('html>body>*')
+
+                if(inspa){
+                    new_ = els[0]
+                    url = new_.getAttribute('data-path')
+
+                    main.parentNode.replaceChild(new_, main)
+                    window.history.pushState(
+                        new_.outerHTML, null, pg
+                    )
+                }else{ // Not inspa
+
+                    // Iterate over each element and replace their
+                    // client-side counterpart
+                    for(el of els){
+                        // Use the fragment's id to find and replace
+                        old = document.querySelector('#' + el.id)
+                        old.parentNode.replaceChild(el, old)
+                    }
+                }
+            }else{ // If there was an error...
+                // Remove any elements with a class of 'exception'
+                els = document.querySelectorAll('.exception')
+                els.forEach(e => e.remove())
+
+                // Insert the response HTML making it the first element
+                // under <main>. The response HTML will have a parent
+                // element with an "exception" class.
+                main.insertAdjacentHTML(
+                    'afterbegin', xhr.responseText
+                )
+            }
+        }
+    }
+
+    // POST to the current URL
+    xhr.open("POST", pg)
+    xhr.setRequestHeader('Content-Type', 'application/json')
+    xhr.send(JSON.stringify(d))
+}
+
+// Once content has been loaded (DOMContentLoaded), we can add listeners
+// to the controls.
+document.addEventListener("DOMContentLoaded", function(ev) {
+'''
+
+        r += f'    trigs = {list(dom.element.Triggers)}'
+
+        r += '''
+    // For each currently supported trigger (you may
+    // have to update Triggers if the event you want to
+    // support doesn't exist
+    for (trig of trigs){
+        els = document.querySelectorAll(
+            '[data-' + trig + '-handler]'
+        )
+
+        for(el of els)
+            el.addEventListener(trig, ajax)
+    }
+
+    els = document.querySelectorAll(
+        'header>section>nav>ul>li a'
+    )
+
+    for(el of els)
+        el.addEventListener('click', ajax)
+
+    window.addEventListener('popstate', (e) => {
+        // Parse the HTML response
+        parser = new DOMParser()
+
+        new_ = parser.parseFromString(
+            e.state, "text/html"
+        )
+
+        new_ = new_.querySelector('html>body>main')
+
+        old = document.querySelector('main')
+
+        old.parentNode.replaceChild(new_, old)
+        console.log('popstate', e)
+    });
+
+    main = document.querySelector('main')
+    window.history.pushState(
+        main.outerHTML, null, window.location.pathname
+    )
+    }
+);
+'''
+
+        #// Return the JavaScript
+        return r
 
 class forms:
     """ ``forms`` acts as a namespace to get to standard forms that a
@@ -1142,7 +1374,7 @@ class page(dom.html):
         :param: msg str: The text to put in the flash message.
         """
         if isinstance(msg, str):
-            msg = dom.paragraph(msg)
+            msg = dom.p(msg)
 
         art = dom.article(msg, class_="flash")
 
@@ -1521,8 +1753,16 @@ class page(dom.html):
 
         self.main._setparent(None)
 
-        self.body += self.main
-        self.body += self.sidebars
+        main = self.main
+        body = self.body
+        sbs = self.sidebars
+
+        if main not in body:
+            body += main
+
+        if sbs not in body:
+            body += sbs
+
         return els
 
     @property
@@ -1890,9 +2130,10 @@ class _404(page):
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
 
-        self.main += dom.paragraph('''
-        Could not find <span class="resource">%s</span>
-        ''', ex.resource)
+        self.main += dom.p(
+            'Could not find '
+            f'<span class="resource">{ex.resource}</span>'
+        )
 
     @property
     def name(self):

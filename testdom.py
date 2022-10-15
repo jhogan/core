@@ -82,6 +82,7 @@ class dom_elements(tester.tester):
                     pass
                 else:
                     del x.attributes['id']
+
         htmlmin = dom.html(TestHtmlMin)
         rm_uuids(htmlmin)
 
@@ -105,7 +106,60 @@ class dom_elements(tester.tester):
         bs = html['strong']
         self.zero(bs)
 
-class dom_element(tester.tester):
+class element(tester.tester):
+    def it_raises_when_same_child_is_added_more_than_once(self):
+        ''' Add child to element '''
+        p = dom.p()
+        span = dom.span()
+
+        def append():
+            nonlocal p
+            p += span
+
+        append()
+
+        self.expect(ValueError, append)
+
+        def append():
+            nonlocal p
+            p << span
+
+        self.expect(ValueError, append)
+
+        ''' elements collections themselves should probably not be
+        constrained from having identical elements added more than once
+        '''
+        ps = dom.ps()
+        span = dom.span()
+
+        ps += span
+        ps += span
+        ps << span
+        ps.append(span)
+        ps.unshift(span)
+        ps.insert(0, span)
+        ps.insertbefore(0, span)
+        ps.insertafter(0, span)
+        ps.push(span)
+
+        self.nine(ps)
+        self.all(type(x) is dom.span for x in ps)
+
+        
+    def it_raises_when_body_is_given_to_void_elements(self):
+        ''' We want to get a ValueError when we add a body argument to
+        an element that is marked `isvoid`. Elements that are "void",
+        like <input>, <meta> and <hr> should not contain a body.
+        '''
+
+        # A tuple of void elements
+        clss = (
+            dom.link, dom.base, dom.img, dom.input, dom.meta, dom.hr,
+        )
+
+        for cls in clss:
+            self.expect(ValueError, lambda: cls('some body text'))
+
     def it_gets_text(self):
         # FIXME:fa4e6674 This is a non-trivial problem
         return
@@ -226,7 +280,7 @@ class dom_element(tester.tester):
         self.all(x.lang is None for x in html.walk())
 
     def it_calls_parent(self):
-        p = dom.paragraph()
+        p = dom.p()
         self.none(p.parent)
 
         span = dom.span('some text')
@@ -251,7 +305,7 @@ class dom_element(tester.tester):
         self.is_(p,          b.elements.first.getparent(2))
 
     def it_calls_siblings(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         txt = dom.text('some text')
         p += txt
@@ -276,22 +330,35 @@ class dom_element(tester.tester):
         self.is_(b, i.siblings.first)
 
     def it_raises_when_moving_elements(self):
-        p = dom.paragraph()
+        p = dom.p()
         txt = dom.text('some text')
         p += txt
 
-        p1 = dom.paragraph()
+        p1 = dom.p()
         self.expect(dom.MoveError, lambda: p1.__iadd__(txt))
 
     def it_calls_isvoid(self):
-        self.false(dom.paragraph.isvoid)
-        self.false(dom.paragraph().isvoid)
+        self.false(dom.p.isvoid)
+        self.false(dom.p().isvoid)
 
         self.true(dom.base.isvoid)
         self.true(dom.base().isvoid)
 
     def it_calls_id(self):
-        p = dom.paragraph()
+        p = dom.p()
+        uuid = uuid4().hex
+        p.id = uuid
+        self.one(p.attributes)
+        self.eq(uuid, p.id)
+
+    def it_gets_attribute_then_sets_the_attribute(self):
+        p = dom.p()
+
+        # Get
+        p.id
+        self.zero(p.attributes)
+
+        # Set
         uuid = uuid4().hex
         p.id = uuid
         self.one(p.attributes)
@@ -321,9 +388,56 @@ class dom_element(tester.tester):
             self.count(i + 1, a.attributes)
 
     def it_calls_id(self):
-        p = dom.paragraph()
+        p = dom.p()
         id = primative.uuid(base64=p.id)
         self.isinstance(id, uuid.UUID)
+
+    def it_appends(self):
+        p = dom.p()
+        em = dom.em()
+
+        ''' It appends element '''
+        p += em
+
+        self.true(em in p.elements)
+
+        ''' It appends text '''
+        txt = 'text for p'
+        p += txt
+
+        self.eq(txt, p.text)
+
+        ''' It appends sequence '''
+        hr = dom.hr()
+        br = dom.hr()
+
+        p += hr, br
+        self.is_(p.elements.penultimate, hr)
+        self.is_(p.elements.ultimate, br)
+
+    def it_unshifts(self):
+        p = dom.p()
+        em = dom.em()
+        span = dom.span()
+        p += span
+
+        self.one(p.elements)
+
+        ''' It prepends/unshifts element '''
+        p << em
+
+        self.two(p.elements)
+        self.is_(em, p.elements.first)
+        self.is_(span, p.elements.second)
+
+        ''' It prepends/unshifts text '''
+        txt = 'text for p'
+        p << txt
+
+        self.three(p.elements)
+        self.eq(txt, p.text)
+        self.is_(em, p.elements.second)
+        self.is_(span, p.elements.third)
 
 class test_comment(tester.tester):
     def it_calls_html(self):
@@ -333,63 +447,17 @@ class test_comment(tester.tester):
         expect = '<!--%s-->' % txt
         self.eq(expect, com.html)
 
-class dom_paragraph(tester.tester):
-    def it_calls__init___with_str_and_args(self):
-        ''' With str arg '''
-        hex1, hex2 = [x.hex for x in (uuid4(), uuid4())]
-        p = dom.paragraph('''
-        hex1: %s
-        hex2: %s
-        ''', hex1, hex2)
-        
-        expect = self.dedent('''
-        <p>
-          hex1: %s
-          hex2: %s
-        </p>
-        ''', hex1, hex2)
+class dom_script(tester.tester):
+    def it_does_not_escape(self):
+        body = 'A <string> with HTML "escapable" characters'
 
-        self.eq(expect, p.pretty)
+        script = dom.script(body)
+        expect = f'<script>{body}</script>'
+        self.eq(expect, script.html)
 
-        ''' With element arg '''
-        txt = dom.text('Plain white sauce!')
-
-        strong = dom.strong('''
-            Plain white sauce will make your teeth
-        ''')
-
-        # Nest <span> into <strong>
-        span = dom.span('go grey.');
-        strong += span
-
-        # NOTE The spacing is botched. This should be corrected when we
-        # write tests for dom.text.
-        p = dom.paragraph(txt)
-        p += strong
-
-        expect = self.dedent('''
-        <p>
-          Plain white sauce!
-          <strong>
-            Plain white sauce will make your teeth
-            <span>
-              go grey.
-            </span>
-          </strong>
-        </p>
-        ''')
-
-        self.eq(expect, p.pretty)
-
-        # Expect a ValueError if *args are given for a non-str first
-        # argument
-        self.expect(
-          ValueError, 
-          lambda: dom.paragraph(txt, 'arg1', 'arg2')
-        )
-
+class p(tester.tester):
     def it_calls_html(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         p += '''
             Plain white sauce!
@@ -425,7 +493,7 @@ class dom_paragraph(tester.tester):
         self.eq(expect, p.pretty)
 
     def it_works_with_html_entities(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         p += '''
             &copy; 2020, All Rights Reserved
@@ -514,7 +582,7 @@ class dom_attribute(tester.tester):
     def it_raises_on_invalid_attributes(self):
         # Test for valid characters in attribute names. Based on
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-        p = dom.paragraph()
+        p = dom.p()
 
         def ass(name):
             p.attributes[name] = name
@@ -544,7 +612,7 @@ class dom_attribute(tester.tester):
                 self.expect(ValueError, lambda: ass(''.join(name)))
         
     def it_deals_with_undef_attr(self):
-        p = dom.paragraph()
+        p = dom.p()
         uuid = uuid4().hex
         attr = p.attributes[uuid]
         self.is_(p.attributes[uuid], attr)
@@ -665,7 +733,7 @@ class dom_attribute(tester.tester):
 
     def it_appends_attribute(self):
         # Append attribute object
-        p = dom.paragraph()
+        p = dom.p()
         self.zero(p.attributes)
         id = uuid4().hex
         p.attributes += dom.attribute('data-id', id)
@@ -719,14 +787,14 @@ class dom_attribute(tester.tester):
         self.eq('ltr', p.dir)
 
     def it_makes_class_attribute_a_cssclass(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.attributes['class'] = 'form-group'
         cls = p.attributes['class']
         self.type(dom.cssclass, cls)
 
     def it_removes_attribute(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name, cls = [uuid4().hex for _ in range(3)]
         style = dom.attribute('style', 'color: 8ec298')
         p.attributes += 'name', name
@@ -758,7 +826,7 @@ class dom_attribute(tester.tester):
 
     def it_updates_attribute(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
         cls = uuid4().hex
@@ -783,7 +851,7 @@ class dom_attribute(tester.tester):
 
     def it_doesnt_append_nonunique(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
         p.attributes += 'data-id', id
@@ -835,7 +903,7 @@ class dom_attribute(tester.tester):
 
 class dom_cssclass(tester.tester):
     def it_deals_with_undef_attr(self):
-        p = dom.paragraph()
+        p = dom.p()
         attr = p.attributes['class']
         self.is_(p.attributes['class'], attr)
         self.zero(p.classes)
@@ -852,13 +920,13 @@ class dom_cssclass(tester.tester):
     def it_calls_class_twice(self):
         # Calling p.classes raised an error in development. This is a
         # test to ensure the problem doesn't somehow resurface.
-        p = dom.paragraph()
+        p = dom.p()
         self.expect(None, lambda: p.classes)
         self.expect(None, lambda: p.classes)
 
     def it_appends_classes(self):
         ''' Add by various methods '''
-        p = dom.paragraph()
+        p = dom.p()
         self.eq(p.classes.html, p.attributes['class'].html)
         cls = dom.cssclass('my-class-1')
         p.attributes['class'].append(cls)
@@ -912,7 +980,7 @@ class dom_cssclass(tester.tester):
 
     def it_adds_multiple_classes_at_a_time(self):
         ''' Add by various methods '''
-        p = dom.paragraph()
+        p = dom.p()
         self.eq(p.classes.html, p.attributes['class'].html)
 
         expect = '<p></p>'
@@ -982,7 +1050,7 @@ class dom_cssclass(tester.tester):
         self.eq(expect, p.classes.html)
 
     def it_removes_classes(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
         self.eight(p.classes)
 
@@ -999,7 +1067,7 @@ class dom_cssclass(tester.tester):
         self.eq('class="c1 c5 c6 c7 c8"', p.classes.html)
 
     def it_removes_multiple_classes(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
         self.eight(p.classes)
 
@@ -1014,7 +1082,7 @@ class dom_cssclass(tester.tester):
         rm = '%s %s' % (uuid4().hex, uuid4().hex)
         self.expect(IndexError, lambda: p.classes.remove(rm))
 
-class dom_html(tester.tester):
+class html(tester.tester):
     def it_calls_html_with_text_nodes(self):
         return 
         # TODO The first html prints .pretty with line feeds
@@ -1071,13 +1139,27 @@ class dom_html(tester.tester):
         self.eq(TestHtmlMin, els.html)
 
     def it_doesnt_parse_decls(self):
+        # NOTE HTML declaration support is half implemented. The parser
+        # can handle standard mode (<!DOCTYPE html>), but nothing else.
+        # See TODO:10d9a676 for more
+        html = '''
+        <!DOCTYPE 
+            HTML 
+            PUBLIC "-//W3C//DTD HTML 4.01//EN"
+            "http://www.w3.org/TR/html4/strict.dtd"
+        >
+        <html>
+        </html>
+        '''
+        self.expect(NotImplementedError, lambda: dom.html(html))
+
         html = '''
         <!DOCTYPE html>
         <html>
         </html>
         '''
+        self.expect(None, lambda: dom.html(html))
 
-        self.expect(NotImplementedError, lambda: dom.html(html))
 
     def it_doesnt_parse_unknown_decls(self):
         # TODO The below dosen't work. The fake uknown declaration is
@@ -1196,7 +1278,7 @@ class dom_markdown(tester.tester):
         This is another paragraph.
         ''')
 
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
 
         self.eq(
             'This is a normal paragraph:', 
@@ -1206,7 +1288,7 @@ class dom_markdown(tester.tester):
         self.type(dom.pre, md.second)
         self.type(dom.code, md.second.elements.first)
 
-        self.type(dom.paragraph, md.third)
+        self.type(dom.p, md.third)
         self.eq(
             'This is another paragraph.', 
             md.third.elements.first.html
@@ -1383,7 +1465,7 @@ class dom_markdown(tester.tester):
         ''')
 
         self.three(md)
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
         self.type(dom.table, md.second)
         self.one(md.second.children)
         self.type(dom.tr, md.second.children.first)
@@ -1402,7 +1484,7 @@ class dom_markdown(tester.tester):
             'Foo',
             md.second.children.first.children.first.elements.first.html
         )
-        self.type(dom.paragraph, md.third)
+        self.type(dom.p, md.third)
 
         md = dom.markdown('<http://example.com/>')
         a = md.first.elements.first
@@ -1540,9 +1622,9 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.four(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
-        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.p, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
 
         md = dom.markdown('''
@@ -1558,9 +1640,9 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.four(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
-        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.p, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
 
         # Nested
@@ -1576,12 +1658,12 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.six(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
         self.type(dom.blockquote, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
-        self.type(dom.paragraph, md.first.elements[2].elements.first)
-        self.type(dom.paragraph, md.first.elements.fifth)
+        self.type(dom.p, md.first.elements[2].elements.first)
+        self.type(dom.p, md.first.elements.fifth)
         self.type(dom.text, md.first.elements.sixth)
 
         md = dom.markdown('''
@@ -1769,7 +1851,7 @@ class dom_markdown(tester.tester):
         ''')
 
         self.one(md)
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
         p = md['p'].first
 
         expect = self.dedent('''
@@ -1807,8 +1889,8 @@ class dom_markdown(tester.tester):
         ''')
 
         self.two(md)
-        self.type(dom.paragraph, md.first)
-        self.type(dom.paragraph, md.second)
+        self.type(dom.p, md.first)
+        self.type(dom.p, md.second)
 
         expect = self.dedent('''
         <p>

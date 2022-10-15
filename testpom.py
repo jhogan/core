@@ -136,9 +136,11 @@ class _404(pom.page):
         self.main += dom.h1('Page Not Found')
         self.main += dom.h2('Foobar apologizes', class_="apology")
 
-        self.main += dom.paragraph('''
-        Could not find <span class="resource">%s</span>
-        ''', ex.resource)
+        self.main += dom.p(
+            'Could not find <span class="resource">' +
+            str(ex.resource) +
+            '</span>'
+        )
 
     @property
     def name(self):
@@ -157,7 +159,6 @@ class pom_menu_items(tester.tester):
 
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
-
 
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
@@ -652,20 +653,6 @@ class page(tester.tester):
         if self.rebuildtables:
             fastnets.orm.recreate()
 
-            # Recreate this table because the entry in it will be
-            # orphaned since the tables for 'asset' (`asset`) and 'pom'
-            # (`site`) were deleted above.
-            import carapacian_com
-            carapacian_com.site.orm.recreate()
-
-        # Unconditionally recreate foonet's tables and supers
-        foonet.orm.recreate(ascend=True)
-        party.company.orm.recreate(ascend=True)
-
-        # Clear radix cache
-        with suppress(AttributeError):
-            del file.directory._radix
-
         orm.security().override = True
         
     def it_calls__init__(self):
@@ -766,6 +753,7 @@ class page(tester.tester):
         }
         with orm.sudo(), orm.proprietor(party.company.carapacian):
             self.type(carapacian_com.site, req.site)
+
     def it_gets_page_using_X_FORWARDED_FOR(self):
         ip = None
         class realip(pom.page):
@@ -789,6 +777,21 @@ class page(tester.tester):
         res = tab.get('/en/realip', ws, hdrs)
         self.status(200, res)
         self.eq(X_FORWARDED_FOR, ip)
+
+    def it_gets_webpage_with_eventjs(self):
+        class eventful(pom.page):
+            def main(self):
+                pass
+
+        pg = eventful()
+        ws = foonet()
+        ws.pages += pg
+
+        tab = self.browser().tab()
+        res = tab.get('/en/eventful', ws)
+        self.status(200, res)
+
+        script = res['#A0c3ac31e55d48a68d49ad293f4f54e31'].only
 
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
@@ -1157,9 +1160,8 @@ class page(tester.tester):
         class time(pom.page):
             def main(self):
                 # Ensure we have access to the request object from page.
-                self.main +=  dom.p('''
-                    Query string from request: %s
-                    ''', www.request.qs
+                self.main += dom.p(
+                    f'Query string from request: {www.request.qs}'
                 )
 
         ws = foonet()
@@ -1257,6 +1259,11 @@ class page(tester.tester):
         self.eq(comment, textarea.first.text)
 
     def it_raises_im_a_teapot(self):
+        rec = None
+        def onlog(src, eargs):
+            nonlocal rec
+            rec = eargs.record
+
         ws = foonet()
 
         class pour(pom.page):
@@ -1273,6 +1280,7 @@ class page(tester.tester):
                         'Appearently, I am a tea pot'
                     )
 
+        logs.log().onlog += onlog
         pg = pour()
         ws.pages += pg
         tab = self.browser().tab()
@@ -1287,6 +1295,14 @@ class page(tester.tester):
 
         self.four(main['article.traceback>div'])
         self.one(res['main[data-path="/error"]'])
+
+        ''' Ensure the exception was logged '''
+        self.eq(
+            "418 I'm a teapot - Appearently, I am a tea pot", 
+            rec.message
+        )
+        
+        self.eq('ERROR', rec.levelname)
 
     def it_raises_404(self):
         class derpnets(pom.sites):
@@ -1304,12 +1320,23 @@ class page(tester.tester):
                 super().__init__(*args, **kwargs)
                 self.host = 'derp.net'
 
+        # We need to recreate all the tables involed in the tests below.
+        # This is because `derpnet` and `foonet` are being used at the
+        # same time which cause issues with the security subsystem, the
+        # file sytem, and the file system cache (radix).
+
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
         derpnet.orm.recreate(ascend=True)
 
+        # Delete all inodes and clear the _radix cache
+        file.inode.orm.recreate(descend=True)
+        with suppress(AttributeError):
+            del file.directory._radix
+
         try:
             ws = derpnet()
+
             with orm.proprietor(ws.proprietor):
                 tab = self.browser().tab()
                 res = tab.get('/en' + '/index', ws)
@@ -1523,7 +1550,6 @@ class page(tester.tester):
     def it_logs_hits(self):
         ''' Set up a page that tests the hit/logging facility '''
         class hitme(pom.page):
-
             def main(self):
                 req.hit.logs.write('Starting main')
                 dev = req.hit.useragent.devicetype
@@ -1533,7 +1559,6 @@ class page(tester.tester):
                 ''', class_='device')
 
                 req.hit.logs.write('Ending main')
-
 
         class signon(pom.page):
             def main(self):
@@ -1576,7 +1601,7 @@ class page(tester.tester):
 
         tab = brw.tab()
 
-        # NOTE The implicit variable `res` in the pages above collide
+        # NOTE The implicit variable `res` in the pages above collides
         # with the `res` variables I used below, so I change the below
         # ones to `res1`.
         ''' GET page '''
@@ -1658,12 +1683,13 @@ class page(tester.tester):
         ''' Log the authentication of a user '''
         # NOTE Authentication hit logging has a bit of a twist because
         # the request starts out with no JWT or authenticated user, but
-        # it ends up with one on completion of the request. The user that
-        # gets authenticated should be set in the hit entity (hit.user)
+        # it ends up with one on completion of the request. The user
+        # that gets authenticated should be set in the hit entity
+        # (hit.user)
 
         # Create user
         usr = ecommerce.user(
-            name = 'luser',
+            name = uuid4().hex,
             password = 'password1',
             site = ws,
         )
@@ -1675,8 +1701,8 @@ class page(tester.tester):
         frm = res1['form'].first
 
         # Set credentials
-        frm['input[name=username]'].first.value = 'luser'
-        frm['input[name=password]'].first.value = 'password1'
+        frm['input[name=username]'].first.value = usr.name
+        frm['input[name=password]'].first.value = usr.password
 
         # POST credentials to log in
         res1 = tab.post('/en/signon', ws=ws, frm=frm)
@@ -2287,7 +2313,7 @@ class page(tester.tester):
     def it_replaces_correct_fragment(self):
         """ This was written due to a bug found in
         tester._browser._tab.element_event which incorrectly patched the
-        DOM object. Instead of replacing the element in it's current
+        DOM object. Instead of replacing the element in its current
         position, it removed the old element and appended the new
         element to the end.  This is obviously wrong because it can
         result in elements getting ordered incorrectly in the DOM. This

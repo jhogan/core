@@ -4,6 +4,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
+"The only way to go fast is to go well"
+# Robert C. Martin
+
 from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
@@ -17,8 +20,8 @@ import dbg
 import dom
 import ecommerce
 import entities
+import file
 import gc
-import time
 import inspect
 import io
 import json
@@ -30,6 +33,7 @@ import re
 import resource
 import sys
 import textwrap
+import time
 import timeit
 import uuid
 import www
@@ -367,15 +371,45 @@ class tester(entities.entity):
         # Rebuild tables in `mods`
         if mods and self.rebuildtables:
             logs.info(f'Rebuilding tables for {mods}')
-            # Get the list of orm.entity classes.
-            es = orm.orm.getentityclasses(includeassociations=True)
+            
+            for mod in mods:
+                mod = __import__(mod,  globals(), locals())
+                logs.info(f'Rebuilding for module: {mod}')
 
-            # For each orm.entity class
-            for e in es:
-                # DROP then CREATE the table for that entity
-                if e.__module__ in mods:
-                    e.orm.recreate()
+                for _, cls in inspect.getmembers(mod):
+                    try:
+                        mro = cls.__mro__
+                    except AttributeError:
+                        # Many member of a module (basically anything
+                        # that's not a class) will not have a __mro__.
+                        continue
+                    else:
+                        if orm.entity in mro:
+                            cls.orm.recreate(descend=True)
 
+                        if cls is ecommerce.user:
+                            try:
+                                # If we have rebuilt the users table, we
+                                # will want to invalidate reference to
+                                # user objects
+                                del ecommerce.users._root
+                            except AttributeError:
+                                # ecommerce.users._root is
+                                # monkey-patched on memoization, so it
+                                # want necessarily be there (see
+                                # ecommerce.users.root)
+                                pass
+
+            # If we are deleting all the tables it the file module,
+            # invalidate the radix cache since it will be a store of the
+            # data in those tables.
+            if 'file' in mods:
+                # Clear radix cache
+                with suppress(AttributeError):
+                    del file.directory._radix
+
+
+                        
         # Create and set principles at ORM level for testing
         sec = orm.security()
         sec.user       = user  if user  else self.user
@@ -433,27 +467,27 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
-                # We not in SPA mode by default. The `inspa`
+                # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
                 # like a global JavaScript varibale. The user may be
-                # given the option of turing SPA mode on or off. This
-                # would be a useful option to give user for a number of
+                # given the option of turning SPA mode on or off. This
+                # would be a useful option to give users for a number of
                 # reasons:
                 #
                 #   * They are using a text-based browser like `links`
-                #   that has no JavaScript support.
+                #     that has no JavaScript support.
                 #
-                #   * They are usinga a legacy browser that has poor
-                #   Javascript support
+                #   * They are using a legacy browser that has poor
+                #     JavaScript support
                 #   
                 #   * They have JavaScript support disable, perhaps for
-                #   security reasons.
+                #     security reasons.
                 # 
                 #   * The "browser" is actually a bot, such as a web
-                #   crawler, whose willingness to execute JavaScript is
-                #   not well understood. In this case, you may want to
-                #   let the crawler index the page as if the site were a
-                #   multi-page application.
+                #     crawler, whose willingness to execute JavaScript is
+                #     not well understood. In this case, you may want to
+                #     let the crawler index the page as if the site were a
+                #     multi-page application.
                 self.inspa     =  False
 
             def element_event(self, src, eargs):
@@ -494,6 +528,9 @@ class tester(entities.entity):
                     :param: this str|dom.selector A CSS selector that
                     identifies a unique element in self that should be
                     replaced.
+
+                    :param: that dom.elements The elements to tha will
+                    replace `this`.
                     """
 
                     # Find the element object
@@ -501,6 +538,12 @@ class tester(entities.entity):
 
                     # Get the parent
                     rent = this.parent
+
+                    # TODO The below could be done in one line. Taking
+                    # insperation from the *real* DOM (the
+                    # JavaScript-based one in browsers), which has a
+                    # `node.replaceChild` method,  we could add a
+                    # `replacechild` method to `dom.element`.
 
                     # Get the ordinal index of this as a child of it
                     # parent.
@@ -535,8 +578,8 @@ class tester(entities.entity):
 
                 # If the "user" "clicked" on a link that was intended to
                 # navigate the tab to a different URL, and the tab isn't
-                # in SPA mode (not `self.inspa`), then we should do a
-                # traditional page navigation to the new page.
+                # in SPA mode (i.e., `not self.inspa`), then we should
+                # do a traditional page navigation to the new page.
                 if not self.inspa and isnav:
                     self.navigate(pg=pg, ws=self.site)
                     return
@@ -561,9 +604,9 @@ class tester(entities.entity):
                     # (res.html)
                     replace(this='main', that=res.html)
                 else:
-                    # No HTML fragments were sent, so there can be
-                    # nothing to replace.
+                    # If no HTML fragments were sent... 
                     if not eargs.html:
+                        # ... there can be nothing to replace
                         return
 
                     # Get the fragement of html in the tab that is the
@@ -572,7 +615,7 @@ class tester(entities.entity):
                     for i, id in enumerate(ids):
                         replace(id, res.html[i])
 
-            # TODO The ability for a tab to maintain it's own internal
+            # TODO The ability for a tab to maintain its own internal
             # DOM should exist in the browser.tab base class in `www.py`
             # as well as here.
             @property
@@ -607,7 +650,7 @@ class tester(entities.entity):
                     
                 targets = v[sels]
 
-                # We need to remove te duplicates because of the bug
+                # We need to remove the duplicates because of the bug
                 # 9aec36b4
                 targets = set(targets)
 
@@ -622,8 +665,7 @@ class tester(entities.entity):
                             ev = getattr(target, ev)
                             ev.append(obj=self.element_event)
 
-
-                # Subscript to element_event for each anchor tag's click
+                # Subscribe to element_event for each anchor tag's click
                 # event.
                 as_ = v['nav>ul>li>a']
                 for a in as_:
@@ -693,6 +735,12 @@ class tester(entities.entity):
                 """ Issues an HTTP GET request for the page `pg` to the
                 site `ws`. The responses object from the request is
                 returned.
+
+                Note that `get` will not alter the `tab`'s internal DOM
+                (afterall, browser tab's make requests all the time that
+                don't alter the HTML structure of the DOM). If you want
+                to point the `tab` to a URl for it to GET and load into
+                its internal DOM, use the `navigate` method.
                 
                 :param: pg pom.page|str: The page to GET.
 
@@ -792,7 +840,6 @@ class tester(entities.entity):
                 appended to the request.
                 """
                 arg_hdrs = www.headers(hdrs) if hdrs else None
-                    
 
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):
@@ -1152,10 +1199,8 @@ class tester(entities.entity):
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
-    # FIXME The assertions `gt`, `lt` and `le` are broken. they have the
-    # expect and actual mixed up. `ge` was corrected recently.
     def gt(self, expect, actual, msg=None):
-        if not (expect > actual): self._failures += failure()
+        if not (expect < actual): self._failures += failure()
 
     def assertGe(self, expect, actual, msg=None):
         if not (expect >= actual): self._failures += failure()
@@ -1169,6 +1214,8 @@ class tester(entities.entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
+    # FIXME The assertions `lt` and `le` are broken. they have the
+    # expect and actual mixed up. `ge` was corrected recently.
     def lt(self, expect, actual, msg=None):
         if not (expect < actual): self._failures += failure()
 
@@ -1444,6 +1491,12 @@ class tester(entities.entity):
 
     def status(self, st, res):
         if st != res.status: 
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
+    def ok(self, res):
+        if res.status != 200:
             msg = f'Actual status: {res.status}'
             
             self._failures += failure()

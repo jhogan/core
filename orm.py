@@ -2034,7 +2034,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         It's possible, but not unlikely, that an entities' orm attribute
         is accessed before the entities' complement has had its
-        `entities` proprety run. 
+        `entities` property run. 
 
         If `cls` is indeed a class referenc, we search through all the
         `entity` classes to find the complement and return that
@@ -6983,11 +6983,13 @@ class fieldmapping(mapping):
 
         For floats, the precision value is the second argument in an
         attribute declaration. In the example below, 8 is the precision
-        of float::
+        of float:
 
             class component(orm.entity):
-                weight  =  float,  8,   7
+                weight = float, 8, 7
         """
+        # FIXME This seems to be a typo: the comma below should probably
+        # be `or`.
         if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
 
@@ -8159,7 +8161,7 @@ class orm:
         # TODO Don't allow to run unless apriori.model has been run
 
         # FIXME:f6c7d0f1 There is a design flaw inherent in this
-        # property.  This proprety was created so we could lazy-load the
+        # property.  This property was created so we could lazy-load the
         # association between an entity and its complement. However,
         # lazy-loading this means that the `orm` reference on the
         # entities class won't exist until this property has been run on
@@ -9120,7 +9122,7 @@ class orm:
             e.orm.recreate()
             
     def _recreate(self, 
-        cur=None, recursive=False, ascend=False, guestbook=None
+        cur=None, recursive=False, ascend=False, descend=True, guestbook=None
     ):
         """ Drop and recreate the table for the orm ``self``. 
 
@@ -9199,6 +9201,12 @@ class orm:
                 if sup := self.super:
                     sup.orm.recreate(
                         cur=cur, ascend=True, guestbook=guestbook
+                    )
+
+            if descend:
+                for sub in self.subentities:
+                    sub.orm.recreate(
+                        cur=cur, ascend=True, guestbook=guestbook,
                     )
                             
         except Exception as ex:
@@ -9690,8 +9698,13 @@ class orm:
         #
 
         # If the `id` exists, we should only get one record back from
-        # the database. If that's not the case, raise a
-        # db.RecordNotFoundError.
+        # the database. If that's not the case, raise
+        # RecordNotFoundError.
+        if not ress.issingular:
+            raise db.RecordNotFoundError(
+                'Unable to find record for '
+                f'{type(self.instance)}:{id.hex}'
+            )
         ress.demandhasone()
 
         # We are only interested in the first

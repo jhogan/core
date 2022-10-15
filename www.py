@@ -35,6 +35,7 @@ from pprint import pprint
 import apriori
 import auth
 import dom
+import ecommerce
 import entities
 import exc
 import file
@@ -42,7 +43,8 @@ import json
 import logs
 import orm
 import os
-import party, ecommerce
+import html
+import party
 import pdb
 import pom
 import primative
@@ -233,6 +235,9 @@ class application:
                 )
 
         except Exception as ex:
+            # Log exception to syslog
+            logs.exception(ex)
+
             # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
                 # Immediatly raise to tester's exception handler
@@ -318,10 +323,14 @@ class application:
                         try:
                             pg = req.page
                         except Exception:
-                            res.body = p.html
+                            # HACK:10d9a676 We shoudn't have to prepend
+                            # DOCTYPE here. See TODO:10d9a676.
+                            res.body = f'<!DOCTYPE html>\n{p.html}'
                         else:
                             pg.flash(p)
-                            res.body = pg.html
+                            # HACK:10d9a676 We shoudn't have to prepend
+                            # DOCTYPE here. See TODO:10d9a676.
+                            res.body = f'<!DOCTYPE html>\n{pg.html}'
 
             # In there was an exception processing the exception,
             # ensure the response is 500 with a simple error message.
@@ -332,9 +341,17 @@ class application:
                 # str(ex) through html.escape(). 
 
                 # TODO Add traceback to output
-                res.body = dom.dedent('''
-                <p>Error processing exception: %s</p>
-                ''' % str(ex))
+                # TODO Add tests to ensure excepiton messages are
+                # escaped properly
+                cls = type(ex).__name__
+                msg = html.escape(str(ex))
+                res.body = dom.dedent(
+                    f'''
+                        <p>
+                            <strong>{cls}</strong>: {msg}
+                        </p>
+                    '''
+                )
 
         finally:
             if not break_:
@@ -850,17 +867,26 @@ class _request:
             # Finish of the hit log
             self.log()
 
+        # If the request if for an event...
         if self.isevent:
+            # If the request is for new SPA page (e.g., a click on a
+            # <nav> that results in an XHR request made...
             if self.isspa:
+                # Return only the <main> element of the SPA page. When
+                # requesting a single page in an SPA context, only the
+                # <main> element is being requested by the client.
                 return self.page.main.html
+
             else:
+                # Return the event HTML elements as handled by the event
+                # handler -- if there are any.
                 if eargs.html:
                     return eargs.html.html
 
             # If the browser didn't send HTML fragments, return None.
             return None
         else:
-            return self.page.html
+            return f'<!DOCTYPE html>\n{self.page.html}'
 
     @property
     def hit(self):
@@ -881,7 +907,7 @@ class _request:
                 size       =  self.size,
             )
 
-            # Conditionally assign theses hit attributes because of
+            # Conditionally assign these hit attributes because of
             # 6028ce62
             if ref := self.referer:
                 self._hit.url = ref

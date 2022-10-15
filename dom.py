@@ -24,6 +24,9 @@ import string
 import sys
 import uuid
 
+"The Web is a detail."
+# Robert C. Martin
+
 """
 Contains classes that implement an object-oriented interface to HTML
 document.
@@ -31,7 +34,7 @@ document.
 This implementation is similar to the WHATWG DOM standarded implemented
 in web browsers to read and manipulate DOM objects with JavaScript,
 although no effort is made to conform to that standard. The API is
-similar to other object models in the Core, making use of @proprety
+similar to other object models in the Core, making use of @property
 methods, indexers (__getitem__), operator overloading (+=), etc.
 
 Each HTML5 element (e.g., <form>, <a>, etc.), is represented by a class
@@ -75,13 +78,13 @@ The following is an example of how to create a basic HTML5 document::
     body.attributes['bgcolor'] = 'black'
 
     # The HTML string for this can be captured using the ``html``
-    # proprety.
+    # property.
     print(html.html)
 
     # The above wouldn't have linefeeds or tabs and would be suitable
     # for consumption by a program like a browser or some other parser.
     # To get a nice output for human consumption, use the ``pretty``
-    # proprety::
+    # property::
     >>> print(html.pretty)
     <html>
         <head>
@@ -99,10 +102,27 @@ The following is an example of how to create a basic HTML5 document::
 
     # Both DOMs will produces the same HTML.
     assert html.html == html1.html
-"""
 
-"""
-.. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
+TODOs
+
+    TODO:10d9a676 Add a `document` class similar to the standard
+    JavaScrip DOM's `document` object. Currently, when we deal with
+    complete DOM objects, we use the `html` class (which represents the
+    <html> tag). For the most part this works because almost everything
+    in an HTML document comes under the <html> tag. However, it is
+    impossible to capture <!DOCTYPE> declarations using this structure
+    because <html> must be a sibling of <!DOCTYPE>. The JavaScript DOM
+    uses the `document` object to act as the parent object of <!DOCTYPE>
+    and <html>. Currently, to get the <!DOCTYPE> declaration in the HTML
+    that is emitted to the browser, there are some HACKs that prepend
+    "<!DOCTYPE html>" to the output. This works for the most part and
+    keeps browser consoles from complaining that the page is being
+    rendered in "quirks mode". However, being hacks these solutions
+    don't adequetly capture the abstraction of a DOM document. For
+    instance, there is no way to indicate which DTD needs to be used
+    (the hacks always defaults standard mode (`html`)).  When correcting
+    this, be sure to grep for the snowflake 10d9a676 as there are
+    several other places that reference this TODO.
 """
 
 # References:
@@ -138,7 +158,7 @@ class attributes(entities.entities):
         """ Append an attribute to the collection via the += operator::
 
             # Create an element
-            p = paragraph()
+            p = dom.p()
 
             # Append an attribute using +=
             p.attributes += attribute('id', 'my-id-value')
@@ -173,7 +193,7 @@ class attributes(entities.entities):
             is to simple append an attribute objects:
 
                 # Create a <p>
-                p = dom.paragraph()
+                p = dom.p()
 
                 # Create an attribute object: id="my-id-value"
                 attr = dom.attribute('id', 'my-id-value')
@@ -327,7 +347,7 @@ class attributes(entities.entities):
         if not isinstance(key, str):
             super().__setitem__(key, item)
             
-        for attr in self:
+        for attr in self._ls:
             if attr.name == key:
                 break
         else:
@@ -805,14 +825,14 @@ class elements(entities.entities):
     that only contain that element::
 
         # Create a paragraphs collection
-        ps = paragraphs()
+        ps = dom.p()
 
-        # Assert that ``paragraphs`` inherits form ``elements``
+        # Assert that ``dom.p`` inherits form ``elements``
         assert isinstance(ps, elements)
 
         # Add paragraph object (<p>) to the paragraphs collection
-        ps += paragraph()
-        ps += paragraph()
+        ps += dom.p()
+        ps += dom.p()
     """
     # TODO:12c29ef9 Write and test mass attribute assignment logic:
     #
@@ -1029,22 +1049,108 @@ class elements(entities.entities):
             raise MoveError('Parent already set')
         self._parent = v
 
-    def append(self, *args, **kwargs):
-        """ Appends an element to this collection.
+    def _text2element(self, txt):
+        """ Convert a str (txt) to a text node and return it. 
+
+        Used by self.append and self.unshift.
+
+        :param: txt str|element: 
+            if str:
+                The text to convert to a node.
+
+            if element:
+                Simply return the element that was passed in.
+        """
+
+        if type(txt) is str:
+            # If we are appending a text node to a <script> tag, we
+            # don't want to do any HTML escaping. Escaping the
+            # contents of a <script> tag (e.g., JavaScript, JSON,
+            # etc) means the quotes and angle brakets would be
+            # garbled thus rending the script uninterpretable, e.g.,
+            # console.log(&#x27;Hello, world&#x27;)
+            esc = not isinstance(self.parent, script)
+            return text(txt, esc=esc)
+
+        return txt
+
+    def _demandadditions(self, obj):
+        """ Raise exception is there is an issue obj being appended to
+        self.elements. 
+
+        Used by self.append and self.unshift.
+
+        :param: obj element|sequence: The element(s) to append.
         """
         if isinstance(self.parent, text):
             raise NotImplementedError(
                 "Can't append to a text node"
             )
 
-        super().append(*args, **kwargs)
+        pass_ = False
+        if isinstance(obj, element):
+            pass_ = True
+        elif hasattr(obj, '__iter__'):
+            # NOTE This could be elements, lists or generators.
+            pass_ = True
+
+        if not pass_:
+            raise TypeError('Invalid element type: ' + str(type(obj)))
+
+    def append(self, obj, *args, **kwargs):
+        """ Appends an element to this object's `elements` collection.
+
+        :param: obj str|element|sequence The element to append.
+
+            if str:
+                Convert to text node and append the node.
+
+            if element:
+                Append the element.
+
+            if sequence:
+                Append each element in the sequence.
+
+        """
+
+        # Convert object to text node if it is a str
+        obj = self._text2element(obj)
+
+        # Raise exception if the obj is invalid
+        self._demandadditions(obj)
+
+        super().append(obj, *args, **kwargs)
+
+    def unshift(self, obj):
+        """ Prepend an element to this object's `elements` collection.
+
+        :param: obj str|element|sequence The element to preappend.
+
+            if str:
+                Convert to text node and prepend the node.
+
+            if element:
+                Prepend the element.
+
+            if sequence:
+                Prepend each element in the sequence.
+        """
+
+        # Convert object to text node if it is a str
+        obj = self._text2element(obj)
+
+        # Raise exception if the obj is invalid
+        self._demandadditions(obj)
+
+        # TODO: Return entities object to indicate what was unshifted
+        super().unshift(e=obj)
         
 class element(entities.entity):
     """ An abstract class from which all HTML5 elements inherit.
 
         # Create a paragraph (<p>) class 
-        p = paragraph()
-        # Assert that ``paragraph`` inherits form ``element``
+        p = dom.p()
+        # Assert that ``dom.p`` inherits form ``element``
         assert isinstance(ps, element)
 
     Attributes
@@ -1092,16 +1198,7 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
-    # A tuple of supported trigger methods. These correspond to DOM
-    # methods, such as element.focus(), which trigger a corresponding
-    # event (onfocus).
-    Triggers = (
-        'click', 'focus', 'blur',
-    )
-
-    # A tuple of supported DOM events such as onfocus or onkeydown
-    Events = tuple('on' + x for x in Triggers)
-
+    # TODO Put beneath constructor
     @staticmethod
     def _getblocklevelelements():
         """ Returns a tuple of block-level, HTML5 ``element`` classes
@@ -1117,7 +1214,7 @@ class element(entities.entity):
             table,     ul,
         )
 
-    def __init__(self, body=None, *args, **kwargs):
+    def __init__(self, body=None, **kwargs):
         """ Create an HTML5 DOM element.
 
         :param: str|element|elements: The body of the element. If str,
@@ -1152,9 +1249,14 @@ class element(entities.entity):
         that is not required.
 
         """
-        # TODO If self.isvoid, the `body` parameter would be
-        # meaningless. In this case, if body is not None, we should
-        # throw a TypeError.
+        if self.isvoid and body is not None:
+            # If self.isvoid, the `body` parameter would be meaningless.
+            # In this case, if body is not None, we should raise an
+            # exception.
+            raise ValueError(
+                f'{type(self)} elements can not accept a body because '
+                'it is void'
+            )
 
         try:
             id = kwargs['id']
@@ -1170,15 +1272,12 @@ class element(entities.entity):
         self._revs = None
 
         if body is not None:
-            if     not isinstance(body, element) \
-               and not isinstance(body, elements):
-
+            if isinstance(body, element):
+                pass
+            elif isinstance(body, elements):
+                pass
+            else:
                 body = str(body)
-
-            if type(body) is str:
-                body %= args
-            elif args:
-                raise ValueError('No args allowed')
 
             self += body
 
@@ -1199,47 +1298,80 @@ class element(entities.entity):
             # Add kwargs to attributes collection
             self.attributes += kwargs
 
-    def __getattr__(self, attr):
-        """ Captures attemps to get trigger methods (i.e.,
-        element.click, element.focus, etc) as well as event properties
-        (element.onclick, element.oninput).  """
+    ''' The event triggers and handlers for any dom.element. '''
 
-        # NOTE for those who get here even though the attribute exists:
-        #
-        # Obviously, __getattr__ methods like this are only entered
-        # when an attribute doesn't exist. 
-        #
-        #     el.idontexist
-        #
-        # Actually, the determination of whether or not an attribute
-        # exist is made by calling the attribute and checking whether or
-        # not an AttributeError is raised. Therefore, even though a
-        # property like `children` exists on `element`, were it or any
-        # of the methods it calls to raise an AttributeError, we would
-        # still get here. So if execution leads you here, even though
-        # the attribute exists, check whether the attribute itself
-        # raised AttributeError.
+    # A tuple of supported trigger methods. These correspond to DOM
+    # methods, such as element.focus(), which trigger a corresponding
+    # event (onfocus).
+    Triggers = 'click', 'focus', 'blur', 'input',
 
-        # Are we trying to get an event property such as
-        # element.onclick.
-        if attr in self.Events:
-            # Strip the 'on'
-            ev = attr[2:]
+    # NOTE If you need to add a new trigger/event (e.g., input/oninput,
+    # keydown/onkeydown), Make sure you add the trigger to the
+    # Triggers tuple above.
 
-            # Return the dom.eventarg for the event
-            return self._on(ev)
+    @property
+    def onclick(self):
+        """ Returns the `onclick` event for this element.
+        """
+        return self._on('click')
 
-        # Are we trying to get a trigger callable
-        if attr in self.Triggers:
-            # Return a callable that, when invoked, will trigger the
-            # event.
-            return self._trigger(trigger=attr)
+    @onclick.setter
+    def onclick(self, v):
+        setattr(self, '_onclick', v)
 
-        raise AttributeError(f"Attribute '{attr}' not found")
+    def click(self):
+        """ Triggers the `click` event for this element.
+        """
+        return self._trigger('click')()
+
+    @property
+    def onfocus(self):
+        """ Returns the `onfocus` event for this element.
+        """
+        return self._on('focus')
+
+    @onfocus.setter
+    def onfocus(self, v):
+        setattr(self, '_onfocus', v)
+
+    def focus(self):
+        """ Triggers the `focus` event for this element.
+        """
+        return self._trigger('focus')()
+
+    @property
+    def onblur(self):
+        """ Returns the `onblur` event for this element.
+        """
+        return self._on('blur')
+
+    @onblur.setter
+    def onblur(self, v):
+        setattr(self, '_onblur', v)
+
+    def blur(self):
+        """ Triggers the `blur` event for this element.
+        """
+        return self._trigger('blur')()
+
+    @property
+    def oninput(self):
+        """ Returns the `oninput` event for this element.
+        """
+        return self._on('input')
+
+    @oninput.setter
+    def oninput(self, v):
+        setattr(self, '_oninput', v)
+
+    def input(self):
+        """ Triggers the `input` event for this element.
+        """
+        return self._trigger('input')()
 
     def _on(self, ev):
-        """ Return or set a memoized dom.event object for the event
-        named by `ev`.
+        """ Return a memoized dom.event object for this event named by
+        `ev`.
 
         :param: ev str: The name of the event, e.g., 'focus', 'blur'.
         """
@@ -1272,6 +1404,8 @@ class element(entities.entity):
 
         return f
 
+    ''' end of triggers and handlers '''
+
     def remove(self, el=None):
         """ Removes ``el`` from this ``element``'s child elements.
 
@@ -1297,10 +1431,11 @@ class element(entities.entity):
         untested functionality.
         """
 
-        # Set to a random identifier. Prepend an x because HTML5's
-        # specification dosen't allow id attributes to start with
-        # numbers.
-        self.id = 'x' + primative.uuid().base64
+        if not self.id:
+            # Set to a random identifier. Prepend an x because HTML5's
+            # specification dosen't allow id attributes to start with
+            # numbers.
+            self.id = 'x' + primative.uuid().base64
 
         if not recursive:
             return
@@ -1338,6 +1473,29 @@ class element(entities.entity):
         el = eargs.entity
         el._setparent(self)
 
+    def _elements_onbefore(self, src, eargs):
+        """ Occurs before an element is added to this element's
+        `elements` collection.
+        """
+        # Raise exception if the element being added already exists in
+        # self._elements. 
+        #
+        # NOTE We need to use the private _elements collection because
+        # an infinite recursion exception will occur otherwise. This is
+        # because the subclasses of element override its `elements`
+        # collection. In side these overrides, children are added thus
+        # causing us to get here. Then, calling `self.elements` here
+        # recurses back into the override, thus causing the infinite
+        # recursion.
+        if hasattr(self, '_elements'):
+            if eargs.entity in self._elements:
+                rent = type(self._elements.parent)
+                child = type(eargs.entity)
+                raise ValueError(
+                    f'Cannot add the same child node ({child}) twice to '
+                    f'parent {rent}'
+                )
+        
     def __getitem__(self, ix):
         # Pass CSS selector to elements collection
         els = elements()
@@ -1511,7 +1669,7 @@ class element(entities.entity):
         When an element is append to another element, the first element
         is considered the second element's parent::
 
-            p = dom.paragraph('I am the parent')
+            p = dom.p('I am the parent')
             span = dom.span('I am the child')
 
             p += span
@@ -1795,6 +1953,7 @@ class element(entities.entity):
         """
         if not hasattr(self, '_elements'):
             self._elements = elements()
+            self._elements.onbeforeadd += self._elements_onbefore
             self._elements.onadd += self._elements_onadd
             self._elements._setparent(self)
         return self._elements
@@ -1825,8 +1984,12 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def __contains__(self, el):
+        return el in self.elements
+
     def __lshift__(self, el):
-        """ Inserts ``el` at the begining of the elements collection.
+        """ Overrides the << operator to insert ``el` at the begining of
+        this element's `elements` collection.
 
         :param: el str|element:
             if el is str:
@@ -1838,23 +2001,13 @@ class element(entities.entity):
                 The el will simply be unshifted onto the child elements
                 collection.
         """
-
-        # TODO We could probably override unshift instead. That way the
-        # ``unshift()`` method and the << operate would work. As it
-        # stands, ``unshift()`` would not use the overridden behavior.
-        if type(el) is str:
-            el = text(el)
-
-        if not isinstance(el, element) and not isinstance(el, elements):
-            raise ValueError('Invalid element type: ' + str(type(el)))
-
         self.elements << el
         return self
 
     def __iadd__(self, el):
         """ Push ``el` at the top of the elements collection.
 
-        :param: el str|element:
+        :param: el str|element|sequence:
             if el is str:
                 A new text node will be created with el as the text
                 node's text property. The text node will be unshfted
@@ -1863,17 +2016,12 @@ class element(entities.entity):
             if el is element:
                 The el will simply be pushed onto the child elements
                 collection.
+
+            if el is sequence:
+                If el is a sequence, such as a tuple or an elements
+                collection, each element in the sequence will be
+                appended to the child elements collection.
         """
-        # TODO There is some redunancy between this and __lshift__.
-        # Also, shouldn't this redundent logic be put in the overrides
-        # element.append and element.insertbefore (which don't actually
-        # exist at the time of this writing).
-        if type(el) is str:
-            el = text(el)
-
-        if not isinstance(el, element) and not isinstance(el, elements):
-            raise ValueError('Invalid element type: ' + str(type(el)))
-
         self.elements += el
         return self
 
@@ -2065,7 +2213,6 @@ class p(element):
 #    import dom
 #    p = dom.p('This is a paragraph')
 #    p1 = dom.p('This is another paragraph')
-paragraph = p
 
 class addresses(elements):
     """ A class used to contain a collection of ``address`` elements.
@@ -2986,7 +3133,7 @@ class a(element):
         # a correct (relative) url. As a side note, we should also
         # except body as ecommerce.url for obvious reason. We should
         # also test if body is file.resource because, in that case, we
-        # do have a url proprety that would be appropriate for self.href
+        # do have a url property that would be appropriate for self.href
         # assuming body.local is False.
         if isinstance(body, file.file):
             self.href = body.path
@@ -4547,7 +4694,7 @@ class caption(element):
     """
 
 class inputs(elements):
-    """ A class used to contain a collection of ``caption`` elements.
+    """ A class used to contain a collection of ``input`` elements.
     """
 
 class input(element):
@@ -4559,6 +4706,7 @@ class input(element):
     number of combinations of input types and attributes.
     """
     isvoid = True
+
     @property
     def min(self):
         """ Valid for date, month, week, time, datetime-local, number,
@@ -5830,14 +5978,22 @@ class script(element):
     The <script> element can also be used with other languages, such as
     WebGL's GLSL shader programming language and JSON.
     """
-    def __init__(self, res=None, *args, **kwargs):
+    def __init__(self, body=None, *args, **kwargs):
         """ Create a script element.
 
-        :param: res file.resource: An optional file resource object used
-        to set the script's src attribute to.
+        :param: body str|file.resource: 
+
+            if str:
+                `body` will be the text within the script tag.
+            
+            if file.resource:
+                A file resource object used to set the
+                script's `src` attribute.
         """
         # If a file.resource was given
-        if res:
+        if isinstance(body, file.resources):
+            res = body
+            body = None
             self.site.resources &= res
             self.src = res.url
             if res.local:
@@ -5848,7 +6004,7 @@ class script(element):
             self.integrity = res.integrity
             self.crossorigin = res.crossorigin
             
-        super().__init__(*args, **kwargs)
+        super().__init__(body, *args, **kwargs)
 
     @property
     def crossorigin(self):
@@ -6449,6 +6605,11 @@ class html(element):
                 The decl parameter will be the entire contents of the
                 declaration inside the <!...> markup (e.g. 'DOCTYPE html').
                 """
+                # HACK:10d9a676 we need to fully support DOCTYPEs, not
+                # just the standard mode doc type. See TODO:10d9a676.
+                if decl == 'DOCTYPE html':
+                    return
+
                 raise NotImplementedError(
                     'HTML doctype declaration are not implemented'
                 )
@@ -8739,7 +8900,7 @@ class selector(entities.entity):
                             # the 2 in :nth-child(1n+2)(
                             b = int(gs[2] + gs[3])
 
-                # Make a and b the corresponding proprety values of this
+                # Make a and b the corresponding property values of this
                 # object.
                 self._a, self._b = a, b
 
@@ -8774,7 +8935,7 @@ class selector(entities.entity):
             # Init the value
             self.value = None
 
-            # Set the arguments proprety to an instance of `argument`
+            # Set the arguments property to an instance of `argument`
             self.arguments = selector.pseudoclass.arguments(self)
 
         def clone(self):
@@ -9175,9 +9336,10 @@ class event(entities.event):
     """ Represents an event for DOM objects.
 
     DOM objects need events in the same way that all entities.entities
-    need events. However, DOM object are unique in that their events can
-    be handled on the server side. This subclass of entities.event
-    supports that option.
+    and entities.entity objects need events. However, DOM object are
+    unique in that their events, though triggered by the client, can be
+    handled on the server side. This subclass of entities.event supports
+    that ability.
     """
 
     """
@@ -9198,24 +9360,27 @@ class event(entities.event):
         </html>
 
     Elements that need event handling have two attributes that are named
-    after this pattern: data-<event>-handler and data-<event>-fragments.
-    The <event> is the name of the event that should be handled; in the
-    above example, the 'click' event' of the <button> is being handled.
-    The data-<event>-handler attribute indicates which method on the
-    page object is the server-side event handler. The
-    data-<event>-fragments attribute indicates the id value(s) of the
-    element's in the document that should be sent to the server-side
-    event handler. The element(s) outerHTML is sent. The server-side
-    handler is free to view and modifier these HTML fragments. The
-    modified versions are returned to the browser and are used to
-    replace the original version.
+    after the following pattern: data-<event>-handler and
+    data-<event>-fragments.  The <event> is the name of the event that
+    should be handled; in the above example, the 'click' event' of the
+    <button> is being handled.  The data-<event>-handler attribute
+    indicates which method on the page object is the server-side event
+    handler. The data-<event>-fragments attribute contain the id
+    value(s) of the element's in the document that should be sent to the
+    server-side event handler. The element(s)'s outerHTML is sent. The
+    server-side handler is free to view and modifier these HTML
+    fragments. The modified versions are returned to the browser and are
+    used to replace the original version.
 
-    This process will be managed by JavaScript in a real browser,
-    however, a Python implementation for this process already exists at
-    `tester.browser._tab.element_event`
+    In real browsers, this process is managed by the JavaScript that is
+    returned from pom.site._eventjs.  Additionally, a Python
+    implementation for this logic is available at
+    tester.browser._tab.element_event. This Python-only implementation
+    makes it possible to write automated tests to ensure events are
+    handled correctly.
 
-    This example shows two different <button>s sending their click event
-    to the same server-side event handler:
+    This example shows two different <button>s declared to send their
+    click event to the same server-side event handler:
 
         <main>
             <button 
@@ -9251,8 +9416,8 @@ class event(entities.event):
             <div id="xBGH5zf5WRmqyP_QT4l2vqw"></div>
         </main>
 
-    Here, we have the onblur and onfocus event sent to the
-    inp_onfocuschange server side event handler. These different events
+    Here, we have the onblur and onfocus events sent to the
+    inp_onfocuschange server-side event handler. These different events
     are able to send different HTML fragments as can be seen above.
     """
     def __init__(self, el, name, *args, **kwargs):
@@ -9377,20 +9542,20 @@ class event(entities.event):
         super().append(f)
 
 class eventargs(entities.eventargs):
-    """ The eventargs class for DOM events. This object is ud to move
-    data from the browser to the server-sied event handler.
+    """ The eventargs class for DOM events. This object is used to move
+    data from the browser to the server-side event handler.
     """
 
     def __init__(self, 
         el=None, trigger=None, hnd=None, src=None, html=None
     ):
-        """ Create an eventargs class.
+        """ Create an eventargs object.
 
         :param: el dom.element: The element that is causing
         the event.  This is usualy a DOM object running in a browser
         that is the subject of an event.
 
-        :param: trigger str: The name of the method that triggers the
+        :param: trigger str: The name of the method that triggered the
         event. Usually, events happen to elements, but an element can
         fire it's own event with a method. Consider:
 
@@ -9406,7 +9571,7 @@ class eventargs(entities.eventargs):
         event.
 
         :param: html dom.elements: A collection of DOM objects from
-        the browser's DOM that the event handler would like view or
+        the browser's DOM that the event handler would like to view or
         manipulate.
         """
 

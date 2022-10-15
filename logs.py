@@ -121,6 +121,12 @@ class addlogeventargs(entities.eventargs):
         """
         self.record = rec
 
+    def __repr__(self):
+        return repr(self.record)
+
+    def __str__(self):
+        return repr(self)
+
 # When the ``logs`` module is imported, we instatiate the ``log`` class,
 # then set its ``logger`` object at the module level. With that, we set
 # the logging methods at the module level, as well. That way, we can

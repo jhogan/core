@@ -656,7 +656,7 @@ class entities:
         Python.
 
         For example, given an entities collection of houses each with a
-        proprety called ``price``, we can get the priciest house in the
+        property called ``price``, we can get the priciest house in the
         collection by doing the following::
 
             priciest = houses.max(key=lambda x: x.price)
@@ -676,7 +676,7 @@ class entities:
         Python.
 
         For example, given an entities collection of houses each with a
-        proprety called ``price``, we can get the cheapest house in the
+        property called ``price``, we can get the cheapest house in the
         collection by doing the following::
 
             cheapest = houses.min(key=lambda x: x.price)
@@ -1202,10 +1202,13 @@ class entities:
 
         :param: e entity: The entity to be inserted.
         """
+        eargs = entityaddeventargs(e)
+        self.onbeforeadd(self, eargs)
+
         # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
-            self.onadd(self, entityaddeventargs(e))
+            self.onadd(self, eargs)
         except AttributeError as ex:
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
@@ -1276,7 +1279,7 @@ class entities:
         self.clear()
 
     def __contains__(self, e):
-        """ Returns True if ``e`` is in ``es``::
+        """ Returns True if e is in self:
 
             assert e not in es
 
@@ -1284,10 +1287,27 @@ class entities:
 
             assert e in es
 
-        :param e entity: The entity being sought.
+        :param e entity|str|int|iterable: The entity being sought.
+            if entity:
+                Simply return True if the entity is in self.
+
+            if iterable:
+                Iterate over each entity. If all entity are in self,
+                return True, False otherwise.
+
+            if int:
+                Use e as an index value. If the index is found, return
+                True.
+
+            if str:
+                Detremine if an entity in self with an `id` or `name`
+                attribute equals e. If so, return True, False otherwise.
         """
         if type(e) in (int, str):
             e = self(e)
+
+        elif hasattr(e, '__iter__'):
+            return len(e) and all(x in self for x in e)
 
         if self.index:
             return self.indexes['identity'](e).ispopulated
@@ -1772,7 +1792,7 @@ class entities:
         # TODO Write tests for this property's logic
         if not self.issingular:
             raise ValueError(
-                'The `only` property demands exactly one element; '
+                'The `only` property demands exactly one element but '
                 f'{self.count} were found'
             )
         return self.first

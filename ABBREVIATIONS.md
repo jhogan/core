@@ -9,5 +9,6 @@ object:        obj
 parent:        rent
 proprietor:    propr
 remove:        rm
+result:        res
 return-value:  r
 tuple:         tup
