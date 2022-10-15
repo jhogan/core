@@ -158,7 +158,7 @@ class attributes(entities.entities):
         """ Append an attribute to the collection via the += operator::
 
             # Create an element
-            p = paragraph()
+            p = dom.p()
 
             # Append an attribute using +=
             p.attributes += attribute('id', 'my-id-value')
@@ -193,7 +193,7 @@ class attributes(entities.entities):
             is to simple append an attribute objects:
 
                 # Create a <p>
-                p = dom.paragraph()
+                p = dom.p()
 
                 # Create an attribute object: id="my-id-value"
                 attr = dom.attribute('id', 'my-id-value')
@@ -825,14 +825,14 @@ class elements(entities.entities):
     that only contain that element::
 
         # Create a paragraphs collection
-        ps = paragraphs()
+        ps = dom.p()
 
-        # Assert that ``paragraphs`` inherits form ``elements``
+        # Assert that ``dom.p`` inherits form ``elements``
         assert isinstance(ps, elements)
 
         # Add paragraph object (<p>) to the paragraphs collection
-        ps += paragraph()
-        ps += paragraph()
+        ps += dom.p()
+        ps += dom.p()
     """
     # TODO:12c29ef9 Write and test mass attribute assignment logic:
     #
@@ -1149,8 +1149,8 @@ class element(entities.entity):
     """ An abstract class from which all HTML5 elements inherit.
 
         # Create a paragraph (<p>) class 
-        p = paragraph()
-        # Assert that ``paragraph`` inherits form ``element``
+        p = dom.p()
+        # Assert that ``dom.p`` inherits form ``element``
         assert isinstance(ps, element)
 
     Attributes
@@ -1669,7 +1669,7 @@ class element(entities.entity):
         When an element is append to another element, the first element
         is considered the second element's parent::
 
-            p = dom.paragraph('I am the parent')
+            p = dom.p('I am the parent')
             span = dom.span('I am the child')
 
             p += span
@@ -2213,7 +2213,6 @@ class p(element):
 #    import dom
 #    p = dom.p('This is a paragraph')
 #    p1 = dom.p('This is another paragraph')
-paragraph = p
 
 class addresses(elements):
     """ A class used to contain a collection of ``address`` elements.

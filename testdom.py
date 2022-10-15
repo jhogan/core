@@ -280,7 +280,7 @@ class element(tester.tester):
         self.all(x.lang is None for x in html.walk())
 
     def it_calls_parent(self):
-        p = dom.paragraph()
+        p = dom.p()
         self.none(p.parent)
 
         span = dom.span('some text')
@@ -305,7 +305,7 @@ class element(tester.tester):
         self.is_(p,          b.elements.first.getparent(2))
 
     def it_calls_siblings(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         txt = dom.text('some text')
         p += txt
@@ -330,29 +330,29 @@ class element(tester.tester):
         self.is_(b, i.siblings.first)
 
     def it_raises_when_moving_elements(self):
-        p = dom.paragraph()
+        p = dom.p()
         txt = dom.text('some text')
         p += txt
 
-        p1 = dom.paragraph()
+        p1 = dom.p()
         self.expect(dom.MoveError, lambda: p1.__iadd__(txt))
 
     def it_calls_isvoid(self):
-        self.false(dom.paragraph.isvoid)
-        self.false(dom.paragraph().isvoid)
+        self.false(dom.p.isvoid)
+        self.false(dom.p().isvoid)
 
         self.true(dom.base.isvoid)
         self.true(dom.base().isvoid)
 
     def it_calls_id(self):
-        p = dom.paragraph()
+        p = dom.p()
         uuid = uuid4().hex
         p.id = uuid
         self.one(p.attributes)
         self.eq(uuid, p.id)
 
     def it_gets_attribute_then_sets_the_attribute(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         # Get
         p.id
@@ -388,7 +388,7 @@ class element(tester.tester):
             self.count(i + 1, a.attributes)
 
     def it_calls_id(self):
-        p = dom.paragraph()
+        p = dom.p()
         id = primative.uuid(base64=p.id)
         self.isinstance(id, uuid.UUID)
 
@@ -457,7 +457,7 @@ class dom_script(tester.tester):
 
 class p(tester.tester):
     def it_calls_html(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         p += '''
             Plain white sauce!
@@ -493,7 +493,7 @@ class p(tester.tester):
         self.eq(expect, p.pretty)
 
     def it_works_with_html_entities(self):
-        p = dom.paragraph()
+        p = dom.p()
 
         p += '''
             &copy; 2020, All Rights Reserved
@@ -582,7 +582,7 @@ class dom_attribute(tester.tester):
     def it_raises_on_invalid_attributes(self):
         # Test for valid characters in attribute names. Based on
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-        p = dom.paragraph()
+        p = dom.p()
 
         def ass(name):
             p.attributes[name] = name
@@ -612,7 +612,7 @@ class dom_attribute(tester.tester):
                 self.expect(ValueError, lambda: ass(''.join(name)))
         
     def it_deals_with_undef_attr(self):
-        p = dom.paragraph()
+        p = dom.p()
         uuid = uuid4().hex
         attr = p.attributes[uuid]
         self.is_(p.attributes[uuid], attr)
@@ -733,7 +733,7 @@ class dom_attribute(tester.tester):
 
     def it_appends_attribute(self):
         # Append attribute object
-        p = dom.paragraph()
+        p = dom.p()
         self.zero(p.attributes)
         id = uuid4().hex
         p.attributes += dom.attribute('data-id', id)
@@ -787,14 +787,14 @@ class dom_attribute(tester.tester):
         self.eq('ltr', p.dir)
 
     def it_makes_class_attribute_a_cssclass(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.attributes['class'] = 'form-group'
         cls = p.attributes['class']
         self.type(dom.cssclass, cls)
 
     def it_removes_attribute(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name, cls = [uuid4().hex for _ in range(3)]
         style = dom.attribute('style', 'color: 8ec298')
         p.attributes += 'name', name
@@ -826,7 +826,7 @@ class dom_attribute(tester.tester):
 
     def it_updates_attribute(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
         cls = uuid4().hex
@@ -851,7 +851,7 @@ class dom_attribute(tester.tester):
 
     def it_doesnt_append_nonunique(self):
         # Add three attributes
-        p = dom.paragraph()
+        p = dom.p()
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
         p.attributes += 'data-id', id
@@ -903,7 +903,7 @@ class dom_attribute(tester.tester):
 
 class dom_cssclass(tester.tester):
     def it_deals_with_undef_attr(self):
-        p = dom.paragraph()
+        p = dom.p()
         attr = p.attributes['class']
         self.is_(p.attributes['class'], attr)
         self.zero(p.classes)
@@ -920,13 +920,13 @@ class dom_cssclass(tester.tester):
     def it_calls_class_twice(self):
         # Calling p.classes raised an error in development. This is a
         # test to ensure the problem doesn't somehow resurface.
-        p = dom.paragraph()
+        p = dom.p()
         self.expect(None, lambda: p.classes)
         self.expect(None, lambda: p.classes)
 
     def it_appends_classes(self):
         ''' Add by various methods '''
-        p = dom.paragraph()
+        p = dom.p()
         self.eq(p.classes.html, p.attributes['class'].html)
         cls = dom.cssclass('my-class-1')
         p.attributes['class'].append(cls)
@@ -980,7 +980,7 @@ class dom_cssclass(tester.tester):
 
     def it_adds_multiple_classes_at_a_time(self):
         ''' Add by various methods '''
-        p = dom.paragraph()
+        p = dom.p()
         self.eq(p.classes.html, p.attributes['class'].html)
 
         expect = '<p></p>'
@@ -1050,7 +1050,7 @@ class dom_cssclass(tester.tester):
         self.eq(expect, p.classes.html)
 
     def it_removes_classes(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
         self.eight(p.classes)
 
@@ -1067,7 +1067,7 @@ class dom_cssclass(tester.tester):
         self.eq('class="c1 c5 c6 c7 c8"', p.classes.html)
 
     def it_removes_multiple_classes(self):
-        p = dom.paragraph()
+        p = dom.p()
         p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
         self.eight(p.classes)
 
@@ -1278,7 +1278,7 @@ class dom_markdown(tester.tester):
         This is another paragraph.
         ''')
 
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
 
         self.eq(
             'This is a normal paragraph:', 
@@ -1288,7 +1288,7 @@ class dom_markdown(tester.tester):
         self.type(dom.pre, md.second)
         self.type(dom.code, md.second.elements.first)
 
-        self.type(dom.paragraph, md.third)
+        self.type(dom.p, md.third)
         self.eq(
             'This is another paragraph.', 
             md.third.elements.first.html
@@ -1465,7 +1465,7 @@ class dom_markdown(tester.tester):
         ''')
 
         self.three(md)
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
         self.type(dom.table, md.second)
         self.one(md.second.children)
         self.type(dom.tr, md.second.children.first)
@@ -1484,7 +1484,7 @@ class dom_markdown(tester.tester):
             'Foo',
             md.second.children.first.children.first.elements.first.html
         )
-        self.type(dom.paragraph, md.third)
+        self.type(dom.p, md.third)
 
         md = dom.markdown('<http://example.com/>')
         a = md.first.elements.first
@@ -1622,9 +1622,9 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.four(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
-        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.p, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
 
         md = dom.markdown('''
@@ -1640,9 +1640,9 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.four(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
-        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.p, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
 
         # Nested
@@ -1658,12 +1658,12 @@ class dom_markdown(tester.tester):
         self.type(dom.blockquote, md.first)
 
         self.six(md.first.elements)
-        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.p, md.first.elements.first)
         self.type(dom.text, md.first.elements.second)
         self.type(dom.blockquote, md.first.elements.third)
         self.type(dom.text, md.first.elements.fourth)
-        self.type(dom.paragraph, md.first.elements[2].elements.first)
-        self.type(dom.paragraph, md.first.elements.fifth)
+        self.type(dom.p, md.first.elements[2].elements.first)
+        self.type(dom.p, md.first.elements.fifth)
         self.type(dom.text, md.first.elements.sixth)
 
         md = dom.markdown('''
@@ -1851,7 +1851,7 @@ class dom_markdown(tester.tester):
         ''')
 
         self.one(md)
-        self.type(dom.paragraph, md.first)
+        self.type(dom.p, md.first)
         p = md['p'].first
 
         expect = self.dedent('''
@@ -1889,8 +1889,8 @@ class dom_markdown(tester.tester):
         ''')
 
         self.two(md)
-        self.type(dom.paragraph, md.first)
-        self.type(dom.paragraph, md.second)
+        self.type(dom.p, md.first)
+        self.type(dom.p, md.second)
 
         expect = self.dedent('''
         <p>

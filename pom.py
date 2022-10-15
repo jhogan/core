@@ -1374,7 +1374,7 @@ class page(dom.html):
         :param: msg str: The text to put in the flash message.
         """
         if isinstance(msg, str):
-            msg = dom.paragraph(msg)
+            msg = dom.p(msg)
 
         art = dom.article(msg, class_="flash")
 
@@ -2130,9 +2130,10 @@ class _404(page):
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
 
-        self.main += dom.paragraph('''
-        Could not find <span class="resource">%s</span>
-        ''', ex.resource)
+        self.main += dom.p(
+            'Could not find '
+            f'<span class="resource">{ex.resource}</span>'
+        )
 
     @property
     def name(self):
