@@ -49,6 +49,13 @@ class site(pom.site):
         return party.company.carapacian
 
     @property
+    def styles(self):
+        """ Return the CSS for this site. 
+        """
+        # The Css constant is defined at the bottom of this source file.
+        return Css
+
+    @property
     def head(self):
         if not self._head:
             hd = super().head
@@ -351,4 +358,236 @@ class ticketsspa(pom.page):
 
     class backlog(dom.main):
         pass
+
+# The Css for the site. See site.styles
+Css = '''
+body{
+    font-family: "Nunito",sans-serif;
+    color: #000;
+}
+
+a{
+    color: #2ba74a !important;
+}
+
+p{
+    text-align: justify;
+}
+
+section#contact-us p{
+    text-align: initial;
+}
+
+hr.divider{
+    background-color: #2ba74a;
+}
+
+h1, h2, h3, h4, h5, h6{
+    font-weight: 700;
+    text-transform: upper;
+}
+
+main>header>.tagline {
+    text-transform: uppercase; 
+    font-weight: bold;
+    font-family: Vision, Ariel, sans-serif;
+    color: #0F6A36;
+    font-size: 1.5em;
+}
+
+body>main>header {
+    text-align: center;
+    margin: 2em 0;
+    font-size: 1.5em;
+}
+
+main>section>:not(header){
+    margin-left:1em;
+}
+
+main>section>header h2{
+    color: #0F6A36;
+    margin-bottom: 5px;
+}
+
+main>section>section>header{
+    margin-bottom: -1em;
+}
+
+main>section>section>header h3{
+    color: #0F6A36;
+    font-size: 1.7em;
+}
+
+body>header, body>footer{
+    background-color: rgb(25, 25, 25);
+}
+
+main>section>header h2{
+    font-family: Vision, Ariel, sans-serif;
+}
+
+main>section>header{
+    border-bottom: .05em green solid;
+}
+
+/* Menu/Nav Bar */ 
+header menu{
+    background-image: none;
+    background-repeat: repeat;
+    background-attachment: scroll;
+    background-clip: border-box;
+    background-origin: padding-box;
+    background-position-x: 0%;
+    background-position-y: 0%;
+    background-size: auto auto;
+	width: 100% !important;
+    display: flex;
+    justify-content: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+header menu li:first-child img{
+    width: 346px;
+    height: 60px;
+}
+
+main{
+    margin: auto;
+    max-width: 50em;
+    padding: 1em;
+}
+
+@media only screen and (max-width: 992px) {
+    header menu li:first-child{
+        width: 100%;
+        text-align: center;
+    }
+
+    header menu{
+        flex-wrap: wrap;
+    }
+
+    header menu li:not(:first-child){
+        font-size: 1em;
+        margin-bottom: .5em;
+    }
+    header menu li:nth-child(2){
+        margin-left: 50px;
+    }
+}
+
+@media only screen and (min-width: 992px) {
+    header menu{
+        flex-wrap: nowrap;
+    }
+
+    header menu li:not(:first-child){
+        font-size: 1.5em;
+        margin-top: 15px;
+    }
+
+    header menu li:first-child{
+        flex-basis: 100%;
+    }
+
+}
+
+@media only screen and (min-width: 1200px) {
+    header menu{
+        flex-wrap: nowrap;
+    }
+
+
+    header menu li:not(:first-child){
+        font-size: 1.36em;
+        margin-top: 15px;
+    }
+}
+
+header menu li{
+    display: inline;
+    padding: 0 .5em;
+}
+
+/* Carapacian colors and weights*/
+.fg-dark-green{
+    color: #0F6A36;
+}
+
+.bg-dark-green{
+    background-color: #0F6A36;
+}
+
+.fg-light-green{
+    color: #2BA74A;
+}
+
+.bg-light-green{
+    background-color: #2BA74A;
+}
+
+.fg-dark-gray{
+    color: #54565B;
+}
+
+.bg-dark-gray{
+    background-color: #54565B;
+}
+
+.fg-light-grey{
+    color: #A8A8AA;
+}
+
+.bg-light-grey{
+    background-color: #A8A8AA;
+}
+
+.font-light{
+    font-weight: 300;
+}
+
+.font-heavy{
+    font-weight: 700;
+}
+
+.fg-black{
+    color: #000000
+}
+
+.bg-black{
+    background-color: #000000
+}
+
+.fg-white{
+    color: #FFFFFF
+}
+
+.bg-white{
+    background-color: #FFFFFF
+}
+
+.label-primary{
+    background-color: #0F6A36;
+    color: #FFFFFF !important;
+}
+
+dt {
+  font-size: 2rem;
+}
+
+dd {
+  margin-bottom: 20px;
+}
+
+body>footer p{
+    text-align: center;
+}
+
+body>footer p{
+    color: #116a36;
+}
+'''
         
