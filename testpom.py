@@ -136,9 +136,11 @@ class _404(pom.page):
         self.main += dom.h1('Page Not Found')
         self.main += dom.h2('Foobar apologizes', class_="apology")
 
-        self.main += dom.paragraph('''
-        Could not find <span class="resource">%s</span>
-        ''', ex.resource)
+        self.main += dom.p(
+            'Could not find <span class="resource">' +
+            str(ex.resource) +
+            '</span>'
+        )
 
     @property
     def name(self):
