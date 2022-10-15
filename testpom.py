@@ -635,11 +635,6 @@ class site(tester.tester):
         with orm.proprietor(ass.proprietor):
             self.expect(None, ass.orm.reloaded)
 
-# XXX Get 
-#
-#    ./testpom page -T 
-#
-# to work. Running multiple times produces different errors.
 class page(tester.tester):
     def __init__(self, *args, **kwargs):
         # We will be testing with foonet so set it as the ORM's
