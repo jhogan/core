@@ -5243,16 +5243,90 @@ with book('Hacking Carapacian Core'):
 
         with section('Reflexive associations'):
           print('''
-            A special type of association occures when the two entity
-            classes reference by the association are the same. These
-            associations are called reflexive.
+            A special type of association occures when the same two
+            entities need to have a many-to-many relationship with each
+            other.  These associations are called reflexive.
 
-            Consider a social networking company. In this company, we
-            would have persons who needed to be associationed with other
+            Consider a social networking company.  In this company, we
+            would have persons who need to be associationed with other
             persons (such as when you "friend" someone on Facebook).
             This is an example of a many-to-many relationship between
             members of the same class (`person`).
-          '''
+
+            Let's create and use a `person_person` association to see
+            how such a we can use the ORM to accomplish establish this
+            relationship.
+          ''')
+
+          with listing('Creating a reflexive association'):
+            class person_persons(orm.associations):
+              pass
+
+            class person_person(orm.association):
+              # References to both sides of the association
+              subject = person
+              object = person
+
+              # The type of relationship the `subject` has with the
+              # `object` (e.g., "friend", "co-worker", "parent", etc.)
+              role = str
+
+          print('''
+            We see above that the association uses the attributes names
+            `subject` and `object` to reference the same type. This is
+            how you know the association is reflexive. The ORM needs the
+            attributes to be named `subject` and `object` and be
+            referencing the same type for it to recognize the
+            association as reflexive.
+
+            In addition to "friend" relationships, our associations will
+            allow us to capture additional relationships types which we
+            will record with string literals in the `role` attribute.
+
+            Let's now use the association association Steve Jobs with
+            Steve Wozniak. We've already created the `person` entity
+            in the prior listing so we will continue to use it.
+          ''')
+
+          with listing('Using a reflexive association'):
+            # Create the two preson objects
+            jobs = person(name='Steve Jobs')
+            woz = person(name='Steve Wozniak')
+
+            # Associate Wozniak as a "friend" of Jobs
+            jobs.person_persons += person_person(
+              object = woz,
+              role = 'friend'
+            )
+
+            # Associate Wozniak as a "business-partner" of Jobs
+            jobs.person_persons += person_person(
+              object = woz,
+              role = 'business-partner'
+            )
+
+            # Save jobs which will also save the association objects and
+            # `woz`
+            jobs.save()
+
+            # Reloade `jobs`
+            jobs1 = jobs.orm.reloaded()
+
+            # Assert that the reloaded jobs has two person_person
+            # associations (one for each role)
+            two(jobs1.person_persons)
+
+            for pp in jobs.person_persons:
+              is_(woz, pp.object)
+
+            one(jobs.person_persons.where(
+              lambda x: x.role == 'friend'
+            ))
+
+            one(jobs.person_persons.where(
+              lambda x: x.role == 'business-partner'
+            ))
+
 
       with section('Many-to-one relationships'):
 
