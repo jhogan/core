@@ -5255,7 +5255,7 @@ with book('Hacking Carapacian Core'):
 
             Let's create and use a `person_person` association to see
             how such a we can use the ORM to accomplish establish this
-            relationship.
+            type of relationship.
           ''')
 
           with listing('Creating a reflexive association'):
@@ -5275,58 +5275,101 @@ with book('Hacking Carapacian Core'):
             We see above that the association uses the attributes names
             `subject` and `object` to reference the same type. This is
             how you know the association is reflexive. The ORM needs the
-            attributes to be named `subject` and `object` and be
-            referencing the same type for it to recognize the
+            attributes to be named `subject` and `object` and to
+            reference the same type in order for it to recognize the
             association as reflexive.
 
-            In addition to "friend" relationships, our associations will
-            allow us to capture additional relationships types which we
-            will record with string literals in the `role` attribute.
+            In addition to "friend" relationships, our association
+            objecs will allow us to capture additional relationships
+            types which we will record with string literals in the
+            `role` attribute.
 
-            Let's now use the association association Steve Jobs with
-            Steve Wozniak. We've already created the `person` entity
-            in the prior listing so we will continue to use it.
+            Let's now use our association to record the relationships
+            Steve Jobs has with Steve Wozniak and Laurene Powell Jobs.
+            We've already created the `person` entity in the prior
+            listing so we will continue to use it.
           ''')
 
           with listing('Using a reflexive association'):
-            # Create the two preson objects
-            jobs = person(name='Steve Jobs')
+            # Create the three preson objects
+            sjobs = person(name='Steve Jobs')
+            ljobs = person(name='Laurene Powell Jobs')
             woz = person(name='Steve Wozniak')
 
             # Associate Wozniak as a "friend" of Jobs
-            jobs.person_persons += person_person(
+            sjobs.person_persons += person_person(
               object = woz,
               role = 'friend'
             )
 
-            # Associate Wozniak as a "business-partner" of Jobs
-            jobs.person_persons += person_person(
+            # The append automatically makes sjobs the `subject` of the
+            # association.
+            is_(sjobs, sjobs.person_persons.last.subject)
+
+            # Associate Wozniak as a business partner of Jobs
+            sjobs.person_persons += person_person(
               object = woz,
-              role = 'business-partner'
+              role = 'partner'
             )
 
-            # Save jobs which will also save the association objects and
+            # Again, the append automatically makes sjobs the `subject`
+            # of the association.
+            is_(sjobs, sjobs.person_persons.last.subject)
+
+            # Associate Laurene as Jobs' spouse
+            sjobs.person_persons += person_person(
+              object = ljobs,
+              role = 'spouse'
+            )
+
+            # Save sjobs which will also save the association objects and
             # `woz`
-            jobs.save()
+            sjobs.save()
 
-            # Reloade `jobs`
-            jobs1 = jobs.orm.reloaded()
+            # Reload `sjobs`
+            sjobs1 = sjobs.orm.reloaded()
 
-            # Assert that the reloaded jobs has two person_person
-            # associations (one for each role)
-            two(jobs1.person_persons)
+            # Assert that the reloaded sjobs has three person_person
+            # associations.
+            three(sjobs1.person_persons)
 
-            for pp in jobs.person_persons:
-              is_(woz, pp.object)
-
-            one(jobs.person_persons.where(
-              lambda x: x.role == 'friend'
+            # One of the associations is Jobs' friendship with Wozniak
+            one(sjobs.person_persons.where(
+              lambda x: x.object.id == woz.id and x.role = 'friend'
             ))
 
-            one(jobs.person_persons.where(
-              lambda x: x.role == 'business-partner'
+            # One of the associations is Jobs' business relationship
+            # with Wozniak
+            one(sjobs.person_persons.where(
+              lambda x: x.object.id == woz.id and x.role = 'partner'
             ))
 
+            # One of the associations is Jobs' marital relationship with 
+            # Laurene.
+            one(sjobs.person_persons.where(
+              lambda x: x.object.id == ljobs.id and x.role = 'spouse'
+            ))
+
+          print('''
+            Above, we creates a person object for Steve Jobs called
+            `sjobs`. We wanted to record two associations with Jobs has
+            with Wozniak: he was his friend and business partner. Then
+            we recorded an association Jobs had with his wife Laurene. 
+
+            The `object` attribute is used for the entity acting as the
+            object of the association. The `subject` attribute is
+            `sjobs` because it is the subject of the association, i.e.,
+            the entity whose association object is being appended to.
+
+            The `role` attribute was added so we could distinguish
+            different types of relationships. Though `subject` and
+            `object` are required to be the names of the entity
+            attributes in reflexive associations, `role` is an arbitrary
+            attribute we just decided to create and use. Most social
+            media platforms seem to have only be able to associate a
+            person with another as a "friend", however, we want this
+            object model to handle multiple relationship types.
+          ''')
 
       with section('Many-to-one relationships'):
 
