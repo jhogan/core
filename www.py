@@ -421,6 +421,10 @@ class _request:
         self._useragent  =  None
         self._site       =  None
 
+    @property
+    def forfavicon(self):
+        return self.path == '/favicon.ico'
+
     def __repr__(self):
         """ A string representation of the HTTP request.
         """
