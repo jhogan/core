@@ -116,6 +116,13 @@ class foonet(pom.site):
 
         return mnu
 
+    @property
+    def favicon(self):
+        if not hasattr(self, '_favicon'):
+           self._favicon = file.file()
+           self._favicon.body = base64.b64decode(Favicon)
+        return self._favicon
+
 class pom_menu_item(tester.tester):
     def it_calls__init__(self):
         itm = pom.menu.item('A text item')
@@ -279,6 +286,13 @@ class site(tester.tester):
         super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().override = True
+
+    def it_gets_favicon(self):
+        ws = foonet()
+        tab = self.browser().tab()
+        B()
+        res = tab.get('/favicon.ico', ws)
+        #self.true('Page class needs main method' in msg)
     
     def it_calls__init__(self):
         ws = foonet()
