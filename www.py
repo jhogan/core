@@ -1294,9 +1294,11 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        # If the site associated with the request doesn't have a page in
-        # its index, raise a 404
-        if not request.page:
+        if request.forfavicon:
+            pass
+        elif not request.page:
+            # If the site associated with the request doesn't have a page in
+            # its index, raise a 404
             raise NotFoundError(self.path)
 
         if self.isget or self.ishead:
