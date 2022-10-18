@@ -693,45 +693,6 @@ class file(inode):
     """ Represents a file in the DB and on the HDD.
     """
 
-    @orm.attr(str)
-    def mime(self):
-        """ The mime type of the file (as str), e.g., 'text/plain'. The
-        mimetype attribute can be set by the user. If it is not set, the
-        accessor will try to guess what it should be given the ``body``
-        attribute and the ``file.name``.
-        """
-        if not attr():
-            mime = mimetypes.guess_type(self.path, strict=False)[0]
-            if mime is not None:
-                attr(mime)
-            elif isinstance(self._body, str):
-                attr('text/plain')
-            elif isinstance(self._body, bytes):
-                attr('application/octet-stream')
-            elif self._body is None:
-                attr(None)
-        return attr()
-
-    @property
-    def inodes(self):
-        """ The super()'s implemention is to return the child inodes
-        under this inode. However, since this is a file, we want to
-        raise an AttributeError because a file would obviously never
-        have files or directories underneath it. 
-        
-        Note we are using the `orm` modules version of AttributeError
-        because there are issues raising builtins.AttributeError from
-        ORM attributes (see orm.py for more). Also, note that the
-        calling code will receive a regular builtins.AttributeError and
-        not an orm.AttributeError so the client code doesn't have to
-        deal with this awkwardness.
-        """
-        # TODO We need to find a better way to do this. The user should
-        # not have to use a specialized AttributeError.
-        raise orm.AttributeError(
-            "file entities don't have inodes"
-        )
-
     def __init__(self, *args, **kwargs):
         """ Initializes a file object.
 
@@ -758,6 +719,26 @@ class file(inode):
 
         super().__init__(*args, **kwargs)
 
+
+    @orm.attr(str)
+    def mime(self):
+        """ The mime type of the file (as str), e.g., 'text/plain'. The
+        mimetype attribute can be set by the user. If it is not set, the
+        accessor will try to guess what it should be given the ``body``
+        attribute and the ``file.name``.
+        """
+        if not attr():
+            mime = mimetypes.guess_type(self.path, strict=False)[0]
+            if mime is not None:
+                attr(mime)
+            elif isinstance(self._body, str):
+                attr('text/plain')
+            elif isinstance(self._body, bytes):
+                attr('application/octet-stream')
+            elif self._body is None:
+                attr(None)
+        return attr()
+
     @property
     def mimetype(self):
         """ Returns the **type** portion of the mime string. For
@@ -772,6 +753,26 @@ class file(inode):
             return mime.split('/')[0]
 
         return None
+
+    @property
+    def inodes(self):
+        """ The super()'s implemention is to return the child inodes
+        under this inode. However, since this is a file, we want to
+        raise an AttributeError because a file would obviously never
+        have files or directories underneath it. 
+        
+        Note we are using the `orm` modules version of AttributeError
+        because there are issues raising builtins.AttributeError from
+        ORM attributes (see orm.py for more). Also, note that the
+        calling code will receive a regular builtins.AttributeError and
+        not an orm.AttributeError so the client code doesn't have to
+        deal with this awkwardness.
+        """
+        # TODO We need to find a better way to do this. The user should
+        # not have to use a specialized AttributeError.
+        raise orm.AttributeError(
+            "file entities don't have inodes"
+        )
 
     def _self_onaftersave(self, src, eargs):
         """ This is the event handler that gets called immediately after
