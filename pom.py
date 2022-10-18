@@ -428,6 +428,7 @@ class site(asset.asset):
         #
         #     return self.pages(path)
 
+        path = self.lang + '/index' if path == '/' else path
         try:
             return self.pages[path]
         except IndexError:
@@ -1274,7 +1275,7 @@ class pages(entities.entities):
         else:
             return super().__getitem__(path)
            
-        seg = segs[0] if len(segs) else 'index'
+        seg = segs[0] if segs else None
 
         for pg in self:
             if pg.name == seg:

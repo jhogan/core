@@ -785,6 +785,7 @@ class _request:
         ws = self.site
         path = self.path
 
+        path = self.language + '/index' if path == '/' else path
         try:
             return ws[path]
         except IndexError:
@@ -896,8 +897,14 @@ class _request:
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
+            try:
+                path = self.page.path
+            except:
+                B()
+                path = self.path
+
             self._hit = ecommerce.hit(
-                path       =  self.page.path,
+                path       =  path,
                 isxhr      =  self.isxhr,
                 qs         =  self.qs,
                 method     =  self.method,
