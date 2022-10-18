@@ -5334,42 +5334,120 @@ with book('Hacking Carapacian Core'):
             three(sjobs1.person_persons)
 
             # One of the associations is Jobs' friendship with Wozniak
-            one(sjobs.person_persons.where(
+            one(sjobs1.person_persons.where(
               lambda x: x.object.id == woz.id and x.role = 'friend'
             ))
 
             # One of the associations is Jobs' business relationship
             # with Wozniak
-            one(sjobs.person_persons.where(
+            one(sjobs1.person_persons.where(
               lambda x: x.object.id == woz.id and x.role = 'partner'
             ))
 
             # One of the associations is Jobs' marital relationship with 
             # Laurene.
-            one(sjobs.person_persons.where(
+            one(sjobs1.person_persons.where(
               lambda x: x.object.id == ljobs.id and x.role = 'spouse'
             ))
 
           print('''
             Above, we creates a person object for Steve Jobs called
-            `sjobs`. We wanted to record two associations with Jobs has
-            with Wozniak: he was his friend and business partner. Then
+            `sjobs`. We wanted to record two associations that Jobs has
+            with Wozniak: he was his friend and a business partner. Then
             we recorded an association Jobs had with his wife Laurene. 
 
             The `object` attribute is used for the entity acting as the
             object of the association. The `subject` attribute is
             `sjobs` because it is the subject of the association, i.e.,
-            the entity whose association object is being appended to.
+            the entity to which the association is appended.
 
             The `role` attribute was added so we could distinguish
             different types of relationships. Though `subject` and
             `object` are required to be the names of the entity
             attributes in reflexive associations, `role` is an arbitrary
             attribute we just decided to create and use. Most social
-            media platforms seem to have only be able to associate a
-            person with another as a "friend", however, we want this
-            object model to handle multiple relationship types.
+            media platforms seem to only be able to associate a person
+            with another as a "friend", however, we want this
+            association to handle multiple relationship types.
+            
+            So far, we've assocated Steve Jobs to his two people: Steve
+            Wozniak and Laurene Powell Jobs. However, these people have
+            their own collection of people with whom they are
+            associated. Let's reload `woz` and associate him to his
+            brother, Mark Wozniak and Janet Hill, his wife.
           ''')
+
+          with listing(
+            'Using the objective side of a reflexive association'
+          ):
+
+            # Create Wozniak's associates
+            mwoz = person(name='Mark Wozniak')
+            hill = person(name='Janet Hill')
+
+            # Reload woz so we no we have a reloaded its data from the
+            # database
+            woz = woz.orm.reloaded()
+
+            # His two current associtions with Steve Jobs were persisted
+            # in the above listing.
+            two(woz.person_persons)
+
+            # One of his associations with Jobs was as a friend
+            one(woz.person_persons.where(
+              lambda x: x.subject.id == sjobs.id and x.role = 'friend'
+            ))
+
+            # The other association was with Jobs as a business partner
+            one(woz.person_persons.where(
+              lambda x: x.subject.id == sjobs.id and x.role = 'partner'
+            ))
+
+            # Associate Wozniak to his brother mwoz
+            woz.person_persons += person_person(
+              object = mwoz,
+              role = 'sibling'
+            )
+
+            # Associate Wozniak to his spouse
+            woz.person_persons += person_person(
+              object = hill,
+              role = 'spouse'
+            )
+
+            # Persist woz again. This will persist the two associations
+            # and their entity references mwoz and hill
+            woz.save()
+
+            # Reload woz for testing purposes
+            woz1 = woz.orm.reloaded()
+
+            # Now woz has four person-to-person associations: the two
+            # we saved above for Steve Jobs, and the ones we just
+            # recorded for his brother and wife.
+            three(woz1.person_persons)
+
+            # One of the associations is Wozniak's friendship with Jobs
+            one(woz1.person_persons.where(
+              lambda x: x.subject.id == sjobs.id and x.role = 'friend'
+            ))
+
+            # One of the associations is Wozniak's partnership with Jobs
+            one(woz1.person_persons.where(
+              lambda x: x.subject.id == sjobs.id and x.role = 'partner'
+            ))
+
+            # One of the associations is Wozniak's fraternal relationhips
+            # with mwoz
+            one(woz1.person_persons.where(
+              lambda x: x.object.id == mwoz.id and x.role = 'sibling'
+            ))
+
+            # One of the associations is Wozniak's spousal relationhips
+            # with hill
+            one(woz1.person_persons.where(
+              lambda x: x.object.id == hill.id and x.role = 'spouse'
+            ))
 
       with section('Many-to-one relationships'):
 
