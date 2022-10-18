@@ -422,7 +422,7 @@ class site(asset.asset):
         found, None is returned.
         """
 
-        # NOTE We may not need the try:except here because the pages
+        # XXX We may not need the try:except here because the pages
         # collection will do the same thing if we use its __call__
         # method::
         #
