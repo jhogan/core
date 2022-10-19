@@ -162,9 +162,9 @@ TODOs:
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
 
-    TODO Reflexive associations currently can currently be loaded only
-    by the subject-side of the association. For example, if the
-    'director' hr.position has direct reports (accessible through
+    FIXME:28ca6113 Reflexive associations currently can currently be
+    loaded only by the subject-side of the association. For example, if
+    the 'director' hr.position has direct reports (accessible through
     hr.position_position), we can discover them like this::
 
         assert director.position_positions.ispopulated
@@ -11275,9 +11275,11 @@ class associations(entities):
                                 # tests.
                                 setattr(e, map.name, comp)
                                 break
+
                     elif isinstance(comp, map.entity):
                         setattr(e, map.name, comp)
                         break
+
                 else:
                     e = e.orm.super  # Ascend
                     continue
