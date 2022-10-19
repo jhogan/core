@@ -98,6 +98,16 @@ class site(asset.asset):
                 self._ensure()
             finally:
                 site._ensuring = False
+        
+        pub = self.public
+        print(id(pub))
+        B()
+
+        try:
+            favicon = pub['favicon.ico']
+        except IndexError:
+            if favicon := self.favicon:
+                pub += favicon
 
     # Host name of the site
     host = str
@@ -253,6 +263,13 @@ class site(asset.asset):
 
             # Save the association between the site and its proprietor
             self.save()
+
+    @property
+    def favicon(self):
+        """
+        XXX
+        """
+        return None
 
     @property
     def styles(self):

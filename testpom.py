@@ -118,10 +118,10 @@ class foonet(pom.site):
 
     @property
     def favicon(self):
-        if not hasattr(self, '_favicon'):
-           self._favicon = file.file()
-           self._favicon.body = base64.b64decode(Favicon)
-        return self._favicon
+        B()
+        return file.file(
+            body = b64decode(Favicon)
+        )
 
 class pom_menu_item(tester.tester):
     def it_calls__init__(self):
