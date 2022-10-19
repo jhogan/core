@@ -1137,7 +1137,7 @@ class file_(tester.tester):
                 with orm.su(usr1):
                     self.expect(orm.AuthorizationError, f.orm.reloaded)
 
-class file_directory(tester.tester):
+class directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True

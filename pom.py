@@ -56,6 +56,7 @@ class site(asset.asset):
 
     # Indicates whether or not the _ensuring method is being run
     _ensuring = False
+
     def __init__(self, *args, **kwargs):
         """ Create a new web ``site`` object.
         """
@@ -74,7 +75,7 @@ class site(asset.asset):
 
         self.sidebars = sidebars()
 
-        # Give the site a default titel of the class's name. 
+        # Give the site a default title of the class's name. 
         self._title = type(self).__name__.replace('_', '-')
 
         # TODO Use the site.directory inodes model to reference
