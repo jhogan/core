@@ -287,6 +287,19 @@ class site(tester.tester):
 
         orm.security().override = True
 
+    def it_gets_public(self):
+        ws = foonet()
+        with orm.proprietor(ws.proprietor):
+            pub = ws.public
+
+        self.eq('public', pub.name)
+        self.false(pub.orm.isnew)
+        self.false(pub.orm.isdirty)
+        self.false(pub.orm.ismarkedfordeletion)
+
+        self.is_(ws.directory, pub.inode)
+        self.is_(pub, ws.public)
+
     def it_gets_favicon(self):
         ws = foonet()
         tab = self.browser().tab()

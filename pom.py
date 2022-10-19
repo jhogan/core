@@ -316,6 +316,20 @@ class site(asset.asset):
         return dir
 
     @property
+    def public(self):
+        """
+        XXX
+        """
+        dir = self.directory
+        try:
+            pub = dir['public']
+        except IndexError:
+            pub = file.directory('public')
+            dir += pub
+        finally:
+            return pub
+
+    @property
     def resources(self):
         """ Returns the sites's resources directory. If the 'resources'
         directory doesn't exist, it is created.
