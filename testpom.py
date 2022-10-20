@@ -118,10 +118,10 @@ class foonet(pom.site):
 
     @property
     def favicon(self):
-        B()
-        return file.file(
-            body = b64decode(Favicon)
-        )
+        r = file.file()
+        r.name = 'favicon.ico'
+        r.body = b64decode(Favicon)
+        return r
 
 class pom_menu_item(tester.tester):
     def it_calls__init__(self):
