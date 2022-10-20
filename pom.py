@@ -101,8 +101,6 @@ class site(asset.asset):
                 site._ensuring = False
         
         pub = self.public
-        print(id(pub))
-        B()
 
         try:
             favicon = pub['favicon.ico']

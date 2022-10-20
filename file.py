@@ -241,7 +241,7 @@ class inode(orm.entity):
 
     @staticmethod
     def _split(path):
-        """ A private static method that takes a path a splits it over
+        """ A private static method that takes a path and splits it over
         the '/' character. Deals with leading '/' more predictably than
         Python's builtin path splitting algorithms.
         """
@@ -401,6 +401,12 @@ class inode(orm.entity):
             # instantiated inode returns from __new__, it is passed to
             # __init__. We don't want to call orm.entity.__init__ a
             # second time on the object if that is the case.
+            # 
+            # NOTE This *seems* to means we can't pass kwargs to inode
+            # constructors. Be cool if we could...
+            #
+            #     file.file(name='hosts', body='127.0.0.1 localhost')
+            #
             super().__init__(*args, **kwargs)
 
     @classproperty

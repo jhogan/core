@@ -860,6 +860,10 @@ class _request:
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.
+
+            # XXX If pg is None because we are getting a public
+            # resource, an an exception happens, write tests to ensure
+            # the correct HTTP response will be returned.
             if ex.flash:
                 self.page.flash(ex.flash)
 
@@ -898,13 +902,14 @@ class _request:
         """ Return the ``hit`` entity. If it does not yet exist for this
         request, create it.
         """
+
+        # XXX Make sure non-page requests are hit properly and tested
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
             try:
                 path = self.page.path
             except:
-                B()
                 path = self.path
 
             self._hit = ecommerce.hit(
