@@ -164,7 +164,7 @@ class inodes(orm.entities):
 
         if isinstance(key, str):
             nds = self
-            names = key.split('/')
+            names = [x for x in key.split('/') if x]
             if len(names) == 1:
                 try:
                     # Retrive from cache
