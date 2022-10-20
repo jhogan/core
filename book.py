@@ -4960,10 +4960,10 @@ with book('Hacking Carapacian Core'):
 
           class movie_person(orm.association):
             # The `person` side of the relatioship
-            persons = persons
+            person = person
 
             # The `movies` side of the relatioship
-            movies = movies
+            movie = movie
 
             # The role a person plays in the creation of the movie
             role = str
@@ -5469,7 +5469,86 @@ with book('Hacking Carapacian Core'):
               ))
 
       with section('Many-to-one relationships'):
-        ...
+        print('''
+          Many-to-one relationships are an unusual case in ORM
+          programming. Normally, when we create a one-to-many
+          relationship, we reference the plural class from the singular
+          class. 
+        ''')
+
+        with listing('Basic example of one-to-many relationship'):
+          ''' Define the entities classes '''
+          class customers(orm.entities):
+            pass
+
+          class orders(orm.entities):
+            pass
+
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            orders = orders
+            
+          class order(orm.entity):
+            pass
+
+        print('''
+          In the above, we can see that a `customer` *has* an `orders`
+          collection, i.e., there is a one-to-many relatioship between
+          a customer and an order. However, we can go the other way by
+          having a reference to an entity's singular form. 
+        ''')
+
+        with listing('Basic example of many-to-one relationship'):
+          ''' Define the entities classes '''
+          class customers(orm.entities):
+            pass
+
+          class orders(orm.entities):
+            pass
+
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            pass
+            
+          class order(orm.entity):
+            customer = customer
+
+        print('''
+          In the above listing, as is made clear by the declaration:
+
+            class order(orm.entity):
+              customer = customer
+
+          each `order` can have many `customers`.
+        ''')
+
+        with listing('Using a many-to-one relationship'):
+          ord = order()
+          cust = customer()
+
+          ord.customer = cust
+
+          ord.save()
+
+          ord1 = ord.orm.reloaded()
+
+          eq(ord.id, ord1.id)
+          eq(cust.id, ord1.customer.id)
+
+        print('''
+          As you can see above, the `order` is able to reference its
+          customer, persist itself along with its customer. However,
+          can a customer reference its `orders`. In other words can we
+          do this:
+
+            ords = cust.orders
+
+          Currently the answer is no. There is a TODO:9b700e9a in the
+          ORM that seeks to allow this to happen. However, you are
+          probably wondering why we would want to set up a one-to-many
+          relationship in reverse order in the first place.
+
+        ''')
 
 
     with section('Custom properties'):
