@@ -856,7 +856,11 @@ class _request:
 
         try:
             # Invoke the page
-            self.page(eargs=eargs, **self.arguments)
+            B()
+            if pg := self.page:
+                pg(eargs=eargs, **self.arguments)
+            else:
+                return self.site.public[self.path]
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.
