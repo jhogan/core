@@ -95,7 +95,7 @@ TODOs:
         class party(orm.entity):
             pass
     
-        class timesheets:
+        class timesheet(orm.entity)
             party = party.party
     
     we should be able to access ``timesheets`` off a party instance:
@@ -146,9 +146,6 @@ TODOs:
 
     TODO Create orm.reload() to complement orm.reloaded(). It should
     reload the data from the db into self.
-
-    FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
-    for more clarification.
 
     TODO datespans and timespans that refer to a timeframe for which an
     association is valid should be named 'valid':

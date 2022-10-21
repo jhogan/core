@@ -370,6 +370,7 @@ class application:
                     # assign empty str for the bytes() function.
                     body = ''
 
+                # XXX Comment
                 # Return the responses body to the browser
                 return iter([bytes(body, 'UTF-8')]) 
 
@@ -856,7 +857,7 @@ class _request:
 
         try:
             # Invoke the page
-            B()
+            # XXX Comment
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
             else:
