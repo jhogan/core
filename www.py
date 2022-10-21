@@ -864,7 +864,7 @@ class _request:
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
             else:
-                return self.site.public[self.path]
+                return self.site.public[self.path].body
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.
