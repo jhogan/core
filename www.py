@@ -372,7 +372,10 @@ class application:
 
                 # XXX Comment
                 # Return the responses body to the browser
-                return iter([bytes(body, 'UTF-8')]) 
+                if isinstance(body, bytes):
+                    return iter([body])
+                else:
+                    return iter([bytes(body, 'UTF-8')]) 
 
             request = None
 

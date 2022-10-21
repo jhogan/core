@@ -1008,7 +1008,12 @@ class tester(entities.entity):
                 # Connection' instead of the standard '502 Bad Gateway'.
                 res._status = st.split()[0]
                 res._headers = www.headers(hdrs)
-                res.body = next(iter).decode('utf-8')
+
+                body = next(iter)
+                if isinstance(body, bytes):
+                    res.body = body
+                else:
+                    res.body = next(iter).decode('utf-8')
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')
