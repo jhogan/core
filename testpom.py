@@ -304,7 +304,9 @@ class site(tester.tester):
         ws = foonet()
         tab = self.browser().tab()
         res = tab.get('/favicon.ico', ws)
-        #self.true('Page class needs main method' in msg)
+        self.ok(res)
+
+        self.eq(b64decode(Favicon), res.body)
     
     def it_calls__init__(self):
         ws = foonet()
