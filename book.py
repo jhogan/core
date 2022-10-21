@@ -5471,9 +5471,12 @@ with book('Hacking Carapacian Core'):
       with section('Many-to-one relationships'):
         print('''
           Many-to-one relationships are an unusual case in ORM
-          programming. Normally, when we create a one-to-many
-          relationship, we reference the plural class from the singular
-          class. 
+          programming. This is because they are essentially a
+          one-to-many in reverse. However, there is a reason for them.
+
+          Normally, when we create a one-to-many relationship, we
+          reference the plural class from the singular class. Consider
+          the following example:
         ''')
 
         with listing('Basic example of one-to-many relationship'):
@@ -5494,8 +5497,9 @@ with book('Hacking Carapacian Core'):
         print('''
           In the above, we can see that a `customer` *has* an `orders`
           collection, i.e., there is a one-to-many relatioship between
-          a customer and an order. However, we can go the other way by
-          having a reference to an entity's singular form. 
+          a customer and an order. However, we can establish this
+          relatioship in the opposite direction. Consider the following
+          code:
         ''')
 
         with listing('Basic example of many-to-one relationship'):
@@ -5519,7 +5523,8 @@ with book('Hacking Carapacian Core'):
             class order(orm.entity):
               customer = customer
 
-          each `order` can have many `customers`.
+          each `order` can have one `customer`. Now let's see an example
+          of these classes being used:
         ''')
 
         with listing('Using a many-to-one relationship'):
@@ -5537,16 +5542,43 @@ with book('Hacking Carapacian Core'):
 
         print('''
           As you can see above, the `order` is able to reference its
-          customer, persist itself along with its customer. However,
-          can a customer reference its `orders`. In other words can we
-          do this:
+          customer, and persist itself along with its customer. However,
+          can `cust` access its `orders`. In other words, can we do
+          this:
 
             ords = cust.orders
 
           Currently the answer is no. There is a TODO:9b700e9a in the
           ORM that seeks to allow this to happen. However, you are
           probably wondering why we would want to set up a one-to-many
-          relationship in reverse order in the first place.
+          relationship in reverse order in the first place. The answer
+          is many-to-one relatioships are usd to establish relationships
+          that wouldn't otherwise be possible due to circular import
+          errors that sometimes happen when one class references another
+          which is in a different module.
+
+          Consider a `customer` class that is located in a module called
+          `crm.py` (for "customer relationship management"). Second,
+          imagine an `order` class in a module called oe.py (for "order
+          entry"). If the `customer` class wants to establish a
+          one-to-many relatioship with the `order` class, it must import
+          the `oe.py` module first in order to reference the `order`
+          class.  However, if `oe.py` imports `crm.py`, and it already
+          references attributes of `crm.py`, then a circular import
+          error will arise making the relationship impossible. With the
+          many-to-one relatioship, we can reference `customer` from
+          `oe.py` and establish the relationship instead of requiring
+          that `crm.py` import and reference attributes of `oe.py`.
+          
+          If that's confusing, don't worry. You will likely know when
+          you've run into this issue. The error message will look
+          something like this:
+
+            AttributeError: partially initialized module 'order.py' has
+            no attribute 'orders' (most likely due to a circular import)
+
+          This is when a many-to-one should be used. Otherwise, there is
+          no reason to use them.
 
         ''')
 
