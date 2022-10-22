@@ -4920,7 +4920,39 @@ with book('Hacking Carapacian Core'):
           ''')
 
       with section('Recursive relationships'):
-        ...
+        print('''
+          It is common that an entity will need to have a one-to-many
+          relationship with itself. In data modeling, this is sometimes
+          called a self-referential relationship and is accomplished by
+          having the foreign key reference the primary key of the same
+          table.
+
+          A good example of a recursive relationship is a comment such
+          as for somebody's post on a social media site. Once a comment
+          is made, someone else can comment on the comment. This could
+          go on *ad infinitum*.
+
+          Luckily, creating recursive relationships is easy with the
+          ORM. For example, to create the recursive comment model
+          describe above, we can write the following:
+
+
+        ''')
+        
+        with listing('Example of a recursive relationship'):
+          class comments(orm.entities):
+              pass
+
+          class comment(orm.entity):
+            # The name of the person creating the comment
+            author    =  str
+
+            # The body of the comment
+            text      =  str
+
+            # The collection of comments that have been written about
+            # this comment
+            comments  =  comments
         
       with section('Many-to-many relationships (or associations)'):
         print('''
@@ -5543,23 +5575,26 @@ with book('Hacking Carapacian Core'):
         print('''
           As you can see above, the `order` is able to reference its
           customer, and persist itself along with its customer. However,
-          can `cust` access its `orders`. In other words, can we do
-          this:
+          can `cust` access its own `orders` attribute? In other words,
+          can we do this:
 
             ords = cust.orders
 
           Currently the answer is no. There is a TODO:9b700e9a in the
-          ORM that seeks to allow this to happen. However, you are
-          probably wondering why we would want to set up a one-to-many
-          relationship in reverse order in the first place. The answer
-          is many-to-one relatioships are usd to establish relationships
-          that wouldn't otherwise be possible due to circular import
-          errors that sometimes happen when one class references another
-          which is in a different module.
+          ORM that seeks to allow this to happen which, when completed,
+          will allow ORM users to get around the circular import issue
+          described below.
 
-          Consider a `customer` class that is located in a module called
+          However, you are probably wondering why we would want to set
+          up a one-to-many relationship in reverse order in the first
+          place. The answer is many-to-one relatioships are usd to
+          establish relationships that wouldn't otherwise be possible
+          due to circular import errors that sometimes happen when one
+          class references another which is in a different module.
+
+          Consider a `customer` entity class that is located in a module called
           `crm.py` (for "customer relationship management"). Second,
-          imagine an `order` class in a module called oe.py (for "order
+          imagine an `order`entity class in a module called oe.py (for "order
           entry"). If the `customer` class wants to establish a
           one-to-many relatioship with the `order` class, it must import
           the `oe.py` module first in order to reference the `order`
@@ -5577,14 +5612,13 @@ with book('Hacking Carapacian Core'):
             AttributeError: partially initialized module 'order.py' has
             no attribute 'orders' (most likely due to a circular import)
 
-          This is when a many-to-one should be used. Otherwise, there is
-          no reason to use them.
-
+          This is when a many-to-one relatioship should be used.
+          Otherwise, there is no reason to use them.
         ''')
 
-
-    with section('Custom properties'):
+    with section('Imperitive attributes'):
       ...
+
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
@@ -5595,9 +5629,6 @@ with book('Hacking Carapacian Core'):
     with section('Indexes'):
         with section('Full text indexes'):
             ...
-
-    with section('Imperitive attributes'):
-      ...
 
 
     with section('Testing ORM entities'):
