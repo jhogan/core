@@ -4923,20 +4923,19 @@ with book('Hacking Carapacian Core'):
         print('''
           It is common that an entity will need to have a one-to-many
           relationship with itself. In data modeling, this is sometimes
-          called a self-referential relationship and is accomplished by
-          having the foreign key reference the primary key of the same
-          table.
+          called a self-referential relationships and are accomplished
+          by having the foreign key reference the primary key of the
+          same table.
 
-          A good example of a recursive relationship is a comment such
-          as for somebody's post on a social media site. Once a comment
-          is made, someone else can comment on the comment. This could
-          go on *ad infinitum*.
+          A good example of a recursive relationship is the comments for
+          a social media post.  Once a comment is made, someone else can
+          comment on the comment, then someone can comment on that
+          comment and so on *ad infinitum*.
 
-          Luckily, creating recursive relationships is easy with the
-          ORM. For example, to create the recursive comment model
-          describe above, we can write the following:
-
-
+          Luckily, creating recursive relationships is easy using the
+          ORM. For example, to create a model that captures the
+          indefinately nested comments described above, we can write the
+          following:
         ''')
         
         with listing('Example of a recursive relationship'):
@@ -4945,14 +4944,29 @@ with book('Hacking Carapacian Core'):
 
           class comment(orm.entity):
             # The name of the person creating the comment
-            author    =  str
+            author = str
 
             # The body of the comment
-            text      =  str
+            text = str
 
             # The collection of comments that have been written about
             # this comment
-            comments  =  comments
+            comments = comments
+        print('''
+          Above, we have create a `comment` entity with some attributes
+          like `author` and `text` to capture the basic associated with
+          a comment. The final attribute declaration:
+
+            comments = comments
+
+          states that we want `comment` objects to have a `comments`
+          attribute that references a collection of objects, i.e., we've
+          set up a recursive relationship. This is no different that
+          setting up regular one-to-many relatioship; we've simply are
+          referencing the same entity instead of a different one.
+
+          Let's use the comment entity to create some nested comment.
+        ''')
         
       with section('Many-to-many relationships (or associations)'):
         print('''
