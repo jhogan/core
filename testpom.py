@@ -1112,6 +1112,11 @@ class page(tester.tester):
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):
+        # XXX Ensure we can run:
+        #
+        #      ./testpom.py page.it_calls_page_coerses_datatypes -Tb
+        #
+
         class time(pom.page):
             def main(
                 self, 

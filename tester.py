@@ -8,7 +8,6 @@
 # Robert C. Martin
 
 from config import config
-from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM, PR
 from entities import classproperty
@@ -408,8 +407,6 @@ class tester(entities.entity):
                 with suppress(AttributeError):
                     del file.directory._radix
 
-
-                        
         # Create and set principles at ORM level for testing
         sec = orm.security()
         sec.user       = user  if user  else self.user
@@ -1010,6 +1007,8 @@ class tester(entities.entity):
                 res._headers = www.headers(hdrs)
 
                 body = next(iter)
+                # XXX We should check the res.mimetype, not the instance
+                # type of body.
                 if isinstance(body, bytes):
                     res.body = body
                 else:

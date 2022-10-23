@@ -215,6 +215,43 @@ TODOs:
         for log in b_logs:
             # Stream the logs
             ...
+
+    TODO:6b455db7 There is currently no support for overridding ORM
+    attributes.
+
+        class mammals(orm.entities):
+            pass
+
+        class mammal(orm.entity):
+            name = str
+
+        class dog(mammals):
+            pass
+
+        class dog(mammal):
+            name = str
+
+    If we were to create a `dog` object and assign it a name value, we
+    would get BrokenRulesError telling us that its super, mammal, did
+    has an empty `name` attribute. The ORM just currently doesn't
+    provide support for this kind of thing. 
+
+    Though this doesn't seem to be a problem for most GEM classes at the
+    moment, any ORM entity's will have an 'owner' and 'proprietor'
+    property that, on assignment, will have to manually work around this
+    limitation. Forgetting to do so can cause mysterious bugs.
+
+    Here are some things to consider when we add support:
+        
+        * Mixed types should be dealt with correctly. For example, if
+          the mammal.name property above were som other type, such as an
+          int, text, byte, etc, the code should do the right thing (or
+          the best thing).
+
+        * Primative field mappings should be supported, like those in
+          the example, but also entity mappings, entities mappings,
+          associations, etc. should have behavior that supports
+          overriding.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
