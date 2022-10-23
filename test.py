@@ -237,7 +237,6 @@ class mycli(cli):
     def registertraceevents(self):
         ts = self.testers
         ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
-       
 
 ##################################################################################
 ''' ORM Tests '''
