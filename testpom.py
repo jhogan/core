@@ -669,8 +669,13 @@ class page(tester.tester):
         # proprietor
         propr = foonet.Proprietor
         with orm.sudo(), orm.proprietor(propr):
-            propr.owner = ecommerce.users.root
-            
+            # Assign the proprietor's owner. We need to manually ascend
+            # due to TODO:6b455db7
+            sup = propr
+            while sup:
+                sup.owner = ecommerce.users.root
+                sup = sup.orm._super
+
         # Now we can call the constructor
         mods = (
             'party', 'ecommerce', 'pom', 
