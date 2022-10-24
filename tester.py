@@ -1006,13 +1006,7 @@ class tester(entities.entity):
                 res._status = st.split()[0]
                 res._headers = www.headers(hdrs)
 
-                body = next(iter)
-                # XXX We should check the res.mimetype, not the instance
-                # type of body.
-                if isinstance(body, bytes):
-                    res.body = body
-                else:
-                    res.body = next(iter).decode('utf-8')
+                res.body = next(iter)
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')

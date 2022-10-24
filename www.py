@@ -199,12 +199,18 @@ class application:
                 
                 # Update on resolution of XXX:c03b8d67
                 data = req()
+                if hasattr(data, 'mime'):
+                    res.headers['Content-Type'] = data.mime
+                if isinstance(data, str):
 
-                # Logically, if we are performing a GET, the data
-                # returned form the request will be the the response
-                # object's body
-                if req.isget:
-                    res.body = data
+
+                    # Logically, if we are performing a GET, the data
+                    # returned form the request will be the the response
+                    # object's body
+                    if req.isget:
+                        res.body = data
+                else:
+                    res.body = data.body
 
             # If the request is a POST
             elif req.ispost:
@@ -874,7 +880,8 @@ class _request:
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
             else:
-                return self.site.public[self.path].body
+                return self.site.public[self.path]
+
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the pages HTML.
@@ -1611,12 +1618,16 @@ class _response():
                 # simply to make working with tools like the `curl`
                 # command more convenient.
                 self._body += '\n'
+
         return self._body
 
     @body.setter
     def body(self, v):
         if self._body != v:
-            self._body = v
+            if isinstance(v, bytes) and self.mimetype == 'text':
+                self._body = v.decode('utf-8')
+            else:
+                self._body = v
             self._html = None
 
     @property
