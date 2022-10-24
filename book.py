@@ -4939,6 +4939,16 @@ with book('Hacking Carapacian Core'):
         ''')
         
         with listing('Example of a recursive relationship'):
+          class films(orm.entities):
+            pass
+
+          class film(orm.entity):
+            # The name of the filem
+            name = str
+
+            # Comments about the film
+            comments = comments
+
           class comments(orm.entities):
               pass
 
@@ -4953,19 +4963,31 @@ with book('Hacking Carapacian Core'):
             # this comment
             comments = comments
         print('''
-          Above, we have create a `comment` entity with some attributes
-          like `author` and `text` to capture the basic associated with
-          a comment. The final attribute declaration:
+          Above we have create two entities: a `film` entity an a
+          `comments` entity. We have created a one-to-many relationship
+          between `film` and `comment` with the declaration:
+
+            class film(orm.entity):
+              ...
+              comments = comments
+
+          This is the standard one-two-many relationship we have seen
+          above. We need the `film` entity to have something for the
+          `comment` entity to record comments on.
+          
+          The `comment` entity has some attributes like `author` and
+          `text` to capture the basic data about a `comment`. The
+          final attribute declaration:
 
             comments = comments
 
           states that we want `comment` objects to have a `comments`
-          attribute that references a collection of objects, i.e., we've
-          set up a recursive relationship. This is no different that
-          setting up regular one-to-many relatioship; we've simply are
+          attribute that references a `comments` collection, i.e., we've
+          set up a recursive relationship. This is no different than
+          setting up regular one-to-many relatioship; here we are simply
           referencing the same entity instead of a different one.
 
-          Let's use the comment entity to create some nested comment.
+          Let's use the comment entity to create some nested comment:
         ''')
         
       with section('Many-to-many relationships (or associations)'):
