@@ -19,6 +19,7 @@ import file
 from base64 import b64decode
 import logs
 import orm
+import mimetypes
 import os
 import party
 import pom

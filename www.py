@@ -170,6 +170,7 @@ class application:
             self.clear()
 
             sec = orm.security()
+
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
@@ -195,6 +196,8 @@ class application:
             # If request is GET or HEAD
             if req.isget or req.ishead:
                 # Invoke the request object, i.e., make the request
+                
+                # Update on resolution of XXX:c03b8d67
                 data = req()
 
                 # Logically, if we are performing a GET, the data
@@ -214,6 +217,7 @@ class application:
 
                         # Make the request and set the response's body
                         # to the HTML that is returned.
+                        # Update on resolution of XXX:c03b8d67
                         res.body = req()
                     else:
                         reqdata = self.request.post
@@ -226,6 +230,7 @@ class application:
 
                         data = [] if data == None else data
                 else:
+                    # Update on resolution of XXX:c03b8d67
                     res.body = req()
 
             else:
@@ -824,14 +829,19 @@ class _request:
         being requested, passing in the query string parameters as
         arguments to the page. When the page is completed processing,
         the HTML for the page is returned.
+
+        # XXX Update the docstring
         """
+
+        # XXX:c03b8d67 This method should return a www._response.
+        # Currently, it return only the body of the request.
+
         # TODO If an exception bubbles up here, it should be logged to
         # syslog (I think).
 
         # Create the hit log. In the finally block, we will add some
         # concluding information by calling self.log again, such as the
         # HTTP status code.
-
         self.log()
 
         # If the request is in response to a dom.event, create the
@@ -1549,6 +1559,8 @@ class _response():
         except KeyError:
             return str(self.status)
 
+    # TODO Rename to content_type to reflect hyphen put in the header
+    # Content-Type
     @property
     def contenttype(self):
         """ The content type of the body.

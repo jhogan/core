@@ -904,7 +904,6 @@ class tester(entities.entity):
                     return d
 
                 st, hdrs = None, None
-                
                 def start_response(st0, hdrs0):
                     nonlocal st
                     nonlocal hdrs
@@ -917,6 +916,7 @@ class tester(entities.entity):
                     pg = ws(url.path)
                     path = url.path
                     qs = url.query
+
                 elif isinstance(pg, pom.page):
                     path = f'/{pg.language}{pg.path}'
                     qs = str()
