@@ -301,14 +301,6 @@ class site(tester.tester):
         self.is_(ws.directory, pub.inode)
         self.is_(pub, ws.public)
 
-    def it_gets_favicon(self):
-        ws = foonet()
-        tab = self.browser().tab()
-        res = tab.get('/favicon.ico', ws)
-        self.ok(res)
-
-        self.eq(b64decode(Favicon), res.body)
-    
     def it_calls__init__(self):
         ws = foonet()
         self.six(ws.pages)
@@ -689,6 +681,16 @@ class page(tester.tester):
 
         orm.security().override = True
         
+    def it_gets_favicon(self):
+        ws = foonet()
+        tab = self.browser().tab()
+        res = tab.get('/favicon.ico', ws)
+        mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
+        self.ok(res)
+        self.eq(mime, res.contenttype)
+        self.bytes(res.body)
+        self.eq(b64decode(Favicon), res.body)
+    
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
