@@ -4939,14 +4939,14 @@ with book('Hacking Carapacian Core'):
         ''')
         
         with listing('Example of a recursive relationship'):
-          class films(orm.entities):
+          class castles(orm.entities):
             pass
 
-          class film(orm.entity):
-            # The name of the filem
+          class castle(orm.entity):
+            # The name of the castle
             name = str
 
-            # Comments about the film
+            # Comments about the castle
             comments = comments
 
           class comments(orm.entities):
@@ -4954,7 +4954,7 @@ with book('Hacking Carapacian Core'):
 
           class comment(orm.entity):
             # The name of the person creating the comment
-            author = str
+            commentator = str
 
             # The body of the comment
             text = str
@@ -4963,19 +4963,19 @@ with book('Hacking Carapacian Core'):
             # this comment
             comments = comments
         print('''
-          Above we have create two entities: a `film` entity an a
+          Above we have create two entities: a `castle` entity an a
           `comments` entity. We have created a one-to-many relationship
-          between `film` and `comment` with the declaration:
+          between `castle` and `comment` with the declaration:
 
-            class film(orm.entity):
+            class castle(orm.entity):
               ...
               comments = comments
 
           This is the standard one-two-many relationship we have seen
-          above. We need the `film` entity to have something for the
+          above. We need the `castle` entity to have something for the
           `comment` entity to record comments on.
           
-          The `comment` entity has some attributes like `author` and
+          The `comment` entity has some attributes like `commentator` and
           `text` to capture the basic data about a `comment`. The
           final attribute declaration:
 
@@ -4989,6 +4989,72 @@ with book('Hacking Carapacian Core'):
 
           Let's use the comment entity to create some nested comment:
         ''')
+
+        with listing('Using a recursive relationship'):
+          camelot = castle(name='Camelot')
+
+          # Take advantage of the one-to-many relationship between
+          # castles and comments to create three thild comments for the
+          # castle camelot.
+          camelot.comments += comment(
+            commentator = 'King Arthur',
+            text = '[in awe] Camelot!',
+          )
+
+          camelot.comments += comment(
+            commentator = 'Sir Galahad',
+            text = '[in awe] Camelot!',
+          )
+
+          camelot.comments += comment(
+            commentator = 'Sir Galahad',
+            text = '[in awe] Camelot!',
+          )
+
+          # Create Patsy's comment
+          its_only_a_model += comment(
+            commentator = 'Patsy',
+            text = "[derisively] It's only a model!",
+          )
+
+          # Take advantage of the recursive relationship comments have
+          # with themselves to make Patsy's comment a comment on Sir
+          # Galahad's comment
+          camelot.comments.last.comments += its_only_a_model
+
+          # Create King Arthur's Shh! comment
+          ssh = comment(
+            commentator = 'King Arthur',
+            text = 'Shh!',
+          )
+
+          # Make King Arthher's Shh! comment a comment on Patsy's
+          # its_only_a_model comment.
+          its_only_a_model.comments += ssh
+
+          # Reload camelot to make sure all the comments made it to the
+          # database.
+          camelot1 = camelot.orm.reloaded()
+
+          # Iterate through camelot's comments
+          for comment1 in camelot1.comments:
+            
+            # Find Sir Galahad's comments
+            if comment1.commentator == 'Sir Galahad':
+              
+              # Get Patsy's comment on Sir Galahad's comment
+              its_only_a_model1 = comment1.comments.only
+
+              # Assert the id's match
+              eq(its_only_a_model.id, its_only_a_model1.id)
+
+              # Get the only comment on Patsy's comment
+              ssh1 = its_only_a_model1.comments.only
+              eq('King Arthur', ssh1.commentator)
+              eq('Shh!', ssh1.text)
+              eq(ssh.id, ssh1.id)
+            else:
+              fail("Sir Galahad's comment wasn't found")
         
       with section('Many-to-many relationships (or associations)'):
         print('''
