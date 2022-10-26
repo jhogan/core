@@ -4922,10 +4922,10 @@ with book('Hacking Carapacian Core'):
       with section('Recursive relationships'):
         print('''
           It is common that an entity will need to have a one-to-many
-          relationship with itself. In data modeling, this is sometimes
-          called a self-referential relationships and are accomplished
-          by having the foreign key reference the primary key of the
-          same table.
+          relationship with itself. In data modeling, this relatioship
+          is called a self-referential relationships, and is established
+          by having the foreign key of a table reference the primary key
+          of the same table.
 
           A good example of a recursive relationship is the comments for
           a social media post.  Once a comment is made, someone else can
@@ -4933,9 +4933,8 @@ with book('Hacking Carapacian Core'):
           comment and so on *ad infinitum*.
 
           Luckily, creating recursive relationships is easy using the
-          ORM. For example, to create a model that captures the
-          indefinately nested comments described above, we can write the
-          following:
+          ORM. Let's say we have a website where you can post pictures
+          of castles that people can comment on:
         ''')
         
         with listing('Example of a recursive relationship'):
@@ -4962,6 +4961,7 @@ with book('Hacking Carapacian Core'):
             # The collection of comments that have been written about
             # this comment
             comments = comments
+
         print('''
           Above we have create two entities: a `castle` entity an a
           `comments` entity. We have created a one-to-many relationship
@@ -4983,18 +4983,39 @@ with book('Hacking Carapacian Core'):
 
           states that we want `comment` objects to have a `comments`
           attribute that references a `comments` collection, i.e., we've
-          set up a recursive relationship. This is no different than
-          setting up regular one-to-many relatioship; here we are simply
-          referencing the same entity instead of a different one.
+          set up a recursive relationship on the `comments` entity. This
+          is no different than setting up regular one-to-many
+          relationship; here we are simply referencing the same entity
+          instead of a different one.
 
-          Let's use the comment entity to create some nested comment:
+          Let's use the comment entity capture the famous dialogue from
+          the movie *Monty Python and the Holy Grail* when the knights
+          arrive at Camelot.
+
+            [CAMELOT]
+              "Camelot!" by King Arthur:
+              "Camelot!" by Sir Galahad:
+              "Camelot!" by Sir Lancelot:
+                "It's only a model!" by Patsy
+                  "Shh!" by King Arthur:
+
+          Here we can see the nested structure of the commentary. The
+          three knights exclaim "Camelot!" in awe. Patsy derisively
+          makes a comment on Sir Lancelot comment that "It's only a
+          model!". (He is really commenting on the above three comments
+          but our object model won't take such a nuance into account).
+          King Arthur, then, makes a comment on Patsy comment
+          instructing him to shush.
+
+          The code below captures this dialog and its structure using
+          the `castle` and `comment` entities. 
         ''')
 
         with listing('Using a recursive relationship'):
           camelot = castle(name='Camelot')
 
           # Take advantage of the one-to-many relationship between
-          # castles and comments to create three thild comments for the
+          # castles and comments to create three child comments for the
           # castle camelot.
           camelot.comments += comment(
             commentator = 'King Arthur',
@@ -5028,9 +5049,12 @@ with book('Hacking Carapacian Core'):
             text = 'Shh!',
           )
 
-          # Make King Arthher's Shh! comment a comment on Patsy's
+          # Make King Arthur's Shh! comment a comment on Patsy's
           # its_only_a_model comment.
           its_only_a_model.comments += ssh
+
+          # Save camelot and its comments
+          camelot.save()
 
           # Reload camelot to make sure all the comments made it to the
           # database.
@@ -5055,6 +5079,18 @@ with book('Hacking Carapacian Core'):
               eq(ssh.id, ssh1.id)
             else:
               fail("Sir Galahad's comment wasn't found")
+
+        print('''
+          Above we are able to create the `castle` and its `comments`.
+          By calling the `save()` method on the `camelot` object, we are
+          able to save it and all the comments (in their nested
+          structure) to the database in an atomic transaction. The end
+          of the code reloads the castle which gives us access to all of
+          its `comments` on demand (i.e., comments are lazy-loaded like
+          other child collections). We then test the reloaded `camelot`
+          to ensure that it and its `comments` made it to the database
+          and back.
+        ''')
         
       with section('Many-to-many relationships (or associations)'):
         print('''
