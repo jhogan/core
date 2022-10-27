@@ -239,7 +239,7 @@ with book('Hacking Carapacian Core'):
 
         A question may arise regarding whether these tests are properly
         refered to as "unit tests". A unit tests is an automated test
-        where sections, or *units*, of source code are tested for
+        where sections, or *units* of source code are tested for
         correct behavior.  However, as stated above, we are interested
         in ensuring that *features* work as expected; not sections, thus
         the term "unit test" would not be appropriate here.
@@ -254,7 +254,7 @@ with book('Hacking Carapacian Core'):
 
         As stated, the goal of the framework's tests is to ensure that
         features continue to work, and that bugs are not allowed to
-        resurface. Given that, we can call the tests regression tests. 
+        resurface. Given that, we can call the tests "regression tests". 
 
         Additionally, the phase "automated integration tests" would be
         appropriate because, as stated elsewhere, the features are
@@ -529,7 +529,7 @@ with book('Hacking Carapacian Core'):
             with with overrides of tester.__init__. -->
           ''')
 
-      with section('Benchmarking', id=0xd89c06c2)
+      with section('Benchmarking', id='d89c06c2')
         print('''
           A special class of tests, called benchmarks, are built into
           the testing framework which measure the amount of time that
@@ -569,7 +569,8 @@ with book('Hacking Carapacian Core'):
           the allowable duration, the user is informed.
         ''')
 
-      with section('Tests as Effort Statements', id=0xd89c06c2)
+
+      with section('Tests as effort statements'):
         ...
 
   with chapter("Entity and entities objects", id='64baaf7a'):
@@ -5022,10 +5023,16 @@ with book('Hacking Carapacian Core'):
             text = '[in awe] Camelot!',
           )
 
+          # Root comments will have no parent
+          none(camelot.comments.last)
+
           camelot.comments += comment(
             commentator = 'Sir Galahad',
             text = '[in awe] Camelot!',
           )
+
+          # Again, root comments will have no parent
+          none(camelot.comments.last)
 
           camelot.comments += comment(
             commentator = 'Sir Galahad',
@@ -5041,7 +5048,21 @@ with book('Hacking Carapacian Core'):
           # Take advantage of the recursive relationship comments have
           # with themselves to make Patsy's comment a comment on Sir
           # Galahad's comment
+
+          # Sir Galahad's comment
+          # -----------------|
+          #                  |
+          # Sir Galahad's comment's collection of comments
+          # -----------------|-----|
+          #                  |     |
+          #                  V     V
           camelot.comments.last.comments += its_only_a_model
+
+          # The parent of its_only_a_model can be accessed through its
+          # `comment` attribute. Here we assert that the parent of
+          # its_only_a_model is the last comment added to camelot (Sir
+          # Galahad's comment)
+          is_(its_only_a_model.comment, camelot.comments.last)
 
           # Create King Arthur's Shh! comment
           ssh = comment(
@@ -5072,6 +5093,11 @@ with book('Hacking Carapacian Core'):
               # Assert the id's match
               eq(its_only_a_model.id, its_only_a_model1.id)
 
+              # Again we get the the parent comment to
+              # its_only_a_model1. This is the last comment that was
+              # added to camelot (i.e, Sir Galahad's)
+              eq(its_only_a_model1.comment.id, camelot.comments.last.id)
+
               # Get the only comment on Patsy's comment
               ssh1 = its_only_a_model1.comments.only
               eq('King Arthur', ssh1.commentator)
@@ -5090,6 +5116,17 @@ with book('Hacking Carapacian Core'):
           other child collections). We then test the reloaded `camelot`
           to ensure that it and its `comments` made it to the database
           and back.
+
+          You will also notice that when we append a comment, or reload
+          a tree of comments, we can get the parent of any comment
+          through its `comment` attribute. Like their `comments`
+          collection, which gives us its child comments, the
+          ORM provides us with the `comment` attribute to get to the
+          parent. The ORM will assume we want this attribute to be named
+          after the type which is why we didn't have to set this in the
+          class declaration. The root comment, i.e., the comments that
+          don't have a parent, will have `comment` attributes that
+          return `None`.
         ''')
         
       with section('Many-to-many relationships (or associations)'):
