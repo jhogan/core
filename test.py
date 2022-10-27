@@ -522,8 +522,8 @@ class artist(orm.entity):
         phone = attr()
         if phone is None:
             return None
-        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
 
+        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
         if type(phone) is str and not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
 
