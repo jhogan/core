@@ -1590,6 +1590,7 @@ class page(tester.tester):
 
     def it_logs_hits(self):
         ''' Set up a page that tests the hit/logging facility '''
+
         class hitme(pom.page):
             def main(self):
                 req.hit.logs.write('Starting main')

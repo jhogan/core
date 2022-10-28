@@ -259,7 +259,6 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
-                #self.orm.mappings['proprietor']._value = propr
                 self.proprietor = propr
 
             # Get (or create if needed) the site's public/ directory
@@ -437,6 +436,7 @@ class site(asset.asset):
         if not self._pages:
             self._pages = pages(rent=self)
             self._pages += error()
+
         return self._pages
 
     @pages.setter
@@ -1316,8 +1316,10 @@ class pages(entities.entities):
             segs = [x for x in path.split('/') if x]
             if len(segs):
                 del segs[0] #
+
         elif isinstance(path, list):
             segs = path
+
         else:
             return super().__getitem__(path)
            
