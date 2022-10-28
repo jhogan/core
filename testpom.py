@@ -1394,7 +1394,7 @@ class page(tester.tester):
 
             with orm.proprietor(ws.proprietor):
                 tab = self.browser().tab()
-                res = tab.get('/en' + '/index', ws)
+                res = tab.get('/en/index', ws)
                 self.eq(404, res.status)
 
                 # A site will, by default, use the generic 404 page (at
