@@ -562,38 +562,45 @@ class site(tester.tester):
         )
         self.one(aps)
 
-    def it_demands_contants_are_setup_on_site(self):
-        class squatnets(pom.sites):
-            pass
+    def it_demands_constants_are_setup_on_site(self):
+        try:
+            class squatnets(pom.sites):
+                pass
 
-        class squatnet(pom.site):
-            pass
+            class squatnet(pom.site):
+                pass
 
-        # No Id constant
-        self.expect(AttributeError, squatnet)
+            # No Id constant
+            self.expect(AttributeError, squatnet)
 
-        class squatnet(pom.site):
-            Id = 'not-a-uuid-type-literal'
+            class squatnet(pom.site):
+                Id = 'not-a-uuid-type-literal'
 
-        self.expect(TypeError, squatnet)
+            self.expect(TypeError, squatnet)
 
-        class squatnet(pom.site):
-            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+            class squatnet(pom.site):
+                Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
 
-        # No Proprietor
-        self.expect(AttributeError, squatnet)
+            # No Proprietor
+            self.expect(AttributeError, squatnet)
 
-        class squatnet(pom.site):
-            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
-            Proprietor = object()
+            class squatnet(pom.site):
+                Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+                Proprietor = object()
 
-        self.expect(TypeError, squatnet)
+            self.expect(TypeError, squatnet)
 
-        class squatnet(pom.site):
-            Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
-            Proprietor = party.party()
+            class squatnet(pom.site):
+                Id = UUID(hex='a74f6395-4d91-450f-922d-8e897e1a26f8')
+                Proprietor = party.party()
 
-        self.expect(ValueError, squatnet)
+            self.expect(ValueError, squatnet)
+
+        finally:
+            # Forget squatnet. It can cause problems for code that looks
+            # for subclasses of site since we don't bother creating a
+            # table for it.
+            orm.forget(squatnet)
 
     def it_ensures(self):
         es = (
