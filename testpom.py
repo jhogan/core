@@ -695,7 +695,7 @@ class page(tester.tester):
         mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
         self.ok(res)
         self.eq(mime, res.contenttype)
-        self.bytes(res.body)
+        self.type(bytes, res.body)
         self.eq(b64decode(Favicon), res.body)
     
     def it_calls__init__(self):
