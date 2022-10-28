@@ -62,6 +62,15 @@ class site(asset.asset):
         """
         super().__init__(*args, **kwargs)
 
+        # NOTE It may be unwise to put any initialization code here that
+        # depends on the database. Consider putting it in the
+        # site._ensure method. For example, code that realize on the
+        # public/ directory (self.public) needed to be put in
+        # site._ensure. This was necessary because the code that ensures
+        # public/ exists needs to have the correct proprietor
+        # and site entity established. Plus the directory itself needs
+        # to be created in the right security context.
+
         self.index = None
         self._pages = None
         self._html = None
@@ -100,13 +109,6 @@ class site(asset.asset):
             finally:
                 site._ensuring = False
         
-        pub = self.public
-
-        try:
-            favicon = pub['favicon.ico']
-        except IndexError:
-            if favicon := self.favicon:
-                pub += favicon
 
     # Host name of the site
     host = str
@@ -260,8 +262,22 @@ class site(asset.asset):
                 #self.orm.mappings['proprietor']._value = propr
                 self.proprietor = propr
 
-            # Save the association between the site and its proprietor
+            # Get (or create if needed) the site's public/ directory
+            # after the site has been established.
+            pub = self.public
+
+            # Save the site plus its associations and directories
             self.save()
+
+            try:
+                # Get the favicon.ico file entity from public/
+                favicon = pub['favicon.ico']
+            except IndexError:
+                # If it doesn't exist, get file from the `favicon`
+                # attribute
+                if favicon := self.favicon:
+                    # Add the favicon.ico to public/
+                    pub += favicon
 
     @property
     def favicon(self):
