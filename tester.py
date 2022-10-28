@@ -1449,6 +1449,8 @@ class tester(entities.entity):
         except Exception as ex:
             if expect is None or type(ex) is not expect:
                 self._failures += failure(actual=ex)
+
+            return None
         else:
             if expect is not None:
                 self._failures += failure(actual=None)
