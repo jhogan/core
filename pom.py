@@ -461,6 +461,9 @@ class site(asset.asset):
 
         :param: path str: The path to the web ``page``.
         """
+        if path in ('/', ''):
+            path = '/en/index'
+
         return self.pages[path]
 
     def __call__(self, path):
