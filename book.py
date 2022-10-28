@@ -5792,8 +5792,53 @@ with book('Hacking Carapacian Core'):
         ''')
 
     with section('Imperitive attributes'):
-      ...
+      print('''
+        Most ORM attributes are simple declarations of name and type
+        with basic logic provided by the ORM to set and get their
+        values and ensure they are persisted to the database. However,
+        there are times when need to associate logic with the setting
+        and or getting of these attributes. For that, we can use a
+        special syntax provided by the ORM.
 
+        Let's take a person class or example. Persons have email
+        address. 
+      ''')
+
+      with listing('Email address as a declarative attribute'):
+        
+        class persons(orm.entities):
+          pass
+
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address
+          email = str
+
+      print('''
+        In the above `person` class, we can set its email address with a
+        simple string. 
+      ''')
+
+      with listing('Getting a declarative attribute'):
+        per = person()
+        per.email = 'JesseHogan@example.com'
+
+        eq('JesseHogan@example.com', per.email)
+        ne('jessehogan@example.com', per.email)
+
+      print('''
+        In the above example, we can see that, unsurprisingly, the case
+        of the email address is preserved. This means that testing the
+        equality of the email address against an all lowercase version
+        of the email address be false (`ne`). This could be a source of
+        bugs because case is meaniningless in email addresses and people
+        usually use only lowercase letters in email address. Let's
+        standardize on lowercase email by getting `person.email` to
+        always return all lowercase emails despite what case is used
+        during the assignment.
+      ''')
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
