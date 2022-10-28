@@ -9716,9 +9716,12 @@ class orm:
         # the database. If that's not the case, raise
         # RecordNotFoundError.
         if not ress.issingular:
+            name = self.instance.__class__.__name__
+            mod = self.instance.__module__
+            cls = mod + '.' + name
             raise db.RecordNotFoundError(
                 'Unable to find record for '
-                f'{type(self.instance)}:{id.hex}'
+                f'<{cls}>:{id.hex}'
             )
         ress.demandhasone()
 
