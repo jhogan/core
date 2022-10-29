@@ -5795,17 +5795,16 @@ with book('Hacking Carapacian Core'):
       print('''
         Most ORM attributes are simple declarations of name and type
         with basic logic provided by the ORM to set and get their
-        values and ensure they are persisted to the database. However,
-        there are times when need to associate logic with the setting
-        and or getting of these attributes. For that, we can use a
-        special syntax provided by the ORM.
+        values, and ensure that those values are persisted to the
+        database. However, there are times when you need to associate
+        logic with the setting and or getting of these attributes. For
+        that, we can use a special syntax provided by the ORM.
 
-        Let's take a person class or example. Persons have email
-        address. 
+        To illustrate, let's take a person class with a name and an
+        email attribute.
       ''')
 
       with listing('Email address as a declarative attribute'):
-        
         class persons(orm.entities):
           pass
 
@@ -5813,7 +5812,7 @@ with book('Hacking Carapacian Core'):
           # The person's name.
           name = str
 
-          # The person's email address
+          # The person's email address.
           email = str
 
       print('''
@@ -5832,13 +5831,87 @@ with book('Hacking Carapacian Core'):
         In the above example, we can see that, unsurprisingly, the case
         of the email address is preserved. This means that testing the
         equality of the email address against an all lowercase version
-        of the email address be false (`ne`). This could be a source of
+        of the email address will be false (`ne`). This could be a source of
         bugs because case is meaniningless in email addresses and people
-        usually use only lowercase letters in email address. Let's
-        standardize on lowercase email by getting `person.email` to
+        usually only use lowercase letters in email address. Let's
+        standardize on lowercase email addresses by getting `person.email` to
         always return all lowercase emails despite what case is used
-        during the assignment.
+        when assigning.
       ''')
+
+      with listing('Writting imperitive attributes'):
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address.
+          @orm.attr(str)
+          def email(self):
+            addr = attr()
+            return addr.lower()
+
+        per = person()
+        per.email = 'JesseHogan@example.com'
+
+        eq('JeSsEhOgAn@eXaMpLe.cOm', per.email)
+
+      print('''
+        In the above example, we replaced the declaration:
+          
+          email = str
+
+        with
+
+          @orm.attr(str)
+          def email(self):
+            ...
+
+        By using the `orm.attr` decorator, we are able to write a Python
+        property that controls exactly what is returned. We name the
+        property `email` to indicate that this is what we want to call
+        the attribute.
+
+        You will notice on the next line
+
+          addr = attr()
+
+        This `attr()` function will seem odd because it does not appear
+        to be declared anywhere. However, it is declared by the ORM
+        behind the scenes and sort of injected into any declarative
+        property. Its purpose is to provide us access to the attribute's
+        value that the ORM currently stores. By assigning its return
+        value to `addr`, we are simply getting the value that we set
+        above with the line.
+        
+          per.email = 'JesseHogan@example.com'
+
+        Thus the following would be True
+
+          assert 'JesseHogan@example.com' == addr
+
+        So now that we have the unadulterated value, we can smash the
+        case we the next line and return that value:
+          
+          return addr.lower()
+
+        So now, whenever we call `person.email`, all of its characters
+        will be lowercase, allowing the following to be asserted:
+
+          eq('JeSsEhOgAn@eXaMpLe.cOm', per.email)
+
+        Note also that the ORM will read the attributes this way when
+        creating INSERT and UPDATE statements to be issued against the
+        database, so what we return in declarative getters will be what
+        is stored in the database.
+
+        This example provides a fairly trivial use of declarative
+        attributes. However, the ability to control the output of ORM
+        attribtues is extremely important because it gives us the
+        ability to encapsulate logic in the getters and setters (the
+        imperitive attributes) which is an essential capability of
+        object-oriented design.
+      ''')
+
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
