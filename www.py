@@ -881,7 +881,12 @@ class _request:
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
             else:
-                return self.site.public[self.path]
+                path = None
+                try:
+                    path = self.path
+                    return self.site.public[path]
+                except Exception as ex:
+                    raise FileNotFoundError(path) from ex
 
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
