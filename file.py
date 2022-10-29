@@ -687,6 +687,21 @@ class inode(orm.entity):
         if self.owner__userid == orm.security().owner.id:
             return orm.violations.empty
             
+        # XXX This is to work around the accessiblilty of
+        # /radix/pom/site. This is sleighted to become "commons" owned
+        # by a new party called party.public. Entities owned by that
+        # party should be readable by definition, so this logic could be
+        # removed.
+        rent = self.inode
+
+        if rent.isradix:
+            if self.name == 'pom':
+                return orm.violations.empty
+
+        if self.name == 'site':
+            if rent.name == 'pom':
+                if rent.inode.inradix:
+                    return orm.violations.empty
         vs = orm.violations()
         vs += 'Cannot retrieve directory'
         return vs
