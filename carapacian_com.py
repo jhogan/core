@@ -5,6 +5,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
+from base64 import b64decode
 from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
@@ -19,7 +20,8 @@ import pom
 # integrity see IntegrityErrors.txt as well as:
 #
 #     [file_directory]                                                      FAIL
-#     RecordNotFoundError: RecordNotFoundError('A single record was not found') in it_creates_floaters_as_a_carapacian_property
+#     RecordNotFoundError: RecordNotFoundError('A single record was not
+#     found') in it_creates_floaters_as_a_carapacian_property
 
 class sites(pom.sites):
     pass

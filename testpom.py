@@ -1353,11 +1353,12 @@ class page(tester.tester):
         self.eq('ERROR', rec.levelname)
 
     def it_raises_404(self):
-        # FIXME: This test creates derpnet which, in some cases, creates
-        # /pom/sites directory. This is a problem because foonet expects
-        # to be able to access these directories, but it can't if it
-        # doesn't own them. We need a 'commons' proprietor to own these
-        # inodes. Without this, we cannot adequately support multitenancy.
+        # XXX:d5ca3c3d This test creates derpnet which, in some cases,
+        # creates /pom/sites directory. This is a problem because foonet
+        # expects to be able to access these directories, but it can't
+        # if it doesn't own them. We need a 'commons' proprietor to own
+        # these inodes. Without this, we cannot adequately support
+        # multitenancy.
         return
 
         class derpnets(pom.sites):
