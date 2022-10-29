@@ -697,6 +697,13 @@ class page(tester.tester):
         self.eq(mime, res.contenttype)
         self.type(bytes, res.body)
         self.eq(b64decode(Favicon), res.body)
+
+    def it_returns_404_when_nonpage_page_doesnt_exist(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+        res = tab.get('/i-dont-exist.ico', ws)
+        B()
     
     def it_calls__init__(self):
         name = uuid4().hex
