@@ -437,8 +437,9 @@ class _request:
         self._site       =  None
 
     @property
-    def forfavicon(self):
-        return self.path == '/favicon.ico'
+    def forfile(self):
+        # XXX Comment
+        return self.path and not self.page
 
     def __repr__(self):
         """ A string representation of the HTTP request.
@@ -1324,8 +1325,9 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        if request.forfavicon:
+        if request.forfile:
             pass
+
         elif not request.page:
             # If the site associated with the request doesn't have a page in
             # its index, raise a 404
