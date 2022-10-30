@@ -6,6 +6,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 import apriori; apriori.model()
 
+from base64 import b64decode
 from contextlib import suppress
 from datetime import timezone, datetime, date
 from dbg import B
@@ -16,10 +17,9 @@ import auth
 import dom
 import ecommerce
 import file
-from base64 import b64decode
 import logs
-import orm
 import mimetypes
+import orm
 import os
 import party
 import pom
@@ -27,6 +27,7 @@ import primative
 import pytz
 import tester
 import www
+
 class foonets(pom.sites):
     pass
 
@@ -1112,7 +1113,6 @@ class page(tester.tester):
                 m += dom.h2('Time')
                 m += dom.i('Timezone: ' + tz)
 
-
                 if len(kwargs):
                     m += dom.dl()
                     dl = m.last
@@ -1132,6 +1132,11 @@ class page(tester.tester):
         res = tab.head('/en/time', ws)
         self.eq('\n', res.body)
         self.eq(200, res.status)
+
+        # FIXME Content-Length should be the size of the payload
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
+        content_length = res.headers['content-length']
+        self.eq(0, content_length)
 
     def it_calls_page_coerses_datatypes(self):
         # XXX Ensure we can run:
@@ -1363,7 +1368,7 @@ class page(tester.tester):
         # XXX:d5ca3c3d This test creates derpnet which, in some cases,
         # creates /pom/sites directory. This is a problem because foonet
         # expects to be able to access these directories, but it can't
-        # if it doesn't own them. We need a 'commons' proprietor to own
+        # if it doesn't own them. We need a 'public' proprietor to own
         # these inodes. Without this, we cannot adequately support
         # multitenancy.
         return

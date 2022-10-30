@@ -214,7 +214,6 @@ class application:
 
             # If the request is a POST
             elif req.ispost:
-                
                 # If the request is XHR (i.e, an AJAX request)
                 if req.isxhr:
 
@@ -251,7 +250,7 @@ class application:
 
             # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
-                # Immediatly raise to tester's exception handler
+                # Immediatly raise to tester's exception handler.
                 break_ = True
                 raise
 
@@ -270,12 +269,15 @@ class application:
                     art += dom.span(str(ex), class_='message')
                     art += pom.traceback(ex)
                     res.body = art.html
+
                     if isinstance(ex, HttpError):
                         res.status = ex.status
+
                     elif isinstance(ex, HttpException):
-                        # Allow the exception to make
-                        # modifications to the response.
+                        # Allow the exception to make modifications to
+                        # the response.
                         ex(res)
+
                     else:
                         # Set to the generic 500 status code
                         res.status = InternalServerError.status
@@ -352,7 +354,7 @@ class application:
                 # str(ex) through html.escape(). 
 
                 # TODO Add traceback to output
-                # TODO Add tests to ensure excepiton messages are
+                # TODO Add tests to ensure exception messages are
                 # escaped properly
                 cls = type(ex).__name__
                 msg = html.escape(str(ex))
@@ -843,9 +845,6 @@ class _request:
         # XXX:c03b8d67 This method should return a www._response.
         # Currently, it return only the body of the request.
 
-        # TODO If an exception bubbles up here, it should be logged to
-        # syslog (I think).
-
         # Create the hit log. In the finally block, we will add some
         # concluding information by calling self.log again, such as the
         # HTTP status code.
@@ -878,22 +877,30 @@ class _request:
         try:
             # Invoke the page
             # XXX Comment
+            # XXX Use self.forfile
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
+                response.headers += 'Content-Type: text/html'
+                response.body = f'<!DOCTYPE html>\n{pg.html}'
             else:
                 path = None
-                try:
-                    path = self.path
-                    return self.site.public[path]
-                except Exception as ex:
-                    raise FileNotFoundError(path) from ex
+                path = self.path
+                pub = self.site.public
 
+                try:
+                    file = pub[path]
+                except Exception as ex:
+                    raise NotFoundError(path) from ex
+                else:
+                    response.body = file.body
+                    response.headers += 'Content-Type: ' + file.mime
+                    
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
-            # the flash message to the pages HTML.
+            # the flash message to the page's HTML.
 
             # XXX If pg is None because we are getting a public
-            # resource, an an exception happens, write tests to ensure
+            # resource, and an exception happens, write tests to ensure
             # the correct HTTP response will be returned.
             if ex.flash:
                 self.page.flash(ex.flash)

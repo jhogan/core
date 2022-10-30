@@ -453,7 +453,7 @@ class tester(entities.entity):
         class _tab(www.browser._tab):
             """ Represents a tab in the test browser. The tab makes the
             actual "HTTP" request and preserves the responses HTML in
-            it's own DOM (.html).
+            its own DOM (.html).
 
             :abbr: tab
             """
