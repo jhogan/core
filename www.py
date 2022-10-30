@@ -865,6 +865,9 @@ class _request:
         #     trigger: The name of the method that caused the event. For
         #     example, if the `click()` method of a <button> caused the
         #     event, trigger would be 'click'.
+
+        # XXX Comment on changes to the return type
+
         eargs = None
         if self.isevent:
             eargs = dom.eventargs(
