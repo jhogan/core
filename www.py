@@ -156,11 +156,6 @@ class application:
 
         global request, response
 
-        res = _response(self.request)
-        res.headers += 'Content-Type: text/html'
-
-        # Set global www.response
-        response = res
 
         break_ = False
 
@@ -196,22 +191,8 @@ class application:
             # If request is GET or HEAD
             if req.isget or req.ishead:
                 # Invoke the request object, i.e., make the request
-                
-                # Update on resolution of XXX:c03b8d67
-                data = req()
-                if hasattr(data, 'mime'):
-                    res.headers['Content-Type'] = data.mime
-                if isinstance(data, str):
-
-
-                    # Logically, if we are performing a GET, the data
-                    # returned form the request will be the the response
-                    # object's body
-                    if req.isget:
-                        res.body = data
-                else:
-                    res.body = data.body
-
+                B()
+                res = req()
             # If the request is a POST
             elif req.ispost:
                 # If the request is XHR (i.e, an AJAX request)
@@ -255,7 +236,11 @@ class application:
                 raise
 
             try:
-                if self.request.isxhr:
+                res = _response(self)
+                if self.request.forfile:
+                    res.status = ex.status
+
+                elif self.request.isxhr:
                     # Create an <article> that explains the exception
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
@@ -868,6 +853,9 @@ class _request:
 
         # XXX Comment on changes to the return type
 
+        global response
+        response = _response(self)
+
         eargs = None
         if self.isevent:
             eargs = dom.eventargs(
@@ -935,8 +923,8 @@ class _request:
 
             # If the browser didn't send HTML fragments, return None.
             return None
-        else:
-            return f'<!DOCTYPE html>\n{self.page.html}'
+
+        return response
 
     @property
     def hit(self):
