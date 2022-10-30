@@ -699,13 +699,6 @@ class page(tester.tester):
         self.type(bytes, res.body)
         self.eq(b64decode(Favicon), res.body)
 
-    def it_returns_404_when_nonpage_page_doesnt_exist(self):
-        ws = foonet()
-
-        tab = self.browser().tab()
-        res = tab.get('/i-dont-exist.ico', ws)
-        B()
-    
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -1364,6 +1357,19 @@ class page(tester.tester):
         
         self.eq('ERROR', rec.levelname)
 
+    def it_returns_404_when_file_doesnt_exist(self):
+        """
+        XXX Comment
+        """
+        ws = foonet()
+
+        tab = self.browser().tab()
+        res = tab.get('/i-dont-exist.ico', ws)
+        self.status(404, res)
+        self.empty(res.body)
+        content_length = res.headers['content-length']
+        self.eq(0, content_length)
+    
     def it_raises_404(self):
         # XXX:d5ca3c3d This test creates derpnet which, in some cases,
         # creates /pom/sites directory. This is a problem because foonet
