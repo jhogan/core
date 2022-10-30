@@ -1627,11 +1627,12 @@ class _response():
         # body = bytes(body, 'utf-8')
 
         if isinstance(self._body, str):
-            if not self._body.endswith('\n'):
-                # Ensure a newline is at the end of the response body
-                # simply to make working with tools like the `curl`
-                # command more convenient.
-                self._body += '\n'
+            if self._body:
+                if not self._body.endswith('\n'):
+                    # Ensure a newline is at the end of the response
+                    # body simply to make working with tools like the
+                    # `curl` command more convenient.
+                    self._body += '\n'
 
         return self._body
 

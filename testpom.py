@@ -1123,8 +1123,8 @@ class page(tester.tester):
         ws.pages += pg
         tab = self.browser().tab()
         res = tab.head('/en/time', ws)
-        self.eq('\n', res.body)
         self.eq(200, res.status)
+        self.empty(res.body)
 
         # FIXME Content-Length should be the size of the payload
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
