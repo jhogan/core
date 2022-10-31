@@ -5839,7 +5839,7 @@ with book('Hacking Carapacian Core'):
         when assigning.
       ''')
 
-      with listing('Writting imperitive attributes'):
+      with listing('Writing imperitive attributes'):
         class person(orm.entity):
           # The person's name.
           name = str
@@ -5868,10 +5868,10 @@ with book('Hacking Carapacian Core'):
 
         By using the `orm.attr` decorator, we are able to write a Python
         property that controls exactly what is returned. We name the
-        property `email` to indicate that this is what we want to call
+        property `email` to indicate that this is how we will referer to
         the attribute.
 
-        You will notice on the next line
+        You will notice on the next line:
 
           addr = attr()
 
@@ -5879,9 +5879,9 @@ with book('Hacking Carapacian Core'):
         to be declared anywhere. However, it is declared by the ORM
         behind the scenes and sort of injected into any declarative
         property. Its purpose is to provide us access to the attribute's
-        value that the ORM currently stores. By assigning its return
-        value to `addr`, we are simply getting the value that we set
-        above with the line.
+        underlying value that the ORM holds at any given moment in time.
+        By assigning its return value to `addr`, we are simply getting
+        the value that we set above with the line.
         
           per.email = 'JesseHogan@example.com'
 
@@ -5889,28 +5889,84 @@ with book('Hacking Carapacian Core'):
 
           assert 'JesseHogan@example.com' == addr
 
-        So now that we have the unadulterated value, we can smash the
-        case we the next line and return that value:
+        So now that we have the unadulterated value, we can smash its
+        case with the next line and return the value:
           
           return addr.lower()
 
         So now, whenever we call `person.email`, all of its characters
         will be lowercase, allowing the following to be asserted:
 
-          eq('JeSsEhOgAn@eXaMpLe.cOm', per.email)
+          eq('jessehogan@example.com', per.email)
 
         Note also that the ORM will read the attributes this way when
-        creating INSERT and UPDATE statements to be issued against the
-        database, so what we return in declarative getters will be what
-        is stored in the database.
+        creating INSERT and UPDATE statements meant to be issued against
+        the database, so what we return in declarative getters will end
+        up being what is stored in the database. The return value of
+        declarative getters are also used in validation.
 
         This example provides a fairly trivial use of declarative
         attributes. However, the ability to control the output of ORM
         attribtues is extremely important because it gives us the
         ability to encapsulate logic in the getters and setters (the
-        imperitive attributes) which is an essential capability of
+        imperitive attributes) which is an essential feature of
         object-oriented design.
       ''')
+
+      with section('Memoization'):
+        print('''
+          The injected `attr()` function, as described above, returns
+          the ORM's underlying value for the attribute. However, we can
+          also use `attr()` to set the attributes underlying value. This
+          can be useful for memoization to speed up performanice.
+
+          For example, let's say our person entity has an `address`
+          attribute which stores a street address. A street address can
+          be expressed in a number of ways. For example, we could write
+          "123 N. Fake steet" or "123 north Fake st.", or any variations
+          thereof. There are third-party API's that we can call that
+          will parse the address and give us a standardized version of
+          the address. The problem is, this may take a will, so we
+          wouldn't mulitple calls to the `address attribute to result in
+          more that one call to the API. This would be a waist of time,
+          computer resources, and likely money.
+          
+          We can use memoization to solve this problem:
+        ''')
+
+        with listing('Using memoization'):
+          class person(orm.entity):
+            @orm.attr(str):
+            def address(self):
+                addr = attr()
+                
+                # If address is a simple string, it hasn't been
+                # normalized yet.
+                if isinstance(addr, str):
+                  # Make expensive call to API to normalize `addr`,
+                  # e.g.,:
+                  #
+                  #     addr = apis.address.normalize(addr)
+
+                  # Store the object (non-string value) we get back from
+                  # the normalization services
+                  attr(addr)
+
+                # Return the string version of the normalized address
+                # object
+                return str(addr)
+
+          per = person()
+          per.address = '123 north Fake street mesa, AZ'
+
+          # Assert first call to per.address
+          eq('123 N Fake Street Mesa, AZ', per.address)
+
+          # Subsequent calls to per.address won't result in additional
+          # calls to the normalization services.
+
+        print('''
+        ''')
 
 
     with section('Sorting'):
