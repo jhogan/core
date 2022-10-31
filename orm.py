@@ -3729,10 +3729,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """
         ls = super().__dir__() + self.orm.properties
 
-        # Remove duplicates. If an entity has an imperitive attribute, the name
-        # of the attribute will come in from the call to super().__dir__()
-        # while the name of its associated map will come in through
-        # self.orm.properties
+        # Remove duplicates. If an entity has an imperitive attribute,
+        # the name of the attribute will come in from the call to
+        # super().__dir__() while the name of its associated map will
+        # come in through self.orm.properties
         return list(set(ls))
 
     def __setattr__(self, attr, v, cmp=True, imp=False):
