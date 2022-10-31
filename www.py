@@ -191,11 +191,10 @@ class application:
             # If request is GET or HEAD
             if req.isget or req.ishead:
                 # Invoke the request object, i.e., make the request
-                B()
                 res = req()
             # If the request is a POST
             elif req.ispost:
-                # If the request is XHR (i.e, an AJAX request)
+                # If the request is XHR (i.e., an AJAX request)
                 if req.isxhr:
 
                     # If the request is in response to a dom.event.
@@ -206,6 +205,7 @@ class application:
                         # Update on resolution of XXX:c03b8d67
                         res.body = req()
                     else:
+                        # XXX Remove this if it is dead code
                         reqdata = self.request.post
 
                         cls, meth = self.class_, self.method
@@ -288,6 +288,9 @@ class application:
                             # /en/error
                             pg = req.site['/%s/error' % lang]
 
+                            # TODO This alternative block is redundant
+                            # with the consequent block
+
                             # Clear and invoke
                             pg.clear()
                             pg(ex=ex)
@@ -299,8 +302,8 @@ class application:
 
                     # If the exception is an HttpException i.e., HTTP 300s. 
                     elif isinstance(ex, HttpException):
-                        # Allow the exception to make
-                        # modifications to the response.
+                        # Allow the exception to make modifications to
+                        # the response.
                         ex(res)
 
                     # If the exception was a non-HTTP exception
@@ -851,7 +854,9 @@ class _request:
         #     example, if the `click()` method of a <button> caused the
         #     event, trigger would be 'click'.
 
-        # XXX Comment on changes to the return type
+        # XXX Comment on changes to the return type.
+        # XXX Update commentaray for the refactor of this method and the
+        # code that calls it.
 
         global response
         response = _response(self)
@@ -867,7 +872,6 @@ class _request:
 
         try:
             # Invoke the page
-            # XXX Comment
             # XXX Use self.forfile
             if pg := self.page:
                 pg(eargs=eargs, **self.arguments)
@@ -896,7 +900,7 @@ class _request:
             if ex.flash:
                 self.page.flash(ex.flash)
 
-                # Set the response statust of the global response
+                # Set the response status of the global response
                 # object.
                 response.status = ex.status
             else:

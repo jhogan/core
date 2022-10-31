@@ -1488,6 +1488,11 @@ class page(tester.tester):
         self.eq('Lang: en', (tab['main p'].first.text))
 
     def it_authenticates(self):
+        # XXX Get this test to run alone:
+        #
+        #     ./testpom page.it_authenticates
+        #
+
         jwt = None
         class authenticate(pom.page):
             def main(self):
