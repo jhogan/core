@@ -2358,7 +2358,7 @@ class page(tester.tester):
 
         btn.click()
 
-        self.eq(tab.html.html, html)
+        self.eq(html, tab.html.html)
         self.true(handled)
 
     def it_returns_traceback_on_exception_during_event_handling(self):

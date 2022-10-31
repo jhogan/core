@@ -156,8 +156,9 @@ class application:
 
         global request, response
 
-
         break_ = False
+
+        res = None
 
         try:
             # Clear state data currently maintained by the WSGI
@@ -201,9 +202,9 @@ class application:
                     if req.isevent:
 
                         # Make the request and set the response's body
-                        # to the HTML that is returned.
-                        # Update on resolution of XXX:c03b8d67
-                        res.body = req()
+                        # to the HTML that is returned.  Update on
+                        # resolution of XXX:c03b8d67
+                        res = req()
                     else:
                         # XXX Remove this if it is dead code
                         reqdata = self.request.post
@@ -217,7 +218,7 @@ class application:
                         data = [] if data == None else data
                 else:
                     # Update on resolution of XXX:c03b8d67
-                    res.body = req()
+                    res = req()
 
             else:
                 # Raise if the method is not POST, GET or HEAD.
@@ -235,8 +236,13 @@ class application:
                 break_ = True
                 raise
 
-            try:
+            if not res:
                 res = _response(self)
+                respones = res
+                res.headers += 'Content-Type: text/html'
+
+
+            try:
                 if self.request.forfile:
                     res.status = ex.status
 
@@ -874,9 +880,18 @@ class _request:
             # Invoke the page
             # XXX Use self.forfile
             if pg := self.page:
-                pg(eargs=eargs, **self.arguments)
                 response.headers += 'Content-Type: text/html'
-                response.body = f'<!DOCTYPE html>\n{pg.html}'
+                pg(eargs=eargs, **self.arguments)
+
+                if not self.ishead:
+                    if self.isevent:
+                        if self.isspa:
+                            response.body = pg.main.html
+                        else:
+                            if eargs.html:
+                                response.body = eargs.html.html
+                    else:
+                        response.body = f'<!DOCTYPE html>\n{pg.html}'
             else:
                 path = None
                 path = self.path
@@ -887,8 +902,9 @@ class _request:
                 except Exception as ex:
                     raise NotFoundError(path) from ex
                 else:
-                    response.body = file.body
                     response.headers += 'Content-Type: ' + file.mime
+                    if not self.ishead:
+                        response.body = file.body
                     
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
@@ -899,6 +915,7 @@ class _request:
             # the correct HTTP response will be returned.
             if ex.flash:
                 self.page.flash(ex.flash)
+                response.body = pg.main.html
 
                 # Set the response status of the global response
                 # object.
@@ -908,25 +925,6 @@ class _request:
         finally:
             # Finish of the hit log
             self.log()
-
-        # If the request if for an event...
-        if self.isevent:
-            # If the request is for new SPA page (e.g., a click on a
-            # <nav> that results in an XHR request made...
-            if self.isspa:
-                # Return only the <main> element of the SPA page. When
-                # requesting a single page in an SPA context, only the
-                # <main> element is being requested by the client.
-                return self.page.main.html
-
-            else:
-                # Return the event HTML elements as handled by the event
-                # handler -- if there are any.
-                if eargs.html:
-                    return eargs.html.html
-
-            # If the browser didn't send HTML fragments, return None.
-            return None
 
         return response
 
