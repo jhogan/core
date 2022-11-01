@@ -800,8 +800,8 @@ class file(inode):
         the file has been saved to the database. If ``file.body``
         contains data, the file will be written to the disk. If the file
         looks like a text file given its ``mime`` type, it will be
-        written as a text (mode='wt'); otherwise, it will be written as
-        a binary file (mode='wb').
+        written as a text file (mode='wt'); otherwise, it will be
+        written as a binary file (mode='wb').
         """
 
         # If there is a body to the file, we want to save it. Otherwise

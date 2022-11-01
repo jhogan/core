@@ -212,6 +212,7 @@ class site(asset.asset):
                 # dirty or markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
+                # Ascend to the super/base entity
                 sup = sup.orm._super
                 wssup = wssup.orm.super
 

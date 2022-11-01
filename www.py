@@ -189,6 +189,7 @@ class application:
             # invalid.
             self.demand()
 
+            # XXX The calls to req() can be made unconditionally
             # If request is GET or HEAD
             if req.isget or req.ishead:
                 # Invoke the request object, i.e., make the request
@@ -200,10 +201,6 @@ class application:
 
                     # If the request is in response to a dom.event.
                     if req.isevent:
-
-                        # Make the request and set the response's body
-                        # to the HTML that is returned.  Update on
-                        # resolution of XXX:c03b8d67
                         res = req()
                     else:
                         # XXX Remove this if it is dead code
@@ -217,7 +214,6 @@ class application:
 
                         data = [] if data == None else data
                 else:
-                    # Update on resolution of XXX:c03b8d67
                     res = req()
 
             else:
@@ -835,9 +831,6 @@ class _request:
 
         # XXX Update the docstring
         """
-
-        # XXX:c03b8d67 This method should return a www._response.
-        # Currently, it return only the body of the request.
 
         # Create the hit log. In the finally block, we will add some
         # concluding information by calling self.log again, such as the
