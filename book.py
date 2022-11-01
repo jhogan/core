@@ -5917,8 +5917,9 @@ with book('Hacking Carapacian Core'):
         print('''
           The injected `attr()` function, as described above, returns
           the ORM's underlying value for the attribute. However, we can
-          also use `attr()` to set the attributes underlying value. This
-          can be useful for memoization to speed up performanice.
+          also use `attr()` to set the attributes underlying value by
+          passing values to it. This can be useful for memoization to
+          speed up performance.
 
           For example, let's say our person entity has an `address`
           attribute which stores a street address. A street address can
@@ -5926,8 +5927,8 @@ with book('Hacking Carapacian Core'):
           "123 N. Fake steet" or "123 north Fake st.", or any variations
           thereof. There are third-party API's that we can call that
           will parse the address and give us a standardized version of
-          the address. The problem is, this may take a will, so we
-          wouldn't mulitple calls to the `address attribute to result in
+          the address. The problem is, this may take a while, so we
+          wouldn't mulitple calls to the `address` attribute to result in
           more that one call to the API. This would be a waist of time,
           computer resources, and likely money.
           
@@ -5966,6 +5967,24 @@ with book('Hacking Carapacian Core'):
           # calls to the normalization services.
 
         print('''
+          Here we are setting the underlying value of the `address`
+          attribute with the object that the mapping service returns to
+          us. We return a strigified version of the address object
+          because we want the address attritute always be a string. The
+          second time `person.address` is called, `attr()` will return
+          the object that the mapping services returned (instead of the
+          `str` that it was originally set to). This type distinction
+          tells the code it does not need to call the mapping service
+          again, thus subsequent calls (such as the one that would be
+          made were we to call `per.save()`) will be more performant and
+          use less resources.
+
+          You may think a similar solution would be to have a private
+          member variable memoize the object returned by the mapping
+          services. However, this would cause a problem if the address
+          were to ever change. We would need the to create an imperative
+          setter to invalidate the private member. Thus, using `attr()`
+          to do the memoization is the right way to go.
         ''')
 
 
