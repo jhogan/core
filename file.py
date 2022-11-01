@@ -749,7 +749,7 @@ class file(inode):
         attribute and the ``file.name``.
         """
         if not attr():
-            mime = mimetypes.guess_type(self.path, strict=False)[0]
+            mime = mimetypes.guess_type(self.name, strict=False)[0]
             if mime is not None:
                 attr(mime)
             elif isinstance(self._body, str):
