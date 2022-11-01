@@ -6392,7 +6392,7 @@ class attr:
     -------
     Creating imperitive setters is as easy as creating getters. You only
     need to specify a `v` as the first argument of the setter to
-    indicate that it is such::
+    indicate that it is such:
 
         class artist(orm.entity):
             @orm.attr(str):
