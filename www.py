@@ -30,6 +30,7 @@ are also provided in this module.
 
 from config import config
 from dbg import B, PM
+from entities import classproperty
 from functools import reduce
 from pprint import pprint
 import apriori
@@ -39,11 +40,11 @@ import ecommerce
 import entities
 import exc
 import file
+import html
 import json
 import logs
 import orm
 import os
-import html
 import party
 import pdb
 import pom
@@ -236,7 +237,6 @@ class application:
                 res = _response(self)
                 respones = res
                 res.headers += 'Content-Type: text/html'
-
 
             try:
                 if self.request.forfile:
