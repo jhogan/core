@@ -30,6 +30,7 @@ are also provided in this module.
 
 from config import config
 from dbg import B, PM
+from entities import classproperty
 from functools import reduce
 from pprint import pprint
 import apriori
@@ -39,11 +40,11 @@ import ecommerce
 import entities
 import exc
 import file
+import html
 import json
 import logs
 import orm
 import os
-import html
 import party
 import pdb
 import pom
@@ -79,6 +80,16 @@ class application:
         application.
         """
         self._request = None
+        self._response = None
+
+    _current = None
+    @classmethod
+    def _set_current(cls, v):
+        cls._current = v
+
+    @classproperty
+    def current(cls):
+        return cls._current
 
     @property
     def environment(self):
@@ -108,8 +119,19 @@ class application:
         processing.
         """
         if not self._request:
-            self._request = _request(self)
+            self._request = request(self)
         return self._request
+
+    @property
+    def response(self):
+        """ The HTTP response object that this application is currently
+        processing.
+        """
+        return self._response
+
+    @response.setter
+    def response(self, v):
+        self._response = v
 
     def demand(self):
         """ Raise an exception if the current state of the WSGI
@@ -154,8 +176,6 @@ class application:
         # Ensure that the GEM has been fully imported
         import apriori; apriori.model()
 
-        global request, response
-
         break_ = False
 
         res = None
@@ -164,6 +184,8 @@ class application:
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
+
+            type(self)._set_current(self)
 
             sec = orm.security()
 
@@ -181,51 +203,13 @@ class application:
 
             sec.proprietor = propr
 
-            # Set the global request object
-            request = self.request
-
             # Raise an exception if the current state of the WSGI
             # application object, or any of its constituents, are
             # invalid.
             self.demand()
 
-            # If request is GET or HEAD
-            if req.isget or req.ishead:
-                # Invoke the request object, i.e., make the request
-                res = req()
-            # If the request is a POST
-            elif req.ispost:
-                # If the request is XHR (i.e., an AJAX request)
-                if req.isxhr:
-
-                    # If the request is in response to a dom.event.
-                    if req.isevent:
-
-                        # Make the request and set the response's body
-                        # to the HTML that is returned.  Update on
-                        # resolution of XXX:c03b8d67
-                        res = req()
-                    else:
-                        # XXX Remove this if it is dead code
-                        reqdata = self.request.post
-
-                        cls, meth = self.class_, self.method
-
-                        obj = cls(self)
-
-                        data = getattr(obj, meth)()
-
-                        data = [] if data == None else data
-                else:
-                    # Update on resolution of XXX:c03b8d67
-                    res = req()
-
-            else:
-                # Raise if the method is not POST, GET or HEAD.
-                raise MethodNotAllowedError(
-                    'Method "%s" is never allowed' % req.method
-                )
-
+            # Make the actual request
+            res = req()
         except Exception as ex:
             # Log exception to syslog
             logs.exception(ex)
@@ -237,7 +221,7 @@ class application:
                 raise
 
             if not res:
-                res = _response(self)
+                res = response(self)
                 respones = res
                 res.headers += 'Content-Type: text/html'
 
@@ -384,19 +368,13 @@ class application:
                 else:
                     return iter([bytes(body, 'UTF-8')]) 
 
-            request = None
-
-# TODO The class name should be `request` and the main instance should
-# be stored in `_request` at the class level. A @property called
-# request.main or request.current can store the request object currently
-# being processed.
+            type(self)._set_current(None)
 
 # NOTE The request class tries to be a generic HTTP request class and a
 # WSGI request class at the same time. We may want to add a new subclass
 # of request call `wsgirequest` that would encapsulate the WSGI logic so
 # we can get it out of the regular `request` class.
-request = None
-class _request:
+class request:
     """ Represents an HTTP request.
 
     The class is designed represent any HTTP request. However, there a
@@ -863,9 +841,7 @@ class _request:
         # XXX Comment on changes to the return type.
         # XXX Update commentaray for the refactor of this method and the
         # code that calls it.
-
-        global response
-        response = _response(self)
+        res = response(self)
 
         eargs = None
         if self.isevent:
@@ -880,18 +856,18 @@ class _request:
             # Invoke the page
             # XXX Use self.forfile
             if pg := self.page:
-                response.headers += 'Content-Type: text/html'
+                res.headers += 'Content-Type: text/html'
                 pg(eargs=eargs, **self.arguments)
 
                 if not self.ishead:
                     if self.isevent:
                         if self.isspa:
-                            response.body = pg.main.html
+                            res.body = pg.main.html
                         else:
                             if eargs.html:
-                                response.body = eargs.html.html
+                                res.body = eargs.html.html
                     else:
-                        response.body = f'<!DOCTYPE html>\n{pg.html}'
+                        res.body = f'<!DOCTYPE html>\n{pg.html}'
             else:
                 path = None
                 path = self.path
@@ -902,9 +878,9 @@ class _request:
                 except Exception as ex:
                     raise NotFoundError(path) from ex
                 else:
-                    response.headers += 'Content-Type: ' + file.mime
+                    res.headers += 'Content-Type: ' + file.mime
                     if not self.ishead:
-                        response.body = file.body
+                        res.body = file.body
                     
         except HttpError as ex:
             # If the page raised an HTTPError with a flash message, add
@@ -915,18 +891,20 @@ class _request:
             # the correct HTTP response will be returned.
             if ex.flash:
                 self.page.flash(ex.flash)
-                response.body = pg.main.html
+                res.body = pg.main.html
 
-                # Set the response status of the global response
-                # object.
-                response.status = ex.status
+                # Set the response status of the response object.
+                res.status = ex.status
             else:
                 raise
         finally:
+            # XXX Comment
+            self.app.response = res
+
             # Finish of the hit log
             self.log()
 
-        return response
+        return res
 
     @property
     def hit(self):
@@ -1012,7 +990,7 @@ class _request:
                 # datetime and HTTP status.
                 if hit.inprogress:
                     hit.end = now
-                    hit.status = response.status
+                    hit.status = self.app.response.status
                 else:
                     hit.begin = now
 
@@ -1389,8 +1367,7 @@ class _request:
                 'Method "%s" is never allowed' % self.method
             )
 
-response = None
-class _response():
+class response():
     Messages = {
         200: 'OK',
 		201: 'Created',
@@ -1859,7 +1836,7 @@ class HttpException(Exception):
         phrase for the error message, e.g.: '404 Not Found'.
         """
         return '%s %s' % (
-            str(self.status), _response.Messages[self.status]
+            str(self.status), response.Messages[self.status]
         )
 
     @property
@@ -2513,15 +2490,15 @@ class browser(entities.entity):
             try:
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
-                res = _response(req=req, ex=ex)
+                res = response(req=req, ex=ex)
                 ex1 = HttpError.create(
                     'Error requesting' , res
                 )
                 raise ex1
             else:
-                # Return a www._response objcet representing the HTTP
+                # Return a www.response objcet representing the HTTP
                 # response to the HTTP request.
-                return _response(req=req, res=res)
+                return response(req=req, res=res)
 
     class _cookies(entities.entities):
         """ A class representing a collection of ``cookie`` objects.

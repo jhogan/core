@@ -987,7 +987,7 @@ class tester(entities.entity):
                 app = www.application()
 
                 # Create request. Associate with app.
-                req = www._request(app)
+                req = www.request(app)
 
                 app.breakonexception = \
                     self.browser.tester.testers.breakonexception
@@ -995,7 +995,7 @@ class tester(entities.entity):
                 # Make WSGI call
                 iter = app(env, start_response)
 
-                res = www._response(req) 
+                res = www.response(req) 
 
                 # Just get the status code from st (which contains the
                 # entire phrase, i.e., '200 OK'). In the future, we may
