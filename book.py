@@ -5839,7 +5839,7 @@ with book('Hacking Carapacian Core'):
         when assigning.
       ''')
 
-      with listing('Writing imperitive attributes'):
+      with listing('Writing imperative attributes'):
         class person(orm.entity):
           # The person's name.
           name = str
@@ -5853,7 +5853,7 @@ with book('Hacking Carapacian Core'):
         per = person()
         per.email = 'JesseHogan@example.com'
 
-        eq('JeSsEhOgAn@eXaMpLe.cOm', per.email)
+        eq('jessehogan@example.com', per.email)
 
       print('''
         In the above example, we replaced the declaration:
@@ -5909,7 +5909,7 @@ with book('Hacking Carapacian Core'):
         attributes. However, the ability to control the output of ORM
         attribtues is extremely important because it gives us the
         ability to encapsulate logic in the getters and setters (the
-        imperitive attributes) which is an essential feature of
+        imperative attributes) which is an essential feature of
         object-oriented design.
       ''')
 
@@ -5970,22 +5970,64 @@ with book('Hacking Carapacian Core'):
           Here we are setting the underlying value of the `address`
           attribute with the object that the mapping service returns to
           us. We return a strigified version of the address object
-          because we want the address attritute always be a string. The
-          second time `person.address` is called, `attr()` will return
-          the object that the mapping services returned (instead of the
-          `str` that it was originally set to). This type distinction
-          tells the code it does not need to call the mapping service
-          again, thus subsequent calls (such as the one that would be
-          made were we to call `per.save()`) will be more performant and
-          use less resources.
+          because we want the `address` attritute to always return a
+          string. If subsequent calls are made to `person.address`,
+          `attr()` will return the object that the mapping services
+          returned (instead of the `str` that it was originally set to).
+          This type distinction tells the code that it does not need to
+          call the mapping service again, thus subsequent calls (such as
+          the one that would be made were we to call `per.save()`) will
+          be more performant and use less resources.
 
           You may think a similar solution would be to have a private
           member variable memoize the object returned by the mapping
           services. However, this would cause a problem if the address
-          were to ever change. We would need the to create an imperative
-          setter to invalidate the private member. Thus, using `attr()`
-          to do the memoization is the right way to go.
+          were to ever change by assigning the attribute a new value. We
+          would need to create an imperative setter to invalidate
+          the private member. Thus, using `attr()` to do the memoization
+          is the right way to go.
         ''')
+
+      print('''
+       It usually makes the most sense to make the getter declarative
+       while allowing the ORM to take care of setting the attribute's
+       value. This allows the code to be sort of lazy about things, only
+       performing the logic when and if its needed. 
+
+       However, occasionally you will find it necessary to create
+       declarative setters. The distingushing characterstic of a
+       imperative setter is the fact that the `@property` must take a
+       `v` argument.  Let's rewrite the `email` attribute of person to
+       be a declarative s
+      ''')
+
+      with listing('Writing an imperative setter'):
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address.
+          @orm.attr(str)
+          def email(self, v):
+            attr(v.lower())
+
+        per = person()
+        per.email = 'JesseHogan@example.com'
+
+        eq('jessehogan@example.com', per.email)
+
+      print('''
+        The signature of the `email` `@property` now contains a `v`
+        parameter, making it an imperative setter. The logic in the
+        @property changes a little, too. We use the value that is
+        assigne to email (`v`) and lowercase it. Then we pass this value
+        to `attr()` thus setting the underlying value to a lowercase
+        version. Since this is a setter, we don't return anything.
+        Notice that the assertions work the same. The email address is
+        made lowercase all the same; just when the attribute is set, not
+        when it is gotton, thus to the user of the `person` class, the
+        change, at least in this case, is inconsequential.
+      ''')
 
 
     with section('Sorting'):
