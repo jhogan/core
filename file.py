@@ -749,7 +749,7 @@ class file(inode):
         attribute and the ``file.name``.
         """
         if not attr():
-            mime = mimetypes.guess_type(self.path, strict=False)[0]
+            mime = mimetypes.guess_type(self.name, strict=False)[0]
             if mime is not None:
                 attr(mime)
             elif isinstance(self._body, str):
@@ -800,8 +800,8 @@ class file(inode):
         the file has been saved to the database. If ``file.body``
         contains data, the file will be written to the disk. If the file
         looks like a text file given its ``mime`` type, it will be
-        written as a text (mode='wt'); otherwise, it will be written as
-        a binary file (mode='wb').
+        written as a text file (mode='wt'); otherwise, it will be
+        written as a binary file (mode='wb').
         """
 
         # If there is a body to the file, we want to save it. Otherwise

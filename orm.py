@@ -6124,9 +6124,9 @@ class entitymapping(mapping):
 
     @property
     def isproprietor(self):
-        """ Returns True if the ``entity`` being referenced is the
-        proprietor (``party.party``) object that each ``entity`` object
-        has. Returns False otherwise.
+        """ Returns True if the ``entity`` being referenced by this
+        entitymapping is the proprietor (``party.party``) object that
+        each ``entity`` object has. Returns False otherwise.
         """
         return self.name == 'proprietor'
 

@@ -717,7 +717,7 @@ class tester(entities.entity):
             def navigate(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
                 the  webserver (ws). The response is used to update the
-                tab's internal DOM (self.html). The www._response object
+                tab's internal DOM (self.html). The www.response object
                 is returned if needed.
 
                 :param: pg pom.page|str: The page to GET.

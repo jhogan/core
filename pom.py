@@ -203,15 +203,27 @@ class site(asset.asset):
             wssup = ws
             while sup:
                 for map in wssup.orm.mappings:
-                    if not isinstance(map, orm.fieldmapping):
+                    if isinstance(map, orm.fieldmapping):
+                        # Accept fieldmapping
+                        pass
+                    elif isinstance(map, orm.entitymapping):
+                        # Accept entitymappings unless they are security
+                        # related
+                        if map.isproprietor or map.isowner:
+                            continue
+                    else:
+                        # Filterout other tiypes
                         continue
-
-                    setattr(sup, map.name, getattr(wssup, map.name))
+                    
+                    # Move the value in wssup's map to sup's 
+                    v = wssup.orm.mappings[map.name].value
+                    sup.orm.mappings[map.name].value = v
 
                 # Make sure that self and its supers aren't flag as new,
                 # dirty or markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
+                # Ascend to the super/base entity
                 sup = sup.orm._super
                 wssup = wssup.orm.super
 
@@ -265,9 +277,6 @@ class site(asset.asset):
             # after the site has been established.
             pub = self.public
 
-            # Save the site plus its associations and directories
-            self.save()
-
             try:
                 # Get the favicon.ico file entity from public/
                 favicon = pub['favicon.ico']
@@ -277,6 +286,9 @@ class site(asset.asset):
                 if favicon := self.favicon:
                     # Add the favicon.ico to public/
                     pub += favicon
+
+            # Save the site plus its associations and directories
+            self.save()
 
     @property
     def favicon(self):

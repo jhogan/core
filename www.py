@@ -210,6 +210,7 @@ class application:
 
             # Make the actual request
             res = req()
+
         except Exception as ex:
             # Log exception to syslog
             logs.exception(ex)
@@ -224,7 +225,6 @@ class application:
                 res = response(self)
                 respones = res
                 res.headers += 'Content-Type: text/html'
-
 
             try:
                 if self.request.forfile:
@@ -813,9 +813,6 @@ class request:
 
         # XXX Update the docstring
         """
-
-        # XXX:c03b8d67 This method should return a www._response.
-        # Currently, it return only the body of the request.
 
         # Create the hit log. In the finally block, we will add some
         # concluding information by calling self.log again, such as the
