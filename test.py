@@ -2290,7 +2290,7 @@ class orm_(tester):
         iss = issue.getvalid()
         self.true(iss.isvalid)
 
-        # Break imperitive rules
+        # Break imperative rules
         iss.assignee = 'brokenATexample.com'
         self.broken(iss, 'assignee', 'valid')
         self.false(iss.isvalid)
@@ -2308,7 +2308,7 @@ class orm_(tester):
         bg = bug.getvalid()
         self.true(bg.isvalid)
 
-        # Break imperitive rules from the superentity
+        # Break imperative rules from the superentity
         bg.assignee = 'brokenATexample.com'
 
         with self.brokentest(bg) as t:
@@ -2336,7 +2336,7 @@ class orm_(tester):
             t(bg.orm.super, 'name', 'fits')
             t(bg.orm.super, 'assignee', 'valid')
 
-        # Break imperitive rule on subentity
+        # Break imperative rule on subentity
         bg.points = 4  # Must be Fibonacci
 
         with self.brokentest(bg) as t:
@@ -2552,7 +2552,7 @@ class orm_(tester):
         self.zero(isss.brokenrules)
 
         # Add a new issue with the same name. Duplicate issue names have
-        # been forbidden by an imperitive broken rule at
+        # been forbidden by an imperative broken rule at
         # issues.brokenrules
         isss += issue.getvalid()
         isss.last.name = iss.name
@@ -3101,7 +3101,7 @@ class orm_(tester):
 
     def it_receives_AttributeError_from_imperitive_attributes(self):
         # An issue was discovered in the former entities.__getattr__.
-        # When an imperitive attribute raised an AttributeError, the
+        # When an imperative attribute raised an AttributeError, the
         # __getttr__ was invoked (this is the reason it gets invoke in
         # the first place) and returned the map.value of the attribute.
         # The effect was that the explict attribute never had a chance
@@ -3109,13 +3109,13 @@ class orm_(tester):
         #
         # To correct this, the __getattr__ was converted to a
         # __getattribute__, and some adjustments were made
-        # (map.isexplicit was added). Now, an imperitive attribute can
+        # (map.isexplicit was added). Now, an imperative attribute can
         # raise an AttributeError and it bubble up correctly (as
         # confirmed by this test). The problem isn't likely to
         # resurface. However, this test was written just as a way to
         # ensure the issue never comes up again. The `issue` entity
         # class was created for this test because adding the
-        # `raiseAttributeError` imperitive attribute to other classes
+        # `raiseAttributeError` imperative attribute to other classes
         # cause an AttributeError to be raise when the brokenrules
         # logic was invoked, which broke a lot of tests.
         #
@@ -6261,7 +6261,7 @@ class orm_(tester):
         # "Earth".
         self.eq('Earth', aa.planet)
 
-        # Test the imperitive attribute timespan. It removes spaces from the
+        # Test the imperative attribute timespan. It removes spaces from the
         # value and replaces them with dashes.
         art.artist_artifacts.first.timespan = '1/10/2018 2/10/2018'
         self.eq('1/10/2018-2/10/2018', aa.timespan)

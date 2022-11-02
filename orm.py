@@ -3231,7 +3231,7 @@ class entitymeta(type):
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
-                    # `v` represents an imperitive attribute. It will
+                    # `v` represents an imperative attribute. It will
                     # contain its own mapping object so just assign
                     # reference. See the `attr` class.
                     map = v.mapping
@@ -3261,7 +3261,7 @@ class entitymeta(type):
                 # this class in orm.mappings, we can delete them.
                 prop = body[map.name]
 
-                # Delete attribute if it is not an imperitive attribute.
+                # Delete attribute if it is not an imperative attribute.
                 if type(prop) is not ormmod.attr.wrap:
                     del body[map.name]
 
@@ -3729,7 +3729,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """
         ls = super().__dir__() + self.orm.properties
 
-        # Remove duplicates. If an entity has an imperitive attribute,
+        # Remove duplicates. If an entity has an imperative attribute,
         # the name of the attribute will come in from the call to
         # super().__dir__() while the name of its associated map will
         # come in through self.orm.properties
@@ -3750,12 +3750,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         `cmp` variable in that method for more.
 
         :param: bool imp: If True, indicates that __setattr__ is being
-        called by an imperitive setter. If this is the case, we want to
+        called by an imperative setter. If this is the case, we want to
         avoid infinite recursion by not calling the setter. Instead, we
         allow the normal behavior of finding the ``mapping`` object
         associated with the setter and setting its ``value`` attribute
         to the ``v`` argument. By default, it is False, because this is
-        only necessary for imperitive setters.
+        only necessary for imperative setters.
         """
 
         # Need to handle 'orm' first, otherwise the code below that
@@ -4103,7 +4103,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # a superentity of self is invalid, the recursive _save
             # method will eventually try to save it and fail, causing a
             # rollback. We don't want to collect brokenrules more than
-            # once because the imperitive brokenrules properties that
+            # once because the imperative brokenrules properties that
             # ORM users write can potentially be slow (such as when they
             # need to make a database calls).
 
@@ -6281,7 +6281,7 @@ class fulltext(index):
         return name
 
 class attr:
-    """ This class makes imperitive attributes possible. 
+    """ This class makes imperative attributes possible. 
 
     Most attributes for orm.entity classes are declaritive::
 
@@ -6390,7 +6390,7 @@ class attr:
 
     Setters
     -------
-    Creating imperitive setters is as easy as creating getters. You only
+    Creating imperative setters is as easy as creating getters. You only
     need to specify a `v` as the first argument of the setter to
     indicate that it is such:
 
@@ -6444,7 +6444,7 @@ class attr:
         self.kwargs = kwargs
 
     def __call__(self, meth):
-        """ This method is invoked when the imperitive attribute is
+        """ This method is invoked when the imperative attribute is
         called. The ``meth`` argument passed in is the actual getter or
         setter that must be called. The ``meth`` is first wrapped by
         attr.wrap and returned to the caller. The caller then invokes
@@ -6460,7 +6460,7 @@ class attr:
 
         When the attr() function is called, either with or without a
         parameter, the __call__ method is invoked. This allows the
-        imperitive attribute to correctly access and mutate its
+        imperative attribute to correctly access and mutate its
         underlying mapping value.
 
             class myentity(orm.entity):
@@ -6540,7 +6540,7 @@ class attr:
             self.inner = ex
 
     class wrap:
-        """ A decorator to make a method an imperitive attribute. 
+        """ A decorator to make a method an imperative attribute. 
         """
         def __init__(self, *args, **kwargs):
             args = list(args)
@@ -6568,7 +6568,7 @@ class attr:
 
         @property
         def mapping(self):
-            """ Returns an mapping for the imperitive attribute.
+            """ Returns an mapping for the imperative attribute.
 
             For example, in the below entity declaration, a
             ng`` would be returned for the `mime` property.
@@ -6625,7 +6625,7 @@ class attr:
 
                 myattr = attr.attr(meth.__name__, instance)
 
-                # Inject attr() reference into user-level imperitive attribute
+                # Inject attr() reference into user-level imperative attribute
                 meth.__globals__['attr'] = myattr
             except AttributeError as ex:
                 # Any AttributeError raised here would be swolled by
@@ -6635,7 +6635,7 @@ class attr:
                 raise Exception(str(ex)) from ex
 
             try:
-                # Invoke the imperitive attribute
+                # Invoke the imperative attribute
                 if isget:
                     return meth(instance)
                 elif isset:
@@ -6732,10 +6732,10 @@ class fieldmapping(mapping):
         :param: isexplicit bool: <To be removed>
 
         :param: isgetter bool: Indicates the mapping is for an
-        imperitive getter.
+        imperative getter.
 
         :param: issetter bool: Indicates the mapping is for an
-        imperitive setter.
+        imperative setter.
 
         :param: span span: A ``timespan`` or a ``datespan`` reference.
         """
