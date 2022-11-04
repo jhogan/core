@@ -1509,6 +1509,8 @@ class page(tester.tester):
                 if req.isget:
                     return
 
+                ''' POST '''
+
                 # Populate the form with data from the request's body
                 frm.post = req.body
 
@@ -1579,20 +1581,19 @@ class page(tester.tester):
         frm = res['form'].first
 
         for i, usr in usrs.enumerate():
-
             # Populate the login form from the /en/authenticate with
             # credentials of the current user.
             frm['input[name=username]'].first.value = usr.name
             frm['input[name=password]'].first.value = usr.password
 
             # Post the credentials to /en/authenticate
+            print(i)
             res = tab.post('/en/authenticate', ws=ws, frm=frm)
 
             # If the user is authentic (if the user was previously saved
             # to the database...
-            isauthentic =  not usr.orm.isnew
+            isauthentic = not usr.orm.isnew
             if isauthentic:
-                
                 # We should get a JWT form /en/authenticate
                 self.status(200, res)
                 jwt = tab.browser.cookies['jwt'].value
@@ -2007,7 +2008,7 @@ class page(tester.tester):
         # IP address
         self.eq(ip.address, hit.ip.address)
 
-    def it_can_accesses_injected_variables(self):
+    def it_can_access_injected_variables(self):
         class lang(pom.page):
             def main(self):
                 req = www.application.current.request
