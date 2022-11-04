@@ -2028,7 +2028,7 @@ class page(tester.tester):
         tab = self.browser().tab()
         res1 = tab.get('/en/lang', ws)
         self.one(res1['span[lang=lang]'])
-        self.status(418, res)
+        self.status(418, res1)
 
     def it_raises_on_reserved_parameters(self):
         def flashes_ValueError(res):
