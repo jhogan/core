@@ -292,8 +292,18 @@ class site(asset.asset):
 
     @property
     def favicon(self):
-        """
-        XXX
+        """ When overriden by subclasses, this property returns a
+        `file.file` object that contains the binary data in its body to
+        represent a favicon (as would be requested automatically by
+        browsers as /favicon.ico).
+
+        By default, None is returned, since the base class can't now
+        what the subclass of `site` wants the favicon to be beforehand.
+
+        The `file` object is stored in the framework's file system when
+        the `site` object is initialized. This allows developers to
+        set the favicon data in this @property although it is served to
+        user agents like any other file would be.
         """
         return None
 
@@ -342,8 +352,15 @@ class site(asset.asset):
 
     @property
     def public(self):
-        """
-        XXX
+        """ Returns the public/ directory (`file.directory`) of this
+        `site`.
+
+        Though the directory returned is a framework entity (a
+        `file.directory`), this directory is analogous to the public/
+        directories that are typically found on websites. These
+        directories typically contain artifacts that need to be publicly
+        accessable such as CSS files, JavaScript files and favicon.ico
+        files.
         """
         dir = self.directory
         try:
