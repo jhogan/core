@@ -6425,9 +6425,9 @@ class attr:
             class artist(orm.entity):
                 name = str
 
-        Any ORM type can be passed in just the same way they are
-        notated in a class declaration. For example, the two statements
-        are equivalent::
+        Any ORM type or ORM class reference can be passed in just the
+        same way they are notated in a class declaration. For example,
+        the two statements are equivalent::
 
             class artist(orm.entity):
                 @orm.attr(float, 5, 1)
@@ -6581,12 +6581,14 @@ class attr:
             """
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
+
             elif entities in self.args[0].mro():
-                # Make entitiesmapping work with orm.attr decorator
-                # This was to get bot.logs, a getter for
-                # apriori.logs, working. It still may need some more
-                # testing. NOTE Untested
+                # Make entitiesmapping work with orm.attr decorator This
+                # was to get bot.logs, a getter for apriori.logs,
+                # working. It still may need some more testing. NOTE
+                # Untested
                 map = entitiesmapping(self.fget.__name__, self.args[0])
+
             else:
                 map = fieldmapping(*self.args, **self.kwargs)
 
