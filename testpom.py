@@ -782,17 +782,17 @@ class page(tester.tester):
         
         import carapacian_com
 
-        req = www._request(www.application())
+        req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'carapacian.com'}
         with orm.sudo(), orm.proprietor(party.company.carapacian):
             self.type(carapacian_com.site, req.site)
 
-        req = www._request(www.application())
+        req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
         with orm.sudo(), orm.proprietor(party.company.carapacian):
             self.type(carapacian_com.site, req.site)
 
-        req = www._request(www.application())
+        req = www.request(www.application())
         req.app.environment = {
             'HTTP_HOST': '380753fc.www.carapacian.com'
         }
@@ -804,6 +804,7 @@ class page(tester.tester):
         class realip(pom.page):
             def main(self):
                 nonlocal ip
+                req = www.application.current.request
                 ip = req.ip.address
 
         ws = foonet()
@@ -1214,8 +1215,9 @@ class page(tester.tester):
         class time(pom.page):
             def main(self):
                 # Ensure we have access to the request object from page.
+                qs = www.application.current.request.qs
                 self.main += dom.p(
-                    f'Query string from request: {www.request.qs}'
+                    f'Query string from request: {qs}'
                 )
 
         ws = foonet()
@@ -1267,8 +1269,9 @@ class page(tester.tester):
                     selected = ['US/Arizona']
                 )
 
-                if www.request.ispost:
-                    frm.post = www.request.body
+                req = www.application.current.request
+                if req.ispost:
+                    frm.post = req.body
 
         # Create site
         ws = foonet()
@@ -1459,10 +1462,8 @@ class page(tester.tester):
     def it_calls_language(self):
         class lang(pom.page):
             def main(self):
-                lang = www.request.language
-                self.main += dom.p('''
-                Lang: %s
-                ''' % lang)
+                lang = www.application.current.request.language
+                self.main += dom.p(f'Lang: {lang}')
 
         ws = foonet()
         pg = lang()
@@ -1497,7 +1498,9 @@ class page(tester.tester):
         jwt = None
         class authenticate(pom.page):
             def main(self):
-                global res
+                req = www.application.current.request
+                res = www.application.current.response
+
                 # Create the login form
                 frm = pom.forms.login()
                 self.main += frm
@@ -1525,6 +1528,7 @@ class page(tester.tester):
             """ A page to report on authenticated users.
             """
             def main(self):
+                req = www.application.current.request
                 usr = req.user
                 jwt = req.cookies('jwt')
 
@@ -1537,7 +1541,7 @@ class page(tester.tester):
 
         class logout(pom.page):
             def main(self):
-                global res
+                res = www.application.current.response
                 # Delete the cookie by setting the expiration date in
                 # the past.: 
                 # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
@@ -1632,6 +1636,7 @@ class page(tester.tester):
 
         class hitme(pom.page):
             def main(self):
+                req = www.application.current.request
                 req.hit.logs.write('Starting main')
                 dev = req.hit.useragent.devicetype
 
@@ -1643,6 +1648,9 @@ class page(tester.tester):
 
         class signon(pom.page):
             def main(self):
+                req = www.application.current.request
+                res = www.application.current.response
+
                 self.main += pom.forms.login()
 
                 if req.isget:
@@ -1655,13 +1663,13 @@ class page(tester.tester):
 
                 req.hit.logs.write(f'Authenticating {uid}')
                 try:
-                    www.request.user = self.site.authenticate(uid, pwd)
+                    req.user = self.site.authenticate(uid, pwd)
                 except pom.site.AuthenticationError:
                     req.hit.logs.write(f'Authenticated failed: {uid}')
                 else:
                     req.hit.logs.write(f'Authenticated {uid}')
 
-                    hdr = auth.jwt.getSet_Cookie(www.request.user)
+                    hdr = auth.jwt.getSet_Cookie(req.user)
                     res.headers += hdr
 
         # Set up site
@@ -2002,8 +2010,8 @@ class page(tester.tester):
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):
-                assert req is www.request
-                assert res is www.response
+                req = www.application.current.request
+                res = www.application.current.response
 
                 # Use req instead of www.request
                 lang = req.language

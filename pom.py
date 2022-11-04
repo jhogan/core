@@ -1750,27 +1750,18 @@ class page(dom.html):
                 # NOTE It's possible to __call__ a page object directly
                 # (not through an HTTP request). In that case, the
                 # www.request would be None.
-                app = www.application.current
+                req = www.application.current.request
 
-                req = res = None
-                if app:
-                    req = app.request
-                    res = app.response
-                if app and app.request and app.request.isevent:
+                if req and req.isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)
                     else:
                         meth = self._mainfunc
 
-                    globs = meth.__globals__
-                    globs['req'] = req
-                    globs['res'] = res
-
                     if eargs.handler:
                         meth(src=eargs.src, eargs=eargs)
                     else:
                         meth()
-                        
                 else:
                     try:
                         main = self._mainfunc
@@ -1779,11 +1770,6 @@ class page(dom.html):
                         raise AttributeError(
                             f'Page class needs main method: {cls}'
                         ) from ex
-
-                    # Inject global variables into main()
-                    globs = self._mainfunc.__func__.__globals__
-                    globs['req'] = www.request
-                    globs['res'] = www.response
 
                     # If there is an HTTP request object, set the
                     # `page`'s `lang` attribute to that of the
