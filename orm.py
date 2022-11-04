@@ -6916,6 +6916,7 @@ class fieldmapping(mapping):
 
         if self.isbytes or self.isstr:
             return self.max == self.min
+
         return False
 
     @property
