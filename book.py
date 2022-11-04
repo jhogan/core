@@ -6010,37 +6010,41 @@ with book('Hacking Carapacian Core'):
           # The person's email address.
           @orm.attr(str)
           def email(self, v):
+            # Set underlying value to lowercased version of the email
+            # address being set.
             attr(v.lower())
 
         per = person()
+
+        # Assign with some upper case characters
         per.email = 'JesseHogan@example.com'
 
+        # Returns all lowercase
         eq('jessehogan@example.com', per.email)
 
       print('''
         The signature of the `email` `@property` now contains a `v`
-        parameter, making it an imperative setter. The `v` will contain
+        parameter making it an imperative setter. The `v` will contain
         the value assigned to the attribute. The logic in the @property
-        changes a little, too. We use the value that is assigned to
+        changes a little too. We use the value that is assigned to
         email (`v`) and lowercase it. Then we pass this value to
         `attr()` thus setting the underlying value to a lowercase
         version. Since this is a setter, we don't return anything.
         Notice that the assertions work the same. The email address is
-        made lowercase all the same; just when the attribute is set, not
-        when it is gotton, thus to the user of the `person` class, the
-        decision to use a setter is inconsequential.
+        lowercased on assignment, but to the user of the `person` class,
+        this distinction is inconsequential.
 
         The declarative constraints placed on ORM types through the
         declarative notiation can be made on imperative attributes. For
         example, instead of:
 
           class person(orm.entity):
-              email = str, 7, 255
+              email = str, 3, 255
 
         we could write:
 
             class person(orm.entity):
-                @orm.attr(str, 7, 255)
+                @orm.attr(str, 3, 255)
                 def email(self):
                     return attr()
       ''')
