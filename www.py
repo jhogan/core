@@ -839,6 +839,7 @@ class request:
         # XXX Update commentaray for the refactor of this method and the
         # code that calls it.
         res = response(self)
+        application.current.response = res
 
         eargs = None
         if self.isevent:
@@ -895,9 +896,6 @@ class request:
             else:
                 raise
         finally:
-            # XXX Comment
-            self.app.response = res
-
             # Finish of the hit log
             self.log()
 
