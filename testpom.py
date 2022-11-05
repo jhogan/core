@@ -1587,7 +1587,6 @@ class page(tester.tester):
             frm['input[name=password]'].first.value = usr.password
 
             # Post the credentials to /en/authenticate
-            print(i)
             res = tab.post('/en/authenticate', ws=ws, frm=frm)
 
             # If the user is authentic (if the user was previously saved

@@ -39,8 +39,6 @@ progress' or 'completed'.
 ``dispatches``. It will process the ``dispatch`` by using logic in the
 third.py module ("third" as in third-party) to send the ``message`` to a
 third party provider.
-
-TODOs:
 """
 from datetime import datetime, date
 from dbg import B

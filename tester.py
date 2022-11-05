@@ -724,9 +724,9 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
-                req = self.get(pg, ws)
-                self.html = req.html
-                return req
+                res = self.get(pg, ws)
+                self.html = res.html
+                return res
 
             def get(self, pg, ws, hdrs=None):
                 """ Issues an HTTP GET request for the page `pg` to the

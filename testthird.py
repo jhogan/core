@@ -22,7 +22,7 @@ import party
 import third
 import www
 
-class test_postmark(tester.tester):
+class postmark(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True

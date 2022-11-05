@@ -23,7 +23,7 @@ import tester
 import third
 import uuid
 
-class test_message(tester.tester):
+class message_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -319,7 +319,7 @@ class test_message(tester.tester):
             with orm.su(usr1):
                 self.expect(orm.AuthorizationError, msg.orm.reloaded)
 
-class test_contactmechanism_message(tester.tester):
+class contactmechanism_message(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -427,7 +427,7 @@ class test_contactmechanism_message(tester.tester):
             with orm.su(sb):
                 self.expect(None, reloaded)
 
-class test_dispatch(tester.tester):
+class dispatch(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -554,7 +554,7 @@ class test_dispatch(tester.tester):
             with orm.su(sb):
                 self.expect(None, dis.save)
 
-class test_status(tester.tester):
+class status(tester.tester):
     def it_calls_creatability(self):
         with orm.sudo():
             with orm.proprietor(party.company.carapacian):
