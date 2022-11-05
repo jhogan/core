@@ -361,11 +361,13 @@ class application:
                     # assign empty str for the bytes() function.
                     body = ''
 
-                # XXX Comment
-                # Return the responses body to the browser
+                # Return the responses body to the browser in accordance
+                # with the WSGI protocol
                 if isinstance(body, bytes):
                     return iter([body])
                 else:
+                    # Before returning, assume body is a UTF-8 str so
+                    # convert accordingly.
                     return iter([bytes(body, 'UTF-8')]) 
 
             type(self)._set_current(None)
@@ -412,7 +414,15 @@ class request:
 
     @property
     def forfile(self):
-        # XXX Comment
+        """ Return True if the request is for a file, False otherwise.
+
+        Most requests will be for a page (a subclass of pom.page) and
+        not a file (a subclass of inode.file). When a request is made
+        for a page, the `page` class is instantiated and called, and its
+        resultant HTML is returned. When a request for a file is made,
+        the framework's file system (governed by file.py) will return
+        the file's body to the requestor (if it can be found).
+        """
         return self.path and not self.page
 
     def __repr__(self):
