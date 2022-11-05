@@ -500,17 +500,8 @@ class site(asset.asset):
         found, None is returned.
         """
 
-        # XXX We may not need the try:except here because the pages
-        # collection will do the same thing if we use its __call__
-        # method::
-        #
-        #     return self.pages(path)
-
         path = self.lang + '/index' if path == '/' else path
-        try:
-            return self.pages[path]
-        except IndexError:
-            return None
+        return self.pages(path)
 
     @property
     def lang(self):
