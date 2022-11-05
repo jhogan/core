@@ -269,7 +269,7 @@ class postmark(emailer):
             body['ReplyTo'] = msg.replyto.name
 
         # Build the HTTP request object
-        req = www._request(url=self.base / 'email')
+        req = www.request(url=self.base / 'email')
 
         req.method = 'POST'
         req.headers += 'Accept: application/json'

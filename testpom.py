@@ -2146,6 +2146,7 @@ class page(tester.tester):
         div0 = div1 = div2 = None
         class clickme(pom.page):
             def btn_onclick(self, src, eargs):
+                req = www.application.current.request
                 eargs.html['p'].only += dom.strong('Thanks')
                 req.hit.logs += ecommerce.log(message='I got clicked')
 
@@ -2183,7 +2184,7 @@ class page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.navigate('/en/clickme', ws)
+        res = tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 
@@ -2267,7 +2268,7 @@ class page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.navigate('/en/clickme', ws)
+        res = tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 
@@ -2427,7 +2428,7 @@ class page(tester.tester):
         tab = self.browser().tab()
 
         # GET the clickme page
-        tab.navigate('/en/clickme', ws)
+        res = tab.navigate('/en/clickme', ws)
 
         self.status(200, res)
 

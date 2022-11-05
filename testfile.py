@@ -226,6 +226,8 @@ class dom_file(tester.tester):
     def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
             def main(self, uid: uuid.UUID):
+                req = www.application.current.request
+                res = www.application.current.response
                 if req.isget:
                     return
 
