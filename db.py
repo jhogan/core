@@ -532,8 +532,13 @@ class executor(entitiesmod.entity):
             caused the need for a rollback.
             """
             
-            logs.warning(f'Rollback because {type(ex)} "{ex}"')
             conn.rollback()
+
+            msg = 'Rollback because '
+            with suppress(Exception):
+                msg += f'{type(ex)} "{ex}"'
+                logs.warning(msg)
+
             raise ex
 
         def reconnect(i, conn, ex):
