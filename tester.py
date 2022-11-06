@@ -412,6 +412,24 @@ class tester(entities.entity):
         sec = orm.security()
         sec.user       = user  if user  else self.user
         sec.proprietor = propr if propr else self.company
+
+        # If propr was passed in
+        if propr:
+            # Ensure that propr is properly persisted
+            with orm.override(), orm.sudo():
+                try:
+                    # Try reloading...
+                    propr.orm.reloaded()
+                except db.RecordNotFoundError:
+                    # Save propr if it doesn't exist in database
+                    propr.save()
+                else:
+                    # If it already exists in database, ensure that the
+                    # persistencestate refrects this.
+                    sup = propr
+                    while sup:
+                        sup.orm.persistencestate = False, False, False
+                        sup = sup.orm._super
             
     def recreateprinciples(self):
         principle().recreate()
