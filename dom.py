@@ -1746,7 +1746,7 @@ class element(entities.entity):
         the immediate parent is returned, if 1 the grandparent, and so
         on. 
 
-        Consider using propreties like ``parent`` and ``grandparent``
+        Consider using properties like ``parent`` and ``grandparent``
         to get the parent element that you want. This method is useful
         when you don't know ahead of time how far up the the tree you
         need to go.

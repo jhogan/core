@@ -1492,7 +1492,7 @@ class page(tester.tester):
     def it_authenticates(self):
         # XXX Get this test to run alone:
         #
-        #     ./testpom page.it_authenticates
+        #     ./testpom page.it_authenticates -T
         #
 
         jwt = None

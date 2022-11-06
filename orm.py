@@ -952,7 +952,7 @@ class where(entitiesmod.entity):
     """ Represents a WHERE clause of an SQL statement. """
 
     def __init__(self, es, pred, args):
-        """ Sets the initial propreties for the ``where`` object. 
+        """ Sets the initial properties for the ``where`` object. 
         
         :param:  entities  es: The ``entities`` collection associated
         with this ``where`` object.

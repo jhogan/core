@@ -8,7 +8,7 @@
 
 # TODO Add Tests
 from config import config
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dbg import B
 from MySQLdb.constants.CR import SERVER_GONE_ERROR
 from MySQLdb.constants.CR import SERVER_LOST

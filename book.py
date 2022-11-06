@@ -1497,7 +1497,7 @@ with book('Hacking Carapacian Core'):
             true(dgs.ispopulated)
 
           print('''
-            Though the Boolean count propreties may seem redundant with
+            Though the Boolean count properties may seem redundant with
             `.count`, they can be useful in making your code more
             expressive and verbal, and thus easier to read and
             understand.

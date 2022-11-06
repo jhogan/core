@@ -15,6 +15,7 @@ from pprint import pprint
 from textwrap import dedent
 from types import FunctionType
 import builtins
+import db
 import dbg
 import dom
 import ecommerce
