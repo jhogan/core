@@ -10650,6 +10650,7 @@ class orm:
         """
         return isinstance(self.instance, entity)
 
+    # TODO We should rename persistencestate(s) to just "state(s)". 
     @property
     def persistencestates(self):
         """ Returns a list of persistencestate tuples for each of the
