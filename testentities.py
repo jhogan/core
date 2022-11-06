@@ -1387,8 +1387,14 @@ class entities_(tester.tester):
         self.assertFalse(ks.isvalid)
         self.assertInValid(ks)
         self.assertTrue(ks.brokenrules.issingular)
-        self.assertEq(ks.brokenrules.first.message, 'Names must be strings')
-        self.assertEq(str(ks.brokenrules.first), 'Names must be strings')
+        msg = 'Names must be strings'
+        str = (
+            f'brokenrule({msg}, property=None, '
+            'type=None, entity=None)'
+        )
+
+        self.assertEq(msg, ks.brokenrules.first.message)
+        self.assertEq(str, builtins.str(ks.brokenrules.first))
 
         # Break all of the knights broken rules and test each entity's 
         # broken rules collection individually
@@ -1397,8 +1403,8 @@ class entities_(tester.tester):
             self.assertFalse(k.isvalid)
             self.assertInValid(k)
             self.assertTrue(k.brokenrules.issingular)
-            self.assertEq(k.brokenrules.first.message, 'Names must be strings')
-            self.assertEq(str(k.brokenrules.first), 'Names must be strings')
+            self.assertEq(msg, k.brokenrules.first.message)
+            self.assertEq(str, builtins.str(k.brokenrules.first))
 
         # Now test the knigts collection's broken rules.
         self.assertFalse(ks.isvalid)
@@ -1406,8 +1412,8 @@ class entities_(tester.tester):
         self.assertCount(4, ks.brokenrules)
 
         for br in ks.brokenrules:
-            self.assertEq(br.message, 'Names must be strings')
-            self.assertEq(str(br), 'Names must be strings')
+            self.assertEq(msg, br.message)
+            self.assertEq(str, builtins.str(br))
 
     def it_raises_onadd(self):
         """ The onappended event is called whenever an entity is added to the
