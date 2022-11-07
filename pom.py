@@ -1754,12 +1754,11 @@ class page(dom.html):
             try:
                 self._calling = True
 
-                # XXX Update NOTE
-                # NOTE It's possible to __call__ a page object directly
-                # (not through an HTTP request). In that case, the
-                # www.request would be None.
                 req = www.application.current.request
 
+                # NOTE It's possible to __call__ a page object directly
+                # (not through an HTTP request). In that case, the
+                # req would be None.
                 if req and req.isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)

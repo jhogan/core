@@ -215,7 +215,7 @@ class application:
             # invalid.
             self.demand()
 
-            # Make the actual request
+            # Make the actual request and get the response object
             res = req()
 
         except Exception as ex:
@@ -868,8 +868,6 @@ class request:
         #     example, if the `click()` method of a <button> caused the
         #     event, trigger would be 'click'.
 
-        # XXX Update commentaray for the refactor of this method and the
-        # code that calls it.
         res = response(self)
         application.current.response = res
 

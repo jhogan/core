@@ -1357,8 +1357,7 @@ class page(tester.tester):
         self.eq('ERROR', rec.levelname)
 
     def it_returns_404_when_file_doesnt_exist(self):
-        """
-        XXX Comment
+        """ Ensure a 404 is return when requesting a file (not a page).
         """
         ws = foonet()
 
