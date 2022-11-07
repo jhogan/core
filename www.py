@@ -935,6 +935,9 @@ class request:
                         res.body = file.body
                     
         except HttpError as ex:
+            # Set the responses status to the exception's status. 
+            res.status = ex.status
+
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the page's HTML.
 
@@ -945,8 +948,6 @@ class request:
                 self.page.flash(ex.flash)
                 res.body = pg.main.html
 
-                # Set the response status of the response object.
-                res.status = ex.status
             else:
                 raise
         finally:
