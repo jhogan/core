@@ -965,10 +965,28 @@ class resource(file):
         """ This event handler is called before the resource is saved to
         the database.
         """
-        # Cancel saving resource to database if local is False. See the
-        # comments for the ``local`` parameter in the docstring for
-        # resource.__init__.
-        eargs.cancel = not self.local
+        if not self.local:
+            # Cancel saving resource to database if local is False. See
+            # the comments for the ``local`` parameter in the docstring
+            # for resource.__init__.
+            eargs.cancel = True
+
+            # XXX Write tests to ensure that when non-local resources
+            # are "saved', their persistencestate is Falsified, and they
+            # have broken rules (particularly once related to "Owner
+            # id does not match ORM ID")
+
+            # Since we aren't saving, make sure the entity's
+            # persistencestate is Falsified. Since this inode will be in
+            # the radix cache, it is possible that at a later time, an
+            # attempt to persist it could be made. In that case, we
+            # don't want that to happen because, if the
+            # orm.security.owner is different, then the entity will be
+            # invalid, causing the save() operation raise an Exception.
+            sup = self
+            while sup:
+                sup.orm.persistencestate = False, False, False
+                sup = sup.orm._super
 
     # A cryptographic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s
