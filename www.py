@@ -180,6 +180,12 @@ class application:
 
         res = None
 
+        sec = orm.security()
+
+        # Back up the existing owner. We will restore it in the
+        # `finally` block.
+        own = sec.owner
+
         try:
             # Clear state data currently maintained by the WSGI
             # application.
@@ -187,8 +193,6 @@ class application:
 
             # XXX I think this can be removed
             type(self)._set_current(self)
-
-            sec = orm.security()
 
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
@@ -348,6 +352,8 @@ class application:
                 )
 
         finally:
+            sec.owner = own
+
             if not break_:
                 # Use the WSGI start_response to send the HTTP status
                 # and headers back to the browser.
