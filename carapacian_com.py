@@ -16,13 +16,6 @@ import file
 import party
 import pom
 
-# XXX Running ./test.py twice seems to report carapacian_com.site
-# integrity see IntegrityErrors.txt as well as:
-#
-#     [file_directory]                                                      FAIL
-#     RecordNotFoundError: RecordNotFoundError('A single record was not
-#     found') in it_creates_floaters_as_a_carapacian_property
-
 class sites(pom.sites):
     pass
 

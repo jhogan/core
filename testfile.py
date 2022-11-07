@@ -280,8 +280,8 @@ class dom_file(tester.tester):
             usr.save()
 
             # Post the file. Reference the user's id in the URL.
-            res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
-            self.status(201, res1)
+            res = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+            self.status(201, res)
 
             usr = usr.orm.reloaded()
             f1 = usr.directory['var/avatars/default.gif']

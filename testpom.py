@@ -1134,11 +1134,6 @@ class page(tester.tester):
         self.eq(0, content_length)
 
     def it_calls_page_coerses_datatypes(self):
-        # XXX Ensure we can run:
-        #
-        #      ./testpom.py page.it_calls_page_coerses_datatypes -Tb
-        #
-
         class time(pom.page):
             def main(
                 self, 
@@ -1490,11 +1485,6 @@ class page(tester.tester):
         self.eq('Lang: en', (tab['main p'].first.text))
 
     def it_authenticates(self):
-        # XXX Get this test to run alone:
-        #
-        #     ./testpom page.it_authenticates -T
-        #
-
         jwt = None
         class authenticate(pom.page):
             def main(self):

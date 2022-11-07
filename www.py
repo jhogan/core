@@ -185,6 +185,7 @@ class application:
             # application.
             self.clear()
 
+            # XXX I think this can be removed
             type(self)._set_current(self)
 
             sec = orm.security()
@@ -192,6 +193,8 @@ class application:
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
+            # XXX Write test to ensure that orm.security().owner is set
+            # back to what it originally was (see finally block)
             sec.owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
@@ -859,7 +862,6 @@ class request:
         #     example, if the `click()` method of a <button> caused the
         #     event, trigger would be 'click'.
 
-        # XXX Comment on changes to the return type.
         # XXX Update commentaray for the refactor of this method and the
         # code that calls it.
         res = response(self)
@@ -1821,7 +1823,7 @@ class HttpException(Exception):
         self.response = res
 
     @classmethod
-    def create(cls, msg, res, _attop=True):
+    def create(cls, msg, res, _atop=True):
         """ Creates and returns a subclass of ``cls`` that corresponds
         to thet HTTP ``status`` property in ``res``. 
 
@@ -1840,14 +1842,14 @@ class HttpException(Exception):
 
         :param: res www.response: The HTTP response object.
 
-        :param: _attop bool: Since ``create`` is a recursive method,
+        :param: _atop bool: Since ``create`` is a recursive method,
         ``atop`` is used internally to determine when the method is at
         the top of the recursion stack.
         """
         for sub in cls.__subclasses__():
             
             # Recurse
-            ex = sub.create(msg, res, _attop=False)
+            ex = sub.create(msg, res, _atop=False)
 
             # Return if the sub was able to create one
             if ex:
@@ -1862,7 +1864,7 @@ class HttpException(Exception):
                     return sub(msg=msg, res=res)
 
         # If we are at the top call of this recursive method...
-        if _attop:
+        if _atop:
             
             # If we are here, then recursing through the subclasses did
             # not result in the discovery of the correct exception
