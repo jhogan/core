@@ -4687,12 +4687,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg = None
 
                             if own:
-                                # The security contekt's owner must
-                                # match the entity if we are not root.
-                                if not own.isroot and own.id != map.value:
-                                    msg = (
-                                        'Owner id does not match orm id'
-                                    )
+                                if own.isroot:
+                                    pass
+                                else:
+                                    # The security context's owner must
+                                    # match the entity if we are not
+                                    # root.
+                                    if own.id != map.value:
+                                        msg = (
+                                            'Owner id does not match '
+                                            'ORM id'
+                                        )
                             else:
                                 # NOTE this could be the result of a
                                 # context manager, such as orm.su() or
