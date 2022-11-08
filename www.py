@@ -889,9 +889,11 @@ class request:
             )
 
         try:
-            # Invoke the page
-            # XXX Use self.forfile
-            if pg := self.page:
+            # If the request is for a page (pom.page)
+            if self.forpage:
+                # Invoke the page
+                pg = self.page
+
                 # If we are dealing with a page, the content-type will
                 # be text/html
                 res.headers += 'Content-Type: text/html'
@@ -917,7 +919,10 @@ class request:
                                 res.body = eargs.html.html
                     else:
                         res.body = f'<!DOCTYPE html>\n{pg.html}'
-            else:
+            elif self.forfile:
+                # ... if the request is for a file from the framework's
+                # file system.
+
                 path = None
                 path = self.path
                 pub = self.site.public
@@ -937,6 +942,11 @@ class request:
                     if not self.ishead:
                         # Assign the file data to the response object
                         res.body = file.body
+            else:
+                # This should never happen
+                raise ValueError(
+                    'Request is neither for a page or a file'
+                )
                     
         except HttpError as ex:
             # Set the responses status to the exception's status. 
