@@ -1208,8 +1208,14 @@ class page(tester.tester):
         pg = time()
         ws.pages += pg
         
+        own = orm.security().owner
+
         tab = self.browser().tab()
         res = tab.get('/en/time?herp=derp', ws)
+
+        # Calling the website will change the orm.security.owner to
+        # 'anonymous' since we don't put valid JWT in the header. 
+        self.is_(orm.security().owner, own)
 
         ps = res['p']
         self.one(ps)
