@@ -926,7 +926,6 @@ class request:
                 path = None
                 path = self.path
                 pub = self.site.public
-
                 try:
                     # Try to get the file from the website's public
                     # directory
@@ -955,9 +954,6 @@ class request:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the page's HTML.
 
-            # XXX If pg is None because we are getting a public
-            # resource, and an exception happens, write tests to ensure
-            # the correct HTTP response will be returned.
             if ex.flash:
                 self.page.flash(ex.flash)
                 res.body = pg.main.html
