@@ -954,7 +954,7 @@ class request:
             # If the page raised an HTTPError with a flash message, add
             # the flash message to the page's HTML.
 
-            if ex.flash:
+            if self.forpage and ex.flash:
                 self.page.flash(ex.flash)
                 res.body = pg.main.html
             else:
