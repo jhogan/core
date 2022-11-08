@@ -431,6 +431,15 @@ class request:
         """
         return self.path and not self.page
 
+    @property
+    def forpage(self):
+        """ If this request is for a page (`pom.page`), return True. If
+        it is for a file (file.file) return False.
+
+        See `request.forfile` for more.
+        """
+        return not self.forfile
+
     def __repr__(self):
         """ A string representation of the HTTP request.
         """
