@@ -779,7 +779,6 @@ class page(tester.tester):
         self.true('Page class needs main method' in msg)
 
     def it_fallsback_to_domain(self):
-        
         import carapacian_com
 
         req = www.request(www.application())

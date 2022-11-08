@@ -191,14 +191,11 @@ class application:
             # application.
             self.clear()
 
-            # XXX I think this can be removed
             type(self)._set_current(self)
 
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
-            # XXX Write test to ensure that orm.security().owner is set
-            # back to what it originally was (see finally block)
             sec.owner = ecommerce.users.anonymous
 
             # Get a reference to the application HTTP request object
@@ -945,7 +942,6 @@ class request:
             if ex.flash:
                 self.page.flash(ex.flash)
                 res.body = pg.main.html
-
             else:
                 raise
         finally:
