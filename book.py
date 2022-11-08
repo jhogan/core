@@ -6025,14 +6025,16 @@ with book('Hacking Carapacian Core'):
       print('''
         The signature of the `email` `@property` now contains a `v`
         parameter making it an imperative setter. The `v` will contain
-        the value assigned to the attribute. The logic in the @property
-        changes a little too. We use the value that is assigned to
-        email (`v`) and lowercase it. Then we pass this value to
-        `attr()` thus setting the underlying value to a lowercase
-        version. Since this is a setter, we don't return anything.
-        Notice that the assertions work the same. The email address is
-        lowercased on assignment, but to the user of the `person` class,
-        this distinction is inconsequential.
+        the value assigned to the attribute. 
+
+        The logic in the `@property` changes a little too. We use the
+        value that is assigned to `email` (`v`) and lowercase it. Then
+        we pass this value to `attr()` thus setting the underlying value
+        to a lowercase version of the email address. Since this is a
+        setter, we don't return anything.  Notice that the assertions
+        work the same. The email address is lowercased on assignment,
+        but to the user of the `person` class, this distinction is
+        inconsequential.
 
         The declarative constraints placed on ORM types through the
         declarative notiation can be made on imperative attributes. For
@@ -6049,6 +6051,38 @@ with book('Hacking Carapacian Core'):
                     return attr()
       ''')
 
+    with section('Inheritance'):
+      print('''
+        A important feature of object-oriented design is the use of
+        inheritence to create robust object models. The ORM extends
+        Python's inheritence model to allow us to create **subentities**
+        (i.e., subclasses) in our entity models which can seemlessly be
+        persisteted.
+
+        A **subentity** is simply a class that inherits from an entity.
+        Let's create a small object model to demonstrate the basic use
+        of inheritence for entity classes.
+      ''')
+
+      with listing('A basic object model that uses inheritence'):
+        class products(orm.entities):
+          name = str
+
+        class product(orm.entity):
+          name = str
+
+        class goods(products):
+          pass
+
+        class good(product):
+          pass
+
+        class services(products):
+          pass
+
+        class service(product):
+          pass
+
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
       #
@@ -6064,9 +6098,6 @@ with book('Hacking Carapacian Core'):
       ...
 
     with section('ORM events'):
-      ...
-
-    with section('Inheritance'):
       ...
 
     with section('Retrieving data'):
