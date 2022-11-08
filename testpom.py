@@ -689,16 +689,6 @@ class page(tester.tester):
 
         orm.security().override = True
         
-    def it_gets_favicon(self):
-        ws = foonet()
-        tab = self.browser().tab()
-        res = tab.get('/favicon.ico', ws)
-        mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
-        self.ok(res)
-        self.eq(mime, res.contenttype)
-        self.type(bytes, res.body)
-        self.eq(b64decode(Favicon), res.body)
-
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -1354,6 +1344,61 @@ class page(tester.tester):
         )
         
         self.eq('ERROR', rec.levelname)
+
+    def it_gets_favicon(self):
+        ws = foonet()
+        brw = self.browser()
+        tab = brw.tab()
+
+
+        hit = ecommerce.hits.last
+        res = tab.get('/favicon.ico', ws)
+
+        if hit:
+            self.ne(hit.id, ecommerce.hits.last.id)
+
+        hit = ecommerce.hits.last
+        self.status(200, hit)
+        self.eq(0, hit)
+
+        # JWT
+        self.none(hit.isjwtvalid)
+
+        # Page path
+        self.eq('/favicon.ico', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('imtherefere.com', hit.url.address)
+
+        # user
+        self.none(hit.user)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
+        self.ok(res)
+        self.eq(mime, res.contenttype)
+        self.type(bytes, res.body)
+        self.eq(b64decode(Favicon), res.body)
 
     def it_returns_404_when_file_doesnt_exist(self):
         """ Ensure a 404 is return when requesting a file (not a page).
