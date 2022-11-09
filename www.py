@@ -824,6 +824,10 @@ class request:
         usually would be no language. In that case, None is returned.
         '''
 
+        # Return None if this request is for a file.
+        if self.forfile:
+            return None
+
         try:
             # TODO When the language code is not given, Accept-Language
             # can be used to work out the best language.
