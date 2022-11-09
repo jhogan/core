@@ -812,10 +812,16 @@ class request:
 
     @property
     def language(self):
-        ''' Return the language code. The default is 'en' for English.
-        
-        When the request is for a page hosted by the framework, this is
-        usually the first segment of the URL path. 
+        ''' Return the language code for this request.
+
+        The language code is usually given in the URL:
+
+            https://www.example.com/en/home
+
+        Above, 'en' is the `language` and would be returned.
+
+        For HTTP requests intended to get or retrieve a file, there
+        usually would be no language. In that case, None is returned.
         '''
 
         try:

@@ -120,6 +120,10 @@ class foonet(pom.site):
 
     @property
     def favicon(self):
+        # XXX Write test to ensure that when this property returns
+        # a file with different data, the file in the framework's changes
+        # the file on the HDD changes, and the value returned from a GET
+        # /favicon.ico changes.
         r = file.file()
         r.name = 'favicon.ico'
         r.body = b64decode(Favicon)

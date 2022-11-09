@@ -1546,7 +1546,7 @@ class directory(tester.tester):
             elif i == 3:
                 assert False
 
-class file_resource(tester.tester):
+class resource(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         clean()
