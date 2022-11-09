@@ -1746,5 +1746,38 @@ class file_resource(tester.tester):
         # presist the radix cache.
         file.directory.radix.save()
 
+    def it_saves_non_local(self):
+        """ Ensure that call to resource.save on a non-local resource
+        file will result in the resource not being saved to the HDD or
+        the DB.
+        """
+
+        # Create non-local resource
+        f = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.41/vue.cjs.js",
+            integrity="sha512-7m9S6PzUY75+/V5GIWRP19NFD1MgYpzbmbbSfUMnj8PMtkOj/XZs4BmxXvXku2litdO4qDrVhGtFkk2MVWlpcg==",
+            local = False
+        )
+
+        # It will be marked isnew
+        self.true(f.orm.isnew)
+        self.false(f.orm.isdirty)
+        self.false(f.orm.ismarkedfordeletion)
+
+        f.save()
+
+        # After saving, the isnew flag is Falsified even though it
+        # hasn't really been saved anywhere.
+        self.false(f.orm.isnew)
+        self.false(f.orm.isdirty)
+        self.false(f.orm.ismarkedfordeletion)
+
+        # It doesn't exist in HDD
+        self.false(f.exists)
+        self.false(os.path.exists(f.path))
+
+        # It doesn't exist in DB
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
+
 if __name__ == '__main__':
     tester.cli().run()

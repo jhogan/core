@@ -971,11 +971,6 @@ class resource(file):
             # for resource.__init__.
             eargs.cancel = True
 
-            # XXX Write tests to ensure that when non-local resources
-            # are "saved', their persistencestate is Falsified, and they
-            # have broken rules (particularly once related to "Owner
-            # id does not match ORM ID")
-
             # Since we aren't saving, make sure the entity's
             # persistencestate is Falsified. Since this inode will be in
             # the radix cache, it is possible that at a later time, an
