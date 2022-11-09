@@ -1355,21 +1355,35 @@ class page(tester.tester):
         
         self.eq('ERROR', rec.levelname)
 
-    def it_gets_favicon(self):
+    def it_gets_favicon_creating_hit_log(self):
         ws = foonet()
-        brw = self.browser()
+
+        # Create a browser tab
+        ip = ecommerce.ip(address='34.56.78.90')
+        brw = self.browser(
+            ip=ip,
+            useragent = (
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) '
+            'AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 '
+            'Mobile/9B179 Safari/7534.48.3'
+            )
+        )
+
         tab = brw.tab()
 
-
+        tab.referer = 'imtherefere.com'
         hit = ecommerce.hits.last
         res = tab.get('/favicon.ico', ws)
+        self.ok(res)
 
         if hit:
             self.ne(hit.id, ecommerce.hits.last.id)
 
         hit = ecommerce.hits.last
         self.status(200, hit)
-        self.eq(0, hit)
+
+        # Size
+        self.eq(0, hit.size)
 
         # JWT
         self.none(hit.isjwtvalid)
@@ -1381,7 +1395,7 @@ class page(tester.tester):
         self.eq(ws.id, hit.site.id)
 
         # Language
-        self.eq('en', hit.language)
+        self.none(hit.language)
 
         # Method
         self.eq('GET', hit.method)
@@ -1404,6 +1418,29 @@ class page(tester.tester):
             brw.useragent.string
         )
 
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
+    def it_gets_favicon(self):
+        ws = foonet()
+
+        # Create a browser tab
+        tab = self.browser().tab()
+
+        res = tab.get('/favicon.ico', ws)
         mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
         self.ok(res)
         self.eq(mime, res.contenttype)

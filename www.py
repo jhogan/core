@@ -978,7 +978,6 @@ class request:
         request, create it.
         """
 
-        # XXX Make sure non-page requests are hit properly and tested
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
