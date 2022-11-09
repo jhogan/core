@@ -6066,7 +6066,7 @@ with book('Hacking Carapacian Core'):
 
       with listing('A basic object model that uses inheritence'):
         class products(orm.entities):
-          name = str
+          pass
 
         class product(orm.entity):
           name = str
@@ -6075,13 +6075,63 @@ with book('Hacking Carapacian Core'):
           pass
 
         class good(product):
-          pass
+          address = str
 
         class services(products):
           pass
 
         class service(product):
-          pass
+          level = str
+
+      print('''
+        Here we have there ORM entities: `products`, `goods` and
+        `services`. Goods and services are types of products therefore
+        those classes inherit from `product`. `goods` are special
+        types of products in that they are physical and therefore have
+        a location which we have called `address`. A
+        `service` is special in a different way: it doesn't have a
+        physical location but does have a `level`. Consider subscribing
+        to a SaSS service and being offered the level of "Basic",
+        "Premium", or "Professional".
+
+        Now that we've established the object model, let's see how to
+        use it to create and persist products, goods and services:
+      ''')
+
+      with listing('Using inherited objects'):
+        
+        # Create a good
+        g = good(
+          name = 'System76 Lemur Pro Laptop',
+          address = 'Warehouse 1'
+        )
+
+        eq('System76 Lemur Pro Laptop', g.name)
+        eq('Warehouse 1', g.address)
+
+        # Save the good
+        g.save()
+
+        g1 = g.orm.reloaded()
+
+        eq('System76 Lemur Pro Laptop', g1.name)
+        eq('Warehouse 1', g1.address)
+
+      print('''
+        Here we are simply creating a 'good' and saving it. Notice that
+        we able to use the `name` attribute just as we use the `address`
+        attribute even though `name` was defined in the `product` base
+        class. This is what we would expect from normal inheritence
+        &mdash; although we woudn't necessarily expect to be able to set
+        the `name` attributes through the constructor. We save the `good`
+        and reload it. Note that the `save()` operation ensures both
+        the `name` and `address` are saved without any explicit
+        reference to the `product` base class. The ORM is working hard
+        behind the scenes to ensure that peristence and attribute access
+        work seemlessly when using inheritence.
+      ''')
+
+        
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
