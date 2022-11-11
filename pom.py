@@ -286,6 +286,8 @@ class site(asset.asset):
                 if favicon := self.favicon:
                     # Add the favicon.ico to public/
                     pub += favicon
+            else:
+                favicon.body = self.favicon.body
 
             # Save the site plus its associations and directories
             self.save()

@@ -120,10 +120,6 @@ class foonet(pom.site):
 
     @property
     def favicon(self):
-        # XXX Write test to ensure that when this property returns
-        # a file with different data, the file in the framework's changes
-        # the file on the HDD changes, and the value returned from a GET
-        # /favicon.ico changes.
         r = file.file()
         r.name = 'favicon.ico'
         r.body = b64decode(Favicon)
@@ -1433,6 +1429,49 @@ class page(tester.tester):
 
         # IP address
         self.eq(ip.address, hit.ip.address)
+
+    def it_gets_updated_favicon(self):
+        """
+            XXX comment
+        """
+        ws = foonet()
+
+        # Create a browser tab
+        tab = self.browser().tab()
+
+        res = tab.get('/favicon.ico', ws)
+        mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
+        self.ok(res)
+        self.eq(mime, res.contenttype)
+        self.type(bytes, res.body)
+        self.eq(b64decode(Favicon), res.body)
+
+
+        body = b64decode(GoogleFavicon)
+        @property
+        def favicon(self):
+            r = file.file()
+            r.name = 'favicon.ico'
+            r.body = body
+            return r
+
+        prop = foonet.__dict__['favicon']
+        try:
+            foonet.favicon = favicon
+            ws = foonet()
+            res = tab.get('/favicon.ico', ws)
+            mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
+            self.ok(res)
+            self.type(bytes, res.body)
+            self.eq(body, res.body)
+
+            favicon = ws.public['favicon.ico']
+            self.eq(body, favicon.body)
+
+            with open(favicon.path, 'rb') as f:
+                self.eq(body, f.read())
+        finally:
+            foonet.favicon = prop
 
     def it_gets_favicon(self):
         ws = foonet()
