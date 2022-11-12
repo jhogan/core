@@ -438,6 +438,27 @@ class request:
 
         See `request.forfile` for more.
         """
+
+        # TODO To distinguish between page and file request, we should
+        # at least see if the first element of the path (e.g.,
+        # '/en/index') is an ISO language code (probably ISO 639-1)
+        # probably using the pycountry package.
+        #
+        # However, this gets us halfway there. What if there is a
+        # directory under public/ called en/. If we wanted to get the
+        # file:
+        #
+        #     GET /en/some.txt
+        #
+        # this URL would be interpreted as a page request and probably
+        # return 404.
+        #
+        # Testing the Accept request header
+        # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept)
+        # and developing a content negotiation strategy
+        # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation)
+        # may be the solution here.
+
         return not self.forfile
 
     def __repr__(self):

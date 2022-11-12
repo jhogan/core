@@ -818,7 +818,6 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     }
 );
 '''
-
         #// Return the JavaScript
         return r
 
