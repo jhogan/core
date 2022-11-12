@@ -6073,7 +6073,7 @@ with book('Hacking Carapacian Core'):
           pass
 
         class good(product):
-          address = str
+          code = str
 
         class services(products):
           pass
@@ -6087,27 +6087,25 @@ with book('Hacking Carapacian Core'):
         `services`. Goods and services are types of products therefore
         the `goods` and `services` classes inherit from `product`. 
 
-        According to the model, `goods` are special types of `products`
-        in that they are physical and therefore have a location which we
-        have called `address`. A `service` is special in a different
-        way: it doesn't have a physical location but does have a
-        `level`. Consider subscribing to a SaSS service and being
-        offered the *level* of "Basic", "Premium", or "Professional".
+        According to the model, `goods` have a `code` associated with
+        them which customer service representatives can use to reference
+        them.  A `service ` has a ``level` attribute to describe
+        the its level (consider subscribing to a SaSS service and being
+        offered the *level* of "Basic", "Premium", or "Professional").
 
         Now that we've established the object model, let's see how to
         use it to create and persist products, goods and services:
       ''')
 
       with listing('Using inherited objects'):
-        
         # Create a good
         g = good(
           name = 'System76 Lemur Pro Laptop',
-          address = 'Warehouse 1'
+          code = 'lemp11'
         )
 
         eq('System76 Lemur Pro Laptop', g.name)
-        eq('Warehouse 1', g.address)
+        eq('lemp11', g.code)
 
         # Save the good
         g.save()
@@ -6115,18 +6113,18 @@ with book('Hacking Carapacian Core'):
         g1 = g.orm.reloaded()
 
         eq('System76 Lemur Pro Laptop', g1.name)
-        eq('Warehouse 1', g1.address)
+        eq('lemp11', g1.code)
 
       print('''
         Here we are simply creating a 'good' and saving it. 
 
         Notice that we able to use the `name` attribute just as we use
-        the `address` attribute even though `name` was defined in the
+        the `code` attribute even though `name` was defined in the
         `product` base class. This is what we would expect from normal
         inheritance (although we woudn't necessarily expect to be able
         to set the `name` attributes through the constructor). We save
         the `good` and reload it. Note that the `save()` operation
-        ensures both the `name` and `address` are saved without any
+        ensures both the `name` and `code` are saved without any
         explicit reference to the `product` base class. The ORM ensure
         that peristence and attribute access work seemlessly when using
         inheritance.
@@ -6139,18 +6137,45 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with listing('Subclasses and their base base')
+        # Create a good
+        g = good(
+          name = 'L-Shaped UPLIFT Standing Desk',
+          code = 'TOP912-80x30-BLK'
+        )
+
         # Get the good's base object
         prod = g.orm.super
 
-        # The base entity has the same id as the subentity
+        # Note the `product` base entity has the same id as its
+        # corresponding subclass `good`
         eq(g.id, prod.id)
 
-        # The base entiity has same name as the subclass
+        # The product has same value for name as the good
         eq(g.name, prod.name)
 
-        # However, the base entity doesn't know about the the
-        # subentity's `address` attribute.
-        expect(AttributeError, lambda: prod.address)
+        # However, the product doesn't know about the the
+        # good's `code` attribute.
+        expect(AttributeError, lambda: prod.code)
+
+        # Save the good
+        g.save()
+
+        # Note that we can reload the good as a good, or good as a
+        # product.
+        g1 = good(g.id)
+
+        prod1 = product(g.id)
+
+        # Both objects will having mathing id and name attributes as
+        # they did before they were saved.
+        eq(g.id, g1.id)
+        eq(g.id, prod1.id)
+        eq(g.name, g1.name)
+        eq(g.name, prod1.name)
+
+        # However, as before, the reloaded product will not know about
+        # the good's code attribute
+        expect(AttributeError, lambda: prod1.code)
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
