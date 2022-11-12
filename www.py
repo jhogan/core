@@ -825,7 +825,6 @@ class request:
         ws = self.site
         path = self.path
 
-        path = self.language + '/index' if path == '/' else path
         try:
             return ws[path]
         except IndexError:
@@ -1159,7 +1158,10 @@ class request:
             slash.
         """
         if self.iswsgi:
-            return self.environment['PATH_INFO']
+            path = self.environment['PATH_INFO']
+            if path == '/':
+                path = '/en/index'
+            return path
 
     @property
     def size(self):
