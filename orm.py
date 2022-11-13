@@ -5029,7 +5029,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                             # Get super's map
                                             map1 = maps1[name]
                                         except IndexError:
-                                            # Dosen't exist: add to dict
+                                            # Doesn't exist: add to dict
                                             # (bypass mapping)
                                             sup2.__dict__[name] = spec
                                         else:
@@ -5145,7 +5145,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             # Append the entity to that entities collection
             es += e
-
 
     def __repr__(self):
         """ Create a string representation of the entity.

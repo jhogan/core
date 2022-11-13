@@ -779,6 +779,7 @@ class page(tester.tester):
 
         req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
+
         with orm.sudo(), orm.proprietor(party.company.carapacian):
             self.type(carapacian_com.site, req.site)
 
@@ -1432,14 +1433,16 @@ class page(tester.tester):
         self.eq(ip.address, hit.ip.address)
 
     def it_gets_updated_favicon(self):
-        """
-            XXX comment
+        """ Make sure that, when a developer changes the favicon
+        (site.favicon), the favicon is changed in the database/HDD/radix
+        cache as well.
         """
         ws = foonet()
 
         # Create a browser tab
         tab = self.browser().tab()
 
+        # Get the original
         res = tab.get('/favicon.ico', ws)
         mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
         self.ok(res)
@@ -1447,8 +1450,10 @@ class page(tester.tester):
         self.type(bytes, res.body)
         self.eq(b64decode(Favicon), res.body)
 
-
         body = b64decode(GoogleFavicon)
+
+        # A new property to monkey-patch foonet with. This simulates a
+        # developer changing the return value of the favicon @property.
         @property
         def favicon(self):
             r = file.file()
@@ -1456,22 +1461,33 @@ class page(tester.tester):
             r.body = body
             return r
 
+        # Get a reference to the original favicon @property so can
+        # restore it in the `finally` block
         prop = foonet.__dict__['favicon']
         try:
+            # Monkey-patch
             foonet.favicon = favicon
+
+            # GET /favicon.ico
             ws = foonet()
             res = tab.get('/favicon.ico', ws)
             mime = mimetypes.guess_type('/favicon.ico', strict=False)[0]
             self.ok(res)
             self.type(bytes, res.body)
+
+            # Ensure it matches the new GoogleFavicon (body)
             self.eq(body, res.body)
 
+            # Test using the file API.
             favicon = ws.public['favicon.ico']
             self.eq(body, favicon.body)
 
+            # Test against the literal file on the HDD
             with open(favicon.path, 'rb') as f:
                 self.eq(body, f.read())
+
         finally:
+            # Restore original favicon @property
             foonet.favicon = prop
 
     def it_gets_favicon(self):

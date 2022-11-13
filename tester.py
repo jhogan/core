@@ -1183,7 +1183,7 @@ class tester(entities.entity):
         if not isinstance(expect, type):
             name = type(expect).__name__
             raise TypeError(
-                'expect must but be of type `type`; receieved: '
+                'expect must be of type `type`; receieved: '
                 f'"{name}"'
             )
 

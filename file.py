@@ -396,11 +396,6 @@ class inode(orm.entity):
 
         elif isinstance(id, uuid.UUID):
             # Perform a database lookup using the primary key
-            # XXX Why don't we search radix cache before instantiating.
-            # This should make things faster and also eliminate security
-            # problems. We would have to ensure that the
-            # orm.security.user has access and orm.security.proprietor
-            # owns the file.
             return cls(*args, **kwargs)
 
         elif isinstance(id, type(None)):
@@ -521,15 +516,14 @@ class inode(orm.entity):
         """ Returns the parent inode for this inode.
         """
 
-        # NOTE This property is automatically provided by the ORM. It
-        # is overridden here because of radix: radix has a
-        # proprietor of party.company.carapacian, thus if someone (other
-        # than a carapacian user) tries
-        # to load radix by calling the inode property of an inode, and
-        # the property needs to load radix, the load will fail because
-        # the ORM will refuse to load radix because it is carapacian
-        # property. We want radix to be a shared resource even though
-        # it's owned by carapacian.
+        # NOTE This property is automatically provided by the ORM. It is
+        # overridden here because of radix: radix has a proprietor of
+        # party.company.carapacian, thus if someone (other than a
+        # carapacian user) tries to load radix by calling the inode
+        # property of an inode, and the property needs to load radix,
+        # the load will fail because the ORM will refuse to load radix
+        # because it is carapacian property. We want radix to be a
+        # shared resource even though it's owned by carapacian.
         #
         # Going forward, we may want a more robust way of handling
         # shared resources like this (the party.region entity comes to
@@ -571,7 +565,6 @@ class inode(orm.entity):
     def __iadd__(self, e):
         """ Overload +=
         """
-
         self.inodes.append(e)
         return self
 
@@ -609,7 +602,7 @@ class inode(orm.entity):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # Be sure to strip slashes in the second argument to
         # os.path.join. Counter-intuitively, a leading slash causes
-        # os.path.join to discard the first argument (self.head) an
+        # os.path.join to discard the first argument (self.head) and
         # return the second argument with the leading slash.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         name = self.name.lstrip('/\\')
@@ -650,7 +643,7 @@ class inode(orm.entity):
         # Make sure we don't create an inode with the same name as an
         # existing one under the same inode. I don't think this can
         # happen because we try to load inodes whenever we reference
-        # them. Hovever, obviously we will want to prevent this at
+        # them. However, obviously we will want to prevent this at
         # the validation level.
         with orm.sudo():
             for nd in nds:
@@ -724,6 +717,7 @@ class inode(orm.entity):
             if rent.name == 'pom':
                 if rent.inode.inradix:
                     return orm.violations.empty
+
         vs = orm.violations()
         vs += 'Cannot retrieve directory'
         return vs
@@ -1124,7 +1118,7 @@ class directory(inode):
     -------
     Creating a `directory` and saving it will save the directory to the
     database. But it won't necessarily be created in the file system.
-    Directories are only created when needed by to store `files`. The
+    Directories are only created when needed to store `files`. The
     _self_onaftersave override creates files and resources in the file
     systems, but the `directory` class does not override this event
     handler to create actual directories.
@@ -1168,6 +1162,8 @@ class directory(inode):
         return False
 
     def delete(self, *args, **kwargs):
+        """ Deletes the directory.
+        """
         super().delete(*args, **kwargs)
 
         if self.isradix:
@@ -1350,13 +1346,14 @@ class directory(inode):
         Etymology
         ---------
         radix is just another word for root. Since inode is a recursive
-        entity, 'root' is already taken as a @property name. 
+        entity, 'root' is already taken as a @property name so we are
+        forced, here, to use a differt name for this @classproperty.
         """
         if not hasattr(cls, '_radix'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
-            # be ``directoy`` but there is no reason it should be
-            # varient.
+            # be ``directory`` but there is no reason it should be
+            # variant.
 
             # TODO Write test to ensure radix is always owned by root.
             # TODO This looks a lot like _floaters. We can consolidate
@@ -1437,6 +1434,7 @@ class directory(inode):
                 # to lazy-load later on when we may not be sudo or
                 # carapacian. That would result in an exception.
                 cls._flts.orm.super
+
         return cls._flts
 
     def __iter__(self):
