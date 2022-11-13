@@ -528,7 +528,7 @@ class inode(orm.entity):
         # Going forward, we may want a more robust way of handling
         # shared resources like this (the party.region entity comes to
         # mind because we will probably want to be able to provide
-        # read-access to region data to all tenants). TODO:9e3a0bbe
+        # read-access to region data to all tenants). FIXME:9e3a0bbe
         # Perhaps these entities should be the properties of a shared
         # party called 'public' or 'commons'.
         if self.inodeid == directory.RadixId:
@@ -702,7 +702,7 @@ class inode(orm.entity):
         if self.owner__userid == orm.security().owner.id:
             return orm.violations.empty
             
-        # XXX This is to work around the accessiblilty of
+        # FIXME:9e3a0bbe This is to work around the accessiblilty of
         # /radix/pom/site. This is sleighted to become "commons" owned
         # by a new party called party.public. Entities owned by that
         # party should be readable by definition, so this logic could be
@@ -1359,6 +1359,8 @@ class directory(inode):
             # TODO This looks a lot like _floaters. We can consolidate
             # with a private method.
             import party
+
+            # FIXME:9e3a0bbe We will want radix to be owned by 'public'
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     cls._radix = cls(cls.RadixId)
@@ -1417,12 +1419,14 @@ class directory(inode):
         if not hasattr(cls, '_flts'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
-            # be ``directoy`` but there is no reason it should be
+            # be ``directory`` but there is no reason it should be
             # varient.
 
             # TODO Write test to ensure floaters is always owned by
             # root.
             import party
+
+            # FIXME:9e3a0bbe We will want floaters to be owned by 'public'
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     cls._flts = cls(cls.FloatersId)
