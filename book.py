@@ -6120,14 +6120,14 @@ with book('Hacking Carapacian Core'):
 
         Notice that we able to use the `name` attribute just as we use
         the `code` attribute even though `name` was defined in the
-        `product` base class. This is what we would expect from normal
-        inheritance (although we woudn't necessarily expect to be able
-        to set the `name` attributes through the constructor). We save
-        the `good` and reload it. Note that the `save()` operation
-        ensures both the `name` and `code` are saved without any
-        explicit reference to the `product` base class. The ORM ensure
-        that peristence and attribute access work seemlessly when using
-        inheritance.
+        `product` base class. This is pretty much what we would expect
+        from normal inheritance (although we woudn't necessarily expect
+        to be able to set the `name` attributes through the
+        constructor). We save the `good` and reload it. Note that the
+        `save()` operation ensures both the `name` and `code` are saved
+        without any explicit reference to the `product` base class. The
+        ORM ensure that peristence and attribute access work seemlessly
+        when using inheritance.
 
         It's important to understand that, even though we didn't
         explicitly reference the `product` class in this example, a
@@ -6146,11 +6146,15 @@ with book('Hacking Carapacian Core'):
         # Get the good's base object
         prod = g.orm.super
 
+        # g is a `good`, though it's base entity is of type `product`
+        type(g, good)
+        type(product, prod)
+
         # Note the `product` base entity has the same id as its
         # corresponding subclass `good`
         eq(g.id, prod.id)
 
-        # The product has same value for name as the good
+        # The product has the same value for `name` as the good
         eq(g.name, prod.name)
 
         # However, the product doesn't know about the the
@@ -6176,6 +6180,57 @@ with book('Hacking Carapacian Core'):
         # However, as before, the reloaded product will not know about
         # the good's code attribute
         expect(AttributeError, lambda: prod1.code)
+
+    print('''
+        Here, we see the use of `super` property to get the base entity
+        of `good`:
+            
+            prod = g.orm.super
+
+        This attribute is not intended for every day use though it is
+        useful to demonstrate the relationship entity objects have with
+        their base entities. `super` is lazy-loaded; when `good` was
+        reloaded, it wasn't pulled from the database until it was called
+        for.
+
+        The important thing to note here is that the ORM is maintating
+        to distinct but related entity: the `good` and the `product`.
+        This is clear from the code sample above. In the database, a
+        `product` table and a `good` table are used to store the `good`
+        entity along with it's corresponding `good` entity. Below are
+        approximations of the two tables in the database:
+
+            /* The product table */
+            CREATE TABLE product (
+              `id` binary(16) NOT NULL,
+              `name` varchar(255),
+              PRIMARY KEY (`id`),
+            )
+
+            /* The good table */
+            CREATE TABLE good (
+              `id` binary(16) NOT NULL,
+              `code` varchar(255),
+              PRIMARY KEY (`id`),
+            )
+
+        Note that only the `product` table has the `name` field. Even
+        though the `good` entity has a `name` attribute, the value for
+        it is stored in the `product` table. This is because `name` is
+        inherited from the `product` entity. Adding an additional `name`
+        field in the `good` table would lead to duplicate data.
+
+        Also note that the `code` field is defined on the `good` table.
+        This should make sense because `code` is an attribute of the
+        `good` entity. We wouldn't expect the `product` to know about
+        this attribute so we don't find it in the `product` table.
+
+        When we saved `g`, a record was inserted into the `product`
+        table to store the `product` entity and another record was
+        inserted into the `good` table for the `good` entity. Since both
+        entity's share the same id, the ORM is able to associate the
+        two making inherited persistence seemless.
+    ''')
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
