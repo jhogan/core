@@ -6,7 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
-""" This module contains class to help deal with files in a web context.
+""" This module contains classes to work with files.
 
 File (and directory) metadata are stored in the database (this is why
 the ``file`` and ``directory`` classes inherit from ``orm.entity``). If
@@ -93,8 +93,8 @@ class inodes(orm.entities):
         """ An event handler to process inode objects as they are being
         added to the `inodes` collection.
 
-        Here we raise a ValueError error if a an inode with the same
-        name is being added. Later, we work with the floaters and radix
+        Here we raise a ValueError error if an inode with the same name
+        is being added. Later, we work with the floaters and radix
         caches to make sure the correct composite is being set on the
         inode being added (see code below).
         """
@@ -102,14 +102,15 @@ class inodes(orm.entities):
         radix = directory.radix
         nd = eargs.entity
 
-        ''' Disallow inodes with same name being added'''
-        # Disallow this::
+        ''' Disallow inodes with same name being added '''
+        # Disallow this
         #
         #     dir = dirctory('/etc')
         #     dir += file('test')
         #
         #     # This will raise a ValueError
         #     dir += file('test')  
+
         for nd1 in self:
             if nd.name == nd1.name:
                 raise ValueError(
@@ -133,7 +134,7 @@ class inodes(orm.entities):
             # Remove it from the floaters/radix directory
             nd.inode.inodes.remove(nd, trash=False)
 
-            # Reset nd's comp
+            # Reset nd's composite (comp)
             while nd:
                 with suppress(KeyError):
                     # Just delete the monkey-patched reference
@@ -147,6 +148,12 @@ class inodes(orm.entities):
                 nd = nd.orm.super
 
     def __call__(self, key):
+        """ Return an inode (file or directory) underneath the directory
+        by a ``key`` name. 
+
+        This is similar to __getitem__ except that, if no inode can be
+        found, None is returned. See __getitem__ for more.
+        """
         try:
             return self[key]
         except IndexError:
@@ -154,7 +161,7 @@ class inodes(orm.entities):
 
     def __getitem__(self, key):
         """ Return an inode (file or directory) underneath the directory
-        by a ``key`` name, if the argument is a str::
+        by a ``key`` name, if the argument is a str:
             
             usr = directory(name='/usr')
             words = usr['share/dict/words']
@@ -167,7 +174,7 @@ class inodes(orm.entities):
             names = [x for x in key.split('/') if x]
             if len(names) == 1:
                 try:
-                    # Retrive from cache
+                    # Retrieve from cache
                     return super().__getitem__(names[0])
                 except IndexError:
                     # If not in cache, look in database
@@ -186,7 +193,7 @@ class inodes(orm.entities):
                             f'Multiple inodes for {names[0]} '
                             f'under {self.inode.name}'
                         )
-            else:
+            else: # If len names) > 1
                 nd = nds[names[0]]
                 if isinstance(nd, directory):
                     nds = nd.inodes
@@ -200,15 +207,15 @@ class inode(orm.entity):
     """ The abstract class from which ``file`` and ``directory``
     inherit. ``inode`` has a ``name`` property used for the file or
     directory name. ``inodes`` are recursive. This gives the
-    ``directory`` class an ``inodes`` collection which contains the
+    ``directory`` class an ``inodes`` attribute which contains the
     files and directories in that directory. ``files`` and
-    ``directories`` also contain an ``inode`` attribute which refers to
+    ``directories`` also contain an ``inode`` attribute which returns
     their parent ``directory``.
 
     inodes act as data singletons. This is to say that, when
     instantiated by path, the inode will be created, cached and
-    returned. Additional call with the same path will result in the same
-    inode being returned::
+    returned. Additional calls with the same path will result in the
+    same inode being returned::
 
         assert directory('/etc') is directory('/etc')
         assert file('/etc/password') is file('/etc/password')
@@ -219,15 +226,19 @@ class inode(orm.entity):
     ---------
     This entity was named after the Unix-style data structure used to
     describe file system object (files and directories).
-    ``filesystemobjects`, though more descriptive, was considered too
-    long to make a good class name.
+    The name "filesystemobjects", though more descriptive, was
+    considered too long to make a good class name.
     """
 
     # The name attribute of the file system object
     @orm.attr(str)
     def name(self, v):
+        """ Sets the `name` attribute for the inode. 
+
+        Raises a ValueError if the name contains a back- or front-slash.
+        """
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # For securty reasons, disallow names in path
+        # For securty reasons, disallow slashes in path
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if '/' in v or '\\' in v:
             raise ValueError(
@@ -270,10 +281,10 @@ class inode(orm.entity):
             # Is the flag set
             kwargs['from__new__']
         except KeyError:
-            # Set the flog
+            # Set the flag (to None)
             kwargs['from__new__'] = None
         else:
-            # If from__new__, instantiate and return
+            # If 'from__new__' exists in kwargs, instantiate and return
             return super(inode, cls).__new__(cls)
 
         # Get the inodes ID. This could be a str containing the path
@@ -290,13 +301,15 @@ class inode(orm.entity):
         # If id is a str...
         if isinstance(id, str):
             try:
-                # See if str is a UUID, i.e., the inode's primary key
+                # Determine if id is a UUID, i.e., the inode's primary
+                # key.
 
                 # FIXME:8960bf52 This can't be right. It prevents us
-                # from creating directories with names that look like
+                # from creating inodes with names that look like
                 # UUIDs:
                 #
                 #     dir.file(uuid4().hex)
+
                 id = uuid.UUID(hex=id)
             except ValueError:
                 # The str id will be considered a path
@@ -304,8 +317,8 @@ class inode(orm.entity):
 
         if isinstance(id, str):
             # If id is still a str, it must be a file path so call it
-            # what it is: `path`; and search the cache. Return if its in
-            # the cache; otherwise, instantiate.
+            # what it is: `path`; and search the cache. Return if it's
+            # in the cache; otherwise, instantiate.
             path = id
 
             local = kwargs.get('local', False)
@@ -338,8 +351,8 @@ class inode(orm.entity):
                 else:
                     dir = directory._floaters
 
-                # Create a net object to capture the details of the find
-                # operation.
+                # Create a net object to capture (i.e., "net") the
+                # details of the find operation.
                 net = directory.net()
 
                 # Search cache
@@ -383,6 +396,11 @@ class inode(orm.entity):
 
         elif isinstance(id, uuid.UUID):
             # Perform a database lookup using the primary key
+            # XXX Why don't we search radix cache before instantiating.
+            # This should make things faster and also eliminate security
+            # problems. We would have to ensure that the
+            # orm.security.user has access and orm.security.proprietor
+            # owns the file.
             return cls(*args, **kwargs)
 
         elif isinstance(id, type(None)):
@@ -395,6 +413,10 @@ class inode(orm.entity):
         return None
 
     def __init__(self, *args, **kwargs):
+        """ Initialize the inode.
+
+        Note that most of the setup code is performed in inode.__new__
+        """
         # Don't call super's init if it has already been called.
         if not self.orm.isinstance:
             # In __new__, we instantiate the inode. However, when the
