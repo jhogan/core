@@ -20,6 +20,11 @@ TODO In hacking/debugging, explain how to set the
 self.tester.breakonexception = True. This is useful for debuging
 testpom.py
 
+TODO In hacking/debugging, explain problem where a post mortem break
+into the debugger can obscure the actual problem due to the fact that
+the state of orm.security can change between the time the exception was
+raised and the post mortem was entered.
+
 TODO In Environment section, declare Ubuntu's default terminal as the
 officially supported terminal for the source code. Indicate that any
 terminal that can handle support as well as this terminal is acceptable.

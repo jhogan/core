@@ -8,7 +8,6 @@
 # Robert C. Martin
 
 from config import config
-from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM, PR
 from entities import classproperty
@@ -16,6 +15,7 @@ from pprint import pprint
 from textwrap import dedent
 from types import FunctionType
 import builtins
+import db
 import dbg
 import dom
 import ecommerce
@@ -408,12 +408,28 @@ class tester(entities.entity):
                 with suppress(AttributeError):
                     del file.directory._radix
 
-
-                        
         # Create and set principles at ORM level for testing
         sec = orm.security()
         sec.user       = user  if user  else self.user
         sec.proprietor = propr if propr else self.company
+
+        # If propr was passed in
+        if propr:
+            # Ensure that propr is properly persisted
+            with orm.override(), orm.sudo():
+                try:
+                    # Try reloading...
+                    propr.orm.reloaded()
+                except db.RecordNotFoundError:
+                    # Save propr if it doesn't exist in database
+                    propr.save()
+                else:
+                    # If it already exists in database, ensure that the
+                    # persistencestate refrects this.
+                    sup = propr
+                    while sup:
+                        sup.orm.persistencestate = False, False, False
+                        sup = sup.orm._super
             
     def recreateprinciples(self):
         principle().recreate()
@@ -456,7 +472,7 @@ class tester(entities.entity):
         class _tab(www.browser._tab):
             """ Represents a tab in the test browser. The tab makes the
             actual "HTTP" request and preserves the responses HTML in
-            it's own DOM (.html).
+            its own DOM (.html).
 
             :abbr: tab
             """
@@ -720,16 +736,16 @@ class tester(entities.entity):
             def navigate(self, pg, ws):
                 """ Issues an HTTP GET request for a page (`pg`) on
                 the  webserver (ws). The response is used to update the
-                tab's internal DOM (self.html). The www._response object
+                tab's internal DOM (self.html). The www.response object
                 is returned if needed.
 
                 :param: pg pom.page|str: The page to GET.
 
                 :param: ws pom.site: The site to get the page from.
                 """
-                req = self.get(pg, ws)
-                self.html = req.html
-                return req
+                res = self.get(pg, ws)
+                self.html = res.html
+                return res
 
             def get(self, pg, ws, hdrs=None):
                 """ Issues an HTTP GET request for the page `pg` to the
@@ -907,7 +923,6 @@ class tester(entities.entity):
                     return d
 
                 st, hdrs = None, None
-                
                 def start_response(st0, hdrs0):
                     nonlocal st
                     nonlocal hdrs
@@ -920,6 +935,7 @@ class tester(entities.entity):
                     pg = ws(url.path)
                     path = url.path
                     qs = url.query
+
                 elif isinstance(pg, pom.page):
                     path = f'/{pg.language}{pg.path}'
                     qs = str()
@@ -990,7 +1006,7 @@ class tester(entities.entity):
                 app = www.application()
 
                 # Create request. Associate with app.
-                req = www._request(app)
+                req = www.request(app)
 
                 app.breakonexception = \
                     self.browser.tester.testers.breakonexception
@@ -998,7 +1014,7 @@ class tester(entities.entity):
                 # Make WSGI call
                 iter = app(env, start_response)
 
-                res = www._response(req) 
+                res = www.response(req) 
 
                 # Just get the status code from st (which contains the
                 # entire phrase, i.e., '200 OK'). In the future, we may
@@ -1008,7 +1024,8 @@ class tester(entities.entity):
                 # Connection' instead of the standard '502 Bad Gateway'.
                 res._status = st.split()[0]
                 res._headers = www.headers(hdrs)
-                res.body = next(iter).decode('utf-8')
+
+                res.body = next(iter)
 
                 # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')
@@ -1166,7 +1183,7 @@ class tester(entities.entity):
         if not isinstance(expect, type):
             name = type(expect).__name__
             raise TypeError(
-                'expect must but be of type `type`; receieved: '
+                'expect must be of type `type`; receieved: '
                 f'"{name}"'
             )
 
@@ -1451,6 +1468,8 @@ class tester(entities.entity):
         except Exception as ex:
             if expect is None or type(ex) is not expect:
                 self._failures += failure(actual=ex)
+
+            return None
         else:
             if expect is not None:
                 self._failures += failure(actual=None)

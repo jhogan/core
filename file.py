@@ -6,7 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 
-""" This module contains class to help deal with files in a web context.
+""" This module contains classes to work with files.
 
 File (and directory) metadata are stored in the database (this is why
 the ``file`` and ``directory`` classes inherit from ``orm.entity``). If
@@ -93,8 +93,8 @@ class inodes(orm.entities):
         """ An event handler to process inode objects as they are being
         added to the `inodes` collection.
 
-        Here we raise a ValueError error if a an inode with the same
-        name is being added. Later, we work with the floaters and radix
+        Here we raise a ValueError error if an inode with the same name
+        is being added. Later, we work with the floaters and radix
         caches to make sure the correct composite is being set on the
         inode being added (see code below).
         """
@@ -102,14 +102,15 @@ class inodes(orm.entities):
         radix = directory.radix
         nd = eargs.entity
 
-        ''' Disallow inodes with same name being added'''
-        # Disallow this::
+        ''' Disallow inodes with same name being added '''
+        # Disallow this
         #
         #     dir = dirctory('/etc')
         #     dir += file('test')
         #
         #     # This will raise a ValueError
         #     dir += file('test')  
+
         for nd1 in self:
             if nd.name == nd1.name:
                 raise ValueError(
@@ -133,7 +134,7 @@ class inodes(orm.entities):
             # Remove it from the floaters/radix directory
             nd.inode.inodes.remove(nd, trash=False)
 
-            # Reset nd's comp
+            # Reset nd's composite (comp)
             while nd:
                 with suppress(KeyError):
                     # Just delete the monkey-patched reference
@@ -147,6 +148,12 @@ class inodes(orm.entities):
                 nd = nd.orm.super
 
     def __call__(self, key):
+        """ Return an inode (file or directory) underneath the directory
+        by a ``key`` name. 
+
+        This is similar to __getitem__ except that, if no inode can be
+        found, None is returned. See __getitem__ for more.
+        """
         try:
             return self[key]
         except IndexError:
@@ -154,7 +161,7 @@ class inodes(orm.entities):
 
     def __getitem__(self, key):
         """ Return an inode (file or directory) underneath the directory
-        by a ``key`` name, if the argument is a str::
+        by a ``key`` name, if the argument is a str:
             
             usr = directory(name='/usr')
             words = usr['share/dict/words']
@@ -164,10 +171,10 @@ class inodes(orm.entities):
 
         if isinstance(key, str):
             nds = self
-            names = key.split('/')
+            names = [x for x in key.split('/') if x]
             if len(names) == 1:
                 try:
-                    # Retrive from cache
+                    # Retrieve from cache
                     return super().__getitem__(names[0])
                 except IndexError:
                     # If not in cache, look in database
@@ -186,7 +193,7 @@ class inodes(orm.entities):
                             f'Multiple inodes for {names[0]} '
                             f'under {self.inode.name}'
                         )
-            else:
+            else: # If len names) > 1
                 nd = nds[names[0]]
                 if isinstance(nd, directory):
                     nds = nd.inodes
@@ -200,15 +207,15 @@ class inode(orm.entity):
     """ The abstract class from which ``file`` and ``directory``
     inherit. ``inode`` has a ``name`` property used for the file or
     directory name. ``inodes`` are recursive. This gives the
-    ``directory`` class an ``inodes`` collection which contains the
+    ``directory`` class an ``inodes`` attribute which contains the
     files and directories in that directory. ``files`` and
-    ``directories`` also contain an ``inode`` attribute which refers to
+    ``directories`` also contain an ``inode`` attribute which returns
     their parent ``directory``.
 
     inodes act as data singletons. This is to say that, when
     instantiated by path, the inode will be created, cached and
-    returned. Additional call with the same path will result in the same
-    inode being returned::
+    returned. Additional calls with the same path will result in the
+    same inode being returned::
 
         assert directory('/etc') is directory('/etc')
         assert file('/etc/password') is file('/etc/password')
@@ -219,15 +226,19 @@ class inode(orm.entity):
     ---------
     This entity was named after the Unix-style data structure used to
     describe file system object (files and directories).
-    ``filesystemobjects`, though more descriptive, was considered too
-    long to make a good class name.
+    The name "filesystemobjects", though more descriptive, was
+    considered too long to make a good class name.
     """
 
     # The name attribute of the file system object
     @orm.attr(str)
     def name(self, v):
+        """ Sets the `name` attribute for the inode. 
+
+        Raises a ValueError if the name contains a back- or front-slash.
+        """
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # For securty reasons, disallow names in path
+        # For securty reasons, disallow slashes in path
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if '/' in v or '\\' in v:
             raise ValueError(
@@ -241,7 +252,7 @@ class inode(orm.entity):
 
     @staticmethod
     def _split(path):
-        """ A private static method that takes a path a splits it over
+        """ A private static method that takes a path and splits it over
         the '/' character. Deals with leading '/' more predictably than
         Python's builtin path splitting algorithms.
         """
@@ -270,10 +281,10 @@ class inode(orm.entity):
             # Is the flag set
             kwargs['from__new__']
         except KeyError:
-            # Set the flog
+            # Set the flag (to None)
             kwargs['from__new__'] = None
         else:
-            # If from__new__, instantiate and return
+            # If 'from__new__' exists in kwargs, instantiate and return
             return super(inode, cls).__new__(cls)
 
         # Get the inodes ID. This could be a str containing the path
@@ -290,13 +301,15 @@ class inode(orm.entity):
         # If id is a str...
         if isinstance(id, str):
             try:
-                # See if str is a UUID, i.e., the inode's primary key
+                # Determine if id is a UUID, i.e., the inode's primary
+                # key.
 
                 # FIXME:8960bf52 This can't be right. It prevents us
-                # from creating directories with names that look like
+                # from creating inodes with names that look like
                 # UUIDs:
                 #
                 #     dir.file(uuid4().hex)
+
                 id = uuid.UUID(hex=id)
             except ValueError:
                 # The str id will be considered a path
@@ -304,8 +317,8 @@ class inode(orm.entity):
 
         if isinstance(id, str):
             # If id is still a str, it must be a file path so call it
-            # what it is: `path`; and search the cache. Return if its in
-            # the cache; otherwise, instantiate.
+            # what it is: `path`; and search the cache. Return if it's
+            # in the cache; otherwise, instantiate.
             path = id
 
             local = kwargs.get('local', False)
@@ -338,8 +351,8 @@ class inode(orm.entity):
                 else:
                     dir = directory._floaters
 
-                # Create a net object to capture the details of the find
-                # operation.
+                # Create a net object to capture (i.e., "net") the
+                # details of the find operation.
                 net = directory.net()
 
                 # Search cache
@@ -395,12 +408,22 @@ class inode(orm.entity):
         return None
 
     def __init__(self, *args, **kwargs):
+        """ Initialize the inode.
+
+        Note that most of the setup code is performed in inode.__new__
+        """
         # Don't call super's init if it has already been called.
         if not self.orm.isinstance:
             # In __new__, we instantiate the inode. However, when the
             # instantiated inode returns from __new__, it is passed to
             # __init__. We don't want to call orm.entity.__init__ a
             # second time on the object if that is the case.
+            # 
+            # NOTE This *seems* to means we can't pass kwargs to inode
+            # constructors. Be cool if we could...
+            #
+            #     file.file(name='hosts', body='127.0.0.1 localhost')
+            #
             super().__init__(*args, **kwargs)
 
     @classproperty
@@ -493,20 +516,19 @@ class inode(orm.entity):
         """ Returns the parent inode for this inode.
         """
 
-        # NOTE This property is automatically provided by the ORM. It
-        # is overridden here because of radix: radix has a
-        # proprietor of party.company.carapacian, thus if someone (other
-        # than a carapacian user) tries
-        # to load radix by calling the inode property of an inode, and
-        # the property needs to load radix, the load will fail because
-        # the ORM will refuse to load radix because it is carapacian
-        # property. We want radix to be a shared resource even though
-        # it's owned by carapacian.
+        # NOTE This property is automatically provided by the ORM. It is
+        # overridden here because of radix: radix has a proprietor of
+        # party.company.carapacian, thus if someone (other than a
+        # carapacian user) tries to load radix by calling the inode
+        # property of an inode, and the property needs to load radix,
+        # the load will fail because the ORM will refuse to load radix
+        # because it is carapacian property. We want radix to be a
+        # shared resource even though it's owned by carapacian.
         #
         # Going forward, we may want a more robust way of handling
         # shared resources like this (the party.region entity comes to
         # mind because we will probably want to be able to provide
-        # read-access to region data to all tenants). TODO:9e3a0bbe
+        # read-access to region data to all tenants). FIXME:9e3a0bbe
         # Perhaps these entities should be the properties of a shared
         # party called 'public' or 'commons'.
         if self.inodeid == directory.RadixId:
@@ -543,7 +565,6 @@ class inode(orm.entity):
     def __iadd__(self, e):
         """ Overload +=
         """
-
         self.inodes.append(e)
         return self
 
@@ -581,7 +602,7 @@ class inode(orm.entity):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # Be sure to strip slashes in the second argument to
         # os.path.join. Counter-intuitively, a leading slash causes
-        # os.path.join to discard the first argument (self.head) an
+        # os.path.join to discard the first argument (self.head) and
         # return the second argument with the leading slash.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         name = self.name.lstrip('/\\')
@@ -622,7 +643,7 @@ class inode(orm.entity):
         # Make sure we don't create an inode with the same name as an
         # existing one under the same inode. I don't think this can
         # happen because we try to load inodes whenever we reference
-        # them. Hovever, obviously we will want to prevent this at
+        # them. However, obviously we will want to prevent this at
         # the validation level.
         with orm.sudo():
             for nd in nds:
@@ -681,6 +702,22 @@ class inode(orm.entity):
         if self.owner__userid == orm.security().owner.id:
             return orm.violations.empty
             
+        # FIXME:9e3a0bbe This is to work around the accessiblilty of
+        # /radix/pom/site. This is sleighted to become "commons" owned
+        # by a new party called party.public. Entities owned by that
+        # party should be readable by definition, so this logic could be
+        # removed.
+        rent = self.inode
+
+        if rent.isradix:
+            if self.name == 'pom':
+                return orm.violations.empty
+
+        if self.name == 'site':
+            if rent.name == 'pom':
+                if rent.inode.inradix:
+                    return orm.violations.empty
+
         vs = orm.violations()
         vs += 'Cannot retrieve directory'
         return vs
@@ -692,45 +729,6 @@ class files(inodes):
 class file(inode):
     """ Represents a file in the DB and on the HDD.
     """
-
-    @orm.attr(str)
-    def mime(self):
-        """ The mime type of the file (as str), e.g., 'text/plain'. The
-        mimetype attribute can be set by the user. If it is not set, the
-        accessor will try to guess what it should be given the ``body``
-        attribute and the ``file.name``.
-        """
-        if not attr():
-            mime = mimetypes.guess_type(self.path, strict=False)[0]
-            if mime is not None:
-                attr(mime)
-            elif isinstance(self._body, str):
-                attr('text/plain')
-            elif isinstance(self._body, bytes):
-                attr('application/octet-stream')
-            elif self._body is None:
-                attr(None)
-        return attr()
-
-    @property
-    def inodes(self):
-        """ The super()'s implemention is to return the child inodes
-        under this inode. However, since this is a file, we want to
-        raise an AttributeError because a file would obviously never
-        have files or directories underneath it. 
-        
-        Note we are using the `orm` modules version of AttributeError
-        because there are issues raising builtins.AttributeError from
-        ORM attributes (see orm.py for more). Also, note that the
-        calling code will receive a regular builtins.AttributeError and
-        not an orm.AttributeError so the client code doesn't have to
-        deal with this awkwardness.
-        """
-        # TODO We need to find a better way to do this. The user should
-        # not have to use a specialized AttributeError.
-        raise orm.AttributeError(
-            "file entities don't have inodes"
-        )
 
     def __init__(self, *args, **kwargs):
         """ Initializes a file object.
@@ -758,6 +756,26 @@ class file(inode):
 
         super().__init__(*args, **kwargs)
 
+
+    @orm.attr(str)
+    def mime(self):
+        """ The mime type of the file (as str), e.g., 'text/plain'. The
+        mimetype attribute can be set by the user. If it is not set, the
+        accessor will try to guess what it should be given the ``body``
+        attribute and the ``file.name``.
+        """
+        if not attr():
+            mime = mimetypes.guess_type(self.name, strict=False)[0]
+            if mime is not None:
+                attr(mime)
+            elif isinstance(self._body, str):
+                attr('text/plain')
+            elif isinstance(self._body, bytes):
+                attr('application/octet-stream')
+            elif self._body is None:
+                attr(None)
+        return attr()
+
     @property
     def mimetype(self):
         """ Returns the **type** portion of the mime string. For
@@ -773,13 +791,33 @@ class file(inode):
 
         return None
 
+    @property
+    def inodes(self):
+        """ The super()'s implemention is to return the child inodes
+        under this inode. However, since this is a file, we want to
+        raise an AttributeError because a file would obviously never
+        have files or directories underneath it. 
+        
+        Note we are using the `orm` modules version of AttributeError
+        because there are issues raising builtins.AttributeError from
+        ORM attributes (see orm.py for more). Also, note that the
+        calling code will receive a regular builtins.AttributeError and
+        not an orm.AttributeError so the client code doesn't have to
+        deal with this awkwardness.
+        """
+        # TODO We need to find a better way to do this. The user should
+        # not have to use a specialized AttributeError.
+        raise orm.AttributeError(
+            "file entities don't have inodes"
+        )
+
     def _self_onaftersave(self, src, eargs):
         """ This is the event handler that gets called immediately after
         the file has been saved to the database. If ``file.body``
         contains data, the file will be written to the disk. If the file
         looks like a text file given its ``mime`` type, it will be
-        written as a text (mode='wt'); otherwise, it will be written as
-        a binary file (mode='wb').
+        written as a text file (mode='wt'); otherwise, it will be
+        written as a binary file (mode='wb').
         """
 
         # If there is a body to the file, we want to save it. Otherwise
@@ -943,10 +981,23 @@ class resource(file):
         """ This event handler is called before the resource is saved to
         the database.
         """
-        # Cancel saving resource to database if local is False. See the
-        # comments for the ``local`` parameter in the docstring for
-        # resource.__init__.
-        eargs.cancel = not self.local
+        if not self.local:
+            # Cancel saving resource to database if local is False. See
+            # the comments for the ``local`` parameter in the docstring
+            # for resource.__init__.
+            eargs.cancel = True
+
+            # Since we aren't saving, make sure the entity's
+            # persistencestate is Falsified. Since this inode will be in
+            # the radix cache, it is possible that at a later time, an
+            # attempt to persist it could be made. In that case, we
+            # don't want that to happen because, if the
+            # orm.security.owner is different, then the entity will be
+            # invalid, causing the save() operation raise an Exception.
+            sup = self
+            while sup:
+                sup.orm.persistencestate = False, False, False
+                sup = sup.orm._super
 
     # A cryptographic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s
@@ -1067,7 +1118,7 @@ class directory(inode):
     -------
     Creating a `directory` and saving it will save the directory to the
     database. But it won't necessarily be created in the file system.
-    Directories are only created when needed by to store `files`. The
+    Directories are only created when needed to store `files`. The
     _self_onaftersave override creates files and resources in the file
     systems, but the `directory` class does not override this event
     handler to create actual directories.
@@ -1111,6 +1162,8 @@ class directory(inode):
         return False
 
     def delete(self, *args, **kwargs):
+        """ Deletes the directory.
+        """
         super().delete(*args, **kwargs)
 
         if self.isradix:
@@ -1293,18 +1346,21 @@ class directory(inode):
         Etymology
         ---------
         radix is just another word for root. Since inode is a recursive
-        entity, 'root' is already taken as a @property name. 
+        entity, 'root' is already taken as a @property name so we are
+        forced, here, to use a differt name for this @classproperty.
         """
         if not hasattr(cls, '_radix'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
-            # be ``directoy`` but there is no reason it should be
-            # varient.
+            # be ``directory`` but there is no reason it should be
+            # variant.
 
             # TODO Write test to ensure radix is always owned by root.
             # TODO This looks a lot like _floaters. We can consolidate
             # with a private method.
             import party
+
+            # FIXME:9e3a0bbe We will want radix to be owned by 'public'
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     cls._radix = cls(cls.RadixId)
@@ -1363,12 +1419,14 @@ class directory(inode):
         if not hasattr(cls, '_flts'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
-            # be ``directoy`` but there is no reason it should be
+            # be ``directory`` but there is no reason it should be
             # varient.
 
             # TODO Write test to ensure floaters is always owned by
             # root.
             import party
+
+            # FIXME:9e3a0bbe We will want floaters to be owned by 'public'
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     cls._flts = cls(cls.FloatersId)
@@ -1380,6 +1438,7 @@ class directory(inode):
                 # to lazy-load later on when we may not be sudo or
                 # carapacian. That would result in an exception.
                 cls._flts.orm.super
+
         return cls._flts
 
     def __iter__(self):
@@ -1409,6 +1468,7 @@ class directory(inode):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if self.id == directory.RadixId:
             return orm.violations.empty
+
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If you own it you can get it

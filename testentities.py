@@ -10,12 +10,13 @@
 ########################################################################
 
 from dbg import B, PM, PR
+from uuid import uuid4
+import builtins
 import entities
 import math
-import tester
 import table
+import tester
 import textwrap
-from uuid import uuid4
 
 class knights(entities.entities):
     def __init__(self, initial=None):
@@ -112,7 +113,7 @@ class constant(entities.entity):
     def __init__(self, v):
         self.value = v
 
-class test_entities(tester.tester):
+class entities_(tester.tester):
     def it_defaults_to_dont_index(self):
         es = entities.entities()
         self.false(es.index)
@@ -1386,8 +1387,14 @@ class test_entities(tester.tester):
         self.assertFalse(ks.isvalid)
         self.assertInValid(ks)
         self.assertTrue(ks.brokenrules.issingular)
-        self.assertEq(ks.brokenrules.first.message, 'Names must be strings')
-        self.assertEq(str(ks.brokenrules.first), 'Names must be strings')
+        msg = 'Names must be strings'
+        str = (
+            f'brokenrule({msg}, property=None, '
+            'type=None, entity=None)'
+        )
+
+        self.assertEq(msg, ks.brokenrules.first.message)
+        self.assertEq(str, builtins.str(ks.brokenrules.first))
 
         # Break all of the knights broken rules and test each entity's 
         # broken rules collection individually
@@ -1396,8 +1403,8 @@ class test_entities(tester.tester):
             self.assertFalse(k.isvalid)
             self.assertInValid(k)
             self.assertTrue(k.brokenrules.issingular)
-            self.assertEq(k.brokenrules.first.message, 'Names must be strings')
-            self.assertEq(str(k.brokenrules.first), 'Names must be strings')
+            self.assertEq(msg, k.brokenrules.first.message)
+            self.assertEq(str, builtins.str(k.brokenrules.first))
 
         # Now test the knigts collection's broken rules.
         self.assertFalse(ks.isvalid)
@@ -1405,8 +1412,8 @@ class test_entities(tester.tester):
         self.assertCount(4, ks.brokenrules)
 
         for br in ks.brokenrules:
-            self.assertEq(br.message, 'Names must be strings')
-            self.assertEq(str(br), 'Names must be strings')
+            self.assertEq(msg, br.message)
+            self.assertEq(str, builtins.str(br))
 
     def it_raises_onadd(self):
         """ The onappended event is called whenever an entity is added to the
@@ -1945,7 +1952,7 @@ class test_entities(tester.tester):
                 ks.pluck('{name!' + str(i) + '}-{trait}')
             )
 
-class test_entity(tester.tester):
+class entity(tester.tester):
     def it_calls__add__(self):
         """ The + operator concatenates an entity with another
         entity or enities collection and returns an enities
@@ -1976,7 +1983,7 @@ class test_entity(tester.tester):
 
     def it_gets_brokenrules(self):
         """ This functionality is tested in
-        test_entities.it_gets_brokenrules.
+        entities_.it_gets_brokenrules.
         """
 
 def createtable(x, y):
@@ -1987,7 +1994,7 @@ def createtable(x, y):
             r.newfield([i, j])
     return tbl
 
-class test_table(tester.tester):
+class table_(tester.tester):
     def it_calls__init__(self):
         # Ensure we can instantiate without arguments
         try:
@@ -2409,7 +2416,7 @@ class table_column(tester.tester):
         for c in tbl.columns:
             self.assertEq(4, c.width)
 
-class test_row(tester.tester):
+class row(tester.tester):
     def it_calls__getitems__(self):
         """ The __getitem__ method returns the field at the given index
         number.  """
@@ -2488,7 +2495,7 @@ class test_row(tester.tester):
 
         self.eq(expect, repr(tbl.rows.second))
 
-class test_fields(tester.tester):
+class fields(tester.tester):
     def it_get_row(self):
         " A fields collection will have a reference to the row it's in. """
         tbl = table.table()
@@ -2514,7 +2521,7 @@ class test_fields(tester.tester):
         for i, r in enumerate(tbl):
             self.assertEq([[i, x] for x in range(5)], r.fields.values)
 
-class test_field(tester.tester):
+class field(tester.tester):
     def it_gets_values(self):
         """ The constructor of field will set the value property. """
         f = table.field(123)
@@ -2816,7 +2823,7 @@ class test_field(tester.tester):
         f = tbl[0][0]
         self.assertEq(s, f.__str__(table=True))
 
-class test_index(tester.tester):
+class index(tester.tester):
     # TODO Complete this class
     def it_calls_getindex(self):
         sks = sillyknights.createthe4()

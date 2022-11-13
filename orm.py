@@ -95,7 +95,7 @@ TODOs:
         class party(orm.entity):
             pass
     
-        class timesheets:
+        class timesheet(orm.entity)
             party = party.party
     
     we should be able to access ``timesheets`` off a party instance:
@@ -146,9 +146,6 @@ TODOs:
 
     TODO Create orm.reload() to complement orm.reloaded(). It should
     reload the data from the db into self.
-
-    FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
-    for more clarification.
 
     TODO datespans and timespans that refer to a timeframe for which an
     association is valid should be named 'valid':
@@ -218,6 +215,43 @@ TODOs:
         for log in b_logs:
             # Stream the logs
             ...
+
+    TODO:6b455db7 There is currently no support for overridding ORM
+    attributes.
+
+        class mammals(orm.entities):
+            pass
+
+        class mammal(orm.entity):
+            name = str
+
+        class dog(mammals):
+            pass
+
+        class dog(mammal):
+            name = str
+
+    If we were to create a `dog` object and assign it a name value, we
+    would get BrokenRulesError telling us that its super, mammal, did
+    has an empty `name` attribute. The ORM just currently doesn't
+    provide support for this kind of thing. 
+
+    Though this doesn't seem to be a problem for most GEM classes at the
+    moment, any ORM entity's will have an 'owner' and 'proprietor'
+    property that, on assignment, will have to manually work around this
+    limitation. Forgetting to do so can cause mysterious bugs.
+
+    Here are some things to consider when we add support:
+        
+        * Mixed types should be dealt with correctly. For example, if
+          the mammal.name property above were som other type, such as an
+          int, text, byte, etc, the code should do the right thing (or
+          the best thing).
+
+        * Primative field mappings should be supported, like those in
+          the example, but also entity mappings, entities mappings,
+          associations, etc. should have behavior that supports
+          overriding.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -918,7 +952,7 @@ class where(entitiesmod.entity):
     """ Represents a WHERE clause of an SQL statement. """
 
     def __init__(self, es, pred, args):
-        """ Sets the initial propreties for the ``where`` object. 
+        """ Sets the initial properties for the ``where`` object. 
         
         :param:  entities  es: The ``entities`` collection associated
         with this ``where`` object.
@@ -4653,12 +4687,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg = None
 
                             if own:
-                                # The security contekt's owner must
-                                # match the entity if we are not root.
-                                if not own.isroot and own.id != map.value:
-                                    msg = (
-                                        'Owner id does not match orm id'
-                                    )
+                                if own.isroot:
+                                    pass
+                                else:
+                                    # The security context's owner must
+                                    # match the entity if we are not
+                                    # root.
+                                    if own.id != map.value:
+                                        msg = (
+                                            'Owner id does not match '
+                                            'ORM id'
+                                        )
                             else:
                                 # NOTE this could be the result of a
                                 # context manager, such as orm.su() or
@@ -4990,7 +5029,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                             # Get super's map
                                             map1 = maps1[name]
                                         except IndexError:
-                                            # Dosen't exist: add to dict
+                                            # Doesn't exist: add to dict
                                             # (bypass mapping)
                                             sup2.__dict__[name] = spec
                                         else:
@@ -5106,7 +5145,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             # Append the entity to that entities collection
             es += e
-
 
     def __repr__(self):
         """ Create a string representation of the entity.
@@ -6090,9 +6128,9 @@ class entitymapping(mapping):
 
     @property
     def isproprietor(self):
-        """ Returns True if the ``entity`` being referenced is the
-        proprietor (``party.party``) object that each ``entity`` object
-        has. Returns False otherwise.
+        """ Returns True if the ``entity`` being referenced by this
+        entitymapping is the proprietor (``party.party``) object that
+        each ``entity`` object has. Returns False otherwise.
         """
         return self.name == 'proprietor'
 
@@ -9704,9 +9742,12 @@ class orm:
         # the database. If that's not the case, raise
         # RecordNotFoundError.
         if not ress.issingular:
+            name = self.instance.__class__.__name__
+            mod = self.instance.__module__
+            cls = mod + '.' + name
             raise db.RecordNotFoundError(
                 'Unable to find record for '
-                f'{type(self.instance)}:{id.hex}'
+                f'<{cls}>:{id.hex}'
             )
         ress.demandhasone()
 
@@ -10635,6 +10676,7 @@ class orm:
         """
         return isinstance(self.instance, entity)
 
+    # TODO We should rename persistencestate(s) to just "state(s)". 
     @property
     def persistencestates(self):
         """ Returns a list of persistencestate tuples for each of the

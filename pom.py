@@ -56,10 +56,20 @@ class site(asset.asset):
 
     # Indicates whether or not the _ensuring method is being run
     _ensuring = False
+
     def __init__(self, *args, **kwargs):
         """ Create a new web ``site`` object.
         """
         super().__init__(*args, **kwargs)
+
+        # NOTE It may be unwise to put any initialization code here that
+        # depends on the database. Consider putting it in the
+        # site._ensure method. For example, code that realize on the
+        # public/ directory (self.public) needed to be put in
+        # site._ensure. This was necessary because the code that ensures
+        # public/ exists needs to have the correct proprietor
+        # and site entity established. Plus the directory itself needs
+        # to be created in the right security context.
 
         self.index = None
         self._pages = None
@@ -74,7 +84,7 @@ class site(asset.asset):
 
         self.sidebars = sidebars()
 
-        # Give the site a default titel of the class's name. 
+        # Give the site a default title of the class's name. 
         self._title = type(self).__name__.replace('_', '-')
 
         # TODO Use the site.directory inodes model to reference
@@ -98,6 +108,7 @@ class site(asset.asset):
                 self._ensure()
             finally:
                 site._ensuring = False
+        
 
     # Host name of the site
     host = str
@@ -192,15 +203,27 @@ class site(asset.asset):
             wssup = ws
             while sup:
                 for map in wssup.orm.mappings:
-                    if not isinstance(map, orm.fieldmapping):
+                    if isinstance(map, orm.fieldmapping):
+                        # Accept fieldmapping
+                        pass
+                    elif isinstance(map, orm.entitymapping):
+                        # Accept entitymappings unless they are security
+                        # related
+                        if map.isproprietor or map.isowner:
+                            continue
+                    else:
+                        # Filterout other tiypes
                         continue
-
-                    setattr(sup, map.name, getattr(wssup, map.name))
+                    
+                    # Move the value in wssup's map to sup's 
+                    v = wssup.orm.mappings[map.name].value
+                    sup.orm.mappings[map.name].value = v
 
                 # Make sure that self and its supers aren't flag as new,
                 # dirty or markedfordeletion
                 sup.orm.persistencestate = False, False, False
 
+                # Ascend to the super/base entity
                 sup = sup.orm._super
                 wssup = wssup.orm.super
 
@@ -248,11 +271,43 @@ class site(asset.asset):
                         sup.owner = root
                         sup = sup.orm.super
 
-                #self.orm.mappings['proprietor']._value = propr
                 self.proprietor = propr
 
-            # Save the association between the site and its proprietor
+            # Get (or create if needed) the site's public/ directory
+            # after the site has been established.
+            pub = self.public
+
+            try:
+                # Get the favicon.ico file entity from public/
+                favicon = pub['favicon.ico']
+            except IndexError:
+                # If it doesn't exist, get file from the `favicon`
+                # attribute
+                if favicon := self.favicon:
+                    # Add the favicon.ico to public/
+                    pub += favicon
+            else:
+                favicon.body = self.favicon.body
+
+            # Save the site plus its associations and directories
             self.save()
+
+    @property
+    def favicon(self):
+        """ When overriden by subclasses, this property returns a
+        `file.file` object that contains the binary data in its body to
+        represent a favicon (as would be requested automatically by
+        browsers as /favicon.ico).
+
+        By default, None is returned, since the base class can't now
+        what the subclass of `site` wants the favicon to be beforehand.
+
+        The `file` object is stored in the framework's file system when
+        the `site` object is initialized. This allows developers to
+        set the favicon data in this @property although it is served to
+        user agents like any other file would be.
+        """
+        return None
 
     @property
     def styles(self):
@@ -296,6 +351,27 @@ class site(asset.asset):
             dir = file.directory(f'/pom/site/{self.id.hex}')
             attr(dir)
         return dir
+
+    @property
+    def public(self):
+        """ Returns the public/ directory (`file.directory`) of this
+        `site`.
+
+        Though the directory returned is a framework entity (a
+        `file.directory`), this directory is analogous to the public/
+        directories that are typically found on websites. These
+        directories typically contain artifacts that need to be publicly
+        accessable such as CSS files, JavaScript files and favicon.ico
+        files.
+        """
+        dir = self.directory
+        try:
+            pub = dir['public']
+        except IndexError:
+            pub = file.directory('public')
+            dir += pub
+        finally:
+            return pub
 
     @property
     def resources(self):
@@ -391,6 +467,7 @@ class site(asset.asset):
         if not self._pages:
             self._pages = pages(rent=self)
             self._pages += error()
+
         return self._pages
 
     @pages.setter
@@ -415,6 +492,9 @@ class site(asset.asset):
 
         :param: path str: The path to the web ``page``.
         """
+        if path in ('/', ''):
+            path = '/en/index'
+
         return self.pages[path]
 
     def __call__(self, path):
@@ -422,16 +502,8 @@ class site(asset.asset):
         found, None is returned.
         """
 
-        # NOTE We may not need the try:except here because the pages
-        # collection will do the same thing if we use its __call__
-        # method::
-        #
-        #     return self.pages(path)
-
-        try:
-            return self.pages[path]
-        except IndexError:
-            return None
+        path = self.lang + '/index' if path == '/' else path
+        return self.pages(path)
 
     @property
     def lang(self):
@@ -746,7 +818,6 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     }
 );
 '''
-
         #// Return the JavaScript
         return r
 
@@ -1269,12 +1340,14 @@ class pages(entities.entities):
             segs = [x for x in path.split('/') if x]
             if len(segs):
                 del segs[0] #
+
         elif isinstance(path, list):
             segs = path
+
         else:
             return super().__getitem__(path)
            
-        seg = segs[0] if len(segs) else 'index'
+        seg = segs[0] if segs else None
 
         for pg in self:
             if pg.name == seg:
@@ -1684,23 +1757,23 @@ class page(dom.html):
 
                 # NOTE It's possible to __call__ a page object directly
                 # (not through an HTTP request). In that case, the
-                # www.request would be None.
-                req = www.request
+                # req would be None.
+                app = www.application.current
+                if app:
+                    req = app.request
+                else:
+                    req = None
+                    
                 if req and req.isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)
                     else:
                         meth = self._mainfunc
 
-                    globs = meth.__globals__
-                    globs['req'] = www.request
-                    globs['res'] = www.response
-
                     if eargs.handler:
                         meth(src=eargs.src, eargs=eargs)
                     else:
                         meth()
-                        
                 else:
                     try:
                         main = self._mainfunc
@@ -1709,11 +1782,6 @@ class page(dom.html):
                         raise AttributeError(
                             f'Page class needs main method: {cls}'
                         ) from ex
-
-                    # Inject global variables into main()
-                    globs = self._mainfunc.__func__.__globals__
-                    globs['req'] = www.request
-                    globs['res'] = www.response
 
                     # If there is an HTTP request object, set the
                     # `page`'s `lang` attribute to that of the

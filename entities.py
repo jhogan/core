@@ -2570,16 +2570,18 @@ class brokenrule(entity):
     def __str__(self):
         """ A string representation of the broken rule.
         """
-        return self.message
+        return repr(self)
 
     def __repr__(self):
         e = type(self.entity)
         e = f'{e.__module__}.{e.__name__}'
-        r = f'{type(self).__name__}(\n'
-        r += f"    message = '{self.message}',\n"
-        r += f"    property = '{self.property}',\n"
-        r += f"    type = '{self.type}',\n"
-        r += f"    entity = <{e}>,\n"
+        r = f'{type(self).__name__}({self.message}, '
+        r += f'property={self.property}, '
+        r += f'type={self.type}, '
+
+        e = 'None' if self.entity is None else f'<{e}>'
+        r += f'entity={e}'
+
         r += ')'
         return r
     

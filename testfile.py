@@ -12,11 +12,12 @@
 
 import apriori; apriori.model()
 
-from dbg import B
+from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import asset
 import base64
+import db
 import dom
 import ecommerce
 import entities
@@ -28,8 +29,7 @@ import party
 import pom
 import tester
 import uuid
-import pom
-import db
+import www
 
 def clean():
     store = file.inode.store
@@ -226,6 +226,8 @@ class dom_file(tester.tester):
     def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
             def main(self, uid: uuid.UUID):
+                req = www.application.current.request
+                res = www.application.current.response
                 if req.isget:
                     return
 
@@ -278,8 +280,8 @@ class dom_file(tester.tester):
             usr.save()
 
             # Post the file. Reference the user's id in the URL.
-            res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
-            self.status(201, res1)
+            res = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+            self.status(201, res)
 
             usr = usr.orm.reloaded()
             f1 = usr.directory['var/avatars/default.gif']
@@ -1137,7 +1139,7 @@ class file_(tester.tester):
                 with orm.su(usr1):
                     self.expect(orm.AuthorizationError, f.orm.reloaded)
 
-class file_directory(tester.tester):
+class directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True
@@ -1544,7 +1546,7 @@ class file_directory(tester.tester):
             elif i == 3:
                 assert False
 
-class file_resource(tester.tester):
+class resource(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         clean()
@@ -1743,6 +1745,39 @@ class file_resource(tester.tester):
         # this will cause permission issues as other tests to
         # presist the radix cache.
         file.directory.radix.save()
+
+    def it_saves_non_local(self):
+        """ Ensure that call to resource.save on a non-local resource
+        file will result in the resource not being saved to the HDD or
+        the DB.
+        """
+
+        # Create non-local resource
+        f = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.41/vue.cjs.js",
+            integrity="sha512-7m9S6PzUY75+/V5GIWRP19NFD1MgYpzbmbbSfUMnj8PMtkOj/XZs4BmxXvXku2litdO4qDrVhGtFkk2MVWlpcg==",
+            local = False
+        )
+
+        # It will be marked isnew
+        self.true(f.orm.isnew)
+        self.false(f.orm.isdirty)
+        self.false(f.orm.ismarkedfordeletion)
+
+        f.save()
+
+        # After saving, the isnew flag is Falsified even though it
+        # hasn't really been saved anywhere.
+        self.false(f.orm.isnew)
+        self.false(f.orm.isdirty)
+        self.false(f.orm.ismarkedfordeletion)
+
+        # It doesn't exist in HDD
+        self.false(f.exists)
+        self.false(os.path.exists(f.path))
+
+        # It doesn't exist in DB
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
 
 if __name__ == '__main__':
     tester.cli().run()

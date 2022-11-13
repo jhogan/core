@@ -17,7 +17,7 @@ import orm
 ########################################################################
 # Test dom                                                             #
 ########################################################################
-class dom_elements(tester.tester):
+class elements(tester.tester):
     def it_gets_text(self):
         # FIXME:fa4e6674 This is a non-trivial problem
         return
@@ -447,7 +447,7 @@ class test_comment(tester.tester):
         expect = '<!--%s-->' % txt
         self.eq(expect, com.html)
 
-class dom_script(tester.tester):
+class script(tester.tester):
     def it_does_not_escape(self):
         body = 'A <string> with HTML "escapable" characters'
 
@@ -516,7 +516,7 @@ class p(tester.tester):
 
         self.eq(expect, p.text)
 
-class dom_text(tester.tester):
+class text(tester.tester):
     def it_calls_html(self):
         txt = self.dedent('''
         <p>
@@ -578,7 +578,7 @@ class dom_text(tester.tester):
         txt = dom.text(txt)
         self.eq(expect, str(txt))
 
-class dom_attribute(tester.tester):
+class attribute(tester.tester):
     def it_raises_on_invalid_attributes(self):
         # Test for valid characters in attribute names. Based on
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
@@ -901,7 +901,7 @@ class dom_attribute(tester.tester):
                 }
             self.expect(ex, f)
 
-class dom_cssclass(tester.tester):
+class cssclass(tester.tester):
     def it_deals_with_undef_attr(self):
         p = dom.p()
         attr = p.attributes['class']
@@ -1184,7 +1184,7 @@ class html(tester.tester):
         '''
         self.expect(NotImplementedError, lambda: dom.html(html))
 
-class dom_markdown(tester.tester):
+class markdown(tester.tester):
     def it_parses_code(self):
         md = dom.markdown('''
         Use the `printf()` function.

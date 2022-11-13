@@ -30,6 +30,7 @@ are also provided in this module.
 
 from config import config
 from dbg import B, PM
+from entities import classproperty
 from functools import reduce
 from pprint import pprint
 import apriori
@@ -39,11 +40,11 @@ import ecommerce
 import entities
 import exc
 import file
+import html
 import json
 import logs
 import orm
 import os
-import html
 import party
 import pdb
 import pom
@@ -79,6 +80,16 @@ class application:
         application.
         """
         self._request = None
+        self._response = None
+
+    _current = None
+    @classmethod
+    def _set_current(cls, v):
+        cls._current = v
+
+    @classproperty
+    def current(cls):
+        return cls._current
 
     @property
     def environment(self):
@@ -108,8 +119,19 @@ class application:
         processing.
         """
         if not self._request:
-            self._request = _request(self)
+            self._request = request(self)
         return self._request
+
+    @property
+    def response(self):
+        """ The HTTP response object that this application is currently
+        processing.
+        """
+        return self._response
+
+    @response.setter
+    def response(self, v):
+        self._response = v
 
     def demand(self):
         """ Raise an exception if the current state of the WSGI
@@ -154,22 +176,23 @@ class application:
         # Ensure that the GEM has been fully imported
         import apriori; apriori.model()
 
-        global request, response
-
-        res = _response(self.request)
-        res.headers += 'Content-Type: text/html'
-
-        # Set global www.response
-        response = res
-
         break_ = False
+
+        res = None
+
+        sec = orm.security()
+
+        # Back up the existing owner. We will restore it in the
+        # `finally` block.
+        own = sec.owner
 
         try:
             # Clear state data currently maintained by the WSGI
             # application.
             self.clear()
 
-            sec = orm.security()
+            type(self)._set_current(self)
+
             # Set the owner to anonymous. 
             # TODO This doesn't address how an authenticated user would
             # be set.
@@ -184,55 +207,13 @@ class application:
 
             sec.proprietor = propr
 
-            # Set the global request object
-            request = self.request
-
             # Raise an exception if the current state of the WSGI
             # application object, or any of its constituents, are
             # invalid.
             self.demand()
 
-            # If request is GET or HEAD
-            if req.isget or req.ishead:
-                # Invoke the request object, i.e., make the request
-                data = req()
-
-                # Logically, if we are performing a GET, the data
-                # returned form the request will be the the response
-                # object's body
-                if req.isget:
-                    res.body = data
-
-            # If the request is a POST
-            elif req.ispost:
-                
-                # If the request is XHR (i.e, an AJAX request)
-                if req.isxhr:
-
-                    # If the request is in response to a dom.event.
-                    if req.isevent:
-
-                        # Make the request and set the response's body
-                        # to the HTML that is returned.
-                        res.body = req()
-                    else:
-                        reqdata = self.request.post
-
-                        cls, meth = self.class_, self.method
-
-                        obj = cls(self)
-
-                        data = getattr(obj, meth)()
-
-                        data = [] if data == None else data
-                else:
-                    res.body = req()
-
-            else:
-                # Raise if the method is not POST, GET or HEAD.
-                raise MethodNotAllowedError(
-                    'Method "%s" is never allowed' % req.method
-                )
+            # Make the actual request and get the response object
+            res = req()
 
         except Exception as ex:
             # Log exception to syslog
@@ -240,12 +221,20 @@ class application:
 
             # If tester.py set the WSGI app to breakonexception.
             if self.breakonexception:
-                # Immediatly raise to tester's exception handler
+                # Immediatly raise to tester's exception handler.
                 break_ = True
                 raise
 
+            if not res:
+                res = response(self)
+                respones = res
+                res.headers += 'Content-Type: text/html'
+
             try:
-                if self.request.isxhr:
+                if self.request.forfile:
+                    res.status = ex.status
+
+                elif self.request.isxhr:
                     # Create an <article> that explains the exception
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
@@ -259,12 +248,15 @@ class application:
                     art += dom.span(str(ex), class_='message')
                     art += pom.traceback(ex)
                     res.body = art.html
+
                     if isinstance(ex, HttpError):
                         res.status = ex.status
+
                     elif isinstance(ex, HttpException):
-                        # Allow the exception to make
-                        # modifications to the response.
+                        # Allow the exception to make modifications to
+                        # the response.
                         ex(res)
+
                     else:
                         # Set to the generic 500 status code
                         res.status = InternalServerError.status
@@ -290,6 +282,9 @@ class application:
                             # /en/error
                             pg = req.site['/%s/error' % lang]
 
+                            # TODO This alternative block is redundant
+                            # with the consequent block
+
                             # Clear and invoke
                             pg.clear()
                             pg(ex=ex)
@@ -301,8 +296,8 @@ class application:
 
                     # If the exception is an HttpException i.e., HTTP 300s. 
                     elif isinstance(ex, HttpException):
-                        # Allow the exception to make
-                        # modifications to the response.
+                        # Allow the exception to make modifications to
+                        # the response.
                         ex(res)
 
                     # If the exception was a non-HTTP exception
@@ -341,7 +336,7 @@ class application:
                 # str(ex) through html.escape(). 
 
                 # TODO Add traceback to output
-                # TODO Add tests to ensure excepiton messages are
+                # TODO Add tests to ensure exception messages are
                 # escaped properly
                 cls = type(ex).__name__
                 msg = html.escape(str(ex))
@@ -354,6 +349,8 @@ class application:
                 )
 
         finally:
+            sec.owner = own
+
             if not break_:
                 # Use the WSGI start_response to send the HTTP status
                 # and headers back to the browser.
@@ -370,22 +367,22 @@ class application:
                     # assign empty str for the bytes() function.
                     body = ''
 
-                # Return the responses body to the browser
-                return iter([bytes(body, 'UTF-8')]) 
+                # Return the responses body to the browser in accordance
+                # with the WSGI protocol
+                if isinstance(body, bytes):
+                    return iter([body])
+                else:
+                    # Before returning, assume body is a UTF-8 str so
+                    # convert accordingly.
+                    return iter([bytes(body, 'UTF-8')]) 
 
-            request = None
-
-# TODO The class name should be `request` and the main instance should
-# be stored in `_request` at the class level. A @property called
-# request.main or request.current can store the request object currently
-# being processed.
+            type(self)._set_current(None)
 
 # NOTE The request class tries to be a generic HTTP request class and a
 # WSGI request class at the same time. We may want to add a new subclass
 # of request call `wsgirequest` that would encapsulate the WSGI logic so
 # we can get it out of the regular `request` class.
-request = None
-class _request:
+class request:
     """ Represents an HTTP request.
 
     The class is designed represent any HTTP request. However, there a
@@ -420,6 +417,49 @@ class _request:
         self._method     =  None
         self._useragent  =  None
         self._site       =  None
+
+    @property
+    def forfile(self):
+        """ Return True if the request is for a file, False otherwise.
+
+        Most requests will be for a page (a subclass of pom.page) and
+        not a file (a subclass of inode.file). When a request is made
+        for a page, the `page` class is instantiated and called, and its
+        resultant HTML is returned. When a request for a file is made,
+        the framework's file system (governed by file.py) will return
+        the file's body to the requestor (if it can be found).
+        """
+        return self.path and not self.page
+
+    @property
+    def forpage(self):
+        """ If this request is for a page (`pom.page`), return True. If
+        it is for a file (file.file) return False.
+
+        See `request.forfile` for more.
+        """
+
+        # TODO To distinguish between page and file request, we should
+        # at least see if the first element of the path (e.g.,
+        # '/en/index') is an ISO language code (probably ISO 639-1)
+        # probably using the pycountry package.
+        #
+        # However, this gets us halfway there. What if there is a
+        # directory under public/ called en/. If we wanted to get the
+        # file:
+        #
+        #     GET /en/some.txt
+        #
+        # this URL would be interpreted as a page request and probably
+        # return 404.
+        #
+        # Testing the Accept request header
+        # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept)
+        # and developing a content negotiation strategy
+        # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation)
+        # may be the solution here.
+
+        return not self.forfile
 
     def __repr__(self):
         """ A string representation of the HTTP request.
@@ -792,11 +832,21 @@ class _request:
 
     @property
     def language(self):
-        ''' Return the language code. The default is 'en' for English.
-        
-        When the request is for a page hosted by the framework, this is
-        usually the first segment of the URL path. 
+        ''' Return the language code for this request.
+
+        The language code is usually given in the URL:
+
+            https://www.example.com/en/home
+
+        Above, 'en' is the `language` and would be returned.
+
+        For HTTP requests intended to get or retrieve a file, there
+        usually would be no language. In that case, None is returned.
         '''
+
+        # Return None if this request is for a file.
+        if self.forfile:
+            return None
 
         try:
             # TODO When the language code is not given, Accept-Language
@@ -811,18 +861,31 @@ class _request:
         return 'en'
 
     def __call__(self):
-        """ When the request is for a WSGI app, this calls the page
-        being requested, passing in the query string parameters as
-        arguments to the page. When the page is completed processing,
-        the HTML for the page is returned.
+        """ Makes the request that this `request` object was created to
+        make.
+
+        When the request is for a WSGI app, a determination is made as
+        to whether the request is for a web page (`pom.page`) or for a
+        file in the framework's file system (`file.file').
+
+        If a page is being requested, we pass in the query string
+        parameters as arguments to the page. When the page is completed
+        processing, the `response` will be returned containing the HTML
+        generated by calling the page.
+
+        If a file is being requested, the response object will contain
+        the data for the file.
+
+        The `response` object will be created here and assigned to the
+        global response varibale (www.application.current.response)
+        making it accessible to all areas of the application (useful to
+        `pom.page` objects). 
+
         """
-        # TODO If an exception bubbles up here, it should be logged to
-        # syslog (I think).
 
-        # Create the hit log. In the finally block, we will add some
-        # concluding information by calling self.log again, such as the
-        # HTTP status code.
-
+        # Create the hit log. In the `finally` block, we will add some
+        # concluding information (such as the HTTP status code), by
+        # calling self.log a second time.
         self.log()
 
         # If the request is in response to a dom.event, create the
@@ -840,8 +903,14 @@ class _request:
         #     trigger: The name of the method that caused the event. For
         #     example, if the `click()` method of a <button> caused the
         #     event, trigger would be 'click'.
+
+        res = response(self)
+        application.current.response = res
+
         eargs = None
         if self.isevent:
+            # Create an eventargs object given the corresponding data in
+            # this request.
             eargs = dom.eventargs(
                 hnd      =  self.body['hnd'],
                 html     =  self.body['html'],
@@ -850,54 +919,99 @@ class _request:
             )
 
         try:
-            # Invoke the page
-            self.page(eargs=eargs, **self.arguments)
-        except HttpError as ex:
-            # If the page raised an HTTPError with a flash message, add
-            # the flash message to the pages HTML.
-            if ex.flash:
-                self.page.flash(ex.flash)
+            # If the request is for a page (pom.page)
+            if self.forpage:
+                # Invoke the page
+                pg = self.page
 
-                # Set the response statust of the global response
-                # object.
-                response.status = ex.status
+                # If we are dealing with a page, the content-type will
+                # be text/html
+                res.headers += 'Content-Type: text/html'
+
+                # Call the page passing in the eventargs (if any) and
+                # the arguments for the page.
+                pg(eargs=eargs, **self.arguments)
+
+                if not self.ishead:
+                    # If we are processing an event
+                    if self.isevent:
+                        # If that event is for a "page" change in an SPA
+                        if self.isspa:
+                            # Set the outer HTML of the page's <main>
+                            # element to the response's body
+                            res.body = pg.main.html
+                        else:
+                            # If this is for a regular event, assigned
+                            # the eventarg's HTML to the response body.
+                            # Presumably, this eventarg was modified by
+                            # the above call to pg.
+                            if eargs.html:
+                                res.body = eargs.html.html
+                    else:
+                        res.body = f'<!DOCTYPE html>\n{pg.html}'
+            elif self.forfile:
+                # ... if the request is for a file from the framework's
+                # file system.
+
+                path = None
+                path = self.path
+                pub = self.site.public
+                try:
+                    # Try to get the file from the website's public
+                    # directory
+                    file = pub[path]
+                except Exception as ex:
+                    # Raise a 404 if not found
+                    raise NotFoundError(path) from ex
+                else:
+                    # On success, use the file's mimetpe fo the
+                    # respones's Content-Type header.
+                    res.headers += 'Content-Type: ' + file.mime
+
+                    if not self.ishead:
+                        # Assign the file data to the response object
+                        res.body = file.body
+            else:
+                # This should never happen
+                raise ValueError(
+                    'Request is neither for a page or a file'
+                )
+                    
+        except HttpError as ex:
+            # Set the responses status to the exception's status. 
+            res.status = ex.status
+
+            # If the page raised an HTTPError with a flash message, add
+            # the flash message to the page's HTML.
+
+            if self.forpage and ex.flash:
+                self.page.flash(ex.flash)
+                res.body = pg.main.html
             else:
                 raise
         finally:
             # Finish of the hit log
             self.log()
 
-        # If the request if for an event...
-        if self.isevent:
-            # If the request is for new SPA page (e.g., a click on a
-            # <nav> that results in an XHR request made...
-            if self.isspa:
-                # Return only the <main> element of the SPA page. When
-                # requesting a single page in an SPA context, only the
-                # <main> element is being requested by the client.
-                return self.page.main.html
-
-            else:
-                # Return the event HTML elements as handled by the event
-                # handler -- if there are any.
-                if eargs.html:
-                    return eargs.html.html
-
-            # If the browser didn't send HTML fragments, return None.
-            return None
-        else:
-            return f'<!DOCTYPE html>\n{self.page.html}'
+        # Return the response object
+        return res
 
     @property
     def hit(self):
         """ Return the ``hit`` entity. If it does not yet exist for this
         request, create it.
         """
+
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
+            try:
+                path = self.page.path
+            except:
+                path = self.path
+
             self._hit = ecommerce.hit(
-                path       =  self.page.path,
+                path       =  path,
                 isxhr      =  self.isxhr,
                 qs         =  self.qs,
                 method     =  self.method,
@@ -965,7 +1079,7 @@ class _request:
                 # datetime and HTTP status.
                 if hit.inprogress:
                     hit.end = now
-                    hit.status = response.status
+                    hit.status = self.app.response.status
                 else:
                     hit.begin = now
 
@@ -1044,7 +1158,10 @@ class _request:
             slash.
         """
         if self.iswsgi:
-            return self.environment['PATH_INFO']
+            path = self.environment['PATH_INFO']
+            if path == '/':
+                path = '/en/index'
+            return path
 
     @property
     def size(self):
@@ -1283,9 +1400,12 @@ class _request:
         complete or is incorrectly constructed.
         """
 
-        # If the site associated with the request doesn't have a page in
-        # its index, raise a 404
-        if not request.page:
+        if request.forfile:
+            pass
+
+        elif not request.page:
+            # If the site associated with the request doesn't have a page in
+            # its index, raise a 404
             raise NotFoundError(self.path)
 
         if self.isget or self.ishead:
@@ -1339,8 +1459,7 @@ class _request:
                 'Method "%s" is never allowed' % self.method
             )
 
-response = None
-class _response():
+class response():
     Messages = {
         200: 'OK',
 		201: 'Created',
@@ -1454,13 +1573,13 @@ class _response():
     def __init__(self, req, res=None, ex=None):
         """ Create an HTTP response.
 
-        :param: req www._request: The www.request object that resulted in
+        :param: req www.request: The www.request object that resulted in
         this response.
 
         :param: res urllib.response: The response object from
         urllib.request.urlopen(). This response object (self) will wrap
         ``res``, making things more convenient for the user of
-        www._response.
+        www.response.
 
         :param: ex Exception: If the HTTP response is the result of an
         Exception, ``ex`` can be passed in. If it contains the status
@@ -1523,6 +1642,8 @@ class _response():
         except KeyError:
             return str(self.status)
 
+    # TODO Rename to content_type to reflect hyphen put in the header
+    # Content-Type
     @property
     def contenttype(self):
         """ The content type of the body.
@@ -1568,17 +1689,22 @@ class _response():
         # body = bytes(body, 'utf-8')
 
         if isinstance(self._body, str):
-            if not self._body.endswith('\n'):
-                # Ensure a newline is at the end of the response body
-                # simply to make working with tools like the `curl`
-                # command more convenient.
-                self._body += '\n'
+            if self._body:
+                if not self._body.endswith('\n'):
+                    # Ensure a newline is at the end of the response
+                    # body simply to make working with tools like the
+                    # `curl` command more convenient.
+                    self._body += '\n'
+
         return self._body
 
     @body.setter
     def body(self, v):
         if self._body != v:
-            self._body = v
+            if isinstance(v, bytes) and self.mimetype == 'text':
+                self._body = v.decode('utf-8')
+            else:
+                self._body = v
             self._html = None
 
     @property
@@ -1745,7 +1871,7 @@ class HttpException(Exception):
         self.response = res
 
     @classmethod
-    def create(cls, msg, res, _attop=True):
+    def create(cls, msg, res, _atop=True):
         """ Creates and returns a subclass of ``cls`` that corresponds
         to thet HTTP ``status`` property in ``res``. 
 
@@ -1764,14 +1890,14 @@ class HttpException(Exception):
 
         :param: res www.response: The HTTP response object.
 
-        :param: _attop bool: Since ``create`` is a recursive method,
+        :param: _atop bool: Since ``create`` is a recursive method,
         ``atop`` is used internally to determine when the method is at
         the top of the recursion stack.
         """
         for sub in cls.__subclasses__():
             
             # Recurse
-            ex = sub.create(msg, res, _attop=False)
+            ex = sub.create(msg, res, _atop=False)
 
             # Return if the sub was able to create one
             if ex:
@@ -1786,7 +1912,7 @@ class HttpException(Exception):
                     return sub(msg=msg, res=res)
 
         # If we are at the top call of this recursive method...
-        if _attop:
+        if _atop:
             
             # If we are here, then recursing through the subclasses did
             # not result in the discovery of the correct exception
@@ -1802,7 +1928,7 @@ class HttpException(Exception):
         phrase for the error message, e.g.: '404 Not Found'.
         """
         return '%s %s' % (
-            str(self.status), _response.Messages[self.status]
+            str(self.status), response.Messages[self.status]
         )
 
     @property
@@ -2456,15 +2582,15 @@ class browser(entities.entity):
             try:
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
-                res = _response(req=req, ex=ex)
+                res = response(req=req, ex=ex)
                 ex1 = HttpError.create(
                     'Error requesting' , res
                 )
                 raise ex1
             else:
-                # Return a www._response objcet representing the HTTP
+                # Return a www.response objcet representing the HTTP
                 # response to the HTTP request.
-                return _response(req=req, res=res)
+                return response(req=req, res=res)
 
     class _cookies(entities.entities):
         """ A class representing a collection of ``cookie`` objects.
