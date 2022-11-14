@@ -6093,6 +6093,10 @@ with book('Hacking Carapacian Core'):
         the its level (consider subscribing to a SaSS service and being
         offered the *level* of "Basic", "Premium", or "Professional").
 
+        In this model, we've inherited one level deep, however, it is
+        possible to create a subentity of `good` and a subentity of
+        that subentity, and so on.
+
         Now that we've established the object model, let's see how to
         use it to create and persist products, goods and services:
       ''')
@@ -6127,7 +6131,7 @@ with book('Hacking Carapacian Core'):
         `save()` operation ensures both the `name` and `code` are saved
         without any explicit reference to the `product` base class. The
         ORM ensure that peristence and attribute access work seemlessly
-        when using inheritance.
+        when using inheritance. 
 
         It's important to understand that, even though we didn't
         explicitly reference the `product` class in this example, a
@@ -6181,24 +6185,29 @@ with book('Hacking Carapacian Core'):
         # the good's code attribute
         expect(AttributeError, lambda: prod1.code)
 
-    print('''
-        Here, we see the use of `super` property to get the base entity
-        of `good`:
+      print('''
+        Here we see the use of `super` property being used to get the
+        base entity of `good`:
             
             prod = g.orm.super
 
-        This attribute is not intended for every day use though it is
-        useful to demonstrate the relationship entity objects have with
-        their base entities. `super` is lazy-loaded; when `good` was
-        reloaded, it wasn't pulled from the database until it was called
-        for.
+        This attribute is not intended for every day use, though it is
+        useful to demonstrate the relationship that entity objects have
+        with their base entities. `super` is lazy-loaded; when `good`
+        was reloaded, it wasn't pulled from the database until it was
+        called for.
 
-        The important thing to note here is that the ORM is maintating
-        to distinct but related entity: the `good` and the `product`.
-        This is clear from the code sample above. In the database, a
-        `product` table and a `good` table are used to store the `good`
-        entity along with it's corresponding `good` entity. Below are
-        approximations of the two tables in the database:
+        The important thing to note here is that the ORM is maintaining
+        two distinct but related entity: the `good` and the `product`.
+        This is clear from the code sample above. 
+      ''')
+
+      with section( 'Behind the scenes: inheritance and presistence'):
+        print('''
+          In the database, a `product` table and a `good` table are used
+          to store the `good` entity along with its corresponding `good`
+          entity. Below are approximations of the two tables in the
+          database:
 
             /* The product table */
             CREATE TABLE product (
@@ -6214,23 +6223,31 @@ with book('Hacking Carapacian Core'):
               PRIMARY KEY (`id`),
             )
 
-        Note that only the `product` table has the `name` field. Even
-        though the `good` entity has a `name` attribute, the value for
-        it is stored in the `product` table. This is because `name` is
-        inherited from the `product` entity. Adding an additional `name`
-        field in the `good` table would lead to duplicate data.
+          Note that only the `product` table has the `name` field. Even
+          though the `good` entity has a `name` attribute, the value for
+          it is stored in the `product` table. This is because `name` is
+          inherited from the `product` entity. Adding an additional
+          `name` field in the `good` table would lead to duplicate data.
 
-        Also note that the `code` field is defined on the `good` table.
-        This should make sense because `code` is an attribute of the
-        `good` entity. We wouldn't expect the `product` to know about
-        this attribute so we don't find it in the `product` table.
+          Also note that the `code` field is defined on the `good`
+          table.  This should make sense because `code` is an attribute
+          of the `good` entity. We wouldn't expect the `product` to know
+          about this attribute so we don't find it in the `product`
+          table.
 
-        When we saved `g`, a record was inserted into the `product`
-        table to store the `product` entity and another record was
-        inserted into the `good` table for the `good` entity. Since both
-        entity's share the same id, the ORM is able to associate the
-        two making inherited persistence seemless.
-    ''')
+          When we saved `g`, a record was inserted into the `product`
+          table to store the `product` entity and another record was
+          inserted into the `good` table for the `good` entity. Since
+          both entity's share the same id, the ORM is able to associate
+          the two making inherited persistence seemless.
+      ''')
+
+      with section('Inheritence and constituents')
+        ...
+
+      with section('Searching'):
+        ...
+
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
