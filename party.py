@@ -27,6 +27,9 @@ import apriori, asset, file
 import db, orm, primative
 import uuid, builtins
 
+# XXX Look for instances of party.carapacian and party.anonymous and see
+# if party.public should be used instead
+
 class parties(orm.entities):                                 
     """ A collection of party objects.
 
@@ -228,6 +231,7 @@ class party(orm.entity):
         finally:
             self._updateperson = True
 
+    # XXX Move this to parties.anonymous. Use _produce
     @classproperty
     def anonymous(cls):
         """ Return a party object that represents an unknown user. 
@@ -371,7 +375,7 @@ class company(legalorganization):
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
 
-    # TODO Move this to party.companies
+    # XXX Move this to party.companies. Use _produce
     _carapacian = None
     @classproperty
     def carapacian(cls):
