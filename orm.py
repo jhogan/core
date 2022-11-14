@@ -253,8 +253,6 @@ TODOs:
           associations, etc. should have behavior that supports
           overriding.
 """
-
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
@@ -263,12 +261,12 @@ from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
 from func import enumerate
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
 from shlex import shlex
 from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
-import MySQLdb
 import builtins
 import dateutil
 import db
@@ -279,6 +277,7 @@ import gc
 import inflect
 import inspect
 import itertools
+import MySQLdb
 import os
 import primative
 import re
