@@ -111,6 +111,7 @@ class party_(tester.tester):
 
         for k, v in kwargs.items():
             setattr(com, k, v)
+
         return com
 
     @staticmethod

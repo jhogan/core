@@ -18,14 +18,19 @@
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
 from datetime import datetime, date
-from db import RecordNotFoundError
 from dbg import B
+from db import RecordNotFoundError
 from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
-import apriori, asset, file
-import db, orm, primative
-import uuid, builtins
+import uuid
+import apriori
+import asset
+import builtins
+import db
+import file
+import orm
+import primative
 
 # XXX Look for instances of party.carapacian and party.anonymous and see
 # if party.public should be used instead
@@ -39,12 +44,12 @@ class parties(orm.entities):
     def _produce(cls, id, fld, su, propr):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        XXX
+        XXX Comment
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if not hasattr('cls', fld):
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            # XXX
+            # XXX Comment
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             with orm.su(su), orm.proprietor(propr):
                 try:
