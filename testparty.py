@@ -83,6 +83,49 @@ class party_(tester.tester):
         per.dun            =  None
         return per
 
+    def it_creates_public_party(self):
+        pub = party.parties.public
+        self.eq(party.parties.PublicId, pub.id)
+
+        # Memoizes
+        self.is_(party.parties.public, pub)
+
+        # Persisted
+        self.false(pub.orm.isnew)
+        self.false(pub.orm.isdirty)
+        self.false(pub.orm.ismarkedfordeletion)
+
+        # Proprietor
+        self.eq(
+            party.parties.public.id,
+            party.parties.public.proprietor__partyid
+        )
+
+        # Owner
+        self.is_(
+            ecommerce.users.root,
+            party.parties.public.owner,
+        )
+
+        # Attributes
+        self.eq('Public', pub.name)
+
+        # Re-memoize
+        for b in (True, False):
+            if b:
+                # Delete the private field
+                del party.parties._public
+            else:
+                # Nullify the private field
+                party.parties._public = None
+
+            pub1 = party.parties.public
+            self.isnot(pub, pub1)
+            self.eq(pub.id, pub1.id)
+            self.false(pub1.orm.isnew)
+            self.false(pub1.orm.isdirty)
+            self.false(pub1.orm.ismarkedfordeletion)
+
     def it_creates_carapacian(self):
         party.company.orm.truncate()
 
