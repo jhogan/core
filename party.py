@@ -40,36 +40,54 @@ class parties(orm.entities):
 
     :abbr: pars
     """
+
+    PublicId = uuid.UUID(int=0xbab11cf73a8f4c97b900d1f6e9dddb5a)
+
+    @classproperty
+    def public(cls):
+        import ecommerce
+        id = cls.PublicId
+        return cls._produce(
+            id     =  id,
+            name   = 'Public',
+            fld    =  '_public',
+            su     =  ecommerce.users.root,
+            propr  =  id
+        ) 
+
     @classmethod
-    def _produce(cls, id, fld, su, propr):
+    def _produce(cls, id, name, fld, su, propr):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         XXX Comment
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
-        if not hasattr('cls', fld):
+        if not hasattr(cls, fld) or not getattr(cls, fld):
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             # XXX Comment
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            e = cls.orm.entity
             with orm.su(su), orm.proprietor(propr):
                 try:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     # Load and memoize
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    par = cls(id)
-                    setattr(cls, fld, par)
+                    par = e(id)
                 except db.RecordNotFoundError:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     # If the record didn't exist, create it.
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    par = cls(id=id, name=name)
-                    setattr(cls, fld, par)
+                    par = e(id=id, name=name)
                     par.save()
+                except Exception:
+                    raise
+                finally:
+                    setattr(cls, fld, par)
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # Return memoized reference
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        return par
+        return getattr(cls, fld)
 
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
