@@ -11697,7 +11697,7 @@ class violations(entitiesmod.entities):
         """
         # NOTE:a22826fe At this point, it is not clear how anonymous or
         # unauthenicated users will work.  We have an anonymous person
-        # (party.party.anonymous). It should have an associated user
+        # (party.parties.anonymous). It should have an associated user
         # record. This could be represent any unauthenicated user.
         import ecommerce
         if not isinstance(security().user, ecommerce.user):

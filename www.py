@@ -1052,10 +1052,10 @@ class request:
                     par = self.user.party
                     hit.user = self.user
                 else:
-                    par = party.party.anonymous
+                    par = party.parties.anonymous
 
                 if par is None:
-                    par = party.party.anonymous
+                    par = party.parties.anonymous
 
                 # Get the party's visitor role
                 visitor = par.visitor

@@ -150,7 +150,7 @@ class ecommerce_(tester.tester):
     def it_creates_visits(self):
         parties = party.parties()
 
-        anon = party.party.anonymous
+        anon = party.parties.anonymous
         parties += anon
         visitor = ecommerce.visitor()
         anon.roles += visitor
@@ -281,7 +281,7 @@ class users(tester.tester):
             self.expect(None, anon.orm.reloaded)
 
             # Test the id of the parent party
-            self.eq(party.party.AnonymousId, anon.party.id)
+            self.eq(party.parties.AnonymousId, anon.party.id)
 
         # The proprietor of the anon user should be Carapacian
         # (although, maybe there should be a "commons" that owns anon)

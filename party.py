@@ -41,10 +41,22 @@ class parties(orm.entities):
     :abbr: pars
     """
 
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # XXX Comment
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     PublicId = uuid.UUID(int=0xbab11cf73a8f4c97b900d1f6e9dddb5a)
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The hard-coded id of the anonymous user. This should not be
+    # changed.
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
 
     @classproperty
     def public(cls):
+        """
+        XXX Comment
+        """
         import ecommerce
         id = cls.PublicId
         return cls._produce(
@@ -53,6 +65,24 @@ class parties(orm.entities):
             fld    =  '_public',
             su     =  ecommerce.users.root,
             propr  =  id
+        ) 
+
+    @classproperty
+    def anonymous(cls):
+        """ Return a party object that represents an unknown user. 
+
+        This is commonly used to represent an actor who accesses a web
+        page but is not logged in to the system. Anonymous users can be
+        people or user agents such as web crawlers, so the generic
+        ``party`` object is used.
+        """
+        import ecommerce
+        return cls._produce(
+            id     = cls.AnonymousId,
+            name   =  'Anonymous',
+            fld    =  '_anon',
+            su     =  ecommerce.users.root,
+            propr  =  company.carapacian,
         ) 
 
     @classmethod
@@ -264,14 +294,6 @@ class party(orm.entity):
     :abbr: par
     """
 
-    _anon = None
-
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # The hard-coded id of the anonymous user. This should not be
-    # changed.
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
-
     def __init__(self, *args, **kwargs):
         self._updateperson = True
         super().__init__(*args, **kwargs)
@@ -344,39 +366,6 @@ class party(orm.entity):
             self.name = v
         finally:
             self._updateperson = True
-
-    # XXX Move this to parties.anonymous. Use _produce
-    @classproperty
-    def anonymous(cls):
-        """ Return a party object that represents an unknown user. 
-
-        This is commonly used to represent an actor who accesses a web
-        page but is not logged in to the system. Anonymous users can be
-        people or user agents such as web crawlers, so the generic
-        ``party`` object is used.
-        """
-        # TODO Write test to ensure this returns the same party each
-        # time.
-
-        # Memoize. NOTE that memoizing this property has a significant
-        # influence on the performance of web hits.
-        if not cls._anon:
-
-            # Carapacian will be the proprietor and root will be the
-            # owner.
-            with orm.sudo(), orm.proprietor(company.carapacian):
-                
-                # Get from DB or create using hard-coded ID
-                try:
-                    cls._anon = party(cls.AnonymousId)
-                except db.RecordNotFoundError:
-                    id = cls.AnonymousId
-                    cls._anon = party(
-                        id = id,
-                        name = 'Anonymous'
-                    )
-                    cls._anon.save()
-        return cls._anon
 
     @property
     def creatability(self):
