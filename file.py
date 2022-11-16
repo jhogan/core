@@ -518,7 +518,7 @@ class inode(orm.entity):
 
         # NOTE This property is automatically provided by the ORM. It is
         # overridden here because of radix: radix has a proprietor of
-        # party.company.carapacian, thus if someone (other than a
+        # party.companies.carapacian, thus if someone (other than a
         # carapacian user) tries to load radix by calling the inode
         # property of an inode, and the property needs to load radix,
         # the load will fail because the ORM will refuse to load radix
@@ -1361,7 +1361,7 @@ class directory(inode):
             import party
 
             # FIXME:9e3a0bbe We will want radix to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
+            with orm.sudo(), orm.proprietor(party.companies.carapacian):
                 try:
                     cls._radix = cls(cls.RadixId)
                 except db.RecordNotFoundError:
@@ -1427,7 +1427,7 @@ class directory(inode):
             import party
 
             # FIXME:9e3a0bbe We will want floaters to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
+            with orm.sudo(), orm.proprietor(party.companies.carapacian):
                 try:
                     cls._flts = cls(cls.FloatersId)
                 except db.RecordNotFoundError:

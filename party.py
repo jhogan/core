@@ -119,7 +119,68 @@ class shiptos(customers):                                    pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
 class legalorganizations(organizations):                     pass
-class companies(legalorganizations):                         pass
+
+class companies(legalorganizations):
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The ID for the carapacian company. This should never be changed.
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
+
+    # XXX Move this to party.companies. Use _produce
+    @classproperty
+    def carapacian(cls):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the official Carapacian company entity
+        (`party.company`). If the entity does not exist in the database,
+        it will be created. The id for the entity is hardcoded and
+        should never be changed.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        import ecommerce
+        return cls._produce(
+            id     = cls.CarapacianId,
+            name   =  'Carapacian, LLC',
+            fld    =  '_carapacian',
+            su     =  ecommerce.users.root,
+            propr  =  cls.CarapacianId,
+        ) 
+
+        if not cls._carapacian:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # We will need to be root to pull the record from the DB
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            with orm.sudo():
+                try:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Use Carapacian's UUID as the proprietor
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(cls.CarapacianId):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Load and memoize
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        cls._carapacian = company(cls.CarapacianId)
+                except db.RecordNotFoundError:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    cls._carapacian = company(
+                        id   = cls.CarapacianId,
+                        name = 'Carapacian, LLC'
+                    )
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Make Carapacian the proprietor then save to DB
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(cls._carapacian):
+                        cls._carapacian.save()
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoized reference
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return cls._carapacian
+
+pass
 class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
@@ -422,57 +483,6 @@ class company(legalorganization):
     # will have an `employee` relationships with `departments` and
     # `divisons`.
     departments = departments
-
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # The ID for the entity. This should never be changed.
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
-
-    # XXX Move this to party.companies. Use _produce
-    _carapacian = None
-    @classproperty
-    def carapacian(cls):
-        """
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns the official Carapacian company entity
-        (`party.company`). If the entity does not exist in the database,
-        it will be created. The id for the entity is hardcoded and
-        should never be changed.
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        """
-        
-        if not cls._carapacian:
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            # We will need to be root to pull the record from the DB
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            with orm.sudo():
-                try:
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Use Carapacian's UUID as the proprietor
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    with orm.proprietor(cls.CarapacianId):
-                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        # Load and memoize
-                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        cls._carapacian = company(cls.CarapacianId)
-                except db.RecordNotFoundError:
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # If the record didn't exist, create it.
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    cls._carapacian = company(
-                        id   = cls.CarapacianId,
-                        name = 'Carapacian, LLC'
-                    )
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Make Carapacian the proprietor then save to DB
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    with orm.proprietor(cls._carapacian):
-                        cls._carapacian.save()
-
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # Return memoized reference
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        return cls._carapacian
 
 class marital(orm.entity):
     """ Allowes for the maintenence of changes to a person's marital

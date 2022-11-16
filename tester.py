@@ -267,7 +267,7 @@ class principle(entities.entity):
 
         :param: recreate bool: If True, recerate the test user, test
         company and the standard Carapacian company
-        (ecommerce.company.carapacian).
+        (ecommerce.companies.carapacian).
         """
         logs.info('Creating principles ...')
 
@@ -313,7 +313,7 @@ class principle(entities.entity):
 
     def recreate(self):
         """ Rereate the principles, i.e., the test user, company and
-        carapacian company (ecommerce.company.carapacian).
+        carapacian company (ecommerce.companies.carapacian).
         """
         self.create(recreate=True)
 

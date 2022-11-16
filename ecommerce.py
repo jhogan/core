@@ -105,7 +105,7 @@ class users(orm.entities):
     @classproperty
     def anonymous(cls):
         if not hasattr(cls, '_anon') or not cls._anon:
-            cara = party.company.carapacian
+            cara = party.companies.carapacian
             with orm.sudo(), orm.proprietor(cara):
                 try:
                     cls._anon = user(cls.AnonymousUserId)

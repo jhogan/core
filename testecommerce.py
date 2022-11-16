@@ -275,7 +275,7 @@ class users(tester.tester):
         # Ensure id matches constant
         self.eq(ecommerce.users.AnonymousUserId, anon.id)
 
-        cara = party.company.carapacian
+        cara = party.companies.carapacian
         with orm.sudo(), orm.proprietor(cara):
             # Verify its actually in the database
             self.expect(None, anon.orm.reloaded)

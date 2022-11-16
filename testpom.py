@@ -774,13 +774,13 @@ class page(tester.tester):
 
         req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'carapacian.com'}
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             self.type(carapacian_com.site, req.site)
 
         req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
 
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             # FIXME:9e3a0bbe This call to req.site fails when trying to
             # load the site/ directory. 
             return
@@ -790,7 +790,7 @@ class page(tester.tester):
         req.app.environment = {
             'HTTP_HOST': '380753fc.www.carapacian.com'
         }
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             self.type(carapacian_com.site, req.site)
 
     def it_gets_page_using_X_FORWARDED_FOR(self):

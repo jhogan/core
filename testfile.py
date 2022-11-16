@@ -376,7 +376,7 @@ class file_(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
+            with orm.sudo(), orm.proprietor(party.companies.carapacian):
                 file.directory.radix.delete()
 
     def it_creates_with_name_kwargs(self):
@@ -1086,7 +1086,7 @@ class file_(tester.tester):
         ''' If proprietor owns a directory, it CAN'T create inodes
         within it. '''
         with orm.override(False):
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 filename = uuid.uuid4().hex
 
                 # We should be able to remove this with the resolution
@@ -1189,7 +1189,7 @@ class directory(tester.tester):
         import party
 
         self.eq(
-            party.company.CarapacianId,
+            party.companies.CarapacianId,
             file.directory.radix.proprietor.id
         )
 
@@ -1197,7 +1197,7 @@ class directory(tester.tester):
         import party
 
         self.eq(
-            party.company.CarapacianId,
+            party.companies.CarapacianId,
             file.directory._floaters.proprietor.id
         )
 

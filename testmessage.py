@@ -432,7 +432,7 @@ class dispatch(tester.tester):
         super().__init__(*args, **kwargs)
 
         with orm.sudo():
-            orm.security().proprietor = party.company.carapacian
+            orm.security().proprietor = party.companies.carapacian
 
     def it_calls_creatability(self):
         with orm.sudo():
@@ -557,10 +557,10 @@ class dispatch(tester.tester):
 class status(tester.tester):
     def it_calls_creatability(self):
         with orm.sudo():
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 pass
 
-        with orm.proprietor(party.company.carapacian):
+        with orm.proprietor(party.companies.carapacian):
             with orm.override():
                 with orm.sudo():
                     usr = ecommerce.user(name='creator')
@@ -619,10 +619,10 @@ class status(tester.tester):
 
     def it_calls_retrievability(self):
         with orm.sudo():
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 pass
 
-        with orm.proprietor(party.company.carapacian):
+        with orm.proprietor(party.companies.carapacian):
             with orm.override():
                 with orm.sudo():
                     usr = ecommerce.user(name='creator')

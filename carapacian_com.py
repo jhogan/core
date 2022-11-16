@@ -41,7 +41,7 @@ class site(pom.site):
         # because the ORM's caches were prematurly filled. The current
         # solution works fine, but we should have a rethink about the
         # way proprietor's are associated with `site` classes.
-        return party.company.carapacian
+        return party.companies.carapacian
 
     @property
     def favicon(self):

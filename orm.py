@@ -7864,7 +7864,7 @@ class security:
         proprietor's UUID. Normally we will get a full-bodied proprietor
         object (a party.party, typically a party.company or some other
         subtype thereof). However, sometimes it more conventient to give
-        a UUID.  See ``party.company.carapacian`` for an example of
+        a UUID.  See ``party.companies.carapacian`` for an example of
         using UUID instead of a party.party object.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """

@@ -370,7 +370,7 @@ class authorization(tester.tester):
 
             assert eng.proprietor.name == 'Microsoft'
 
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 self.expect(orm.ProprietorError, eng.save)
         
 

@@ -1921,7 +1921,53 @@ class party_(tester.tester):
         self.is_(
             party.party.anonymous,
             party.party.anonymous,
+class companies(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party',
+        super().__init__(mods=mods, *args, **kwargs)
+
+    def it_creates_carapacian_company(self):
+        cara = party.companies.carapacian
+        self.eq(party.companies.CarapacianId, cara.id)
+
+        # Memoizes
+        self.is_(party.companies.carapacian, cara)
+
+        # Persisted
+        self.false(cara.orm.isnew)
+        self.false(cara.orm.isdirty)
+        self.false(cara.orm.ismarkedfordeletion)
+
+        # Proprietor
+        self.eq(
+            party.companies.carapacian.id,
+            party.companies.carapacian.proprietor__partyid
         )
+
+        # Owner
+        self.eq(
+            ecommerce.users.root.id,
+            party.companies.carapacian.owner.id,
+        )
+
+        # Attributes
+        self.eq('Carapacian, LLC', cara.name)
+
+        # Re-memoize
+        for b in (True, False):
+            if b:
+                # Delete the private field
+                del party.companies._carapacian
+            else:
+                # Nullify the private field
+                party.companies._carapacian = None
+
+            cara1 = party.companies.carapacian
+            self.isnot(cara, cara1)
+            self.eq(cara.id, cara1.id)
+            self.false(cara1.orm.isnew)
+            self.false(cara1.orm.isdirty)
+            self.false(cara1.orm.ismarkedfordeletion)
 
 class contactmechanism(tester.tester):
     def __init__(self, *args, **kwargs):
