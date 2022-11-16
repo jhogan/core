@@ -23,6 +23,97 @@ import bot
 from uuid import uuid4, UUID
 from random import randint
 
+class parties(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party',
+        super().__init__(mods=mods, *args, **kwargs)
+
+    def it_creates_public_party(self):
+        pub = party.parties.public
+        self.eq(party.parties.PublicId, pub.id)
+
+        # Memoizes
+        self.is_(party.parties.public, pub)
+
+        # Persisted
+        self.false(pub.orm.isnew)
+        self.false(pub.orm.isdirty)
+        self.false(pub.orm.ismarkedfordeletion)
+
+        # Proprietor
+        self.eq(
+            party.parties.public.id,
+            party.parties.public.proprietor__partyid
+        )
+
+        # Owner
+        self.is_(
+            ecommerce.users.root,
+            party.parties.public.owner,
+        )
+
+        # Attributes
+        self.eq('Public', pub.name)
+
+        # Re-memoize
+        for b in (True, False):
+            if b:
+                # Delete the private field
+                del party.parties._public
+            else:
+                # Nullify the private field
+                party.parties._public = None
+
+            pub1 = party.parties.public
+            self.isnot(pub, pub1)
+            self.eq(pub.id, pub1.id)
+            self.false(pub1.orm.isnew)
+            self.false(pub1.orm.isdirty)
+            self.false(pub1.orm.ismarkedfordeletion)
+
+    def it_creates_public_anonymous(self):
+        anon = party.parties.anonymous
+        self.eq(party.parties.AnonymousId, anon.id)
+
+        # Memoizes
+        self.is_(party.parties.anonymous, anon)
+
+        # Persisted
+        self.false(anon.orm.isnew)
+        self.false(anon.orm.isdirty)
+        self.false(anon.orm.ismarkedfordeletion)
+
+        # Proprietor
+        self.eq(
+            party.company.carapacian.id,
+            party.parties.anonymous.proprietor__partyid
+        )
+
+        # Owner
+        self.eq(
+            ecommerce.users.root.id,
+            party.parties.anonymous.owner.id,
+        )
+
+        # Attributes
+        self.eq('Anonymous', anon.name)
+
+        # Re-memoize
+        for b in (True, False):
+            if b:
+                # Delete the private field
+                del party.parties._anon
+            else:
+                # Nullify the private field
+                party.parties._anon = None
+
+            anon1 = party.parties.anonymous
+            self.isnot(anon, anon1)
+            self.eq(anon.id, anon1.id)
+            self.false(anon1.orm.isnew)
+            self.false(anon1.orm.isdirty)
+            self.false(anon1.orm.ismarkedfordeletion)
+
 class party_(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,66 +173,6 @@ class party_(tester.tester):
         per.isicv4         =  None
         per.dun            =  None
         return per
-
-    def it_creates_public_party(self):
-        pub = party.parties.public
-        self.eq(party.parties.PublicId, pub.id)
-
-        # Memoizes
-        self.is_(party.parties.public, pub)
-
-        # Persisted
-        self.false(pub.orm.isnew)
-        self.false(pub.orm.isdirty)
-        self.false(pub.orm.ismarkedfordeletion)
-
-        # Proprietor
-        self.eq(
-            party.parties.public.id,
-            party.parties.public.proprietor__partyid
-        )
-
-        # Owner
-        self.is_(
-            ecommerce.users.root,
-            party.parties.public.owner,
-        )
-
-        # Attributes
-        self.eq('Public', pub.name)
-
-        # Re-memoize
-        for b in (True, False):
-            if b:
-                # Delete the private field
-                del party.parties._public
-            else:
-                # Nullify the private field
-                party.parties._public = None
-
-            pub1 = party.parties.public
-            self.isnot(pub, pub1)
-            self.eq(pub.id, pub1.id)
-            self.false(pub1.orm.isnew)
-            self.false(pub1.orm.isdirty)
-            self.false(pub1.orm.ismarkedfordeletion)
-
-    def it_creates_carapacian(self):
-        party.company.orm.truncate()
-
-        cara = party.company.carapacian
-        self.is_(party.company.carapacian, cara)
-        self.false(cara.orm.isnew)
-        self.false(cara.orm.isdirty)
-        self.false(cara.orm.ismarkedfordeletion)
-
-        party.company._carapacian = None
-        cara1 = party.company.carapacian
-        self.isnot(cara, cara1)
-        self.eq(cara.id, cara1.id)
-        self.false(cara1.orm.isnew)
-        self.false(cara1.orm.isdirty)
-        self.false(cara1.orm.ismarkedfordeletion)
 
     @staticmethod
     def getvalidcompany(**kwargs):
@@ -1917,10 +1948,27 @@ class party_(tester.tester):
             self.eq(ks.rating, ks1.rating)
             self.eq(ks.skilltype.id, ks1.skilltype.id)
 
-    def it_returns_same_anonymous(self):
-        self.is_(
-            party.party.anonymous,
-            party.party.anonymous,
+class companies(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party',
+        super().__init__(mods=mods, *args, **kwargs)
+
+    def it_creates_carapacian_company(self):
+        cara = party.company.carapacian
+        self.eq(party.company.CarapacianId, cara.id)
+
+        # Memoizes
+        self.is_(party.company.carapacian, cara)
+
+        # Persisted
+        self.false(cara.orm.isnew)
+        self.false(cara.orm.isdirty)
+        self.false(cara.orm.ismarkedfordeletion)
+
+        # Proprietor
+        self.eq(
+            party.company.carapacian.id,
+            party.company.carapacian.proprietor__partyid
         )
 
 class contactmechanism(tester.tester):

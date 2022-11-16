@@ -115,9 +115,8 @@ class users(orm.entities):
                         name = 'anonymous',
                     )
 
-                    cls._anon.party = party.party.anonymous
+                    cls._anon.party = party.parties.anonymous
                     cls._anon.save()
-
 
         return cls._anon
         
