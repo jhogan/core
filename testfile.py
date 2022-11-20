@@ -1139,6 +1139,46 @@ class file_(tester.tester):
                 with orm.su(usr1):
                     self.expect(orm.AuthorizationError, f.orm.reloaded)
 
+class directories(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'pom', 
+        super().__init__(mods=mods, *args, **kwargs)
+        clean()
+
+    def it_gets_pom_site_directory(self):
+        pubid = party.parties.PublicId
+        rootid = ecommerce.users.RootUserId
+
+        ''' Test the site directory '''
+        site = file.directories.site
+
+        # Memoized
+        self.is_(site, file.directories.site)
+
+        # Proprietor
+        self.eq(pubid, site.proprietor.id)
+
+        # Owner
+        self.eq(rootid, site.owner.id)
+
+        # Persistence state
+        self.eq((False, False, False), site.orm.persistencestate)
+
+        ''' Test the pom directory '''
+        pom_ = site.inode 
+
+        # Proprietor
+        self.eq(pubid, pom_.proprietor.id)
+
+        # Owner
+        self.eq(rootid, pom_.owner.id)
+
+        # Persistence state
+        self.eq((False, False, False), pom_.orm.persistencestate)
+
+        # Parent is radix
+        self.is_(file.directory.radix, pom_.inode)
+
 class directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
