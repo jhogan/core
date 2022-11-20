@@ -8,6 +8,7 @@ key:           k
 list:          ls
 message:       msg
 object:        obj
+operation:     op
 owner:         own
 parent:        rent
 proprietor:    propr

@@ -2713,7 +2713,7 @@ class orm_(tester):
         for i in range(10):
             self.eq(abbrs, [e.orm.abbreviation for e in es])
 
-            # FIXME:9e3a0bbe When e is a subclass of pom.site, its
+            # XXX:9e3a0bbe When e is a subclass of pom.site, its
             # _ensure method is run and fails because it tries to load
             # the site/ directory.
             return
