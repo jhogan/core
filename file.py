@@ -250,22 +250,6 @@ class inode(orm.entity):
     # inodes recursive (self-referencing).
     inodes = inodes
 
-    @staticmethod
-    def _split(path):
-        """ A private static method that takes a path and splits it over
-        the '/' character. Deals with leading '/' more predictably than
-        Python's builtin path splitting algorithms.
-        """
-        if path == '/':
-            return ['/']
-
-        names = path.split('/')
-
-        if path.startswith('/'):
-            names[0] = '/'
-
-        return names
-
     def __new__(cls, *args, **kwargs):
         """ Ensure that when instantiating, we return the cached version
         of an inode object if one exists. If one doesn't exist, create,
@@ -425,6 +409,22 @@ class inode(orm.entity):
             #     file.file(name='hosts', body='127.0.0.1 localhost')
             #
             super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def _split(path):
+        """ A private static method that takes a path and splits it over
+        the '/' character. Deals with leading '/' more predictably than
+        Python's builtin path splitting algorithms.
+        """
+        if path == '/':
+            return ['/']
+
+        names = path.split('/')
+
+        if path.startswith('/'):
+            names[0] = '/'
+
+        return names
 
     @classproperty
     def store(cls):
