@@ -348,7 +348,9 @@ class site(asset.asset):
         """
         dir = attr()
         if dir is None:
-            dir = file.directory(f'/pom/site/{self.id.hex}')
+            site = file.directories.site
+            dir = file.directory(self.id.hex)
+            site += dir
             attr(dir)
         return dir
 
