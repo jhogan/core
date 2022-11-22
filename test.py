@@ -26,8 +26,9 @@ from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
-from tester import *
 from uuid import uuid4
+import sys
+import types
 import account
 import asset
 import auth
@@ -61,6 +62,7 @@ import testcarapacian_com
 import testdom
 import testecommerce
 import testentities
+import tester
 import testfile
 import testlogs
 import testmessage
@@ -110,7 +112,7 @@ def la2gr(chars):
             r += ' '
     return r
         
-class test_jwt(tester):
+class test_jwt(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
@@ -183,7 +185,7 @@ class test_jwt(tester):
         t = auth.jwt('an invalid token')
         self.invalid(t)
 
-class test_datetime(tester):
+class test_datetime(tester.tester):
     def it_calls__init__(self):
         utc = timezone.utc
         
@@ -222,7 +224,7 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
-class test_date(tester):
+class test_date(tester.tester):
     def it_calls__init__(self):
         # Test date with standard args
         args = (2003, 10, 11)
@@ -952,7 +954,7 @@ class artist_artist(orm.association):
     def processing(self, v):
         self._processing = v
 
-class orm_(tester):
+class orm_(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'apriori', 'file',
         super().__init__(mods=mods, *args, **kwargs)
@@ -981,7 +983,7 @@ class orm_(tester):
 
         # TODO Replace all `with self._chrontest()` with `with ct()`
         for meth in type(self).__dict__.items():
-            if type(meth[1]) != FunctionType: 
+            if type(meth[1]) != types.FunctionType: 
                 continue
             if meth[0][0] == '_': 
                 continue
@@ -14711,7 +14713,7 @@ class benchmark_orm_cpu(tester.benchmark):
 
         self.time(18.0, 19.0, f, 100)
 
-class orm_migration(tester):
+class orm_migration(tester.tester):
     def it_calls_table(self):
         class cats(orm.entities):
             pass
@@ -14727,7 +14729,7 @@ class orm_migration(tester):
         mig = orm.migration(e=cat)
         orm.forget(cat)
 
-class crust_migration(tester):
+class crust_migration(tester.tester):
     def it_shows_migrants(self):
         # Drop all table in db
         db.tables().drop()
@@ -14884,7 +14886,7 @@ class crust_migration(tester):
 Test General Entities Model (GEM)
 '''
 
-class gem_shipment(tester):
+class gem_shipment(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'shipment', 'order', 'party', 'ecommerce'
         super().__init__(mods=mods, *args, **kwargs)
@@ -15308,7 +15310,7 @@ class gem_shipment(tester):
         # docs1 has one entity tha has a non-None documenttype attribute
         self.one([x for x in docs1.pluck('documenttype') if x is not None])
 
-class gem_effort(tester):
+class gem_effort(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'effort', 'apriori', 'party', 'asset', 'order'
         super().__init__(mods=mods, *args, **kwargs)
@@ -16089,7 +16091,7 @@ class gem_effort(tester):
         self.eq(st.asset.id, st1.asset.id)
         self.eq(st.asset.name, st1.asset.name)
 
-class gem_invoice(tester):
+class gem_invoice(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'invoice', 'party', 'apriori'
         super().__init__(mods=mods, *args, **kwargs)
@@ -16457,7 +16459,7 @@ class gem_invoice(tester):
         self.eq(dec('182.20'), ip1.amount)
         self.eq(dec('182.20'), ip1.payment.amount)
 
-class gem_account(tester):
+class gem_account(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -16728,7 +16730,7 @@ class gem_account(tester):
             self.eq(assmeth.method.name,     assmeth1.method.name)
             self.eq(assmeth.method.formula,  assmeth1.method.formula)
 
-class gem_budget(tester):
+class gem_budget(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
@@ -17102,7 +17104,7 @@ class gem_budget(tester):
             self.eq(ita.id, ita1.id)
             self.eq(ita.percent, ita1.percent)
 
-class gem_hr(tester):
+class gem_hr(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
@@ -17250,7 +17252,7 @@ class gem_hr(tester):
     @staticmethod
     def getvalidpositiontype():
         postyp = hr.positiontype()
-        postyp.description = tester.dedent('''
+        postyp.description = self.dedent('''
         As Machine Learning and Signal Processing Engineer you are going
         to lead the effort to bring signal processing algorithms into
         production which condition and extract rich morphological
@@ -17879,7 +17881,7 @@ class gem_hr(tester):
             self.eq(duct.deductiontype.name, duct1.deductiontype.name)
             self.eq(duct.amount, duct1.amount)
 
-class primative_uuid(tester):
+class primative_uuid(tester.tester):
     def it_creates_uuid(self):
         id = primative.uuid()
         self.true(isinstance(id, uuid.UUID))
@@ -17894,4 +17896,4 @@ class primative_uuid(tester):
         self.eq(id, id1)
 
 if __name__ == '__main__':
-    cli().run()
+    tester.cli().run()
