@@ -230,13 +230,6 @@ class test_date(tester):
         actual = primative.date(*args)
         self.eq(expect, actual)
 
-# TODO Can we remove this?
-class mycli(cli):
-    def registertraceevents(self):
-        ts = self.testers
-        ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
-       
-
 ##################################################################################
 ''' ORM Tests '''
 ##################################################################################
@@ -17196,7 +17189,6 @@ class gem_hr(tester):
                 fp1.position.positiontype.name
             )
             
-
     @staticmethod
     def getvalidposition():
         pos = hr.position()
@@ -17227,7 +17219,6 @@ class gem_hr(tester):
 
         postyp.name = "Machine Learning and Signal Processing Engineer"
         return postyp
-
 
     def it_updates_position(self):
         pos = self.getvalidposition()

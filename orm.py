@@ -233,7 +233,7 @@ TODOs:
 
     If we were to create a `dog` object and assign it a name value, we
     would get BrokenRulesError telling us that its super, mammal, did
-    has an empty `name` attribute. The ORM just currently doesn't
+    have an empty `name` attribute. The ORM just currently doesn't
     provide support for this kind of thing. 
 
     Though this doesn't seem to be a problem for most GEM classes at the
@@ -244,9 +244,9 @@ TODOs:
     Here are some things to consider when we add support:
         
         * Mixed types should be dealt with correctly. For example, if
-          the mammal.name property above were som other type, such as an
-          int, text, byte, etc, the code should do the right thing (or
-          the best thing).
+          the mammal.name property above were some other type, such as
+          an int, text, byte, etc, the code should do the right thing
+          (or the best thing).
 
         * Primative field mappings should be supported, like those in
           the example, but also entity mappings, entities mappings,
@@ -2850,8 +2850,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        # If there is an security().proprietor and the entities collection is
-        # not a chunk, then add a proprietor filter.
+        # If there is an security().proprietor and the entities
+        # collection is not a chunk, then add a proprietor filter.
         #
         # There is no need to append a proprietor filter to a chunked
         # entities collection. The streamed entities collection will
@@ -4328,7 +4328,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         # constituent is being moved to
                                         # a different composite.
                                         setattr(e, map.name, self.id)
-
                                         break
 
                             # Call save(). If there is an Exception,
@@ -9052,17 +9051,16 @@ class orm:
             pred = pred.match or pred
 
             # Get the column name referenced by the predicate
-            # FIXME If multiple columns are supported, fix below
+            # FIXME If multiple columns are supported, fix below.
             col = pred.columns[0]
 
             e = top or self.entity.orm.super
 
             while e: # :=
-
                 # Find the map based on the column name
                 map = e.orm.mappings(col) 
 
-                # Is map the proprietor FK
+                # Is `map` the proprietor FK
                 isfk = isinstance(map, foreignkeyfieldmapping)
                 isproprietor = isfk and map.isproprietor
 
@@ -9071,7 +9069,6 @@ class orm:
                 # ('proprietor__partyid') since every entity has a
                 # proprietor foreignkeymappings.
                 if map and not isproprietor:
-
                     # If we found the map, we found the entity we want
                     # to query, so assign it to `top` and break.
                     top = e.orm.entities
@@ -11181,6 +11178,7 @@ class orm:
                 for i, map in builtins.enumerate(maps):
                     if map.name == 'proprietor':
                         continue
+
                     if orm.issub(map.entity, self.entity):
                         if ass.orm.isreflexive:
                             if map.issubjective:
@@ -11569,10 +11567,18 @@ class migration:
 
         return f'{self.table}\n{self.entity.orm.altertable}'
             
-# ORM Exceptions
-class InvalidColumn(ValueError): pass
-class InvalidStream(ValueError): pass
-class ConfusionError(ValueError): pass
+''' ORM Exceptions '''
+class InvalidColumn(ValueError):
+    """ XXX Comment
+    """
+
+class InvalidStream(ValueError):
+    """ XXX Comment
+    """
+
+class ConfusionError(ValueError):
+    """ XXX Comment
+    """
 
 class ProprietorError(ValueError):
     """ An error caused by the proprietor not being set correctly for
