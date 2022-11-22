@@ -1,8 +1,6 @@
 Carapacian Core
 ================
 <!-- TODO
-Add section on linting. We discourage in favor of code review.
-
 We may want a section on the development process to encourage a certain
 mode of development.
 
@@ -666,6 +664,22 @@ The above service can then be invoked with `curl`:
 
     curl carapacian.com:8000
 
+If you already have a reverse proxy, such as Nginx, set up to use
+sockets, you can create a socket file and bind `gunicorn` to it:
+
+    gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'
+
+This way you can use `curl` to access the socket from a special URL
+through the reverse proxy, e.g.:
+
+    curl https://c13fa8ce.carapacian.com
+
+Note that you may need to `touch` the socket file before running
+`gunicorn`. This will give you an opportunity to change the socket's
+owner and group, as well as its permissions, so the reverse proxy is
+able to read and write to it. The user and/or group would likely be
+www-data.
+
 You can set breakpoints in the code with the call `B()` described
 [above](#hacking-debugger).  When the breakpoint is encountered, the
 terminal that `gunicorn` is running in will display a PDB prompt giving
@@ -682,10 +696,23 @@ pipe the output to `tidy` to make the HTML easier to read:
     # warning messages and stuff. You may want to create an alias.
     curl carapacian.com:8000 | tidy -iq --tidy-mark no --show-warnings no --show-info no 2>/dev/null
 
-<!-- TODO Recommend using `nmap` with Vim. Also, recommend using a
-`sleep .5` before the `curl` command in order to allow time for the
-worker process to reload.
--->
+In Vim, you can set up an `nmap` that will automatically run this curl
+command:
+    
+    nmap - :wa \| ! sleep 0.5 ; curl carapacian.com:8000 \| tidy -iq --tidy-mark no --show-warnings no --show-info no 2>/dev/null
+
+The above will allow you to simply type `-` when editing the source code
+bound to the `gunicorn` invocation. First the code is saved `wa`. Then
+half a second is allowed to pass so that `gunicorn` can note the changes
+to the source code and `--reload`. Then `curl` is invoked to GET the
+resource.
+
+### Linting ###
+Currently linting is not used to enforce coding standards (as defined in
+[STYLE.md](STYLE.md)). A good code review should be able to catch any
+deviations from the standard. Of course, individual developers are free
+to use linting tools, such as `pylint` to improve the quality of their
+code if they see fit.
 
 ### Interacting with the database ###
 
