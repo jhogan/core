@@ -14491,7 +14491,54 @@ class orm_(tester):
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
-class benchmark_orm_cpu(benchmark):
+    def it_persists_publicly_owned_entity(self):
+        """
+        XXX Comment
+        """
+
+        # Get the public proprietor (party)
+        pub = party.parties.public
+
+        # Instantiate art as public
+        with orm.proprietor(pub):
+            art = artist.getvalid()
+            self.is_(pub, art.proprietor)
+            self.is_(orm.security().owner, art.owner)
+
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        stdcompanyid = '574d42d0625e4b2ba79e28d981616545'
+        if orm.security().proprietor.id.hex != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        lastname = uuid4().hex
+        art.lastname = lastname
+
+        # We shouldn't expect to be able to save an entity just because
+        # it's public. 
+        self.expect(orm.ProprietorError, art.save)
+
+        # Switch back to public proprietor
+        with orm.proprietor(pub):
+            # We should be able to save artist now
+            self.expect(None, art.save)
+
+        # Since the artist is "public property", we should be able to
+        # reload now even though we are back to the default proprietor
+        # ("Standard Company 0")
+        art1 = art.orm.reloaded()
+
+        # Assert the security attributes of the reloaded artist are
+        # correct.
+        self.eq(pub.id, art1.proprietor.id)
+        self.eq(orm.security().owner.id, art1.owner.id)
+
+        arts = artists(lastname = lastname)
+        print(arts)
+
+        # XXX Test updating public entity as a non-public proprietor
+        # XXX Test streaming/chunked
+class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True

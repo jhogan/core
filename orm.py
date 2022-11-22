@@ -2862,8 +2862,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
-                    p1 += f'{map.name} = _binary %s'
+                    p1 += f'{map.name} in (_binary %s, _binary %s)'
                     args.append(security().proprietorid.bytes)
+
+                    from party import parties
+                    args.append(parties.PublicId.bytes)
                     break
 
         if p1:
@@ -9606,11 +9609,14 @@ class orm:
         # level. This restricts entity records not associated with
         # security().proprietor from being loaded.
         propr = security().proprietor
-        from party import party
+        from party import party, parties
         if propr:
             for map in self.mappings.foreignkeymappings:
+                # XXX Rewrite as: if map.isproprietor:
                 if map.fkname == 'proprietor':
-                    sql += f' AND {map.name} = _binary %s'
+                    name = map.name
+                    sql = sql.strip() + ' '
+                    sql += f' AND ({name} = _binary %s OR {name} = _binary %s)'
                     if isinstance(propr, UUID):
                         bytes = propr.bytes
                     elif isinstance(propr, party):
@@ -9619,7 +9625,7 @@ class orm:
                         # Shouldn't happen
                         raise TypeError('Proprietor is incorrect type')
 
-                    args.append(bytes)
+                    args.extend([bytes, parties.PublicId.bytes])
                     break
 
         ress = None
