@@ -9597,7 +9597,11 @@ class orm:
         entity to be loaded.
         """
         # Create the basic SELECT query.
-        sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
+        sql = textwrap.dedent(f'''
+            SELECT * 
+            FROM {self.table} 
+            WHERE id = _binary %s 
+        ''')
 
         # Search on the `id`'s bytes.
         args = [id.bytes]
