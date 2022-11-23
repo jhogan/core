@@ -14557,15 +14557,21 @@ class orm_(tester.tester):
             self.is_(pub, art.proprietor)
             self.is_(orm.security().owner, art.owner)
 
+        lastname = uuid4().hex
+        art.lastname = lastname
+
+        ''' Assert testing environment '''
         # Assert that we are using the (non-public) default proprietor
         # ("Standard Company 0")
         stdcompanyid = '574d42d0625e4b2ba79e28d981616545'
         if orm.security().proprietor.id.hex != stdcompanyid:
             raise tester.ValueError('Invalid default proprietor')
 
-        lastname = uuid4().hex
-        art.lastname = lastname
+        stduserid = '574d42d099374fa7a008b885a9a77a9a'
+        if orm.security().owner.id.hex != stduserid:
+            raise tester.ValueError('Invalid default owner')
 
+        ''' Creation tests '''
         # We shouldn't expect to be able to save an entity just because
         # it's public. 
         self.expect(orm.ProprietorError, art.save)
@@ -14586,11 +14592,181 @@ class orm_(tester.tester):
         self.eq(pub.id, art1.proprietor.id)
         self.eq(orm.security().owner.id, art1.owner.id)
 
-        arts = artists(lastname = lastname)
-        print(arts)
+        # Create a non-public artist for testing
+        nonpub = artist.getvalid()
+        nonpub.lastname = lastname
+        nonpub.save()
 
-        # XXX Test updating public entity as a non-public proprietor
-        # XXX Test streaming/chunked
+        # We should now have two with the given last name, one public,
+        # and one non-public
+        arts = artists(lastname=lastname)
+        self.two(arts)
+        self.true(art.id in arts.pluck('id'))
+        self.true(nonpub.id in arts.pluck('id'))
+
+        # If we are public, we should only see the public artist
+        with orm.proprietor(pub):
+            arts = artists(lastname=lastname)
+            self.one(arts)
+            self.eq(art.id, arts.only.id)
+
+        # Repeat the above but with streaming
+        arts = artists(orm.stream, lastname=lastname)
+        self.two(arts)
+        self.true(art.id in arts.pluck('id'))
+        self.true(nonpub.id in arts.pluck('id'))
+
+        with orm.proprietor(pub):
+            arts = artists(orm.stream, lastname=lastname)
+            self.one(arts)
+            self.eq(art.id, arts.only.id)
+
+        ''' Modification tests '''
+        art1.firstname = uuid4().hex
+
+        # A regular proprietor shouldn't, be default, be able create or
+        # modify a public entity; only read.
+        self.expect(orm.ProprietorError, art1.save)
+
+        # Save as public proprietor
+        with orm.proprietor(pub):
+            self.expect(None, art1.save)
+            
+        # Read as regular proprietor
+        self.expect(None, art1.orm.reloaded)
+
+        ''' Deletion tests '''
+        # Regular proprietor shouldn't be able to delete public
+        # property by default.
+        self.expect(orm.ProprietorError, art.delete)
+
+        # Delete as public
+        with orm.proprietor(pub):
+            self.expect(None, art.delete)
+
+            # Ensure it is actually deleted
+            self.expect(db.RecordNotFoundError, art.orm.reloaded)
+
+    def it_persists_publicly_owned_subentity(self):
+        """
+        XXX Comment
+        """
+
+        ''' Assert testing environment '''
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        stdcompanyid = '574d42d0625e4b2ba79e28d981616545'
+        if orm.security().proprietor.id.hex != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        stduserid = '574d42d099374fa7a008b885a9a77a9a'
+        if orm.security().owner.id.hex != stduserid:
+            raise tester.ValueError('Invalid default owner')
+
+        ''' Setup '''
+        # Get the public proprietor (party)
+        pub = party.parties.public
+
+        # Instantiate sng as public
+        with orm.proprietor(pub):
+            sng = singer.getvalid()
+            both = sng, sng.orm.super
+
+            for e in both:
+                self.is_(pub, e.proprietor)
+                self.is_(orm.security().owner, e.owner)
+
+        lastname = uuid4().hex
+        voice = uuid4().hex
+        sng.lastname = lastname
+        sng.voice = voice
+
+        ''' Creation tests '''
+        # We shouldn't expect to be able to save an entity just because
+        # it's public. 
+        for e in both:
+            self.expect(orm.ProprietorError, e.save)
+
+        # Switch back to public proprietor
+        with orm.proprietor(pub):
+            # We should be able to save singer now
+            self.expect(None, sng.save)
+
+        ''' Retrieval tests '''
+        # Since the singer is "public property", we should be able to
+        # reload now even though we are back to the default proprietor
+        # ("Standard Company 0")
+        sng1 = sng.orm.reloaded()
+
+        # Assert the security attributes of the reloaded singer are
+        # correct.
+        both = sng1, sng1.orm.super
+        for e in both:
+            self.eq(pub.id, e.proprietor.id)
+            self.eq(orm.security().owner.id, e.owner.id)
+
+
+        # Create a non-public singer for testing
+        nonpub = singer.getvalid()
+        nonpub.lastname = lastname
+        nonpub.voice = voice
+        nonpub.save()
+
+        # We should now have two with the given last name, one public,
+        # and one non-public
+        sngs = singers(lastname=lastname, voice=voice)
+        self.two(sngs)
+        self.true(sng.id in sngs.pluck('id'))
+        self.true(nonpub.id in sngs.pluck('id'))
+
+        # If we are public, we should only see the public singer
+        with orm.proprietor(pub):
+            sngs = singers(lastname=lastname)
+            self.one(sngs)
+            self.eq(sng.id, sngs.only.id)
+
+        # Repeat the above but with streaming. 
+        # NOTE that we have to use voice instead of lastname because
+        # querying the base classes attribute while streaming is
+        # currently not supported. See the comments about streaming and
+        # joints at orm.entities.__init__.
+        sngs = singers(orm.stream, voice=voice)
+        self.true(sng.id in sngs.pluck('id'))
+
+        self.two(sngs)
+        self.true(nonpub.id in sngs.pluck('id'))
+
+        with orm.proprietor(pub):
+            sngs = singers(orm.stream, voice=voice)
+            self.one(sngs)
+            self.eq(sng.id, sngs.only.id)
+
+        ''' Modification tests '''
+        sng1.firstname = uuid4().hex
+
+        # A regular proprietor shouldn't, be default, be able create or
+        # modify a public entity; only read.
+        self.expect(orm.ProprietorError, sng1.save)
+
+        # Save as public proprietor
+        with orm.proprietor(pub):
+            self.expect(None, sng1.save)
+            
+        # Read as regular proprietor
+        self.expect(None, sng1.orm.reloaded)
+
+        ''' Deletion tests '''
+        # Regular proprietor shouldn't be able to delete public
+        # property by default.
+        self.expect(orm.ProprietorError, sng.delete)
+
+        # Delete as public
+        with orm.proprietor(pub):
+            self.expect(None, sng.delete)
+
+            # Ensure it is actually deleted
+            self.expect(db.RecordNotFoundError, sng.orm.reloaded)
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
