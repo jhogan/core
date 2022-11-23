@@ -12297,21 +12297,45 @@ class orm_(tester.tester):
         expr = 'col = %s'
         pred = orm.predicate(expr)
         test(expr, pred, 'col', '=', '%s')
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         ## Parse introducers#
         expr = 'id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('id = _binary %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # _binary id = %s
         expr = '_binary id = %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # _binary id = _binary %s
         expr = '_binary id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = _binary %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # col in (123) 
         exprs = (
@@ -12372,6 +12396,16 @@ class orm_(tester.tester):
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s)", str(pred))
 
+        # XXX:60c2c0d8 Fix bug which causes the introducer to be
+        # included in the operands list when they are used in IN
+        # clauses.
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
+
         exprs = (
             'col in (_binary %s, _binary %s)',
             'col IN(_binary %s,_binary %s)',
@@ -12380,6 +12414,14 @@ class orm_(tester.tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s, _binary %s)", str(pred))
+
+        for i, pred in enumerate(pred):
+            self.three(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(pred.operands[2], '%s')
+            self.eq(0, i)
 
     def it_saves_recursive_entity(self):
         def recurse(com1, com2, expecteddepth, curdepth=0):
