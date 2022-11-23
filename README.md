@@ -8,32 +8,11 @@ mode of development.
 
 TODO In the future, the `dba` bot should ensure this line is added.
 
-TODO Explain how to view the SQL being sent to MySQL using the snapshot
-context manager:
-    with db.chronicler.snapshot():
-        B()
-        print(self.asset_parties)
-
-TODO In hacking/debugging, explain how to set the
-self.tester.breakonexception = True. This is useful for debuging
-testpom.py
-
-TODO In hacking/debugging, explain problem where a post mortem break
-into the debugger can obscure the actual problem due to the fact that
-the state of orm.security can change between the time the exception was
-raised and the post mortem was entered.
-
 TODO In Environment section, declare Ubuntu's default terminal as the
 officially supported terminal for the source code. Indicate that any
 terminal that can handle support as well as this terminal is acceptable.
 
-TODO: Explain that, within tests, you can cause breakonexception by using this
-line:
-
 TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
-    
-    self.testers.breakonexception = True
-
 -->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
@@ -509,17 +488,17 @@ Hacking
 
 <a id="hacking-running-tests"></a>
 ### Running tests ###
-Most feature development and bug fixes are done by adding a number of
-tests to the [suite of regression testing scripts](#assets-test-scripts).
+Virtually all feature development and bug fixes are done by adding a number of
+tests to the [suite of regression test scripts](#assets-test-scripts).
 
 Each module has, or should have, a corresponding test module. For
 example, the tests for the [product.py](product.py) module are located in
 [testproduct.py](testproduct.py). Within the test module, there are (or should be)
 *tester* classes which test classes in the corresponding module. 
 
-For example, to test the ability of the ORM class
+For example, to test the ability of the ORM entity class
 `product.product` to update itself, a tester method called
-`testproduct.test_product.it_updates` contains code to update a
+`testproduct.product_.it_updates` contains code to update a
 `product` and assert that the update works. Conventionally, tester
 methods start with the `it_` prefix, though this isn't a strict
 requirement of the tester framework. 
@@ -532,26 +511,26 @@ This runs all the tests in that file as well as all the tests in files
 that match the pattern `test*.py`. Note that `test.py` should complete
 with no failures on a feature branch before it is merged into 'main'.
 
-To narrow you tests down a little, you choose to run only the
-module-level tests. To run all the product tests, run the [testproduct.py](testproduct.py)
-script mentioned above:
+To narrow you tests down a little, you can choose to run only the
+module-level tests. For example, to run all the tests for the product
+classes, run the [testproduct.py](testproduct.py) script mentioned
+above:
 
     ./testproduct.py
-
 
 To narrow things down even more, you can choose to run a tester class
 specifically:
 
-    ./testproduct.py test_product
+    ./testproduct.py product_
 
-This only runs the tests in the `test_product` class.
+This only runs the tests in the `product_` tester class.
 
 During development, you will probably want to focus on one tester method
 at a time. If you were testing the updating capabilities of the
 `product` class, as described above, you could choose to run only the
 `it_updates` method like this:
 
-    ./testproduct.py test_product.it_updates
+    ./testproduct.py product_.it_updates
 
 This is much faster. 
 
@@ -559,7 +538,7 @@ By default, tests rebuild database tables that are needed for the tests.
 This takes some time and is often unnecessary. You can cause the test
 process to skip this process with the `-T` flag.
 
-    ./testproduct.py test_product.it_updates -T
+    ./testproduct.py product_.it_updates -T
 
 Now the test runs even faster.
 
@@ -584,20 +563,48 @@ test to break on those exceptions. This is an extremely important
 technique to know because it makes development so much faster. All you
 have to do is pass in the `-b` flag.
 
-    ./testproduct.py test_product.it_updates -b
+    ./testproduct.py product_.it_updates -b
 
-When the exception is encountered, you will be dropped into the PDB
-debugger at the line that caused the exception. From there, you will be
-able to get the values of any variable, step in, out of, and over lines
-of code, print a stack trace, jump to different lines of code, etc. If
-you don't know how to use PDB you can find a reference
+This enables the break-on-exception feature. When the exception is
+encountered, you will be dropped into the PDB debugger at the line that
+caused the exception. This is called post mortem debugging. From here,
+you will be able to get the values of any variable, step in, out of, and
+over lines of code, print a stack trace, jump to different lines of
+code, etc. If you don't know how to use PDB you can find a reference
 [here](https://docs.python.org/3/library/pdb.html#debugger-commands).
 
-You can also set breakpoints in the code. This is typically done by
-calling the `B` function (the `B` function is imported in each module
-with the line `from dbg import B`). For example, if you want to be
-dropped in the debugger when the below method is called, just call `B`
-on the first line:
+There is a caveat to this technique: since any context manager that the
+code was in will have exited by the time you enter the post mortem, some
+global variables may have changed. This is particularly true of the
+`orm.security` variables such as `proprietor` and `owner` which make up
+the security context. Be mindful of this when determine the cause of the
+exception, particulary when the cause may depend on these global
+variables. If such is the case, you may need to set breakpoints (as
+described below) instead of using post mortem debugging.
+
+There are occasions when you want to break-on-exception but only when
+certain tests are run. This is especially true when running
+`./testpom.py`. This is because it intentionally causes exception
+through the tester's HTTP interface which you don't want to break on. A
+technique to get around this is to select the test method where you
+would like to turn on the break-on-exception feature and add the following
+line to that method:
+
+    self.testers.breakonexception = True
+
+This would be a temporary line, so be sure not to commit it to source
+control.
+
+This has the same affect as the `-b` flag except it only goes into
+effect at that point which can avoid a lot of unnecessary breaking.
+
+### Setting breakpoints ###
+Breakpoints allow you to stop the code while its running in order to
+debug a certain point in the execution of the code. This is typically
+done by calling the `B` function (the `B` function is imported in each
+module with the line `from dbg import B`). For example, if you want to
+be dropped in the debugger when the below method is called, just call
+`B` on the first line:
 
     def some_dubious_logic(self):
         B()
@@ -612,7 +619,8 @@ If the `B` function is encountered, you will be dropped into PDB.
 ### When exceptions are caught ###
 If an exception is raised and caught, you may find yourself in the
 `except` block not knowing where the exception was actually raised.
-Another function from `dbg` called `PM` is imported in most modules:
+Another function from `dbg` called `PM` (post mortem) is imported in
+most modules:
 
     from dbg import B, PM
 
@@ -627,10 +635,10 @@ raised the exception.
         PM(ex)
         ...
 
-The `B` and `PM` functions are added to the actual source code. They
-shouldn't be pushed into the Git repository, though. It's okay to push
-them into feature branches if that is convenient, but they should never
-be pushed into 'main'.
+The `B` and `PM` function calls are added to the actual source code.
+They shouldn't be pushed into the Git repository, though. It's okay to
+push them into feature branches if that is convenient, but they should
+never be pushed into 'main'.
 
 ### Testing through Green Unicorn ###
 On the occasion that you need to debug an issue through the HTTP
