@@ -651,7 +651,7 @@ class stream(entitiesmod.entity):
 
             # Only 10 artist rows will be pulled from the database at a
             # time.
-            for art inn arts::
+            for art in arts::
                 ...
 
     """
@@ -1034,6 +1034,9 @@ class predicate(entitiesmod.entity):
               'BETWEEN', 'NOT BETWEEN'
     Constants = 'TRUE', 'FALSE', 'NULL'
     Ops = Specialops + Wordops
+
+    # The supported MySQL
+    # (https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html)
     Introducers = '_binary',
     
     def __init__(self, expr, junctionop=None, wh=None):
@@ -1234,21 +1237,33 @@ class predicate(entitiesmod.entity):
         if not self.match:
             if self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 if len(self.operands) != 3:
-                    msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg = (
+                        'Expected 2 operands, not ' +
+                        str(len(self.operands))
+                    )
                     msg += '\nThere may be unquoted string literals'
-                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                    self._raiseSyntaxError(
+                        lex, tok, ex=unexpected, msg=msg
+                    )
             else:
                 if self.operator in ('IN', 'NOT IN'):
                     if len(self.operands) < 2:
                         msg = 'Expected at least 2 operands, not %s'
                         msg %= len(self.operands)
                         msg += '\nThere may be unquoted string literals'
-                        self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                        self._raiseSyntaxError(
+                            lex, tok, ex=unexpected, msg=msg
+                        )
                 elif len(self.operands) != 2:
-                    msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg = (
+                        'Expected 2 operands, not %s' % 
+                        len(self.operands)
+                    )
                     msg += '\nThere may be unquoted string literals'
 
-                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                    self._raiseSyntaxError(
+                        lex, tok, ex=unexpected, msg=msg
+                    )
 
             if self.operator not in predicate.Ops:
                 raise predicate.InvalidOperator(self.operator)
@@ -2862,7 +2877,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
-                    p1 += f'{map.name} in (_binary %s, _binary %s)'
+                    # XXX 60c2c0d8 The introduction of the public
+                    # proprietor here revealed a bug in predicate parsing that
+                    # causes introducers to be included in the operands
+                    # list.
+                    p1 += f'{map.name} IN (_binary %s, _binary %s)'
                     args.append(security().proprietorid.bytes)
 
                     from party import parties
