@@ -14767,6 +14767,45 @@ class orm_(tester.tester):
             # Ensure it is actually deleted
             self.expect(db.RecordNotFoundError, sng.orm.reloaded)
 
+    def it_persists_publicly_owned_constituents(self):
+        """
+        XXX Comment
+        """
+
+        ''' Setup '''
+        pub = party.parties.public
+        stdcompanyid = uuid.UUID('574d42d0625e4b2ba79e28d981616545')
+        stduserid = uuid.UUID('574d42d099374fa7a008b885a9a77a9a')
+
+        ''' Assert testing environment '''
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        if orm.security().proprietor.id != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        if orm.security().owner.id != stduserid:
+            raise tester.ValueError('Invalid default owner')
+
+        ''' Creation tests '''
+        art = artist.getvalid()
+        self.eq(stdcompanyid, art.proprietor.id)
+        art.save()
+
+        with orm.proprietor(pub):
+            for _ in range(2):
+                art.presentations += presentation.getvalid()
+                self.is_(pub, art.presentations.last.proprietor)
+
+            art.save()
+
+        ''' Retrieval tests '''
+        art1 = self.expect(None, art.orm.reloaded)
+
+        self.eq(stdcompanyid, art1.proprietor.id)
+
+        self.is_(pub.id, art1.presentations.first.proprietor.id)
+        self.is_(pub.id, art1.presentations.second.proprietor.id)
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

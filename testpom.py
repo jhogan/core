@@ -641,6 +641,14 @@ class site(tester.tester):
 
             self.eq((False, False, False), dir.orm.persistencestate);
 
+        # Test the parent directory site/
+        site = dir.inode
+        self.eq('site', site.name)
+        self.eq((False, False, False), site.orm.persistencestate)
+        self.eq(party.parties.PublicId, site.proprietor.id)
+        self.eq(ecommerce.users.RootUserId, site.owner.id)
+
+        ''' Test the association between site and its proprietor '''
         aps = ws.asset_parties
         self.populated(aps)
         aps = aps.where(
