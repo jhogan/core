@@ -282,23 +282,6 @@ class inode(orm.entity):
             except KeyError:
                 id = None
 
-        # If id is a str...
-        if isinstance(id, str):
-            try:
-                # Determine if id is a UUID, i.e., the inode's primary
-                # key.
-
-                # XXX:8960bf52 This can't be right. It prevents us
-                # from creating inodes with names that look like
-                # UUIDs:
-                #
-                #     dir.file(uuid4().hex)
-
-                id = uuid.UUID(hex=id)
-            except ValueError:
-                # The str id will be considered a path
-                pass
-
         if isinstance(id, str):
             # If id is still a str, it must be a file path so call it
             # what it is: `path`; and search the cache. Return if it's
