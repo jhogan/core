@@ -349,9 +349,21 @@ class site(asset.asset):
         dir = attr()
         if dir is None:
             site = file.directories.site
-            dir = file.directory(self.id.hex)
-            site += dir
+            try:
+                # If the web site (pom.site) hasn't been created
+                # yet, attr() would have returned None (thus bringing us
+                # here). However, the site's directory may be available
+                # via the `site` directory because the directory may
+                # exist in the database. So try to get it out of `site`
+                # first. 
+                dir = site[self.id.hex]
+            except IndexError:
+                # If it wasn't in site, create it here
+                dir = file.directory(self.id.hex)
+                site += dir
+
             attr(dir)
+
         return dir
 
     @property
