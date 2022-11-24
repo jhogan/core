@@ -1,19 +1,5 @@
 Carapacian Core
 ================
-<!-- TODO
-We may want a section on the development process to encourage a certain
-mode of development.
-
-* Add section on how to do performance testing
-
-TODO In the future, the `dba` bot should ensure this line is added.
-
-TODO In Environment section, declare Ubuntu's default terminal as the
-officially supported terminal for the source code. Indicate that any
-terminal that can handle support as well as this terminal is acceptable.
-
-TODO Discuss putting UUID fragments after comment tags (i.e., TODO:c4c040d)
--->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
@@ -472,16 +458,24 @@ standard. It could probably be easily ported to another RDBMS if that
 were somehow deemed desirable, however MySQL currently seems like an
 excellent choice for the framework's needs.
 
-The RDBMS is also expected to take care of its on scalability and
-backup needs as well as provide network transparency. However, a
-database bot <!--TODO reference the bot section--> will be written to
-tend the administration of these functions.
+The RDBMS is also expected to take care of its on scalability and backup
+needs as well as provide network transparency. However, a [database
+bot](#assets-robotic-process-automation) will be written to tend the
+administration of these functions.
 
 ### Lower environments ###
 As of this writing, not much work has been done to determine how the
-production environment, as well as the lower enviroments, such as UAT,
+production environment, as well as the lower environments, such as UAT,
 QA, and development will be managed. This section will be updated when
 concrete solutions to this problem domain have been devised.
+
+### Terminal ###
+Unicode characters are occasionally used in the source code and the
+git-log comments. A terminal or IDE that can properly render these glyphs
+is necessary. Ubuntu's default terminal (currently `gnome-terminal`) is
+the officially supported terminal of the framework. Thus, no characters
+should be added to the source code or git-log which cannot be properly
+rendered in this program.
 
 Hacking
 -------
@@ -578,7 +572,7 @@ code was in will have exited by the time you enter the post mortem, some
 global variables may have changed. This is particularly true of the
 `orm.security` variables such as `proprietor` and `owner` which make up
 the security context. Be mindful of this when determine the cause of the
-exception, particulary when the cause may depend on these global
+exception, particularly when the cause may depend on these global
 variables. If such is the case, you may need to set breakpoints (as
 described below) instead of using post mortem debugging.
 
@@ -672,7 +666,7 @@ The above service can then be invoked with `curl`:
 
     curl carapacian.com:8000
 
-If you already have a reverse proxy, such as Nginx, set up to use
+If you already have a reverse proxy, such as NGINX, set up to use
 sockets, you can create a socket file and bind `gunicorn` to it:
 
     gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'
@@ -697,7 +691,7 @@ the PDB prompt to cause the code to continue. The request will complete
 and the `gunicorn` daemon is ready for the next request.
 
 Note that the output from `curl` will be HTML intended for computer
-consumption, i.e., it will not have linefeeds or indentation. You can
+consumption, i.e., it will not have line feeds or indentation. You can
 pipe the output to `tidy` to make the HTML easier to read:
 
     # Lots of flags have to be given to tidy to keep it from printing
