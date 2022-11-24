@@ -25,7 +25,7 @@ TODOs:
     TODO:604a3422 When a constituent is deleted, its composite reference
     is not remove:
         
-        # Create an artist with a presenation.
+        # Create an artist with a presentation.
         art = artist()
         art.presentations += presentation()
         art.save()
@@ -8010,7 +8010,7 @@ class security:
         return False
 
     def __repr__(self):
-        """ Return a string represenation of the security object.
+        """ Return a string representation of the security object.
         """
         r = f'{type(self).__name__}(\n'
         r += f'  owner={self.owner!r}\n'
