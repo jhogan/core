@@ -14803,8 +14803,9 @@ class orm_(tester.tester):
 
         self.eq(stdcompanyid, art1.proprietor.id)
 
-        self.is_(pub.id, art1.presentations.first.proprietor.id)
-        self.is_(pub.id, art1.presentations.second.proprietor.id)
+
+        self.eq(pub.id, art1.presentations.first.proprietor.id)
+        self.eq(pub.id, art1.presentations.second.proprietor.id)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
