@@ -1532,14 +1532,19 @@ class predicate(entitiesmod.entity):
 
         r += ')' * self.endparen
 
-        junc = self.junction
-        if junc:
-            r += str(junc)
+        # If there is a junction (a conjoined predicate)... 
+        if self.junction:
+            # ... concatentate the stringyfied version of it. Obviously,
+            # this call will be recursive since the next junction may
+            # have a its own junction and so on.
+            r += str(self.junction)
 
         return r
 
     def __repr__(self):
-        return "predicate('%s')" % str(self)
+        """ Return a string representation of the predicate.
+        """
+        return type(self).__name__ + f"('{self}')"
 
     @staticmethod
     def iscolumn(tok):
@@ -1549,11 +1554,21 @@ class predicate(entitiesmod.entity):
         :param: str tok: The token to test.
         """
         TOK = tok.upper()
-        return     not predicate.isoperator(tok) \
-               and not predicate.isliteral(tok) \
-               and tok[0].isalpha()           \
-               and re.match(predicate.Isalphanum_, tok) \
-               and TOK not in ('AND', 'OR', 'MATCH')
+        # TODO Answer the following: Should we not examin the mappings
+        # collection of the entity to determine whether or not tok is a
+        # column?
+        if predicate.isoperator(tok):
+            return False
+
+        if predicate.isliteral(tok):
+            return False
+
+        if tok[0].isalpha():
+            if predicate.IsAlphaNumeric_.match(tok):
+                if TOK not in ('AND', 'OR', 'MATCH'):
+                    return True
+
+        return False
 
     @staticmethod
     def _lookslikeoperator(lex, tok):
