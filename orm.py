@@ -10364,8 +10364,27 @@ class orm:
                         if skip:
                             continue
 
-                        # Instantiate an object from entity class.
-                        e = eclass()
+                        with proprietor(None):
+                            # Instantiate an object from entity class.
+                            # Above we set the proprietor to None so the
+                            # constructor does not assign e's
+                            # `proprietor` attribute to the *current*
+                            # proprietor. The underlying id for the
+                            # entity's proprietor will be pulled from
+                            # the database (proprietor__partyid) and
+                            # that value will be used to lazy-load the
+                            # proprietor attribute when/if needed.
+                            #
+                            # Normally, a proprietor will only have
+                            # access its own records (by definition),
+                            # but in the case of public records
+                            # (party.parties.public), we need to make
+                            # sure that the current proprietor is not
+                            # used to overwrite the public proprietor
+                            # which is what would happen if we do not
+                            # nullify the current proprietor before
+                            # instantiation.
+                            e = eclass()
 
                         # Add to entity dict
                         edict[key]= e
