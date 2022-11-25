@@ -11860,10 +11860,10 @@ class orm_(tester.tester):
         '''
 
         pairs = (
-            (orm.predicate.ParentheticalImbalance,  parens),
-            (orm.predicate.SyntaxError,             syntax),
-            (orm.predicate.UnexpectedToken,         unexpected),
-            (orm.predicate.InvalidOperator,         invalidop),
+            (orm.predicate.ParentheticalImbalanceError,  parens),
+            (orm.predicate.SyntaxError,                  syntax),
+            (orm.predicate.UnexpectedTokenError,         unexpected),
+            (orm.predicate.InvalidOperatorError,         invalidop),
         )
 
         for ex, exprs in pairs:
@@ -12278,7 +12278,7 @@ class orm_(tester.tester):
         expr = "col = 'can''t won''t shan''t'"
         test(expr, pred, 'col', '=', "'can''t won''t shan''t'")
 
-        for op in orm.predicate.Specialops:
+        for op in orm.predicate.SpecialOps:
             expr = 'col %s 123' % op
             pred = orm.predicate(expr)
             test(expr, pred, 'col', op, '123')
@@ -14587,7 +14587,7 @@ class orm_(tester.tester):
         # ("Standard Company 0")
         art1 = art.orm.reloaded()
 
-        # Assert the security attributes of the reloaded artist are
+        # Assert that the security attributes of the reloaded artist are
         # correct.
         self.eq(pub.id, art1.proprietor.id)
         self.eq(orm.security().owner.id, art1.owner.id)
