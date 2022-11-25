@@ -1231,13 +1231,11 @@ class tester(entities.entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
-    # FIXME The assertions `lt` and `le` are broken. they have the
-    # expect and actual mixed up. `ge` was corrected recently.
     def lt(self, expect, actual, msg=None):
-        if not (expect < actual): self._failures += failure()
+        if not (actual < expect): self._failures += failure()
 
     def le(self, expect, actual, msg=None):
-        if not (expect <= actual): self._failures += failure()
+        if not (actual <= expect): self._failures += failure()
 
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
