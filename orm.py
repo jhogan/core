@@ -1028,14 +1028,14 @@ class predicates(entitiesmod.entities):
     pass
 
 class predicate(entitiesmod.entity):
-    """ The predicate part of the `orm.where` class.
+    """ Represents an SQL-like predicate (WHERE clause).
 
     A predicate is the actual Boolean expression. This class contains
     logic to parse the SQL-like Boolean expressions and store the token
-    its object model.
+    in its object model.
     """
-    # Regurlare expression to test whether a string is composed fully of
-    # alphanumeric or underscore characters.
+    # Regular expression to test whether a string is composed fully of
+    # alphanumeric and underscore characters.
     IsAlphaNumeric_ = re.compile(r'^[A-Za-z0-9_]+$')
 
     # Supported operators composed of special characters
@@ -1140,7 +1140,7 @@ class predicate(entitiesmod.entity):
         the iterator will simply return the next junction predicate if
         there is one.
 
-        For example, a iterating over a simple predicate like ('x=1')
+        For example, iterating over a simple predicate like ('x=1')
         results in one interation:
 
             for i, pred in enumerate(predicate('x=1')):
@@ -1171,7 +1171,7 @@ class predicate(entitiesmod.entity):
     def junction(self):
         """ The next predicate that this predicate is conjoined to.
 
-        For example, give:
+        For example, given:
             
             x=1 AND y=2
 
@@ -1194,6 +1194,7 @@ class predicate(entitiesmod.entity):
         """
         if self._junctionop:
             return self._junctionop.strip().upper()
+
         return None
 
     @property
@@ -1208,7 +1209,7 @@ class predicate(entitiesmod.entity):
         """ A private static method used by the parser to raise an
         exception to indicate exactly where, in the predicate
         expression, a problem was discover with the expression which
-        forced the parsing to abort.
+        forced parsing to abort.
 
         :param: lex shlex: A reference to the shlex (simple lexical
         analysis) object that was being used when the syntax error
@@ -1277,6 +1278,8 @@ class predicate(entitiesmod.entity):
 
         # For each token in the expression...
         while tok != lex.eof:
+            # Create an uppercase version of the token for certain
+            # equality tests.
             TOK = tok.upper()
 
             # % are placeholder tokens (e.g., "name = %s")
@@ -1301,7 +1304,7 @@ class predicate(entitiesmod.entity):
             
             # If token is an introducer (e.g., _binary)
             elif tok in self.Introducers:
-                # If we are in an SQL-like IN clause
+                # If we are in an SQL-like IN clause...
                 if isin:
                     intro = tok
                 else:
@@ -1342,8 +1345,8 @@ class predicate(entitiesmod.entity):
                 if not len(self.operands):
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
 
-                # Is the token one of the supported operators (or does
-                # it just appear to be one)...
+                # Is the token is one of the supported operators (or
+                # does it just appear to be one)...
                 if not self.isoperator(tok):
                     raise predicate.InvalidOperatorError(tok)
 
@@ -1381,11 +1384,10 @@ class predicate(entitiesmod.entity):
                     #
                     # x=1 is the first predicate and y=2 is the
                     # second. If we were parsing this expression, and we
-                    # are at the AND, the self would be x=1. Below,
-                    # we are passing paring for y=2 to a new predicate
-                    # object. Then we assign the new predict to
-                    # self.junction. This is how compound expressions
-                    # are objectified.
+                    # are at the AND, then self would be x=1. Below,
+                    # we are passing y=2 to a new predicate object. Then
+                    # we assign the new predict to self.junction. This
+                    # is how compound expressions are objectified.
                     self.junction = predicate(lex, tok, wh=self.where)
                     self._demandBalancedParens()
                     return
@@ -1402,7 +1404,7 @@ class predicate(entitiesmod.entity):
                     # Count closing parenthesis
                     self.endparen += 1
 
-            # If we are parsing an BETWEEN clause and we have reached
+            # If we are parsing a BETWEEN clause and we have reached
             # the 3rd operand (1 BETWEEN 2 AND 3), then we know we are no
             # longer in the BETWEEN clause.
             if inbetween and len(self.operands) == 3:
@@ -1415,8 +1417,8 @@ class predicate(entitiesmod.entity):
         # end while (while tok != lex.eof)
 
         if not self.match:
-            # Raise error if we are in a BETWEEN clause in there are not
-            # 3 operands
+            # Raise error if we are in a BETWEEN clause and there are
+            # not 3 operands
             #
             #     1 BETWEEN 2 AND 3
             #
@@ -1431,8 +1433,8 @@ class predicate(entitiesmod.entity):
                         lex, tok, ex=unexpected, msg=msg
                     )
             else:
-                # Raise error if this predicate is an IN clause but has
-                # only doesn't have at least two operands: 
+                # Raise error if this predicate is an IN clause doesn't
+                # have at least two operands: 
                 # 
                 #     1 IN (2)
                 #
@@ -1467,7 +1469,7 @@ class predicate(entitiesmod.entity):
     def operator(self):
         """ Return the predicate's operator.
 
-        The operator will always returned as uppercased (assuning it's a
+        The operator will always returned as uppercased (assuming it's a
         word operator).
         """
         if self._operator is None:
@@ -1484,14 +1486,12 @@ class predicate(entitiesmod.entity):
 
         Despite how the expression was given to the predicate object,
         the return value will always be normalized, i.e., word operators
-        (BETWEEN, IN, LIKE, etc.) will always be capitalized, and
-        whitespace will be consistently be used in a conventional way.
-        For example:
+        (BETWEEN, IN, LIKE, etc.) will always be uppercased, and
+        whitespace will be formated in a consistant way. For example:
 
             expr       = 'col1 is null and x in(1,2)'
             normalized = 'col1 IS NULL AND x IN (1, 2)'
-            pred = predicate(expr)
-            assert normalized == str(pred)
+            assert normalized == str(predicate(expr))
         """
         r = str()
 
@@ -1536,7 +1536,7 @@ class predicate(entitiesmod.entity):
         if self.junction:
             # ... concatentate the stringyfied version of it. Obviously,
             # this call will be recursive since the next junction may
-            # have a its own junction and so on.
+            # have its own junction and so on.
             r += str(self.junction)
 
         return r
@@ -1640,6 +1640,9 @@ class predicate(entitiesmod.entity):
         return tok == '%s'
 
     class Match():
+        """
+            XXX Comment
+        """
         re_isnatural = re.compile(
             r'^\s*in\s+natural\s+language\s+mode\s*$', \
               flags=re.IGNORECASE
@@ -1816,6 +1819,9 @@ class predicate(entitiesmod.entity):
     class SyntaxError(ValueError):
         """ The exception to raise when there is a general syntax error
         during the parsing of a predicate expression.
+
+        There are a few subclasses of this class for more specific types
+        of errors.
         """
         def __init__(self, col=None, ctx=None, tok=None, msg=None):
             """ Create a SyntaxError.
