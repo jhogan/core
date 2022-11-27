@@ -285,7 +285,7 @@ class pom_menu_items(tester.tester):
 
 class site(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'apriori'
+        mods = 'party', 'apriori', 'file', 'asset'
         super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().override = True
