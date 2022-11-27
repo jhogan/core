@@ -322,7 +322,7 @@ class principle(entities.entity):
         """ Return a test user object. Ensure its in the database if it
         is not already.
         """
-        Id = uuid.UUID(hex='574d42d0-9937-4fa7-a008-b885a9a77a9a')
+        Id = uuid.UUID(hex='574d42d099374fa7a008b885a9a77a9a')
         if not hasattr(self, '_user'):
             import orm, db
             with orm.sudo():
@@ -338,7 +338,7 @@ class principle(entities.entity):
         """ Return a test company object. Ensure its in the database if
         it is not already.
         """
-        Id = uuid.UUID(hex='574d42d0-625e-4b2b-a79e-28d981616545')
+        Id = uuid.UUID(hex='574d42d0625e4b2ba79e28d981616545')
         if not hasattr(self, '_company'):
             import party, orm, db
 
@@ -1231,13 +1231,11 @@ class tester(entities.entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
-    # FIXME The assertions `lt` and `le` are broken. they have the
-    # expect and actual mixed up. `ge` was corrected recently.
     def lt(self, expect, actual, msg=None):
-        if not (expect < actual): self._failures += failure()
+        if not (actual < expect): self._failures += failure()
 
     def le(self, expect, actual, msg=None):
-        if not (expect <= actual): self._failures += failure()
+        if not (actual <= expect): self._failures += failure()
 
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
@@ -1972,4 +1970,11 @@ class cli:
         print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class NotCallableError(Exception):
+    """ XXX Comment
+    """
+    pass
+
+class ValueError(builtins.ValueError):
+    """ XXX Comment
+    """
     pass

@@ -1,17 +1,23 @@
 carapacian:    car    cara
+context:       ctx
+description:   desc
 entities:      es
 entity:        e
 field          fld
 handler:       hnd
 index:         ix
+introducer:    intro
 key:           k
 list:          ls
 message:       msg
 object:        obj
+operation:     op
 owner:         own
 parent:        rent
+parenthesis:   paren
 proprietor:    propr
 remove:        rm
 result:        res
 return-value:  r
 tuple:         tup
+where:         wh
