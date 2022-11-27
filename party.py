@@ -82,7 +82,7 @@ class parties(orm.entities):
             name   =  'Anonymous',
             fld    =  '_anon',
             su     =  ecommerce.users.root,
-            propr  =  company.carapacian,
+            propr  =  companies.carapacian,
         ) 
 
     @classmethod

@@ -85,7 +85,7 @@ class parties(tester.tester):
 
         # Proprietor
         self.eq(
-            party.company.carapacian.id,
+            party.companies.carapacian.id,
             party.parties.anonymous.proprietor__partyid
         )
 

@@ -285,7 +285,7 @@ class users(tester.tester):
 
         # The proprietor of the anon user should be Carapacian
         # (although, maybe there should be a "commons" that owns anon)
-        self.eq(party.company.CarapacianId, anon.proprietor__partyid)
+        self.eq(party.companies.CarapacianId, anon.proprietor__partyid)
         self.eq(ecommerce.users.RootUserId, anon.owner__userid)
 
 class test_visits(tester.tester):
