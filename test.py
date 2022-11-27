@@ -10715,7 +10715,7 @@ class orm_(tester.tester):
                 if op == 'NOT':
                     self.gt(1, art1.weight)
                 else:
-                    self.le(art1.weight, 1)
+                    self.le(1, art1.weight)
 
                 self.one(art1.artist_artifacts)
                 fact1 = art1.artist_artifacts.first.artifact
@@ -10724,7 +10724,7 @@ class orm_(tester.tester):
                 if op == 'NOT':
                     self.gt(11, fact1.weight)
                 else:
-                    self.le(fact1.weight, 11)
+                    self.le(11, fact1.weight)
 
         artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
         factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
@@ -11662,7 +11662,7 @@ class orm_(tester.tester):
         self.one(arts1.orm.joins)
         self.type(presentations, arts1.orm.joins.first.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
@@ -11678,7 +11678,7 @@ class orm_(tester.tester):
         self.type(presentations, arts1.orm.joins.first.entities)
         self.type(locations, arts1.orm.joins.second.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
@@ -11698,7 +11698,7 @@ class orm_(tester.tester):
         self.type(presentations, arts1.orm.joins.first.entities)
         self.type(locations, arts1.orm.joins.second.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
