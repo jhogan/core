@@ -1109,8 +1109,21 @@ class directories(inodes):
     """
     @classproperty
     def site(cls):
-        """
-        XXX Comment
+        """ Return the site/ directory.
+
+        The site/ directory's is at the root (radix) of the file system
+        underneath the pom/ directory.
+            
+            /pom/site
+
+        Each pom.site (website) object creates a directory underneath
+        site/ named after its primary key as a hex string. Within that
+        directory, site's can store files as they see fit.
+
+        The proprietor of the site/ directory (and its parent pom/) is
+        "the public" (party.parties.public). This means that any tenant
+        (proprietor) has read access to the directory (necessary when
+        loading this part of the file system).
         """
         import party
         with orm.sudo(), orm.proprietor(party.parties.public):

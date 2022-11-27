@@ -795,9 +795,6 @@ class page(tester.tester):
         req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
 
         with orm.sudo(), orm.proprietor(party.company.carapacian):
-            # XXX:9e3a0bbe This call to req.site fails when trying to
-            # load the site/ directory. 
-            return
             self.type(carapacian_com.site, req.site)
 
         req = www.request(www.application())

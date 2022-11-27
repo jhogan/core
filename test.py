@@ -2710,12 +2710,6 @@ class orm_(tester.tester):
 
         for i in range(10):
             self.eq(abbrs, [e.orm.abbreviation for e in es])
-
-            # XXX:9e3a0bbe When e is a subclass of pom.site, its
-            # _ensure method is run and fails because it tries to load
-            # the site/ directory.
-            return
-
             self.eq(abbrs, [e().orm.abbreviation for e in es])
 
     def it_calls_count_on_class(self):
@@ -14543,8 +14537,10 @@ class orm_(tester.tester):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
     def it_persists_publicly_owned_entity(self):
-        """
-        XXX Comment
+        """ Make sure that entity's whose proprietor is
+        `party.parties.public` are persisted correctly. Public entities
+        should be readable by any proprietor but only writable by the
+        `party.parties.public` proprietor.
         """
 
         ''' Setup '''
@@ -14648,8 +14644,10 @@ class orm_(tester.tester):
             self.expect(db.RecordNotFoundError, art.orm.reloaded)
 
     def it_persists_publicly_owned_subentity(self):
-        """
-        XXX Comment
+        """ Make sure that subentity's whose proprietor is
+        `party.parties.public` are persisted correctly. Public entities
+        should be readable by any proprietor but only writable by the
+        `party.parties.public` proprietor.
         """
 
         ''' Assert testing environment '''
@@ -14768,8 +14766,11 @@ class orm_(tester.tester):
             self.expect(db.RecordNotFoundError, sng.orm.reloaded)
 
     def it_persists_publicly_owned_constituents(self):
-        """
-        XXX Comment
+        """ Make sure that the constituent collections owned by entity
+        objects are persisted correctly when at least some of their
+        entity objects are owned by the paryt.parties.public proprietor.
+        Public entities should be readable by any proprietor but only
+        writable by the public proprietor.
         """
 
         ''' Setup '''

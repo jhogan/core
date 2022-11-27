@@ -954,14 +954,14 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         """ Sets the initial properties for the ``where`` object. 
         
-        :param:  entities  es: The ``entities`` collection associated
+        :param: entities es: The ``entities`` collection associated
         with this ``where`` object.
 
-        :param:  str or predicate pred: A str or ``predicate`` object
-        associated with this ``where`` object
+        :param: str|predicate: A str or ``predicate`` object associated
+        with this ``where`` object
 
-        :param:  list      args:        A list of arguments associated
-        with this ``where`` object.
+        :param: list args: A list of arguments associated with this
+        ``where`` object.
         """
 
         self.entities     =  es
@@ -993,6 +993,7 @@ class where(entitiesmod.entity):
 
         return wh
 
+    # XXX Rename this to `demand`
     def demandvalid(self):
         def demand(col, exists=False, ft=False):
             for map in self.entities.orm.mappings.all:
@@ -1015,6 +1016,7 @@ class where(entitiesmod.entity):
             if pred.match:
                 for col in pred.match.columns:
                     demand(col, exists=True, ft=True)
+
                 continue
 
             for op in pred.operands:
@@ -1640,9 +1642,6 @@ class predicate(entitiesmod.entity):
         return tok == '%s'
 
     class Match():
-        """
-            XXX Comment
-        """
         re_isnatural = re.compile(
             r'^\s*in\s+natural\s+language\s+mode\s*$', \
               flags=re.IGNORECASE
@@ -3128,6 +3127,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         super().append(e, uniq)
 
+    # TODO This method should be in the ORM class and it should be called
+    # '_prepare'
     def _preparepredicate(self, _p1='', _p2=None, *args, **kwargs):
         p1, p2 = _p1, _p2
 
@@ -3145,7 +3146,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         args = list(args)
         for k, v in kwargs.items():
             if p1: 
-                p1 += ' and '
+                p1 += ' AND '
             p1 += '%s = %%s' % k
             args.append(v)
 
@@ -3170,7 +3171,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        # If there is an security().proprietor and the entities
+        # If there is a security().proprietor and the entities
         # collection is not a chunk, then add a proprietor filter.
         #
         # There is no need to append a proprietor filter to a chunked
@@ -3182,10 +3183,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
-                    # XXX 60c2c0d8 The introduction of the public
-                    # proprietor here revealed a bug in predicate parsing that
-                    # causes introducers to be included in the operands
-                    # list.
                     p1 += f'{map.name} IN (_binary %s, _binary %s)'
                     args.append(security().proprietorid.bytes)
 
@@ -8790,6 +8787,7 @@ class orm:
         except Exception as ex:
             return 'Exception: %s ' % (str(ex),)
 
+    # TODO Consider renaming to isstruck
     @property
     def ismarkedfordeletion(self):
         """ Returns True if the entity is marked for deletion. When an
@@ -10667,10 +10665,11 @@ class orm:
         object.
 
         """
-        # Note, since generating the SELECT statement involves
-        # recursion, we need a regular method. The user would rather
-        # call a property (orm.select), however, so this is a private
-        # method normally accessed through the orm.select property.
+        # NOTE, since generating the SELECT statement involves
+        # recursion, this needs to be a regular method. The user would
+        # rather call a property (orm.select), however, so this is a
+        # private method normally accessed through the orm.select
+        # property.
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -10897,9 +10896,13 @@ class orm:
         inplaceholder  =  False
         argix          =  0
 
-        # Iterate over sql instead of using a simple search-and-replace
-        # approach so we don't add introducer to quoted instances of the
-        # placeholder token.
+        # TODO Should we use the shlex tokenizer here insteaded of
+        # iterating over `sql`? If so, rewrite to use shlex. If not,
+        # write a comment explaining the decision not to.
+
+        # Iterate over `sql` instead of using a simple
+        # search-and-replace approach so we don't add introducer to
+        # quoted instances of the placeholder token.
         for s in sql:
             # Detect quotes
             if s == "'":
@@ -10913,8 +10916,8 @@ class orm:
             if inplaceholder:
                 if s == 's':
                     if type(args[argix]) in (bytearray, bytes):
-                        # Here we add the _binary introducer because the arg is
-                        # binary and we are not in quoted text
+                        # Here we add the _binary introducer because the
+                        # arg is binary and we are not in quoted text
                         r += '_binary %s'
                     else:
                         # A non-binary placeholder
@@ -10922,8 +10925,8 @@ class orm:
                     argix += 1
                 else:
                     # False alarm. The previous '%' didn't indicate a
-                    # placeholder token so just append '%' + s to the return
-                    # string
+                    # placeholder token so just append '%' + s to the
+                    # return string
                     r += '%' + s
 
                 inplaceholder = False
@@ -11916,15 +11919,22 @@ class migration:
             
 ''' ORM Exceptions '''
 class InvalidColumn(ValueError):
-    """ XXX Comment
+    """ An exception raised when a predicate expression is discovered to
+    contain a column name that does not exist as an entity attribute.
     """
 
 class InvalidStream(ValueError):
-    """ XXX Comment
+    """ Raised when an entity is joined to another entity that is in
+    streaming mode.
     """
 
 class ConfusionError(ValueError):
-    """ XXX Comment
+    """ Raised by `orm.altertable` if it gets confused when comparing
+    the existing database table with the entity's attributes. 
+
+    The algorithm shouldn't get confused, however, as it is under
+    development, there are still potential areas where it can't continue
+    under certain conditions.
     """
 
 class ProprietorError(ValueError):

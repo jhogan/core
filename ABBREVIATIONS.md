@@ -1,5 +1,6 @@
 carapacian:    car    cara
 context:       ctx
+description:   desc
 entities:      es
 entity:        e
 field          fld
