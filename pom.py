@@ -213,7 +213,7 @@ class site(asset.asset):
                         if map.isproprietor or map.isowner:
                             continue
                     else:
-                        # Filterout other tiypes
+                        # Filter out other types
                         continue
                     
                     # Move the value in wssup's map to sup's 
