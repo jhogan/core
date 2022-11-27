@@ -14788,7 +14788,8 @@ class orm_(tester.tester):
 
         ''' Creation tests '''
         art = artist.getvalid()
-        self.eq(stdcompanyid, art.proprietor.id)
+        art.presentations += presentation.getvalid()
+        self.eq(stdcompanyid, art.presentations.last.proprietor.id)
         art.save()
 
         with orm.proprietor(pub):
@@ -14804,8 +14805,74 @@ class orm_(tester.tester):
         self.eq(stdcompanyid, art1.proprietor.id)
 
 
-        self.eq(pub.id, art1.presentations.first.proprietor.id)
-        self.eq(pub.id, art1.presentations.second.proprietor.id)
+        press = art.presentations
+        press1 = art1.presentations
+
+        self.three(press)
+        self.three(press1)
+
+        self.eq(stdcompanyid, press1[press.first].proprietor.id)
+        self.eq(pub.id, press1[press.third].proprietor.id)
+
+        with orm.proprietor(pub):
+            self.expect(db.RecordNotFoundError, art.orm.reloaded)
+            for pres in art.presentations:
+                if pres.id == art.presentations.first.id:
+                    self.expect(
+                        db.RecordNotFoundError, pres.orm.reloaded
+                    )
+                else:
+                    self.eq(pub.id, pres.orm.reloaded().proprietor.id)
+
+        ''' Modification tests '''
+        descs = list()
+
+        descs.extend([uuid4().hex for x in range(3)])
+
+
+        art.presentations.first.description = descs[0]
+
+        self.expect(None, art.save)
+
+        art.presentations.second.description = descs[1]
+        art.presentations.third.description = descs[2]
+
+        self.expect(orm.ProprietorError, art.save)
+
+        with orm.proprietor(pub):
+            self.expect(None, art.save)
+
+        art1 = self.expect(None, art.orm.reloaded)
+
+        for i, pres in art.presentations.enumerate():
+            pres1 = art1.presentations[pres]
+            self.eq(descs[i], pres1.description)
+            if pres.id == art.presentations.first.id:
+                self.eq(stdcompanyid, pres1.proprietor.id)
+            else:
+                self.eq(pub.id, pres1.proprietor.id)
+        
+        ''' Deletion tests '''
+        for i, pres in art.presentations.enumerate():
+            if i.first:
+                continue
+
+            pres.orm.ismarkedfordeletion = True
+
+        self.expect(orm.ProprietorError, art.save)
+
+        for i, pres in art.presentations.enumerate():
+            self.expect(None, pres.orm.reloaded)
+
+        with orm.proprietor(pub):
+            art.save()
+
+        for i, pres in art.presentations.enumerate():
+            if i.first:
+                self.expect(None, pres.orm.reloaded)
+                continue
+
+            self.expect(db.RecordNotFoundError, pres.orm.reloaded)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
