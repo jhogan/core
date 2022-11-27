@@ -11224,8 +11224,11 @@ class orm_(tester.tester):
         self.eq("1234", arts.orm.where.args[0])
         self.eq("5678", arts.orm.where.args[1])
         for i, pred in enumerate(arts.orm.where.predicate):
-            self.eq("%s", pred.operands[1])
-            self.lt(i, 3)
+            if pred.columns[0] == 'proprietor__partyid':
+                self.eq("_binary %s", pred.operands[1])
+            else:
+                self.eq("%s", pred.operands[1])
+            self.lt(3, i)
 
         expr = (
             "firstname between '1234' and '5678' or "
@@ -11238,11 +11241,11 @@ class orm_(tester.tester):
         self.eq("2345", arts.orm.where.args[2])
         self.eq("6789", arts.orm.where.args[3])
 
-        # XXX 60c2c0d8 The introduction of the public proprietor reveald
-        # a bug in predicate parsing that causes introducers to be
-        # included in the operands list
         for i, pred in enumerate(arts.orm.where.predicate):
-            self.eq("%s", pred.operands[1])
+            if pred.columns[0] == 'proprietor__partyid':
+                self.eq("_binary %s", pred.operands[1])
+            else:
+                self.eq("%s", pred.operands[1])
             self.lt(3, i)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
@@ -12390,14 +12393,11 @@ class orm_(tester.tester):
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s)", str(pred))
 
-        # XXX:60c2c0d8 Fix bug which causes the introducer to be
-        # included in the operands list when they are used in IN
-        # clauses.
         for i, pred in enumerate(pred):
             self.two(pred.operands)
             self.eq(pred.operands[0], 'col')
             # The operands list excludes the introducer
-            self.eq(pred.operands[1], '%s')
+            self.eq(pred.operands[1], '_binary %s')
             self.eq(0, i)
 
         exprs = (
@@ -12412,9 +12412,8 @@ class orm_(tester.tester):
         for i, pred in enumerate(pred):
             self.three(pred.operands)
             self.eq(pred.operands[0], 'col')
-            # The operands list excludes the introducer
-            self.eq(pred.operands[1], '%s')
-            self.eq(pred.operands[2], '%s')
+            self.eq(pred.operands[1], '_binary %s')
+            self.eq(pred.operands[2], '_binary %s')
             self.eq(0, i)
 
     def it_saves_recursive_entity(self):
