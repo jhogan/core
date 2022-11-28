@@ -1109,31 +1109,31 @@ class tester(entities.entity):
         
     def assertUuid(self, id, msg=None):
         if isinstance(id, uuid.UUID):
-            raise ValueError('Assert type instead')
+            raise builtins.ValueError('Assert type instead')
 
         try: 
             uuid.UUID(str(id), version=4)
-        except ValueError: 
+        except builtins.ValueError: 
             self._failures += failure()
 
     def uuid(self, id, msg=None):
         if isinstance(id, uuid.UUID):
-            raise ValueError('Assert type instead')
+            raise builtins.ValueError('Assert type instead')
 
         try: 
             uuid.UUID(str(id), version=4)
-        except ValueError: 
+        except builtins.ValueError: 
             self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
     def true(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
@@ -1145,13 +1145,13 @@ class tester(entities.entity):
 
     def assertFalse(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
     def false(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
@@ -1453,7 +1453,7 @@ class tester(entities.entity):
         # it does).
         try:
             if not callable(fn):
-                raise NotCallableError((
+                raise TypeError((
                     'The fn parameter must be a callable object. '
                     'Consider using a function or lambda instead of '
                     'a: ' + type(fn).__name__
@@ -1939,7 +1939,7 @@ class cli:
                     # Validate flags
                     for flag in flags:
                         if flag not in ('p',):
-                            raise ValueError(
+                            raise builtins.ValueError(
                                 f'Invalid flag: "{flag}"'
                             )
 
@@ -1967,11 +1967,6 @@ class cli:
 
         # Print stats with current test method being tested
         print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
-
-class NotCallableError(Exception):
-    """ XXX Comment
-    """
-    pass
 
 class ValueError(builtins.ValueError):
     """ An exception raised by test units to indicate that the values in
