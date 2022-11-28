@@ -19,5 +19,6 @@ proprietor:    propr
 remove:        rm
 result:        res
 return-value:  r
+switch-user:   su
 tuple:         tup
 where:         wh

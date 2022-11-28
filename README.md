@@ -536,6 +536,39 @@ process to skip this process with the `-T` flag.
 
 Now the test runs even faster.
 
+Note that when viewing the output, you may see a lot of error messages.
+For example, you might see lines like the following.
+
+    0.005 INFO Getting tester subclasses ...
+    0.005 INFO Iterating over subclasses ...
+    11.652 [0 0 60,220] 49MB -- orm_.it_has_two_entity_references_of_same_type
+    11.792 [0 0 61,960] 49MB -- orm_.it_migrates
+    13.134 [0 0 59,586] 49MB -- orm_.it_isolates_brokenrules
+    31.589 WARNING Rollback because <class 'ZeroDivisionError'> "division by zero"
+    26.630 [0 0 76,169] 75MB -- orm_.it_raises_error_on_invalid_attributes_of_associations
+    57.320 WARNING Rollback because <class 'entities.BrokenRulesError'> "Can't save invalid object <class '__main__.artist'> at 0x7efe89014790
+            * brokenrule(firstname is too long, property=firstname, type=fits, entity=<__main__.artist>)
+            * brokenrule(lastname is too short, property=lastname, type=fits, entity=<__main__.artist>)
+            * brokenrule(password is too short, property=password, type=fits, entity=<__main__.artist>)
+            * brokenrule(ssn is too short, property=ssn, type=fits, entity=<__main__.artist>)
+            * brokenrule(bio1 is too short, property=bio1, type=fits, entity=<__main__.artist>)
+            * brokenrule(bio2 is too short, property=bio2, type=fits, entity=<__main__.artist>)
+            * brokenrule(phone is out of range, property=phone, type=fits, entity=<__main__.artist>)
+            * brokenrule(email is too short, property=email, type=fits, entity=<__main__.artist>)
+            * brokenrule(gender is too short, property=gender, type=fits, entity=<__main__.artist>)
+    53.477 [0 0 74,450] 81MB -- orm_.it_hard_deletes_entity
+    53.721 WARNING Rollback because <class 'ZeroDivisionError'> "division by zero"
+    [orm_]                                                                pass
+
+The above sample shows the (very truncated) output of `./test.py orm\_`.
+Though we see a lot of WARNING lines with error messages in them, the
+last line indicate that `orm_` passed. The error messages are the result
+of the tests ensuring that the unhappy path (such as library code
+raising exception under certain conditions) are excuting as expected.
+The last lines of output (those that contain the tags "pass" or "FAIL")
+are the ones to look out for. Underneath the FAIL ones will be printed
+the error messages that need to be addressed.
+
 ### Viewing SQL being issued to MySQL ###
 For debugging purposes, you will occasionally take an interest in what
 SQL the ORM is actually sending to the database. This is done by using

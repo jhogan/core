@@ -96,13 +96,26 @@ class parties(orm.entities):
     def _produce(cls, id, name, fld, su, propr):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        XXX Comment
+        Ensure a `party`, or subclass thereof, with the given id is in
+        the database. Return the `party` to the caller.
+
+        :param: id UUID: The id of the `party` entity.
+
+        :param: name str: If the `party` doesn't exist, this value will
+        be assigned to the party's `name` attribute upon creation.
+
+        :param: fld str: The name of the private class variable that
+        the `party` entity will be set to for memoization. (E.g.,
+        '_anon', '_root', '_carapacian'.)
+
+        :param: su ecommerce.user: The user to switch to when creating
+        the entity.
+
+        :param: propr party.party: The party to switch the propretor to
+        when creating the entity.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if not hasattr(cls, fld) or not getattr(cls, fld):
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            # XXX Comment
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             e = cls.orm.entity
             with orm.su(su), orm.proprietor(propr):
                 try:
@@ -117,6 +130,7 @@ class parties(orm.entities):
                     par = e(id=id, name=name)
                     par.save()
                 except Exception:
+                    # XXX What's this?
                     raise
                 finally:
                     setattr(cls, fld, par)
@@ -164,7 +178,6 @@ class companies(legalorganizations):
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
 
-    # XXX Move this to party.companies. Use _produce
     @classproperty
     def carapacian(cls):
         """

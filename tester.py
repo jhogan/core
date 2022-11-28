@@ -1944,7 +1944,6 @@ class cli:
                             )
 
                     self.testers.profile = 'p' in flags
-                    
 
     def _testers_onbeforeinvoketest(self, src, eargs):
         ''' Get tracked objects count '''
@@ -1975,6 +1974,7 @@ class NotCallableError(Exception):
     pass
 
 class ValueError(builtins.ValueError):
-    """ XXX Comment
+    """ An exception raised by test units to indicate that the values in
+    the testing environment are invalid.
     """
     pass
