@@ -34,7 +34,6 @@ import primative
 
 # XXX Look for instances of party.carapacian and party.anonymous and see
 # if party.public should be used instead
-
 class parties(orm.entities):                                 
     """ A collection of party objects.
 
@@ -42,7 +41,8 @@ class parties(orm.entities):
     """
 
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # XXX Comment
+    # The primary key for the "public" proprietor, i.e.,
+    # `party.parties.public` 
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     PublicId = uuid.UUID(int=0xbab11cf73a8f4c97b900d1f6e9dddb5a)
 
@@ -54,8 +54,15 @@ class parties(orm.entities):
 
     @classproperty
     def public(cls):
-        """
-        XXX Comment
+        """ The public proprietor. 
+
+        Entities that have `public` as their proprietor would be
+        readable to any proprietor (though they wouldn't be writable).
+
+        Currently this is public directories such as /radix, /pom and
+        /pom/site. Future common entities could include `region`
+        entities (think a zipcode database) that contains geographical
+        information that any proprietor would need.
         """
         import ecommerce
         id = cls.PublicId
