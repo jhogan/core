@@ -1225,21 +1225,47 @@ class directory(tester.tester):
             self.true(sup in sup.inode)
             sup = sup.inode
         
-    def it_creates_radix_as_a_carapacian_property(self):
-        import party
+    def it_gets_radix(self):
+        # Force to rememoize
+        with suppress(AttributeError):
+            del file.directory._radix
 
-        self.eq(
-            party.companies.CarapacianId,
-            file.directory.radix.proprietor.id
-        )
+        pubid = party.parties.PublicId
+        radix = file.directory.radix
+        rootid = ecommerce.users.RootUserId
 
-    def it_creates_floaters_as_a_carapacian_property(self):
-        import party
+        # Make sure we are testing memoization correctly
+        self.true(hasattr(file.directory, '_radix'))
 
-        self.eq(
-            party.companies.CarapacianId,
-            file.directory._floaters.proprietor.id
-        )
+        # Memoize
+        self.is_(radix, file.directory.radix)
+
+        # Ensure the proprietor is the public
+        self.eq(pubid, radix.proprietor.id)
+
+        # Ensure owner is root
+        self.eq(rootid, radix.owner__userid)
+
+    def it_gets_floaters(self):
+        # Force to rememoize
+        with suppress(AttributeError):
+            del file.directory._flts
+
+        pubid = party.parties.PublicId
+        flts = file.directory._floaters
+        rootid = ecommerce.users.RootUserId
+
+        # Make sure we are testing memoization correctly
+        self.true(hasattr(file.directory, '_flts'))
+
+        # Memoize
+        self.is_(flts, file.directory._floaters)
+
+        # Ensure the proprietor is the public
+        self.eq(pubid, flts.proprietor.id)
+
+        # Ensure owner is root
+        self.eq(rootid, flts.owner__userid)
 
     def it_deletes_from_floaters(self):
         ''' Delete a cached-only floating directory '''

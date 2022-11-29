@@ -1370,32 +1370,14 @@ class directory(inode):
         entity, 'root' is already taken as a @property name so we are
         forced, here, to use a different name for this @classproperty.
         """
-        if not hasattr(cls, '_radix'):
-            # TODO:3d0fe827 Shouldn't we be instantiating a
-            # ``directory`` here, instead of cls. cls will almost always
-            # be ``directory`` but there is no reason it should be
-            # variant.
+        import party
+        return cls._produce(
+            id     =  directory.RadixId,
+            name   =  'radix',
+            fld    =  '_radix',
+            propr  =  party.parties.public,
 
-            # XXX Write test to ensure radix is always owned by root.
-            # TODO This looks a lot like _floaters. We can consolidate
-            # with a private method.
-            import party
-
-            # XXX:9e3a0bbe We will want radix to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.companies.carapacian):
-                try:
-                    cls._radix = cls(cls.RadixId)
-                except db.RecordNotFoundError:
-                    cls._radix = cls(id=cls.RadixId, name='radix')
-                    cls._radix.save()
-
-                # XXX Correct this comment
-                # Enuser the the super (inode) is loaded. We don't want
-                # to lazy-load later on when we may not be sudo or
-                # carapacian. That would result in an Exception.
-                cls._radix.orm.super
-
-        return cls._radix
+        )
     
     @property
     def isradix(self):
@@ -1438,33 +1420,40 @@ class directory(inode):
 
             f.save()
         """
-        if not hasattr(cls, '_flts'):
-            # TODO:3d0fe827 Shouldn't we be instantiating a
-            # ``directory`` here, instead of cls. cls will almost always
-            # be ``directory`` but there is no reason it should be
-            # variant.
+        import party
+        return cls._produce(
+            id     =  cls.FloatersId,
+            name   =  '.floaters',
+            fld    =  '_flts',
+            propr  =  party.parties.public
+        )
 
-            # XXX Write test to ensure floaters is always owned by
-            # root.
-            import party
-
-            # XXX:9e3a0bbe We will want floaters to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.companies.carapacian):
+    @classmethod
+    def _produce(cls, id, name, fld, propr):
+        """
+            XXX Comment
+        """
+        if not hasattr(cls, fld):
+            with orm.sudo(), orm.proprietor(propr):
                 try:
-                    cls._flts = cls(cls.FloatersId)
+                    dir = cls(id)
                 except db.RecordNotFoundError:
-                    cls._flts = cls(id=cls.FloatersId, name='.floaters')
-                    cls._flts.save()
+                    dir = cls(id=id, name=name)
 
-                # XXX Correct comment. If _floater is to public
-                # property, we should be able to allow lazy-loading of
-                # super.
-                # Enuser the the super (inode) is loaded). We don't want
+                    # NOTE: In some cases (floaters) setting the class
+                    # variable needs to happen before the save() in
+                    # order to avoid an infinite recurssion.
+                    setattr(cls, fld, dir)
+                    dir.save()
+                else:
+                    setattr(cls, fld, dir)
+
+                # Ensure the the super (inode) is loaded. We don't want
                 # to lazy-load later on when we may not be sudo or
-                # carapacian. That would result in an exception.
-                cls._flts.orm.super
+                # public. That would result in an Exception.
+                dir.orm.super
 
-        return cls._flts
+        return getattr(cls, fld)
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead
