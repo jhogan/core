@@ -6056,7 +6056,8 @@ with book('Hacking Carapacian Core'):
         A important feature of object-oriented design is the use of
         inheritance to create robust object models. The ORM extends
         Python's inheritance model by allowing us to create subclasses
-        in our entity models which can seemlessly be presisted.
+        of our entity classes, called **subentities**, which can
+        seemlessly be persisted.
 
         Let's create a small object model to demonstrate the basic use
         of inheritance for entity classes.
@@ -6082,20 +6083,20 @@ with book('Hacking Carapacian Core'):
           level = str
 
       print('''
-
-        Here we have there ORM entities: `products`, `goods` and
+        Here we have three ORM entities: `products`, `goods` and
         `services`. Goods and services are types of products therefore
         the `goods` and `services` classes inherit from `product`. 
 
         According to the model, `goods` have a `code` associated with
-        them which customer service representatives can use to reference
-        them.  A `service ` has a ``level` attribute to describe
-        the its level (consider subscribing to a SaSS service and being
+        them (perhaps for customer service representatives to use as a
+        reference).  A `service ` has a ``level` attribute to describe
+        its level (consider subscribing to a SaSS service and being
         offered the *level* of "Basic", "Premium", or "Professional").
 
         In this model, we've inherited one level deep, however, it is
-        possible to create a subentity of `good` and a subentity of
-        that subentity, and so on.
+        possible to create a subentity classes of the `good` and
+        `product` entities, and subentities of those subentities, as so
+        on *ad infinitum*.
 
         Now that we've established the object model, let's see how to
         use it to create and persist products, goods and services:
@@ -6120,24 +6121,27 @@ with book('Hacking Carapacian Core'):
         eq('lemp11', g1.code)
 
       print('''
-        Here we are simply creating a 'good' and saving it. 
+        Here we are simply creating a 'good', saving and reloading it.
 
         Notice that we able to use the `name` attribute just as we use
         the `code` attribute even though `name` was defined in the
         `product` base class. This is pretty much what we would expect
         from normal inheritance (although we woudn't necessarily expect
         to be able to set the `name` attributes through the
-        constructor). We save the `good` and reload it. Note that the
-        `save()` operation ensures both the `name` and `code` are saved
-        without any explicit reference to the `product` base class. The
-        ORM ensure that peristence and attribute access work seemlessly
-        when using inheritance. 
+        constructor). 
+
+        We save the `good` and reload it. Note that the `save()`
+        operation ensures both the `name` and `code` are saved without
+        any explicit reference to the `product` base class. The ORM
+        ensure that peristence and attribute access work seemlessly when
+        using inheritance. 
 
         It's important to understand that, even though we didn't
         explicitly reference the `product` class in this example, a
         `product` and a `good` were created in the system. Both entities
         have the same `id`. We can use the `good` object (`g`) to get
-        access to its corresponding base entity:
+        access to its corresponding base entity (sometimes called the
+        **superentitity**)
       ''')
 
       with listing('Subclasses and their base base')
@@ -6176,38 +6180,38 @@ with book('Hacking Carapacian Core'):
 
         # Both objects will having mathing id and name attributes as
         # they did before they were saved.
-        eq(g.id, g1.id)
-        eq(g.id, prod1.id)
-        eq(g.name, g1.name)
-        eq(g.name, prod1.name)
+        eq(g.id,    g1.id)
+        eq(g.id,    prod1.id)
+        eq(g.name,  g1.name)
+        eq(g.name,  prod1.name)
 
         # However, as before, the reloaded product will not know about
         # the good's code attribute
         expect(AttributeError, lambda: prod1.code)
 
       print('''
-        Here we see the use of `super` property being used to get the
-        base entity of `good`:
+        Here we see the use of the `super` property being used to get
+        the superentity of `good`:
             
             prod = g.orm.super
 
-        This attribute is not intended for every day use, though it is
-        useful to demonstrate the relationship that entity objects have
-        with their base entities. `super` is lazy-loaded; when `good`
-        was reloaded, it wasn't pulled from the database until it was
-        called for.
+        The `super` attribute is not intended for every day use, though
+        it is useful to demonstrate the relationship that entity objects
+        have with their base entities. `super` is lazy-loaded; when
+        `good` was reloaded, it wasn't pulled from the database until it
+        was called for.
 
         The important thing to note here is that the ORM is maintaining
         two distinct but related entity: the `good` and the `product`.
         This is clear from the code sample above. 
       ''')
 
-      with section( 'Behind the scenes: inheritance and presistence'):
+      with section('Behind the scenes: inheritance and presistence'):
         print('''
           In the database, a `product` table and a `good` table are used
-          to store the `good` entity along with its corresponding `good`
-          entity. Below are approximations of the two tables in the
-          database:
+          to store the `product` entity along with its corresponding
+          `good` entity. Below are approximations of the two tables in
+          the database:
 
             /* The product table */
             CREATE TABLE product (
@@ -6224,10 +6228,11 @@ with book('Hacking Carapacian Core'):
             )
 
           Note that only the `product` table has the `name` field. Even
-          though the `good` entity has a `name` attribute, the value for
-          it is stored in the `product` table. This is because `name` is
-          inherited from the `product` entity. Adding an additional
-          `name` field in the `good` table would lead to duplicate data.
+          though the `good` *entity* has a `name` attribute, the value
+          for it is stored in the `product` table. This is because
+          `name` is inherited from the `product` entity. Adding an
+          additional `name` field in the `good` table would lead to
+          duplicate data.
 
           Also note that the `code` field is defined on the `good`
           table.  This should make sense because `code` is an attribute
@@ -6241,6 +6246,28 @@ with book('Hacking Carapacian Core'):
           both entity's share the same id, the ORM is able to associate
           the two making inherited persistence seemless.
       ''')
+
+      with section('Further uses of subentities'):
+        print('''
+            Though we only showed creating, saving and reloading new
+            subentity objects, it is, of course, also possible to update,
+            and delete them. Updating subentity's works just like
+            updating regular entities with the inheritence aspects being
+            taken care of by the ORM.. To delete a subentity
+            is to delete its superentities as well as any subentities it
+            has. All these persistence operations are done in an atomic
+            transaction.
+
+            Furthermore, subentities can have constituents. Those
+            constiuents can be entities or even subentities themselves.
+            Working with subentity constituents is the same as working
+            with regular entities. 
+
+            Since inheritance is a cornerstone of robust object models,
+            a lot of work has been put into the ORM to ensure that
+            subentities and their constituents can be persisted as
+            seemlessly as possible.
+        ''')
 
       with section('Inheritence and constituents')
         ...
