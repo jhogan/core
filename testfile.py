@@ -12,6 +12,7 @@
 
 import apriori; apriori.model()
 
+from contextlib import suppress
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
