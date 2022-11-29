@@ -851,7 +851,7 @@ class root(tester.tester):
         self.is_(root1, br.entity)
 
     def it_assigns_root_a_consistent_id(self):
-        Id = uuid.UUID(hex='93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+        Id = uuid.UUID(hex='4001930b2ae4402a8c77011f0ffca9ce')
 
         for _ in range(2):
             ecommerce.user.orm.truncate()

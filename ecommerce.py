@@ -62,8 +62,8 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    AnonymousUserId  =  uuid.UUID('616e6f6e-7573-6572-8a2e-882b3978ef54')
-    RootUserId       =  uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+    AnonymousUserId  =  uuid.UUID('616e6f6e757365728a2e882b3978ef54')
+    RootUserId       =  uuid.UUID('4001930b2ae4402a8c77011f0ffca9ce')
 
     @classproperty
     def root(cls):
@@ -402,7 +402,7 @@ class user(orm.entity):
     def isroot(self):
         # TODO:887c6605 Change this to:
         #
-        #    return self.id = '93a7930b-2ae4-402a-8c77-011f0ffca9ce'.
+        #    return self.id = '4001930b2ae4402a8c77011f0ffca9ce'
         #
         # I think we can get rid of the self.site test.
         return self.name == 'root' and self.site is None
