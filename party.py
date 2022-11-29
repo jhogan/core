@@ -120,7 +120,7 @@ class parties(orm.entities):
             with orm.su(su), orm.proprietor(propr):
                 try:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Load and memoize
+                    # Load
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     par = e(id)
                 except db.RecordNotFoundError:

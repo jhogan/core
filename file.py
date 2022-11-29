@@ -1431,28 +1431,60 @@ class directory(inode):
     @classmethod
     def _produce(cls, id, name, fld, propr):
         """
-            XXX Comment
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Ensure a `directory`, or subclass thereof, with the given id is
+        in the database. Return the `directory` to the caller.
+
+        :param: id UUID: The id of the `directory` entity.
+
+        :param: name str: If the `directory` doesn't exist, this value
+        will be assigned to the directory's `name` attribute upon
+        creation.
+
+        :param: fld str: The name of the private class variable that the
+        `directory` entity will be set to for memoization. (E.g.,
+        '_radix', '_flts', etc.)
+
+        :param: propr party.party: The party to switch the propretor to
+        when creating the entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if not hasattr(cls, fld):
             with orm.sudo(), orm.proprietor(propr):
                 try:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Load
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     dir = cls(id)
                 except db.RecordNotFoundError:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     dir = cls(id=id, name=name)
 
-                    # NOTE: In some cases (floaters) setting the class
-                    # variable needs to happen before the save() in
-                    # order to avoid an infinite recurssion.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # NOTE: In some cases (e.g. floaters) setting the
+                    # class variable needs to happen before the save()
+                    # in order to avoid an infinite recursion.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     setattr(cls, fld, dir)
                     dir.save()
                 else:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Memoize
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     setattr(cls, fld, dir)
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # Ensure the the super (inode) is loaded. We don't want
                 # to lazy-load later on when we may not be sudo or
                 # public. That would result in an Exception.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 dir.orm.super
 
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoize version
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return getattr(cls, fld)
 
     def __iter__(self):
