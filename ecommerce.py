@@ -94,10 +94,11 @@ class users(orm.entities):
             if usrs.issingular:
                 cls._root = usrs.only
             else:
-                cls._root = user(id=cls.RootUserId, name='root')
+                with orm.proprietor(None):
+                    cls._root = user(id=cls.RootUserId, name='root')
 
-                with orm.override():
-                    cls._root.save()
+                    with orm.override():
+                        cls._root.save()
 
         return cls._root
 
