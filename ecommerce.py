@@ -89,8 +89,7 @@ class users(orm.entities):
             )
 
             if usrs.isplurality:
-                # TODO Replace with IntegrityError
-                raise ValueError('Multiple roots found')
+                raise db.IntegrityError('Multiple roots found')
 
             if usrs.issingular:
                 cls._root = usrs.first
