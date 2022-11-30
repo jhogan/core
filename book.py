@@ -6252,11 +6252,11 @@ with book('Hacking Carapacian Core'):
             Though we only showed creating, saving and reloading new
             subentity objects, it is, of course, also possible to update,
             and delete them. Updating subentity's works just like
-            updating regular entities with the inheritence aspects being
-            taken care of by the ORM.. To delete a subentity
-            is to delete its superentities as well as any subentities it
-            has. All these persistence operations are done in an atomic
-            transaction.
+            updating regular entities &mdash; with the inheritence
+            aspects being taken care of by the ORM.. To delete a
+            subentity is to delete its superentities as well as any
+            subentities it has. All these persistence operations are
+            done in an atomic transaction.
 
             Furthermore, subentities can have constituents. Those
             constiuents can be entities or even subentities themselves.
@@ -6269,12 +6269,39 @@ with book('Hacking Carapacian Core'):
             seemlessly as possible.
         ''')
 
-      with section('Inheritence and constituents')
-        ...
+      with section('Querying subentities'):
+        print('''
+            Querying subentities works the same as querying regular
+            entities &mdash; with the inheritance aspect being taken
+            care of by the ORM. Consider the following:
+        ''')
 
-      with section('Searching'):
-        ...
+        with listing('Querying subentities'):
+            simple = service(
+                name="Simple Edition", level='simple'
+            )
 
+            pro = service(
+                name="Professional Edition", level='professional'
+            )
+
+            simple.save(pro)
+
+            srvs = services(
+                'name = %s AND level = %s', 'Simple Edition', 'simple'
+            )
+
+            one(srvs)
+            eq(simple.id, srvs.only.id)
+
+            srvs = services(
+                "name LIKE '%Edition'"
+            )
+
+            two(srvs)
+
+            self.true(simple.id in srvs.pluck('id'))
+            self.true(pro.id    in srvs.pluck('id'))
 
     with section('Sorting'):
       # Gover the nested sorting capabilities of composite-constiuents:
