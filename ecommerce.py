@@ -92,7 +92,7 @@ class users(orm.entities):
                 raise db.IntegrityError('Multiple roots found')
 
             if usrs.issingular:
-                cls._root = usrs.first
+                cls._root = usrs.only
             else:
                 cls._root = user(id=cls.RootUserId, name='root')
 
