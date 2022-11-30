@@ -41,6 +41,7 @@ import dateutil
 import uuid
 import db
 import decimal; dec=decimal.Decimal
+import ecommerce
 import effort
 import entities
 import exc
