@@ -17587,7 +17587,7 @@ class gem_hr(tester.tester):
     @staticmethod
     def getvalidpositiontype():
         postyp = hr.positiontype()
-        postyp.description = self.dedent('''
+        postyp.description = tester.dedent('''
         As Machine Learning and Signal Processing Engineer you are going
         to lead the effort to bring signal processing algorithms into
         production which condition and extract rich morphological
