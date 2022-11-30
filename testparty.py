@@ -47,9 +47,9 @@ class parties(tester.tester):
         )
 
         # Owner
-        self.is_(
-            ecommerce.users.root,
-            party.parties.public.owner,
+        self.eq(
+            ecommerce.users.root.id,
+            party.parties.public.owner.id,
         )
 
         # Attributes
