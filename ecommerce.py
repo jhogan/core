@@ -65,6 +65,8 @@ class users(orm.entities):
     AnonymousUserId  =  uuid.UUID('616e6f6e757365728a2e882b3978ef54')
     RootUserId       =  uuid.UUID('4001930b2ae4402a8c77011f0ffca9ce')
 
+    # TODO Create a `_produce` classmethod to consolidate users.root and
+    # users.anonymous
     @classproperty
     def root(cls):
         """

@@ -12,6 +12,7 @@
 import apriori; apriori.model()
 
 from dbg import B
+from contextlib import suppress
 import ecommerce
 import orm
 import party
@@ -268,6 +269,8 @@ class users(tester.tester):
             ecommerce.users._anon = None
 
     def it_calls_anonymous(self):
+        # XXX Make sure 'public' ownes anonymous
+
         # Call twice to make sure anonymous is being memoized
         anon = ecommerce.users.anonymous
         self.is_(anon, ecommerce.users.anonymous)

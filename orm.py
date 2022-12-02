@@ -993,8 +993,7 @@ class where(entitiesmod.entity):
 
         return wh
 
-    # XXX Rename this to `demand`
-    def demandvalid(self):
+    def demand(self):
         def demand(col, exists=False, ft=False):
             for map in self.entities.orm.mappings.all:
                 if not isinstance(map, fieldmapping):
@@ -3192,7 +3191,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         if p1:
             self.orm.where = where(self, p1, args)
-            self.orm.where.demandvalid()
+            self.orm.where.demand()
             self.orm.where.args = self.orm.parameterize(args)
 
     def clear(self):
