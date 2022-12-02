@@ -409,6 +409,10 @@ class tester(entities.entity):
                 with suppress(AttributeError):
                     del file.directory._radix
 
+            if 'party' in mods:
+                with suppress(AttributeError):
+                    del party.parties._public
+
         # Create and set principles at ORM level for testing
         sec = orm.security()
         sec.user       = user  if user  else self.user
