@@ -499,39 +499,6 @@ class inode(orm.entity):
         return self in directory._floaters
 
     @property
-    def inode(self):
-        """ Returns the parent inode for this inode.
-        """
-        # XXX We should be able to remove this property when radix is
-        # owned by public. See NOTE below.
-
-        # NOTE This property is automatically provided by the ORM. It is
-        # overridden here because of radix: radix has a proprietor of
-        # party.companies.carapacian, thus if someone (other than a
-        # carapacian user) tries to load radix by calling the inode
-        # property of an inode, and the property needs to load radix,
-        # the load will fail because the ORM will refuse to load radix
-        # because it is carapacian property. We want radix to be a
-        # shared resource even though it's owned by carapacian.
-        #
-        # Going forward, we may want a more robust way of handling
-        # shared resources like this (the party.region entity comes to
-        # mind because we will probably want to be able to provide
-        # read-access to region data to all tenants). XXX:9e3a0bbe
-        # Perhaps these entities should be the properties of a shared
-        # party called 'public' or 'commons'.
-        if self.inodeid == directory.RadixId:
-            return directory.radix
-
-        sup = self
-        while sup:
-            if type(sup) is inode:
-                return sup.orm.mappings['inode'].value
-            sup = sup.orm.super
-
-        return None
-
-    @property
     def root(self):
         """ Return the root inode.
         """
