@@ -6277,6 +6277,7 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with listing('Querying subentities'):
+            # Create two `service` entities
             simple = service(
                 name="Simple Edition", level='simple'
             )
@@ -6285,26 +6286,49 @@ with book('Hacking Carapacian Core'):
                 name="Professional Edition", level='professional'
             )
 
+            # Save simple along with pro
             simple.save(pro)
 
+            # Query for the `simple` entity
             srvs = services(
                 'name = %s AND level = %s', 'Simple Edition', 'simple'
             )
 
+            # Assert that we loaded the `simple` entity from the
+            # database.
             one(srvs)
             eq(simple.id, srvs.only.id)
 
+            # Query both of the services (since their names both end in
+            # "Edition".
             srvs = services(
                 "name LIKE '%Edition'"
             )
 
+            # Assert both were loaded
             two(srvs)
-
             self.true(simple.id in srvs.pluck('id'))
             self.true(pro.id    in srvs.pluck('id'))
 
+        print('''
+            Here we are creating and saving two `service` subentities.
+            We are able create them with their `name` attributes because
+            it superclass, because the `name` attribute is inherited
+            from its superclass `product`. This is what we did with the
+            `good` subentity above.
+
+            Once the entities have been saved, we use the SQL-like
+            expression to query them from the database. Notice that we
+            are able to use the `name` attribute as well as the `level`
+            attribute in the query expressions. The ORM ensures that
+            inherited attributes are queryable. Thus, we don't need to
+            do anything special to query inherited attributes of a
+            subentity.
+        ''')
+
     with section('Sorting'):
-      # Gover the nested sorting capabilities of composite-constiuents:
+      # Go over the nested sorting capabilities of
+      # composite-constiuents:
       #
       #    custs.sort('orders.createdat')
       ...
