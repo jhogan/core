@@ -9937,8 +9937,7 @@ class orm:
         from party import party, parties
         if propr:
             for map in self.mappings.foreignkeymappings:
-                # XXX Rewrite as: if map.isproprietor:
-                if map.fkname == 'proprietor':
+                if map.isproprietor:
                     name = map.name
                     sql = sql.strip() + ' '
                     sql += f' AND ({name} = _binary %s OR {name} = _binary %s)'
