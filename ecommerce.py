@@ -76,32 +76,13 @@ class users(orm.entities):
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if not hasattr(cls, '_root') or not cls._root:
-            from pom import site
-            for map in user.orm.mappings.foreignkeymappings:
-                if map.entity is site:
-                    break
-            else:
-                raise ValueError(
-                    'Could not find site foreign key'
-                )
-                
-            # XXX Why are we not loading using the RootUserId?
-            usrs = users(
-                f'name = %s and {map.name} is %s', 'root', None
-            )
-
-            if usrs.isplurality:
-                raise db.IntegrityError('Multiple roots found')
-
-            if usrs.issingular:
-                cls._root = usrs.only
-            else:
-                with orm.proprietor(None):
+            with orm.override(), orm.proprietor(None), orm.su(None):
+                try:
+                    cls._root = user(cls.RootUserId)
+                except db.RecordNotFoundError:
                     cls._root = user(id=cls.RootUserId, name='root')
-
-                    with orm.override():
-                        cls._root.save()
-
+                    cls._root.save()
+                
         return cls._root
 
     @classproperty
@@ -402,37 +383,7 @@ class user(orm.entity):
 
     @property
     def isroot(self):
-        # TODO:887c6605 Change this to:
-        #
-        #    return self.id = '4001930b2ae4402a8c77011f0ffca9ce'
-        #
-        # I think we can get rid of the self.site test.
-        return self.name == 'root' and self.site is None
-
-    @property
-    def brokenrules(self):
-        brs = entities.brokenrules()
-
-        # Get site foreignkey name
-        from pom import site
-        for map in users.orm.mappings.foreignkeymappings:
-            if map.entity is site:
-                break
-        else:
-            raise ValueError(
-                'Could not find site foreign key'
-            )
-
-        if self.orm.isnew and self.isroot:
-            usrs = users(
-                f'name = %s and {map.name} is %s', 'root', None
-            )
-            if usrs.count:
-                brs += entities.brokenrule(
-                    'Root already exists', 'name', 'valid', self
-                )
-
-        return brs
+        return self.id.hex == '4001930b2ae4402a8c77011f0ffca9ce'
 
     def su(self):
         """ A context manager to switch current user to self.

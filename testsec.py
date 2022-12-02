@@ -825,44 +825,6 @@ class owner(tester.tester):
         self.eq('valid', eng.brokenrules.first.type)
         self.is_(eng, eng.brokenrules.first.entity)
 
-class root(tester.tester):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        orm.security().override = True
-        if self.rebuildtables:
-            orm.orm.recreate(
-                ecommerce.user,
-            )
-
-    def it_cannot_create_multiple_root_users(self):
-        # TODO:887c6605 Lift restriction on multiple users being named
-        # root. Now that we have root's id hardcoded, we can rely on
-        # that as the identifier of the system's root.
-        ecommerce.user.orm.truncate()
-        root = ecommerce.user(name='root')
-        self.expect(None, root.save)
-
-        root1 = ecommerce.user(name='root')
-        self.expect(entities.BrokenRulesError, root1.save)
-        self.one(root1.brokenrules)
-        br = root1.brokenrules.first
-        self.eq('valid', br.type)
-        self.is_(root1, br.entity)
-
-    def it_assigns_root_a_consistent_id(self):
-        Id = uuid.UUID(hex='4001930b2ae4402a8c77011f0ffca9ce')
-
-        for _ in range(2):
-            ecommerce.user.orm.truncate()
-            ecommerce.users._root = None
-
-            self.eq(Id, ecommerce.users.root.id)
-
-            ecommerce.user.orm.truncate()
-
-            self.eq(Id, ecommerce.users.root.id)
-
 class proprietor(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

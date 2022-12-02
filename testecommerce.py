@@ -268,6 +268,31 @@ class users(tester.tester):
         if self.testers.rebuildtables:
             ecommerce.users._anon = None
 
+    def it_calls_root(self):
+        # Remove the memoized instance so we can test loading and
+        # memoization
+
+        with suppress(AttributeError):
+            del ecommerce.users._root
+        
+        # Call twice to make sure root is being memoized
+        root = ecommerce.users.root
+        self.is_(root, ecommerce.users.root)
+        self.true(hasattr(ecommerce.users, '_root'))
+
+        # Ensure id matches constant
+        self.eq(ecommerce.users.RootUserId, root.id)
+
+        # Ensure null owner
+        self.none(root.owner)
+
+        # Ensure null proprietor
+        self.none(root.proprietor)
+
+        with orm.override(), orm.proprietor(None):
+            # Verify its actually in the database
+            self.expect(None, root.orm.reloaded)
+
     def it_calls_anonymous(self):
         # XXX Make sure 'public' ownes anonymous
 
