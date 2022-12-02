@@ -176,7 +176,7 @@ class companies(legalorganizations):
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     # The ID for the carapacian company. This should never be changed.
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
+    CarapacianId = uuid.UUID('ca4aff4089714948aa4274b038731333')
 
     @classproperty
     def carapacian(cls):
