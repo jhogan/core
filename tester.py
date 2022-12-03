@@ -1741,6 +1741,10 @@ class failure(entities.entity):
 
             try:
                 self._message = inspect.getargvalues(stack[1][0])[3]['msg']
+                if not isinstance(self._message, str):
+                    raise TypeError(
+                        'Assertion message must be of type str'
+                    )
             except KeyError:
                 pass
 
