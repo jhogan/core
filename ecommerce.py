@@ -88,8 +88,8 @@ class users(orm.entities):
     @classproperty
     def anonymous(cls):
         if not hasattr(cls, '_anon') or not cls._anon:
-            cara = party.companies.carapacian
-            with orm.sudo(), orm.proprietor(cara):
+            pub = party.parties.public
+            with orm.sudo(), orm.proprietor(pub):
                 try:
                     cls._anon = user(cls.AnonymousUserId)
                 except db.RecordNotFoundError:
