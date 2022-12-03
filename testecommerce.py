@@ -294,27 +294,32 @@ class users(tester.tester):
             self.expect(None, root.orm.reloaded)
 
     def it_calls_anonymous(self):
-        # XXX Make sure 'public' ownes anonymous
+        # Remove the memoized instance so we can test loading and
+        # memoization
 
-        # Call twice to make sure anonymous is being memoized
+        with suppress(AttributeError):
+            del ecommerce.users._anon
+        
+        # Call twice to make sure anon is being memoized
         anon = ecommerce.users.anonymous
         self.is_(anon, ecommerce.users.anonymous)
+        self.true(hasattr(ecommerce.users, '_anon'))
 
         # Ensure id matches constant
         self.eq(ecommerce.users.AnonymousUserId, anon.id)
 
-        cara = party.companies.carapacian
-        with orm.sudo(), orm.proprietor(cara):
+        root = ecommerce.users.root
+        pub = party.parties.public
+
+        # Ensure root owner
+        self.eq(root.id, anon.owner.id)
+
+        # Ensure public proprietor
+        self.eq(pub.id, anon.proprietor.id)
+
+        with orm.override(), orm.proprietor(pub):
             # Verify its actually in the database
             self.expect(None, anon.orm.reloaded)
-
-            # Test the id of the parent party
-            self.eq(party.parties.AnonymousId, anon.party.id)
-
-        # The proprietor of the anon user should be Carapacian
-        # (although, maybe there should be a "commons" that owns anon)
-        self.eq(party.companies.CarapacianId, anon.proprietor__partyid)
-        self.eq(ecommerce.users.RootUserId, anon.owner__userid)
 
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
