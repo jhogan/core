@@ -6326,17 +6326,55 @@ with book('Hacking Carapacian Core'):
             subentity.
         ''')
 
-    with section('Sorting'):
-      # Go over the nested sorting capabilities of
-      # composite-constiuents:
-      #
-      #    custs.sort('orders.createdat')
-      ...
-
     with section('Indexes'):
+			print('''
+					Indexes can be placed on columns in MySQL to speed up
+					searches for values in those columns. Throught the ORM's
+					declarative syntax, we can easily denote our desire that a
+					given attribute shoud be indexed in the database.
+
+					For example, let's say that user frequently search the
+					for `dogs` using by `name`. We could alter the `dog` class
+					by adding an index on the `name` attribute like so:
+			''')
+
+			with listing('Using indexes'):
+				import orm
+				class dog(orm.entity):
+					name = str, orm.index
+					dob = date
+
+			print('''
+				Above, we have added a reference to the `orm.index` class.
+				The ORM will take notice of this and will create an index
+				for the `name` field in the database. When the ORM creates
+				the table, the `CREATE TABLE` statement will contain an
+				instruction to create the index:
+
+					CREATE TABLE `main_dogs`(
+						`id` binary(16) primary key,
+						`proprietor__partyid` binary(16),
+						`owner__userid` binary(16),
+						`createdat` datetime(6),
+						`updatedat` datetime(6),
+						`name` varchar(255),
+						INDEX proprietor__partyid_ix (proprietor__partyid),
+						INDEX owner__userid_ix (owner__userid),
+						INDEX name_ix (name)
+					) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        Notice the `name_ix` index is create with the line:
+
+          INDEX name_ix (name)
+        
+        You will also notice that the foreign keys, `proprietor__partyid`
+        and `owner__userid`, are indexed as well. This as a default
+        provided by the ORM to improved performance on these
+        often-searched fields.
+			''')
+
         with section('Full text indexes'):
             ...
-
 
     with section('Testing ORM entities'):
       ...
@@ -6365,6 +6403,14 @@ with book('Hacking Carapacian Core'):
 
     with section('Validation', id='012b0632'):
       ...
+
+    with section('Sorting'):
+      # Go over the nested sorting capabilities of
+      # composite-constiuents:
+      #
+      #    custs.sort('orders.createdat')
+      ...
+
 
   with chapter('The General Entity Model') as sec:
     with section('Using aprori.model()') as sec:
