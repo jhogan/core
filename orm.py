@@ -6241,7 +6241,7 @@ class indexes(entitiesmod.entities):
 
 class index(entitiesmod.entity):
     """ The ``index`` class is used by entity declarations to specify
-    that a database index should be applied by the mapping::
+    that a database index should be applied by the mapping:
         
         class artist(orm.entity):
             ssn = str, orm.index
@@ -6258,7 +6258,7 @@ class index(entitiesmod.entity):
                 INDEX ssn_ix (ssn)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        # Notice that the artist's CREATE TABLE  DDL has the line:
+        # Notice that the artist's CREATE TABLE DDL has the line:
         #
         #     INDEX ssn_ix (ssn)
         #
@@ -6290,7 +6290,7 @@ class index(entitiesmod.entity):
         return name
 
     def __str__(self):
-        """ Strung indexes are the index's name.
+        """ Return the name of the index.
         """
         return self.name
     
