@@ -705,7 +705,11 @@ class sendbot(bot):
                 # Create or retrieve as carapacian and as the root user
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 cara = party.companies.carapacian
-                with orm.proprietor(cara), orm.sudo():
+
+                # NOTE Use orm.sudo() first here because switching the
+                # proprietor causes reloads to happen which don't work
+                # unless the security context is set up correctly.
+                with orm.sudo(), orm.proprietor(cara): 
                     try:
                         kwargs['from__new__'] = None
                         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
