@@ -399,7 +399,7 @@ class party(orm.entity):
     def retrievability(self):
         from ecommerce import users
 
-        # Get all users that belong to this party. (Noramally this would
+        # Get all users that belong to this party. (Normally this would
         # be written `usrs = self.users` but that can't be done at the
         # moment.)
         usrs = users('party__partyid', self.id)

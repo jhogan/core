@@ -4162,6 +4162,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             def setattr0(_, __, v):
                 map.value = v
 
+            # TODO There needs to be work done to prevent the call to
+            # self._setvalue from needlessly loading entities. We can
+            # control this by setting cmp to False.
+            # 
+            # At least one example is when v is an entity object, and
+            # the entitymapping for that entity object has a corresponding
+            # foreignkeymapping mapping. In this case, if v.id equals the
+            # foreignkeymapping's `value` property, we could set cmp to
+            # False to prevent a load the entity in _setvalue. At the
+            # moment, it doesn't appear to be the case that an
+            # entitymapping references its foreignkeymapping, though
+            # this could probably done easily by adding a
+            # `foreignkeymapping` @property to the `entitymapping`
+            # class.
+
             # Comparisons (cmp) are expensive because they require
             # getting the old value. If the entity isnew, then we know
             # there is no reason to check the old value.
