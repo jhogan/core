@@ -26,7 +26,7 @@ def clear():
     for p in party.party.orm.getsubentities(accompany=True):
         p.orm.truncate()
 
-    party.company._carapacian = None
+    party.companies._carapacian = None
 
 class bot_(tester.tester):
     def __init__(self, *args, **kwargs):

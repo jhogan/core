@@ -308,7 +308,7 @@ class principle(entities.entity):
             import party
             # Carapacian will recreate itself when called as long as its
             # private field is None
-            party.company._carapacian = None
+            party.companies._carapacian = None
 
         self.iscreated = True
 

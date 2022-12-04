@@ -330,8 +330,6 @@ class contactmechanism_message(tester.tester):
                 if e.__module__ in mods:
                     e.orm.recreate()
 
-            party.company._carapacian = None
-
     def it_calls_creatability(self):
         with orm.override():
             with orm.sudo():
