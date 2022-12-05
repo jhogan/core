@@ -1530,14 +1530,6 @@ class page(tester.tester):
         self.eq(0, content_length)
     
     def it_raises_404(self):
-        # XXX:9e3a0bbe This test creates derpnet which, in some cases,
-        # creates /pom/sites directory. This is a problem because foonet
-        # expects to be able to access these directories, but it can't
-        # if it doesn't own them. We need a 'public' proprietor to own
-        # these inodes. Without this, we cannot adequately support
-        # multitenancy.
-        return
-
         class derpnets(pom.sites):
             pass
 
