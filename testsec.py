@@ -863,10 +863,10 @@ class proprietor(tester.tester):
         eng.save()
 
         eng = eng.orm.reloaded()
-        self.is_(tsla, eng.engineer_projects.last.proprietor)
+        self.eq(tsla.id, eng.engineer_projects.last.proprietor.id)
 
         proj = proj.orm.reloaded()
-        self.is_(tsla, proj.engineer_projects.last.proprietor)
+        self.eq(tsla.id, proj.engineer_projects.last.proprietor.id)
 
         self.expect(None, e_p.orm.reloaded)
 

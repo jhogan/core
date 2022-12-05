@@ -1562,7 +1562,7 @@ class directory(tester.tester):
         # We haven't created a file in this directory yet, so there is
         # no reason it should `exists` on the HDD.
         self.false(dir.exists)
-        self.is_(file.directory.radix, dir.inode)
+        self.eq(file.directory.radix.id, dir.inode.id)
         self.eq(join(dir.store, 'radix/abc'), dir.path)
         self.one(dir.inodes)
 
