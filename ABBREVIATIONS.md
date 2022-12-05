@@ -1,6 +1,7 @@
 carapacian:    car    cara
 entities:      es
 entity:        e
+fulltext:      ft
 handler:       hnd
 index:         ix
 key:           k

@@ -2562,7 +2562,7 @@ with book('Hacking Carapacian Core'):
         database. Let's recreate those classes to be ORM class.
       ''')
 
-      with listing('Creating a ORM class'):
+      with listing('Creating an ORM class'):
         # Import the orm module
         import orm
         from datetime import date

@@ -3206,8 +3206,10 @@ class entitymeta(type):
 
             elif type(v) is tuple:
                 # `v` will be a tuple if multiple, comma seperated type
-                # arguments are declared, i.e., `str, 0, 1,
-                # orm.fulltext`
+                # arguments are declared, i.e.: 
+                #
+                #     str, 0, 1, orm.fulltext
+                #
                 args, kwargs = [], {}
 
                 # Iterate over tuple
@@ -6300,7 +6302,7 @@ class index(entitiesmod.entity):
         return super().__repr__() + ' ' + self.name
 
 class fulltexts(indexes):
-    """ A collection of fulltext objects.
+    """ A collection of `fulltext` objects.
     """
 
 class fulltext(index):
@@ -9078,8 +9080,7 @@ class orm:
 
             e = top or self.entity.orm.super
 
-            while e: # :=
-
+            while e:
                 # Find the map based on the column name
                 map = e.orm.mappings(col) 
 

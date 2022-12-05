@@ -335,8 +335,8 @@ class presentation(orm.entity):
     description  =  str
     locations    =  locations
     components   =  components
-    title        =  str,        orm.fulltext('title_desc',0)
-    description1 =  str,        orm.fulltext('title_desc',1)
+    title        =  str, orm.fulltext('title_desc', 0)
+    description1 =  str, orm.fulltext('title_desc', 1)
     author       =  str,
 
     @staticmethod
@@ -450,9 +450,9 @@ class artifact(orm.entity):
         fact.comments = uuid4().hex
         return fact
 
-    title        =  str,        orm.fulltext('title_desc',0)
-    description  =  str,        orm.fulltext('title_desc',1)
-    weight       =  int,        -2**63,                       2**63-1
+    title        =  str, orm.fulltext('title_desc', 0)
+    description  =  str, orm.fulltext('title_desc', 1)
+    weight       =  int, -2**63, 2**63-1
     abstract     =  bool
     price        =  dec
     components   =  components
