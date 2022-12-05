@@ -6277,101 +6277,103 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with listing('Querying subentities'):
-            # Create two `service` entities
-            simple = service(
-                name="Simple Edition", level='simple'
-            )
+          # Create two `service` entities
+          simple = service(
+              name="Simple Edition", level='simple'
+          )
 
-            pro = service(
-                name="Professional Edition", level='professional'
-            )
+          pro = service(
+              name="Professional Edition", level='professional'
+          )
 
-            # Save simple along with pro
-            simple.save(pro)
+          # Save simple along with pro
+          simple.save(pro)
 
-            # Query for the `simple` entity
-            srvs = services(
-                'name = %s AND level = %s', 'Simple Edition', 'simple'
-            )
+          # Query for the `simple` entity
+          srvs = services(
+              'name = %s AND level = %s', 'Simple Edition', 'simple'
+          )
 
-            # Assert that we loaded the `simple` entity from the
-            # database.
-            one(srvs)
-            eq(simple.id, srvs.only.id)
+          # Assert that we loaded the `simple` entity from the
+          # database.
+          one(srvs)
+          eq(simple.id, srvs.only.id)
 
-            # Query both of the services (since their names both end in
-            # "Edition".
-            srvs = services(
-                "name LIKE '%Edition'"
-            )
+          # Query both of the services (since their names both end in
+          # "Edition".
+          srvs = services(
+              "name LIKE '%Edition'"
+          )
 
-            # Assert both were loaded
-            two(srvs)
-            self.true(simple.id in srvs.pluck('id'))
-            self.true(pro.id    in srvs.pluck('id'))
+          # Assert both were loaded
+          two(srvs)
+          self.true(simple.id in srvs.pluck('id'))
+          self.true(pro.id    in srvs.pluck('id'))
 
         print('''
-            Here we are creating and saving two `service` subentities.
-            We are able create them with their `name` attributes because
-            it superclass, because the `name` attribute is inherited
-            from its superclass `product`. This is what we did with the
-            `good` subentity above.
+          Here we are creating and saving two `service` subentities.
+          We are able create them with their `name` attributes because
+          it superclass, because the `name` attribute is inherited
+          from its superclass `product`. This is what we did with the
+          `good` subentity above.
 
-            Once the entities have been saved, we use the SQL-like
-            expression to query them from the database. Notice that we
-            are able to use the `name` attribute as well as the `level`
-            attribute in the query expressions. The ORM ensures that
-            inherited attributes are queryable. Thus, we don't need to
-            do anything special to query inherited attributes of a
-            subentity.
+          Once the entities have been saved, we use the SQL-like
+          expression to query them from the database. Notice that we
+          are able to use the `name` attribute as well as the `level`
+          attribute in the query expressions. The ORM ensures that
+          inherited attributes are queryable. Thus, we don't need to
+          do anything special to query inherited attributes of a
+          subentity.
         ''')
 
-    with section('Indexes'):
-			print('''
-					Indexes can be placed on columns in MySQL to speed up
-					searches for values in those columns. Throught the ORM's
-					declarative syntax, we can easily denote our desire that a
-					given attribute shoud be indexed in the database.
+      with section('Indexes'):
+        print('''
+          Indexes can be placed on columns in MySQL to speed up
+          searches for values in those columns. Through the ORM's
+          declarative syntax, we can easily register our desire that a
+          given attribute shoud be indexed in the database.
 
-					For example, let's say that user frequently search the
-					for `dogs` using by `name`. We could alter the `dog` class
-					by adding an index on the `name` attribute like so:
-			''')
+          For example, let's say that users frequently search the
+          for `dogs` by `name`. We could alter the `dog` class to add
+          an index on the `name` attribute like so:
+        ''')
 
-			with listing('Using indexes'):
-				import orm
-				class dog(orm.entity):
-					name = str, orm.index
-					dob = date
+        with listing('Using indexes'):
+          class dog(orm.entity):
+            name = str, orm.index
+            dob = date
 
-			print('''
-				Above, we have added a reference to the `orm.index` class.
-				The ORM will take notice of this and will create an index
-				for the `name` field in the database. When the ORM creates
-				the table, the `CREATE TABLE` statement will contain an
-				instruction to create the index:
+        print('''
+          Above, we have added a reference to the `orm.index` class in the
+          `name` declaration The ORM will take notice of this and create
+          an index for the `name` field in the database. When the ORM
+          creates the table, the `CREATE TABLE` statement will contain an
+          instruction to create the index:
 
-					CREATE TABLE `main_dogs`(
-						`id` binary(16) primary key,
-						`proprietor__partyid` binary(16),
-						`owner__userid` binary(16),
-						`createdat` datetime(6),
-						`updatedat` datetime(6),
-						`name` varchar(255),
-						INDEX proprietor__partyid_ix (proprietor__partyid),
-						INDEX owner__userid_ix (owner__userid),
-						INDEX name_ix (name)
-					) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            CREATE TABLE `main_dogs`(
+              `id` binary(16) primary key,
+              `proprietor__partyid` binary(16),
+              `owner__userid` binary(16),
+              `createdat` datetime(6),
+              `updatedat` datetime(6),
+              `name` varchar(255),
+              INDEX proprietor__partyid_ix (proprietor__partyid),
+              INDEX owner__userid_ix (owner__userid),
+              INDEX name_ix (name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        Notice the `name_ix` index is create with the line:
+          Notice the `name_ix` index is create with the line:
 
-          INDEX name_ix (name)
-        
-        You will also notice that the foreign keys, `proprietor__partyid`
-        and `owner__userid`, are indexed as well. This as a default
-        provided by the ORM to improved performance on these
-        often-searched fields.
-			''')
+            INDEX name_ix (name)
+          
+          You will also notice that the foreign keys,
+          `proprietor__partyid` and `owner__userid`, are indexed as well.
+          This is default behaviour provided by the ORM to improved
+          performance on these often-searched fields.
+        ''')
+
+        with section('Composite indexes'):
+            ...
 
         with section('Full text indexes'):
             ...
