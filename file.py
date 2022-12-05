@@ -1303,6 +1303,7 @@ class directory(inode):
 
         return f
 
+    # TODO Put in directories class
     @classproperty
     def radix(cls):
         """ Returns the radix directory.

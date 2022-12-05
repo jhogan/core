@@ -1084,8 +1084,8 @@ class file_(tester.tester):
                 f = d.file(filename)
                 self.expect(None, f.save)
 
-        ''' If proprietor owns a directory, it CAN'T create inodes
-        within it. '''
+        ''' If proprietor doesn't owns a directory, it CAN'T create
+        inodes within it. '''
         with orm.override(False):
             with orm.proprietor(party.companies.carapacian):
                 filename = uuid.uuid4().hex

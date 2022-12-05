@@ -372,7 +372,6 @@ class authorization(tester.tester):
 
             with orm.proprietor(party.companies.carapacian):
                 self.expect(orm.ProprietorError, eng.save)
-        
 
     ''' RETRIEVABILITY '''
     def it_cant_retrieve_entity(self):

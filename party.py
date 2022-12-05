@@ -32,8 +32,6 @@ import file
 import orm
 import primative
 
-# XXX Look for instances of party.carapacian and party.anonymous and see
-# if party.public should be used instead
 class parties(orm.entities):                                 
     """ A collection of party objects.
 
