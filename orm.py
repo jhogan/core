@@ -10074,13 +10074,14 @@ class orm:
             mod = self.instance.__module__
             cls = mod + '.' + name
 
-            # NOTE Capture the security attributes. This is useful for
-            # post mortem debugging because, by the time we enter into
-            # post mortem (pdb.post_mortem), the context managers that
-            # change the security attributes will have changed, meaning
-            # that, if we examin print(security()) during post mortem,
-            # we will get different values that the ones that existed
-            # at the time the exception was actually raised.
+            # NOTE:e7b15632 Capture the security attributes. This is
+            # useful for post mortem debugging because, by the time we
+            # enter into post mortem (pdb.post_mortem), the context
+            # managers that change the security attributes will have
+            # changed, meaning that, if we examin print(security())
+            # during post mortem, we will get different values that the
+            # ones that existed at the time the exception was actually
+            # raised.
             owner = security().owner
             propr = security().proprietor
 

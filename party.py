@@ -228,7 +228,6 @@ class companies(legalorganizations):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return cls._carapacian
 
-pass
 class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
