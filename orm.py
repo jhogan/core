@@ -3817,6 +3817,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     if vs.ispopulated:
 
+                        # NOTE These are used for debugging. See
+                        # e7b15632 
+                        usr = security().user
+                        propr = security().proprietor
+
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         # Raise an AuthorizationError
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
