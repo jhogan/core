@@ -4167,9 +4167,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             def setattr0(_, __, v):
                 map.value = v
 
-            # TODO There needs to be work done to prevent the call to
-            # self._setvalue from needlessly loading entities. We can
-            # control this by setting cmp to False.
+            # TODO:aa1efc3b There needs to be work done to prevent the
+            # call to self._setvalue from needlessly loading entities.
+            # We can control this by setting cmp to False.
             # 
             # At least one example is when v is an entity object, and
             # the entitymapping for that entity object has a corresponding
@@ -8226,7 +8226,10 @@ class security:
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sup = v
         while sup:
-            sup.proprietor = v
+            # Set as root because _setvalue tends to reload the
+            # proprietor for comparison. See aa1efc3b.
+            with sudo():
+                sup.proprietor = v
             sup = sup.orm.super
 
     @property
