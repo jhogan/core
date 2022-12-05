@@ -1740,8 +1740,12 @@ class failure(entities.entity):
                 pass
 
             try:
-                self._message = inspect.getargvalues(stack[1][0])[3]['msg']
-                if not isinstance(self._message, str):
+                msg = inspect.getargvalues(stack[1][0])[3]['msg']
+
+                if isinstance(msg, str) or msg is None:
+                    self._message = msg
+                else:
+                    self._message = None
                     raise TypeError(
                         'Assertion message must be of type str'
                     )
