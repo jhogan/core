@@ -6373,7 +6373,52 @@ with book('Hacking Carapacian Core'):
         ''')
 
         with section('Composite indexes'):
-            ...
+          print('''
+            Composite indexes are indexes that span multiple columns.
+            These type of indexes can improve the performance of queries
+            which tend to filter on a collection of columns.
+
+            We can cause the ORM to create composite indexes for 2 or
+            more attributes. For example, consider the following
+            `person` entity:
+          ''')
+
+          with listing('Declaring composite indexes'):
+            class person(orm.entity):
+                firstname = str, orm.index('fullname', 0)
+                lastname = str, orm.index('fullname', 1)
+
+          print('''
+            This class declares a `firstname` and a `lastname`
+            attribute. These attributes can be indexed together with the
+            composite index we have called "fullname". The second
+            parameter to `orm.index` the ordinal. We are declaring that
+            we want the `firstname` column to come first in the
+            composite index, then `lastname` should come second. This
+            entity generates the `CREATE TABLE` belowe:
+
+              CREATE TABLE `t_persons`(
+                  `id` binary(16) primary key,
+                  `proprietor__partyid` binary(16),
+                  `owner__userid` binary(16),
+                  `createdat` datetime(6),
+                  `updatedat` datetime(6),
+                  `firstname` varchar(255),
+                  `lastname` varchar(255),
+                  INDEX proprietor__partyid_ix (proprietor__partyid),
+                  INDEX owner__userid_ix (owner__userid),
+                  INDEX fullname_ix (firstname, lastname)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            The relevent line is:
+
+              INDEX fullname_ix (firstname, lastname)
+
+            The name the database uses for the index is the name we
+            specified for the index ("fullname") concatenated with an "_ix"
+            suffix. Following that, we see the two attribute names in
+            the order we specified using the ordinal argument.
+          ''')
 
         with section('Full text indexes'):
             ...
