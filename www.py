@@ -439,8 +439,8 @@ class request:
         See `request.forfile` for more.
         """
 
-        # TODO To distinguish between page and file request, we should
-        # at least see if the first element of the path (e.g.,
+        # TODO:bea5347d To distinguish between page and file request, we
+        # should at least see if the first element of the path (e.g.,
         # '/en/index') is an ISO language code (probably ISO 639-1)
         # probably using the pycountry package.
         #
@@ -458,7 +458,6 @@ class request:
         # and developing a content negotiation strategy
         # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation)
         # may be the solution here.
-
         return not self.forfile
 
     def __repr__(self):
