@@ -231,10 +231,7 @@ class application:
                 res.headers += 'Content-Type: text/html'
 
             try:
-                if self.request.forfile:
-                    res.status = ex.status
-
-                elif self.request.isxhr:
+                if self.request.isxhr:
                     # Create an <article> that explains the exception
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
