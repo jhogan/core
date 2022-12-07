@@ -704,16 +704,16 @@ sockets, you can create a socket file and bind `gunicorn` to it:
 
     gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'
 
-This way you can use `curl` to access the socket from a special URL
-through the reverse proxy, e.g.:
+This command will create the socket file `c13fa8ce.sock`. Note you may
+need to change the socket's group or owner to give NGINX access to it,
+e.g.:
+
+    chown www-data:www-data /run/carapacian.com/c13fa8ce.sock
+
+You should now be able to use `curl` to access the socket from a special
+URL through the reverse proxy, e.g.:
 
     curl https://c13fa8ce.carapacian.com
-
-Note that you may need to `touch` the socket file before running
-`gunicorn`. This will give you an opportunity to change the socket's
-owner and group, as well as its permissions, so the reverse proxy is
-able to read and write to it. The user and/or group would likely be
-www-data.
 
 You can set breakpoints in the code with the call `B()` described
 [above](#hacking-debugger).  When the breakpoint is encountered, the

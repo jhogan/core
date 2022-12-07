@@ -281,7 +281,7 @@ class tickets(pom.page):
         ''' Multiple events, single widget '''
         span = dom.span()
         span1 = dom.span()
-        lbl = dom.label('Enter only numbers: ')
+        lbl = dom.label('Enter only numbers (tab out to validate): ')
         inp = dom.input()
         inp.oninput += self.inp_oninput3, span
         inp.onblur += self.inp_onblur, span1
