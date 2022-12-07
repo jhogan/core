@@ -1,5 +1,13 @@
 Carapacian Core
 ================
+
+<!-- XXX Explain reloading gunicorn in production 
+    https://serverfault.com/questions/823546/automated-graceful-reload-of-gunicorn-in-production
+-->
+
+<!-- XXX Explain that you need to stop (CTRL-Z) gunicorn then change the
+socket's user and group to www-data.
+-->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
