@@ -232,7 +232,7 @@ class bot(ecommerce.agent):
             # Create in (or retrieve from) the database as root and as
             # the Carapacian proprietor.
             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
+            with orm.sudo(), orm.proprietor(party.companies.carapacian):
                 try:
                     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     # Retrieve
@@ -456,7 +456,7 @@ class bot(ecommerce.agent):
         certain tests to indicate a desire to break out of a simulated
         test environment, such as one provided by a third party API.
         """
-        cara = party.company.carapacian
+        cara = party.companies.carapacian
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Set the ORM's owner to the bot's user object. We want all
@@ -704,8 +704,12 @@ class sendbot(bot):
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 # Create or retrieve as carapacian and as the root user
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                cara = party.company.carapacian
-                with orm.proprietor(cara), orm.sudo():
+                cara = party.companies.carapacian
+
+                # NOTE Use orm.sudo() first here because switching the
+                # proprietor causes reloads to happen which don't work
+                # unless the security context is set up correctly.
+                with orm.sudo(), orm.proprietor(cara): 
                     try:
                         kwargs['from__new__'] = None
                         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

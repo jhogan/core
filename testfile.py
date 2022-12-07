@@ -12,6 +12,7 @@
 
 import apriori; apriori.model()
 
+from contextlib import suppress
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
@@ -376,8 +377,9 @@ class file_(tester.tester):
             )
 
         if hasattr(file.directory, '_radix'):
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
-                file.directory.radix.delete()
+            radix = file.directory.radix
+            with orm.sudo(), orm.proprietor(radix.proprietor):
+                radix.delete()
 
     def it_creates_with_name_kwargs(self):
         name = uuid.uuid4().hex
@@ -1083,10 +1085,10 @@ class file_(tester.tester):
                 f = d.file(filename)
                 self.expect(None, f.save)
 
-        ''' If proprietor owns a directory, it CAN'T create inodes
-        within it. '''
+        ''' If proprietor doesn't owns a directory, it CAN'T create
+        inodes within it. '''
         with orm.override(False):
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 filename = uuid.uuid4().hex
 
                 # We should be able to remove this with the resolution
@@ -1139,6 +1141,46 @@ class file_(tester.tester):
                 with orm.su(usr1):
                     self.expect(orm.AuthorizationError, f.orm.reloaded)
 
+class directories(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'file', 'pom', 
+        super().__init__(mods=mods, *args, **kwargs)
+        clean()
+
+    def it_gets_pom_site_directory(self):
+        pubid = party.parties.PublicId
+        rootid = ecommerce.users.RootUserId
+
+        ''' Test the site directory '''
+        site = file.directories.site
+
+        # Memoized
+        self.is_(site, file.directories.site)
+
+        # Proprietor
+        self.eq(pubid, site.proprietor.id)
+
+        # Owner
+        self.eq(rootid, site.owner.id)
+
+        # Persistence state
+        self.eq((False, False, False), site.orm.persistencestate)
+
+        ''' Test the pom directory '''
+        pom_ = site.inode 
+
+        # Proprietor
+        self.eq(pubid, pom_.proprietor.id)
+
+        # Owner
+        self.eq(rootid, pom_.owner.id)
+
+        # Persistence state
+        self.eq((False, False, False), pom_.orm.persistencestate)
+
+        # Parent is radix
+        self.is_(file.directory.radix, pom_.inode)
+
 class directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1185,21 +1227,47 @@ class directory(tester.tester):
             self.true(sup in sup.inode)
             sup = sup.inode
         
-    def it_creates_radix_as_a_carapacian_property(self):
-        import party
+    def it_gets_radix(self):
+        # Force to rememoize
+        with suppress(AttributeError):
+            del file.directory._radix
 
-        self.eq(
-            party.company.CarapacianId,
-            file.directory.radix.proprietor.id
-        )
+        pubid = party.parties.PublicId
+        radix = file.directory.radix
+        rootid = ecommerce.users.RootUserId
 
-    def it_creates_floaters_as_a_carapacian_property(self):
-        import party
+        # Make sure we are testing memoization correctly
+        self.true(hasattr(file.directory, '_radix'))
 
-        self.eq(
-            party.company.CarapacianId,
-            file.directory._floaters.proprietor.id
-        )
+        # Memoize
+        self.is_(radix, file.directory.radix)
+
+        # Ensure the proprietor is the public
+        self.eq(pubid, radix.proprietor.id)
+
+        # Ensure owner is root
+        self.eq(rootid, radix.owner__userid)
+
+    def it_gets_floaters(self):
+        # Force to rememoize
+        with suppress(AttributeError):
+            del file.directory._flts
+
+        pubid = party.parties.PublicId
+        flts = file.directory._floaters
+        rootid = ecommerce.users.RootUserId
+
+        # Make sure we are testing memoization correctly
+        self.true(hasattr(file.directory, '_flts'))
+
+        # Memoize
+        self.is_(flts, file.directory._floaters)
+
+        # Ensure the proprietor is the public
+        self.eq(pubid, flts.proprietor.id)
+
+        # Ensure owner is root
+        self.eq(rootid, flts.owner__userid)
 
     def it_deletes_from_floaters(self):
         ''' Delete a cached-only floating directory '''
@@ -1494,7 +1562,7 @@ class directory(tester.tester):
         # We haven't created a file in this directory yet, so there is
         # no reason it should `exists` on the HDD.
         self.false(dir.exists)
-        self.is_(file.directory.radix, dir.inode)
+        self.eq(file.directory.radix.id, dir.inode.id)
         self.eq(join(dir.store, 'radix/abc'), dir.path)
         self.one(dir.inodes)
 

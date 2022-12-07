@@ -250,26 +250,10 @@ class inode(orm.entity):
     # inodes recursive (self-referencing).
     inodes = inodes
 
-    @staticmethod
-    def _split(path):
-        """ A private static method that takes a path and splits it over
-        the '/' character. Deals with leading '/' more predictably than
-        Python's builtin path splitting algorithms.
-        """
-        if path == '/':
-            return ['/']
-
-        names = path.split('/')
-
-        if path.startswith('/'):
-            names[0] = '/'
-
-        return names
-
     def __new__(cls, *args, **kwargs):
         """ Ensure that when instantiating, we return the cached version
         of an inode object if one exists. If one doesn't exist, create,
-        cache and return::
+        cache and return:
 
             assert directory('/etc') is directory('/etc')
             assert file('/etc/password') is file('/etc/password')
@@ -298,33 +282,18 @@ class inode(orm.entity):
             except KeyError:
                 id = None
 
-        # If id is a str...
-        if isinstance(id, str):
-            try:
-                # Determine if id is a UUID, i.e., the inode's primary
-                # key.
-
-                # FIXME:8960bf52 This can't be right. It prevents us
-                # from creating inodes with names that look like
-                # UUIDs:
-                #
-                #     dir.file(uuid4().hex)
-
-                id = uuid.UUID(hex=id)
-            except ValueError:
-                # The str id will be considered a path
-                pass
-
         if isinstance(id, str):
             # If id is still a str, it must be a file path so call it
             # what it is: `path`; and search the cache. Return if it's
             # in the cache; otherwise, instantiate.
             path = id
 
+            # Get the `local` kwarg (used in `resource`).
             local = kwargs.get('local', False)
 
-            # If resource and `local` is False, don't cache, i.e.,
-            # don't anchor to radix or floaters (see resource.local).
+            # If we are newing a resource and the `local` kwargs is
+            # False, don't cache, i.e., don't anchor to radix or
+            # floaters (see resource.local).
             if resource in cls.mro() and not local:
                 nds = [x for x in path.split('/') if x]
 
@@ -426,6 +395,22 @@ class inode(orm.entity):
             #
             super().__init__(*args, **kwargs)
 
+    @staticmethod
+    def _split(path):
+        """ A private static method that takes a path and splits it over
+        the '/' character. Deals with leading '/' more predictably than
+        Python's builtin path splitting algorithms.
+        """
+        if path == '/':
+            return ['/']
+
+        names = path.split('/')
+
+        if path.startswith('/'):
+            names[0] = '/'
+
+        return names
+
     @classproperty
     def store(cls):
         """ Returns a physical file system path as a string containing
@@ -474,19 +459,21 @@ class inode(orm.entity):
 
         # If self was a floater, return because floaters won't be on the
         # HDD or in the DB. We also don't want deleting a floater to
-        # cascade into the colection of floaters, causing unsaved
+        # cascade into the collection of floaters, causing unsaved
         # floaters to be saved. This would result in a BrokenRulesError
         # being raised.
         if isfloater:
             return
 
         try:
-            # Don't care if it dosn't exist
+            # Don't care if it doesn't exist
             with suppress(FileNotFoundError):
                 # Delete inode from HDD
                 if isinstance(self, directory):
+                    # Recursively delete
                     shutil.rmtree(self.path)
                 elif isinstance(self, file):
+                    # Delete file
                     os.unlink(self.path)
                 else:
                     raise TypeError('Incorrect inode type')
@@ -512,40 +499,11 @@ class inode(orm.entity):
         return self in directory._floaters
 
     @property
-    def inode(self):
-        """ Returns the parent inode for this inode.
-        """
-
-        # NOTE This property is automatically provided by the ORM. It is
-        # overridden here because of radix: radix has a proprietor of
-        # party.company.carapacian, thus if someone (other than a
-        # carapacian user) tries to load radix by calling the inode
-        # property of an inode, and the property needs to load radix,
-        # the load will fail because the ORM will refuse to load radix
-        # because it is carapacian property. We want radix to be a
-        # shared resource even though it's owned by carapacian.
-        #
-        # Going forward, we may want a more robust way of handling
-        # shared resources like this (the party.region entity comes to
-        # mind because we will probably want to be able to provide
-        # read-access to region data to all tenants). FIXME:9e3a0bbe
-        # Perhaps these entities should be the properties of a shared
-        # party called 'public' or 'commons'.
-        if self.inodeid == directory.RadixId:
-            return directory.radix
-
-        sup = self
-        while sup:
-            if type(sup) is inode:
-                return sup.orm.mappings['inode'].value
-            sup = sup.orm.super
-
-        return None
-
-    @property
     def root(self):
         """ Return the root inode.
         """
+        # TODO Shouldn't all recursive entity objects have a `root`
+        # property that does this?
         nd = self
         while True:
             if nd.inode:
@@ -572,6 +530,8 @@ class inode(orm.entity):
     def head(self):
         """ A string representing the directory portion of the path.
 
+        Etymology
+        ---------
         Note this property would have been called `directory`. However,
         the ORM wants to use `directory` for something else so we
         borrowed terminology from os.path.split()
@@ -702,22 +662,6 @@ class inode(orm.entity):
         if self.owner__userid == orm.security().owner.id:
             return orm.violations.empty
             
-        # FIXME:9e3a0bbe This is to work around the accessiblilty of
-        # /radix/pom/site. This is sleighted to become "commons" owned
-        # by a new party called party.public. Entities owned by that
-        # party should be readable by definition, so this logic could be
-        # removed.
-        rent = self.inode
-
-        if rent.isradix:
-            if self.name == 'pom':
-                return orm.violations.empty
-
-        if self.name == 'site':
-            if rent.name == 'pom':
-                if rent.inode.inradix:
-                    return orm.violations.empty
-
         vs = orm.violations()
         vs += 'Cannot retrieve directory'
         return vs
@@ -739,7 +683,7 @@ class file(inode):
         self._body = None
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # Allowing names to have slashed can be a security problem
+        # Allowing names to have slashes can be a security problem.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         try:
             name = kwargs['name']
@@ -756,13 +700,13 @@ class file(inode):
 
         super().__init__(*args, **kwargs)
 
-
     @orm.attr(str)
     def mime(self):
-        """ The mime type of the file (as str), e.g., 'text/plain'. The
-        mimetype attribute can be set by the user. If it is not set, the
-        accessor will try to guess what it should be given the ``body``
-        attribute and the ``file.name``.
+        """ The mime type of the file (as str), e.g., 'text/plain'. 
+
+        The mimetype attribute can be set by the user. If it is not set,
+        the accessor will try to guess what it should be given the
+        ``body`` attribute and the ``file.name``.
         """
         if not attr():
             mime = mimetypes.guess_type(self.name, strict=False)[0]
@@ -778,8 +722,9 @@ class file(inode):
 
     @property
     def mimetype(self):
-        """ Returns the **type** portion of the mime string. For
-        example, if ``self.mime`` is:
+        """ Returns the **type** portion of the mime string. 
+
+        For example, if ``self.mime`` is:
                 
             image/jpeg
 
@@ -860,7 +805,7 @@ class file(inode):
     def body(self):
         """ Returns the contents of the file. 
         
-        The property will read the contents into a private varable if
+        The property will read the contents into a private variable if
         they have not already been memoized. Subsequent calls to body
         will return the contents of the private variable.
         """
@@ -904,10 +849,10 @@ class resource(file):
     libraries, CSS files and fonts.
 
     Resources are special files in that they can be defined as
-    originating from an external source such as a CDN. This class can be
-    configured to pull from the CDN and store locally, eliminating the
-    need for a developer to manually manage the resource file on the
-    hard drive.
+    originating from an external source such as a CDN. Objcets of this
+    class can be configured to pull from the CDN and stored locally,
+    eliminating the need for a developer to manually manage the resource
+    file on the hard drive.
     """
 
     def __new__(cls, *args, **kwargs):
@@ -949,7 +894,6 @@ class resource(file):
             #     'cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js'
             args = ['/' + os.sep.join(dirs), *args]
 
-            
         return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -969,7 +913,6 @@ class resource(file):
         CSS library - causing the user's browser to download the
         resource from the CDN rather than the webserver.
         """
-            
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
         self.orm.default('integrity', None)
@@ -989,11 +932,12 @@ class resource(file):
 
             # Since we aren't saving, make sure the entity's
             # persistencestate is Falsified. Since this inode will be in
-            # the radix cache, it is possible that at a later time, an
+            # the radix cache, it is possible that, at a later time, an
             # attempt to persist it could be made. In that case, we
             # don't want that to happen because, if the
             # orm.security.owner is different, then the entity will be
-            # invalid, causing the save() operation raise an Exception.
+            # invalid, causing the save() operation to raise an
+            # Exception.
             sup = self
             while sup:
                 sup.orm.persistencestate = False, False, False
@@ -1013,12 +957,14 @@ class resource(file):
     # The crossorigin attribute is analogous to the 'crossorigin'
     # attribute in <script>.
     #
-    # Possible values
-    #     'anonymous' - CORS requests for the script element will
+    # Possible values:
+    #
+    #     * 'anonymous' - CORS requests for the script element will
     #     have the credentials flag set to 'same-origin'. (default)
     #
-    #     'use-credentials' - CORS requests for this element will
+    #     * 'use-credentials' - CORS requests for this element will
     #     have the credentials flag set to 'include'.
+    #
     crossorigin  =  str
 
     def __str__(self):
@@ -1038,6 +984,7 @@ class resource(file):
         """
         if eargs.op != 'delete':
             self._write()
+
         super()._self_onaftersave(src, eargs)
 
     def _write(self):
@@ -1098,6 +1045,7 @@ class resource(file):
                 # We won't be able to cache, but that shouldn't be a show
                 # stopper. We may want to log, though.
                 pass
+
         except Exception as ex:
             # Remove the file if there was an exception
             with contextlib.suppress(Exception):
@@ -1110,6 +1058,30 @@ class resource(file):
 class directories(inodes):
     """ Represents a collection of ``directory`` entities.
     """
+    @classproperty
+    def site(cls):
+        """ Return the site/ directory.
+
+        The site/ directory's is at the root (radix) of the file system
+        underneath the pom/ directory.
+            
+            /pom/site
+
+        Each pom.site (website) object creates a directory underneath
+        site/ named after its primary key as a hex string. Within that
+        directory, site's can store files as they see fit.
+
+        The proprietor of the site/ directory (and its parent pom/) is
+        "the public" (party.parties.public). This means that any tenant
+        (proprietor) has read access to the directory (necessary when
+        loading this part of the file system).
+        """
+        import party
+        with orm.sudo(), orm.proprietor(party.parties.public):
+            site = directory('/pom/site')
+            site.save()
+
+        return site
 
 class directory(inode):
     """ Represents a directory in a file system.
@@ -1156,7 +1128,7 @@ class directory(inode):
                 return True
 
             if isinstance(nd1, directory):
-                if nd in nd1:
+                if nd in nd1:  # recursion
                     return True
 
         return False
@@ -1226,11 +1198,11 @@ class directory(inode):
 
             # Looks like `ls` is in /usr/bin
             assert net.isfound 
-            assert net.found[0] == 'ls'
-            assert net.wanting = []
-            assert net.tail.name == 'ls'
+            assert  net.found[0]   ==  'ls'
+            assert  net.wanting    ==  []
+            assert  net.tail.name  ==  'ls'
 
-            # Search again for a file that dosen't exist
+            # Search again for a file that doesn't exist
             net = self.net()
             usr.find('bin/init'), net)
 
@@ -1240,16 +1212,16 @@ class directory(inode):
             # `bin` was found, though
             assert net.found[0].name == 'bin'
 
-            # But `init` was not found. Maybe it's in /usr/sbin ...
+            # But `init` was not found (maybe it's in /usr/sbin/...).
             assert net.wanting[0].name == 'init'
         """
 
-        # NOTE `find` is sort of similar to `__getitem__`. It would be
+        # TODO `find` is sort of similar to `__getitem__`. It would be
         # nice if we could consolidate these two methods if possible.
 
         if isinstance(key, list):
             # Key must be the path structured as a list, which is what
-            # we want.
+            # we want so pass.
             pass
         elif isinstance(key, str):
             # Assume key is a path ('/etc/passwd') and split it to make
@@ -1258,11 +1230,11 @@ class directory(inode):
         else:
             raise TypeError('Path is wrong type')
 
-        # `recursing` will be True if are entering find() for the first
-        # time.
+        # `recursing` will be True if we are entering find() for the
+        # first time.
         if not recursing:
-            # Create a net object if we don't have one to store results
-            # of search
+            # Create a net object if we don't have one in order to store
+            # results of search
             if not net:
                 net = self.net()
 
@@ -1286,7 +1258,7 @@ class directory(inode):
             net.wanting.extend(key)
             return None
         else:
-            # The inode was found so append to the net's found.
+            # The inode was found so append to the net's `found`.
             # Contining searching for the rest of the path by recursing
             # into the found inode.
             net.found.append(nd)
@@ -1331,12 +1303,13 @@ class directory(inode):
 
         return f
 
+    # TODO Put in directories class
     @classproperty
     def radix(cls):
         """ Returns the radix directory.
 
         The radix directory is the root directory of all inodes that are
-        properly stored in the syste (as opposed to floaters). radix is
+        properly stored in the system (as opposed to floaters). radix is
         memoized here because, through it, we keep the entire file
         system tree in memory.
 
@@ -1347,37 +1320,20 @@ class directory(inode):
         ---------
         radix is just another word for root. Since inode is a recursive
         entity, 'root' is already taken as a @property name so we are
-        forced, here, to use a differt name for this @classproperty.
+        forced, here, to use a different name for this @classproperty.
         """
-        if not hasattr(cls, '_radix'):
-            # TODO:3d0fe827 Shouldn't we be instantiating a
-            # ``directory`` here, instead of cls. cls will almost always
-            # be ``directory`` but there is no reason it should be
-            # variant.
+        import party
+        return cls._produce(
+            id     =  directory.RadixId,
+            name   =  'radix',
+            fld    =  '_radix',
+            propr  =  party.parties.public,
 
-            # TODO Write test to ensure radix is always owned by root.
-            # TODO This looks a lot like _floaters. We can consolidate
-            # with a private method.
-            import party
-
-            # FIXME:9e3a0bbe We will want radix to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
-                try:
-                    cls._radix = cls(cls.RadixId)
-                except db.RecordNotFoundError:
-                    cls._radix = cls(id=cls.RadixId, name='radix')
-                    cls._radix.save()
-
-                # Enuser the the super (inode) is loaded). We don't want
-                # to lazy-load later on when we may not be sudo or
-                # carapacian. That would result in an exception.
-                cls._radix.orm.super
-
-        return cls._radix
+        )
     
     @property
     def isradix(self):
-        """ Returns True if this directory is the radix directory; False
+        """ Returns True if this directory is the radix directory, False
         otherwise.
         """
         return self.id == self.RadixId and self.inode is None
@@ -1385,21 +1341,21 @@ class directory(inode):
     @classproperty
     def _floaters(cls):
         """ Returns a directory to store inodes under until they are
-        ready to be attached to the the radix cache. 
+        ready to be attached to the radix cache. 
 
         Consider the following file::
             
             f = file('myfile')
 
-        Since it wasn't created off the root (it doesn't start with a
-        /), it isn't attached to the radix. It just floats in the
+        Since it wasn't created off the root (i.e., it doesn't start
+        with a /), it isn't attached to the radix. It just floats in the
         floaters cache. 
 
             assert f in directory._floaters
             assert f not in directory.radix
 
-        This is fine, but to get the file properly in the
-        file system, we need to attach it to the radix/root.
+        This is fine, but to get the file properly in the file system,
+        we need to attach it to the radix/root.
 
             d = directory('/mydirectory')
             d += f
@@ -1416,30 +1372,72 @@ class directory(inode):
 
             f.save()
         """
-        if not hasattr(cls, '_flts'):
-            # TODO:3d0fe827 Shouldn't we be instantiating a
-            # ``directory`` here, instead of cls. cls will almost always
-            # be ``directory`` but there is no reason it should be
-            # varient.
+        import party
+        return cls._produce(
+            id     =  cls.FloatersId,
+            name   =  '.floaters',
+            fld    =  '_flts',
+            propr  =  party.parties.public
+        )
 
-            # TODO Write test to ensure floaters is always owned by
-            # root.
-            import party
+    @classmethod
+    def _produce(cls, id, name, fld, propr):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Ensure a `directory`, or subclass thereof, with the given id is
+        in the database. Return the `directory` to the caller.
 
-            # FIXME:9e3a0bbe We will want floaters to be owned by 'public'
-            with orm.sudo(), orm.proprietor(party.company.carapacian):
+        :param: id UUID: The id of the `directory` entity.
+
+        :param: name str: If the `directory` doesn't exist, this value
+        will be assigned to the directory's `name` attribute upon
+        creation.
+
+        :param: fld str: The name of the private class variable that the
+        `directory` entity will be set to for memoization. (E.g.,
+        '_radix', '_flts', etc.)
+
+        :param: propr party.party: The party to switch the propretor to
+        when creating the entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        if not hasattr(cls, fld):
+            with orm.sudo(), orm.proprietor(propr):
                 try:
-                    cls._flts = cls(cls.FloatersId)
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Load
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    dir = cls(id)
                 except db.RecordNotFoundError:
-                    cls._flts = cls(id=cls.FloatersId, name='.floaters')
-                    cls._flts.save()
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    dir = cls(id=id, name=name)
 
-                # Enuser the the super (inode) is loaded). We don't want
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # NOTE: In some cases (e.g. floaters) setting the
+                    # class variable needs to happen before the save()
+                    # in order to avoid an infinite recursion.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    setattr(cls, fld, dir)
+                    dir.save()
+                else:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Memoize
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    setattr(cls, fld, dir)
+
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # Ensure the the super (inode) is loaded. We don't want
                 # to lazy-load later on when we may not be sudo or
-                # carapacian. That would result in an exception.
-                cls._flts.orm.super
+                # public. That would result in an Exception.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                dir.orm.super
 
-        return cls._flts
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoize version
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return getattr(cls, fld)
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead
@@ -1468,7 +1466,6 @@ class directory(inode):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if self.id == directory.RadixId:
             return orm.violations.empty
-
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If you own it you can get it

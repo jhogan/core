@@ -18,20 +18,125 @@
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
 from datetime import datetime, date
-from db import RecordNotFoundError
 from dbg import B
+from db import RecordNotFoundError
 from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
-import apriori, asset, file
-import db, orm, primative
-import uuid, builtins
+import uuid
+import apriori
+import asset
+import builtins
+import db
+import file
+import orm
+import primative
 
 class parties(orm.entities):                                 
     """ A collection of party objects.
 
     :abbr: pars
     """
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The primary key for the "public" proprietor, i.e.,
+    # `party.parties.public` 
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    PublicId = uuid.UUID(int=0xbab11cf73a8f4c97b900d1f6e9dddb5a)
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The hard-coded id of the anonymous user. This should not be
+    # changed.
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
+
+    @classproperty
+    def public(cls):
+        """ The public proprietor. 
+
+        Entities that have `public` as their proprietor would be
+        readable to any proprietor (though they wouldn't be writable).
+
+        Currently this is public directories such as /radix, /pom and
+        /pom/site. Future common entities could include `region`
+        entities (think a zipcode database) that contains geographical
+        information that any proprietor would need.
+        """
+        import ecommerce
+        id = cls.PublicId
+        return cls._produce(
+            id     =  id,
+            name   = 'Public',
+            fld    =  '_public',
+            su     =  ecommerce.users.root,
+            propr  =  id
+        ) 
+
+    @classproperty
+    def anonymous(cls):
+        """ Return a party object that represents an unknown user. 
+
+        This is commonly used to represent an actor who accesses a web
+        page but is not logged in to the system. Anonymous users can be
+        people or user agents such as web crawlers, so the generic
+        ``party`` object is used.
+        """
+        import ecommerce
+        return cls._produce(
+            id     = cls.AnonymousId,
+            name   =  'Anonymous',
+            fld    =  '_anon',
+            su     =  ecommerce.users.root,
+            propr  =  companies.carapacian,
+        ) 
+
+    @classmethod
+    def _produce(cls, id, name, fld, su, propr):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Ensure a `party`, or subclass thereof, with the given id is in
+        the database. Return the `party` to the caller.
+
+        :param: id UUID: The id of the `party` entity.
+
+        :param: name str: If the `party` doesn't exist, this value will
+        be assigned to the party's `name` attribute upon creation.
+
+        :param: fld str: The name of the private class variable that
+        the `party` entity will be set to for memoization. (E.g.,
+        '_anon', '_root', '_carapacian'.)
+
+        :param: su ecommerce.user: The user to switch to when creating
+        the entity.
+
+        :param: propr party.party: The party to switch the propretor to
+        when creating the entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        if not hasattr(cls, fld) or not getattr(cls, fld):
+            e = cls.orm.entity
+            with orm.su(su), orm.proprietor(propr):
+                try:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Load
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    par = e(id)
+                except db.RecordNotFoundError:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    par = e(id=id, name=name)
+                    par.save()
+                except Exception:
+                    # XXX What's this?
+                    raise
+                finally:
+                    setattr(cls, fld, par)
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoized reference
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return getattr(cls, fld)
 
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
@@ -63,7 +168,66 @@ class shiptos(customers):                                    pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
 class legalorganizations(organizations):                     pass
-class companies(legalorganizations):                         pass
+
+class companies(legalorganizations):
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # The ID for the carapacian company. This should never be changed.
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    CarapacianId = uuid.UUID('ca4aff4089714948aa4274b038731333')
+
+    @classproperty
+    def carapacian(cls):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the official Carapacian company entity
+        (`party.company`). If the entity does not exist in the database,
+        it will be created. The id for the entity is hardcoded and
+        should never be changed.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        import ecommerce
+        return cls._produce(
+            id     = cls.CarapacianId,
+            name   =  'Carapacian, LLC',
+            fld    =  '_carapacian',
+            su     =  ecommerce.users.root,
+            propr  =  cls.CarapacianId,
+        ) 
+
+        if not cls._carapacian:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # We will need to be root to pull the record from the DB
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            with orm.sudo():
+                try:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Use Carapacian's UUID as the proprietor
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(cls.CarapacianId):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Load and memoize
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        cls._carapacian = company(cls.CarapacianId)
+                except db.RecordNotFoundError:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    cls._carapacian = company(
+                        id   = cls.CarapacianId,
+                        name = 'Carapacian, LLC'
+                    )
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Make Carapacian the proprietor then save to DB
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(cls._carapacian):
+                        cls._carapacian.save()
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoized reference
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return cls._carapacian
+
 class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
@@ -147,14 +311,6 @@ class party(orm.entity):
     :abbr: par
     """
 
-    _anon = None
-
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # The hard-coded id of the anonymous user. This should not be
-    # changed.
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    AnonymousId = uuid.UUID('46061800-5b7d-4dfe-9b6e-d69efc2732d6')
-
     def __init__(self, *args, **kwargs):
         self._updateperson = True
         super().__init__(*args, **kwargs)
@@ -228,38 +384,6 @@ class party(orm.entity):
         finally:
             self._updateperson = True
 
-    @classproperty
-    def anonymous(cls):
-        """ Return a party object that represents an unknown user. 
-
-        This is commonly used to represent an actor who accesses a web
-        page but is not logged in to the system. Anonymous users can be
-        people or user agents such as web crawlers, so the generic
-        ``party`` object is used.
-        """
-        # TODO Write test to ensure this returns the same party each
-        # time.
-
-        # Memoize. NOTE that memoizing this property has a significant
-        # influence on the performance of web hits.
-        if not cls._anon:
-
-            # Carapacian will be the proprietor and root will be the
-            # owner.
-            with orm.sudo(), orm.proprietor(company.carapacian):
-                
-                # Get from DB or create using hard-coded ID
-                try:
-                    cls._anon = party(cls.AnonymousId)
-                except db.RecordNotFoundError:
-                    id = cls.AnonymousId
-                    cls._anon = party(
-                        id = id,
-                        name = 'Anonymous'
-                    )
-                    cls._anon.save()
-        return cls._anon
-
     @property
     def creatability(self):
         vs = orm.violations()
@@ -272,7 +396,7 @@ class party(orm.entity):
     def retrievability(self):
         from ecommerce import users
 
-        # Get all users that belong to this party. (Noramally this would
+        # Get all users that belong to this party. (Normally this would
         # be written `usrs = self.users` but that can't be done at the
         # moment.)
         usrs = users('party__partyid', self.id)
@@ -365,57 +489,6 @@ class company(legalorganization):
     # will have an `employee` relationships with `departments` and
     # `divisons`.
     departments = departments
-
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # The ID for the entity. This should never be changed.
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    CarapacianId = uuid.UUID('f05eff40-8971-4948-aa42-74b038731333')
-
-    # TODO Move this to party.companies
-    _carapacian = None
-    @classproperty
-    def carapacian(cls):
-        """
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns the official Carapacian company entity
-        (`party.company`). If the entity does not exist in the database,
-        it will be created. The id for the entity is hardcoded and
-        should never be changed.
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        """
-        
-        if not cls._carapacian:
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            # We will need to be root to pull the record from the DB
-            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            with orm.sudo():
-                try:
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Use Carapacian's UUID as the proprietor
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    with orm.proprietor(cls.CarapacianId):
-                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        # Load and memoize
-                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                        cls._carapacian = company(cls.CarapacianId)
-                except db.RecordNotFoundError:
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # If the record didn't exist, create it.
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    cls._carapacian = company(
-                        id   = cls.CarapacianId,
-                        name = 'Carapacian, LLC'
-                    )
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # Make Carapacian the proprietor then save to DB
-                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    with orm.proprietor(cls._carapacian):
-                        cls._carapacian.save()
-
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # Return memoized reference
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        return cls._carapacian
 
 class marital(orm.entity):
     """ Allowes for the maintenence of changes to a person's marital

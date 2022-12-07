@@ -25,7 +25,7 @@ TODOs:
     TODO:604a3422 When a constituent is deleted, its composite reference
     is not remove:
         
-        # Create an artist with a presenation.
+        # Create an artist with a presentation.
         art = artist()
         art.presentations += presentation()
         art.save()
@@ -233,7 +233,7 @@ TODOs:
 
     If we were to create a `dog` object and assign it a name value, we
     would get BrokenRulesError telling us that its super, mammal, did
-    has an empty `name` attribute. The ORM just currently doesn't
+    have an empty `name` attribute. The ORM just currently doesn't
     provide support for this kind of thing. 
 
     Though this doesn't seem to be a problem for most GEM classes at the
@@ -244,9 +244,9 @@ TODOs:
     Here are some things to consider when we add support:
         
         * Mixed types should be dealt with correctly. For example, if
-          the mammal.name property above were som other type, such as an
-          int, text, byte, etc, the code should do the right thing (or
-          the best thing).
+          the mammal.name property above were some other type, such as
+          an int, text, byte, etc, the code should do the right thing
+          (or the best thing).
 
         * Primative field mappings should be supported, like those in
           the example, but also entity mappings, entities mappings,
@@ -650,7 +650,7 @@ class stream(entitiesmod.entity):
 
             # Only 10 artist rows will be pulled from the database at a
             # time.
-            for art inn arts::
+            for art in arts::
                 ...
 
     """
@@ -892,7 +892,7 @@ class join(entitiesmod.entity):
     
     An entities collection class can have zero or more join objects in
     its ``joins`` collection. These are used to generate the JOIN
-    portion of its SELECT statement (``entities.orm.sql``).
+    portion of its SELECT statement (``entities.orm.select``).
     """
     
     # Constants for the types of a join. Currently, only INNER JOINS are
@@ -953,14 +953,14 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         """ Sets the initial properties for the ``where`` object. 
         
-        :param:  entities  es: The ``entities`` collection associated
+        :param: entities es: The ``entities`` collection associated
         with this ``where`` object.
 
-        :param:  str or predicate pred: A str or ``predicate`` object
-        associated with this ``where`` object
+        :param: str|predicate: A str or ``predicate`` object associated
+        with this ``where`` object
 
-        :param:  list      args:        A list of arguments associated
-        with this ``where`` object.
+        :param: list args: A list of arguments associated with this
+        ``where`` object.
         """
 
         self.entities     =  es
@@ -992,7 +992,7 @@ class where(entitiesmod.entity):
 
         return wh
 
-    def demandvalid(self):
+    def demand(self):
         def demand(col, exists=False, ft=False):
             for map in self.entities.orm.mappings.all:
                 if not isinstance(map, fieldmapping):
@@ -1014,6 +1014,7 @@ class where(entitiesmod.entity):
             if pred.match:
                 for col in pred.match.columns:
                     demand(col, exists=True, ft=True)
+
                 continue
 
             for op in pred.operands:
@@ -1027,30 +1028,78 @@ class predicates(entitiesmod.entities):
     pass
 
 class predicate(entitiesmod.entity):
-    Isalphanum_ = re.compile(r'^[A-Za-z0-9_]+$')
-    Specialops = '=', '==', '<', '<=', '>', '>=', '<>'
-    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS NOT', 'IN', 'NOT IN', \
-              'BETWEEN', 'NOT BETWEEN'
+    """ Represents an SQL-like predicate (WHERE clause).
+
+    A predicate is the actual Boolean expression. This class contains
+    logic to parse the SQL-like Boolean expressions and store the token
+    in its object model.
+    """
+    # Regular expression to test whether a string is composed fully of
+    # alphanumeric and underscore characters.
+    IsAlphaNumeric_ = re.compile(r'^[A-Za-z0-9_]+$')
+
+    # Supported operators composed of special characters
+    SpecialOps = '=', '==', '<', '<=', '>', '>=', '<>'
+
+    # Supported operators composed of one or more words
+    WordOps = (
+        'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS NOT', 
+        'IN', 'NOT IN', 'BETWEEN', 'NOT BETWEEN',
+    )
+
+    # Predicate constants (analogous to SQL constants)
     Constants = 'TRUE', 'FALSE', 'NULL'
-    Ops = Specialops + Wordops
+
+    # All the supported operaters
+    Ops = SpecialOps + WordOps
+
+    # The supported MySQL introducers
+    # (https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html)
     Introducers = '_binary',
     
     def __init__(self, expr, junctionop=None, wh=None):
+        """ Create a `predicate`.
+
+        :param: expr str|shlex: This is the Boolean expression itself as
+        a str (e.g., "id = 123 OR name = 'Jesse'"). A `shlex` object of
+        the expression can be used as well but that is for internal use.
+
+        :param: junctionop str: The junciton operator used to join to
+        expression, e.g., AND, OR. Used internally.
+
+        :param: wh orm.where: The `where` object associated with this
+        predicate.
+        """
         self._operator      =  ''
+
+        # The list of values that the particular predicate operates on
         self.operands       =  list()
         self.match          =  None
         self._junction      =  None
         self._junctionop    =  junctionop
         self.startparen     =  0
         self.endparen       =  0
+
+        # The MySQL introducer on the left-hand side of the operator:
+        #
+        #     _binary %s = %s
+        #
         self.lhsintroducer  =  ''
+
+        # The MySQL introducer on the right-hand side of the operator:
+        #
+        #     %s = _binary %s
+        #
         self.rhsintroducer  =  ''
+
+        # A reference to the orm.where object
         self.where          =  wh
 
         if expr:
             if isinstance(expr, shlex):
                 lex = expr
             elif expr is not None:
+                # Use Python's builtin shlex class to help with parsing
                 lex = shlex(expr, posix=False, punctuation_chars='!=<>')
 
             self._parse(lex)
@@ -1059,6 +1108,9 @@ class predicate(entitiesmod.entity):
             pass
 
     def clone(self):
+        """ Return a new `predicate` with values that are equivalent to
+        `self`.
+        """
         pred = predicate(None, self.junctionop, wh=self.where)
 
         if self.operands is None:
@@ -1081,6 +1133,31 @@ class predicate(entitiesmod.entity):
         return pred
 
     def __iter__(self):
+        """ Returns an iterator for the `predicate`.
+
+        Iterating over predicates is unlike iterating over most things.
+        Since any given predicate may have 0 or one junction predicates,
+        the iterator will simply return the next junction predicate if
+        there is one.
+
+        For example, iterating over a simple predicate like ('x=1')
+        results in one interation:
+
+            for i, pred in enumerate(predicate('x=1')):
+                assert i == 0
+                assert str(pred) == 'x = 1'
+
+        Predicates that are conjoined (through an AND or an OR) will
+        iterate once for each conjoined predicate.
+
+            for i, pred in enumerate(predicate('x=1 AND y=2')):
+                if i == 0:
+                    assert str(pred) == 'x = 1'
+                elif i == 1:
+                    assert str(pred) == 'AND y = 2'
+                else:
+                    assert False
+        """
         yield self
         if self.match and self.match.junction:
             for pred in self.match.junction:
@@ -1092,6 +1169,17 @@ class predicate(entitiesmod.entity):
 
     @property
     def junction(self):
+        """ The next predicate that this predicate is conjoined to.
+
+        For example, given:
+            
+            x=1 AND y=2
+
+        One predicate would represent x=1. Its `junction` property would
+        return the predicate the represents y=2. That predicate whould
+        have a `junction` property of None since nothing comes after
+        y=2.
+        """
         return self._junction
 
     @junction.setter
@@ -1100,16 +1188,40 @@ class predicate(entitiesmod.entity):
 
     @property
     def junctionop(self):
+        """ If this `predicate` is conjoined to another predicate, the
+        conjunctive operator ('AND' or 'OR') is returned. Otherwise,
+        None is returned.
+        """
         if self._junctionop:
             return self._junctionop.strip().upper()
+
         return None
 
     @property
     def columns(self):
+        """ Returns a list containing the subset of operands which are
+        columns.
+        """
         return [op for op in self.operands if self.iscolumn(op)]
 
     @staticmethod
     def _raiseSyntaxError(lex, tok, ex=None, msg=''):
+        """ A private static method used by the parser to raise an
+        exception to indicate exactly where, in the predicate
+        expression, a problem was discover with the expression which
+        forced parsing to abort.
+
+        :param: lex shlex: A reference to the shlex (simple lexical
+        analysis) object that was being used when the syntax error
+        occured.
+
+        :param: ex type<predicate.SyntaxError>: A reference to the
+        exception class (not object) that the caller wishes to be
+        raised, e.g., predicate.UnexpectedTokenError,
+        predicate.ParentheticalImbalanceError, etc.
+
+        :param: msg str: The error message for the exception.
+        """
         if not ex:
             ex = predicate.SyntaxError
 
@@ -1123,34 +1235,62 @@ class predicate(entitiesmod.entity):
         raise ex(cur, snippet, tok, msg=msg)
     
     def _demandBalancedParens(self):
+        """ Raise a `ParentheticalImbalanceError` exception if the number of
+        parenthesis in the predicate, at the current moment in parsing,
+        do not balance.
+        """
         if self.junctionop:
             return
 
+        # Count start and end parenthesis.
         startparen = endparen = 0
         for pred in self:
             startparen += pred.startparen
             endparen += pred.endparen
 
         if endparen != startparen:
-            raise predicate.ParentheticalImbalance(startparen, endparen)
+            raise predicate.ParentheticalImbalanceError(startparen, endparen)
 
     def _parse(self, lex):
-        tok = lex.get_token()
-        inbetween      =  False
-        isin           =  False
-        inquote        =  False
-        inplaceholder  =  False
-        intro          =  str()
-        unexpected = predicate.UnexpectedToken
+        """ Parse the Boolean expression.
 
+        :param: lex shlex: The `shlex` object which contains the Boolean
+        expression.
+        """
+        tok = lex.get_token()
+
+        # True if we are in a BETWEEN clause
+        inbetween      =  False
+
+        # True if we are in an IN clause
+        isin           =  False
+
+        # True if we are in a quoted string
+        inquote        =  False
+
+        # True if we are in a placeholder (%s)
+        inplaceholder  =  False
+
+        # The MySQL introducer
+        intro          =  str()
+
+        unexpected = predicate.UnexpectedTokenError
+
+        # For each token in the expression...
         while tok != lex.eof:
+            # Create an uppercase version of the token for certain
+            # equality tests.
             TOK = tok.upper()
 
+            # % are placeholder tokens (e.g., "name = %s")
             if tok == '%':
                 inplaceholder = True
 
+            # If the prior characters was a '%'
             elif inplaceholder:
                 if tok == 's':
+                    # Make sure the introducer (e.g., _binary)  is part
+                    # of the placeholder
                     placeholder = intro + ' %s' if intro else '%s'
                     self.operands.append(placeholder)
                     intro = str()
@@ -1158,9 +1298,13 @@ class predicate(entitiesmod.entity):
                     msg = 'Unexpected placeholder type. ' + \
                           'Consider using %s instead'
                     self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+
+                # That concludes the placeholder parsing
                 inplaceholder = False
             
+            # If token is an introducer (e.g., _binary)
             elif tok in self.Introducers:
+                # If we are in an SQL-like IN clause...
                 if isin:
                     intro = tok
                 else:
@@ -1169,14 +1313,21 @@ class predicate(entitiesmod.entity):
                     else:
                         self.lhsintroducer = tok
 
+            # If the token looks like a database column name
             elif self.iscolumn(tok):
                 self.operands.append(tok)
 
+            # If the SQL-like MATCH operator is found...
             elif TOK == 'MATCH':
                 self.operands = None
                 self.operator = None
+                # Use the Match class to parse the MATCH expression.
+                # Once that expression is parsed, we will continue
+                # parsing the rest of the expression in this class. 
                 self.match = predicate.Match(lex, self.where)
 
+            # Is the token an SQL-like word operator (e.g. BETWEEN or
+            # LIKE)
             elif self.iswordoperator(tok):
                 self.operator += ' ' + tok
                 if TOK == 'BETWEEN':
@@ -1184,20 +1335,29 @@ class predicate(entitiesmod.entity):
                 elif TOK == 'IN':
                     isin = True
 
+            # If the token looks like a (non-word) operator
             elif self._lookslikeoperator(lex, tok):
+                # If we have found two operators side-by-side...
                 if self.operator:
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
                     
+                # Are there operands for the operator to work on...
                 if not len(self.operands):
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
 
+                # Is the token is one of the supported operators (or
+                # does it just appear to be one)...
                 if not self.isoperator(tok):
-                    raise predicate.InvalidOperator(tok)
+                    raise predicate.InvalidOperatorError(tok)
 
                 self.operator = tok
 
+            # Is the token a string or numeric literal or constant
             elif self.isliteral(tok):
                 tok = TOK if TOK in self.Constants else tok
+
+                # Concatenate to last operand if we are working with a
+                # string literal
                 if inquote:
                     if tok[0] == "'":
                         self.operands[-1] += tok
@@ -1205,23 +1365,48 @@ class predicate(entitiesmod.entity):
                     inquote = True # Maybe
                     self.operands.append(tok)
 
+            # If token is a junction operator
             elif TOK in ('AND', 'OR'):
+                # If no match expression was parsed and no operands have
+                # been discovered yet...
                 if not self.match and not len(self.operands):
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
 
+                # If the current token is not the AND of a BETWEEN
+                # clause (e.g. `number BETWEEN 1 AND 10`)
+                #                                 ^---- this guy
                 if not (inbetween and TOK == 'AND'):
+                    # Since we are at a junction operator, we are
+                    # basically parsing a new predicate. Take for
+                    # example:
+                    #
+                    #     x=1 AND y=2
+                    #
+                    # x=1 is the first predicate and y=2 is the
+                    # second. If we were parsing this expression, and we
+                    # are at the AND, then self would be x=1. Below,
+                    # we are passing y=2 to a new predicate object. Then
+                    # we assign the new predict to self.junction. This
+                    # is how compound expressions are objectified.
                     self.junction = predicate(lex, tok, wh=self.where)
                     self._demandBalancedParens()
                     return
 
+            # If we are starting a new subexpression...
             elif tok == '(':
                 if not isin:
+                    # Count opening parenthesis
                     self.startparen += 1
 
+            # If we are ending a subexpression...
             elif tok == ')':
                 if not isin:
+                    # Count closing parenthesis
                     self.endparen += 1
 
+            # If we are parsing a BETWEEN clause and we have reached
+            # the 3rd operand (1 BETWEEN 2 AND 3), then we know we are no
+            # longer in the BETWEEN clause.
             if inbetween and len(self.operands) == 3:
                 inbetween = False
 
@@ -1229,35 +1414,67 @@ class predicate(entitiesmod.entity):
 
             if tok != lex.eof and tok[-1] != "'":
                 inquote = False
+        # end while (while tok != lex.eof)
 
         if not self.match:
+            # Raise error if we are in a BETWEEN clause and there are
+            # not 3 operands
+            #
+            #     1 BETWEEN 2 AND 3
+            #
             if self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 if len(self.operands) != 3:
-                    msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg = (
+                        'Expected 2 operands, not ' +
+                        str(len(self.operands))
+                    )
                     msg += '\nThere may be unquoted string literals'
-                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                    self._raiseSyntaxError(
+                        lex, tok, ex=unexpected, msg=msg
+                    )
             else:
+                # Raise error if this predicate is an IN clause doesn't
+                # have at least two operands: 
+                # 
+                #     1 IN (2)
+                #
                 if self.operator in ('IN', 'NOT IN'):
                     if len(self.operands) < 2:
                         msg = 'Expected at least 2 operands, not %s'
                         msg %= len(self.operands)
                         msg += '\nThere may be unquoted string literals'
-                        self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                        self._raiseSyntaxError(
+                            lex, tok, ex=unexpected, msg=msg
+                        )
                 elif len(self.operands) != 2:
-                    msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg = (
+                        'Expected 2 operands, not %s' % 
+                        len(self.operands)
+                    )
                     msg += '\nThere may be unquoted string literals'
 
-                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                    self._raiseSyntaxError(
+                        lex, tok, ex=unexpected, msg=msg
+                    )
 
+            # Raise error if the operator is unsupported
             if self.operator not in predicate.Ops:
-                raise predicate.InvalidOperator(self.operator)
+                raise predicate.InvalidOperatorError(self.operator)
 
+        # Conclude by making sure there are as many opening parenthesis
+        # as there are closing ones.
         self._demandBalancedParens()
                 
     @property
     def operator(self):
+        """ Return the predicate's operator.
+
+        The operator will always returned as uppercased (assuming it's a
+        word operator).
+        """
         if self._operator is None:
             return None
+
         return self._operator.strip().upper()
 
     @operator.setter
@@ -1265,61 +1482,106 @@ class predicate(entitiesmod.entity):
         self._operator = v
 
     def __str__(self):
+        """ Returns the Boolean expression as a str.
+
+        Despite how the expression was given to the predicate object,
+        the return value will always be normalized, i.e., word operators
+        (BETWEEN, IN, LIKE, etc.) will always be uppercased, and
+        whitespace will be formated in a consistant way. For example:
+
+            expr       = 'col1 is null and x in(1,2)'
+            normalized = 'col1 IS NULL AND x IN (1, 2)'
+            assert normalized == str(predicate(expr))
+        """
         r = str()
 
+        # If there is a junction operator (AND, OR) linking this
+        # predicate to the prior one, start the string with it.
         r += ' %s ' % self.junctionop if self.junctionop else ''
 
+        # Add starting parenthesis
         r += '(' * self.startparen
 
+        # If there is a MATCH predicate...
         if self.match:
+            # Concatentate the stringified MATCH predicate to return
+            # value
             r += str(self.match)
         else:
             ops = self.operands
 
-            # Append a space to the introducers if they exists
-            lhsintro = self.lhsintroducer
-            lhsintro = lhsintro + ' ' if lhsintro else ''
-            rhsintro = self.rhsintroducer
-            rhsintro = rhsintro + ' ' if rhsintro else ''
-
             if self.operator in ('IN', 'NOT IN'):
-                r += '%s %s (%s)' % (ops[0],
-                                     self.operator,
-                                     ', '.join(ops[1:]))
+                r += '%s %s (%s)' % (
+                    ops[0], self.operator, ', '.join(ops[1:])
+                )
 
             elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 r += '%s %s %s AND %s'
                 r %= (ops[0], self.operator, *ops[1:])
 
             else:
-                r += '%s%s %s %s%s' % (lhsintro,
-                                       ops[0], 
-                                       self.operator, 
-                                       rhsintro,
-                                       ops[1])
+                # Append a space to the introducers if they exists
+                lhsintro = self.lhsintroducer
+                lhsintro = lhsintro + ' ' if lhsintro else ''
+                rhsintro = self.rhsintroducer
+                rhsintro = rhsintro + ' ' if rhsintro else ''
+
+                r += '%s%s %s %s%s' % (
+                    lhsintro, ops[0], self.operator, rhsintro, ops[1]
+                )
 
         r += ')' * self.endparen
 
-        junc = self.junction
-        if junc:
-            r += str(junc)
+        # If there is a junction (a conjoined predicate)... 
+        if self.junction:
+            # ... concatentate the stringyfied version of it. Obviously,
+            # this call will be recursive since the next junction may
+            # have its own junction and so on.
+            r += str(self.junction)
 
         return r
 
     def __repr__(self):
-        return "predicate('%s')" % str(self)
+        """ Return a string representation of the predicate.
+        """
+        return type(self).__name__ + f"('{self}')"
 
     @staticmethod
     def iscolumn(tok):
+        """ Return True if the token looks like the name of a column in
+        a database table.
+
+        :param: str tok: The token to test.
+        """
         TOK = tok.upper()
-        return     not predicate.isoperator(tok) \
-               and not predicate.isliteral(tok) \
-               and tok[0].isalpha()           \
-               and re.match(predicate.Isalphanum_, tok) \
-               and TOK not in ('AND', 'OR', 'MATCH')
+        # TODO Answer the following: Should we not examin the mappings
+        # collection of the entity to determine whether or not tok is a
+        # column?
+        if predicate.isoperator(tok):
+            return False
+
+        if predicate.isliteral(tok):
+            return False
+
+        if tok[0].isalpha():
+            if predicate.IsAlphaNumeric_.match(tok):
+                if TOK not in ('AND', 'OR', 'MATCH'):
+                    return True
+
+        return False
 
     @staticmethod
     def _lookslikeoperator(lex, tok):
+        """ Return True if the token looks like a non-word operator
+        (e.g., =, <, >, <>, etc.), False otherwise.
+
+        Compare `self.iswordoperator`
+
+        :param: lex shlex: A reference to the shlex object being used
+        for parsing.
+
+        :param: str tok: The token to test.
+        """
         for c in tok:
             if c not in lex.punctuation_chars:
                 return False
@@ -1327,14 +1589,31 @@ class predicate(entitiesmod.entity):
 
     @staticmethod
     def isoperator(tok):
-        return tok.upper() in predicate.Ops + predicate.Wordops
+        """ Return True if the token is an operator (word operator or
+        special character operator), False otherwise.
+
+        :param: str tok: The token to test.
+        """
+        return tok.upper() in predicate.Ops + predicate.WordOps
 
     @staticmethod
     def iswordoperator(tok):
-        return tok.upper() in predicate.Wordops
+        """ Return True if the token looks like a word operator
+        (e.g., LIKE, NOT, NOT LIKE, IS, IS NOT), False otherwise 
+        Compare `self._lookslikeoperator`
+
+        :param: str tok: The token to test.
+        """
+        return tok.upper() in predicate.WordOps
 
     @staticmethod
     def isliteral(tok):
+        """ Return True if the token is a string or numeric literal,
+        e.g., "ABC", 123, etc. Literals can be constants as well such as
+        TRUE, FALSE or NULL .
+
+        :param: str tok: The token to test.
+        """
         fl = ''.join((tok[0], tok[-1]))
 
         # If quoted
@@ -1415,7 +1694,7 @@ class predicate(entitiesmod.entity):
                 elif insearch:
                     if tok == ')':
                         if not self.searchstring:
-                            ex=predicate.UnexpectedToken
+                            ex=predicate.UnexpectedTokenError
                             msg = 'Missing search string'
                             predicate._raiseSyntaxError(
                                 lex, tok, ex=ex, msg=msg
@@ -1452,13 +1731,13 @@ class predicate(entitiesmod.entity):
                         return
 
                     else:
-                        ex=predicate.UnexpectedToken
+                        ex=predicate.UnexpectedTokenError
                         msg = 'Check spelling of search modifiers '
                         predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
                 if tok == '(':
                     if len(self.columns) and not inagainst:
-                        ex=predicate.UnexpectedToken
+                        ex=predicate.UnexpectedTokenError
                         msg = 'Are you missing the AGAINST keyword'
                         predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
@@ -1467,7 +1746,7 @@ class predicate(entitiesmod.entity):
 
                 elif tok == ')':
                     if incolumns and not len(self.columns):
-                        ex=predicate.UnexpectedToken
+                        ex=predicate.UnexpectedTokenError
                         msg = 'Missing columns list'
                         predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
@@ -1485,7 +1764,7 @@ class predicate(entitiesmod.entity):
             try:
                 self.mode
             except:
-                ex=predicate.UnexpectedToken
+                ex=predicate.UnexpectedTokenError
                 msg = 'Invalid search modifiers'
                 predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
                 
@@ -1535,27 +1814,54 @@ class predicate(entitiesmod.entity):
             return r
 
     class SyntaxError(ValueError):
+        """ The exception to raise when there is a general syntax error
+        during the parsing of a predicate expression.
+
+        There are a few subclasses of this class for more specific types
+        of errors.
+        """
         def __init__(self, col=None, ctx=None, tok=None, msg=None):
-            self.column = col
-            self.context = ctx
-            self.token = tok
-            self.message = msg
+            """ Create a SyntaxError.
+
+            :param: col str: The column number, i.e., the number of
+            characters into the expression where the SyntaxError was
+            detected.
+
+            :param: ctx str: A snippit of the expression near where the
+            SyntaxError was detected.
+
+            :param: tok str: The last token captured by the shlex
+            tokenizer that resulted in the SyntaxError being detected.
+
+            :param: tok msg: A message that explains the syntax error.
+            """
+            self.column   =  col
+            self.context  =  ctx
+            self.token    =  tok
+            self.message  =  msg
 
         def __str__(self):
-            args = (self.column, self.context)
-
+            args = self.column, self.context
             if self.column:
                 msg = "Syntax error at column %s near '%s'" % args
             elif self.context:
-                msg = "Syntax error %s near '%s'" % self.context
+                # NOTE This appears to be dead code but may be of use
+                # later.
+                msg = "Syntax error near '%s'" % self.context
                 
             if self.message:
                 msg += '. ' + self.message
 
             return msg
 
-    class ParentheticalImbalance(SyntaxError):
+    class ParentheticalImbalanceError(SyntaxError):
+        """ A SyntaxError that occurs when the parses discovers that the
+        number of opening parenthesis does not match the number of
+        closing parenthesis.
+        """
         def __init__(self, startparen, endparen):
+            """ Create a ParentheticalImbalanceError exception.
+            """
             self.startparen = startparen
             self.endparen = endparen
 
@@ -1563,14 +1869,24 @@ class predicate(entitiesmod.entity):
             msg = 'Parenthetical imbalance. '
             return msg
 
-    class InvalidOperator(SyntaxError):
+    class InvalidOperatorError(SyntaxError):
+        """ A SyntaxError indicating that an operator was discovered
+        that is not supported.
+        """
         def __init__(self, op):
+            """ Create an InvalidOperatorError. 
+
+            :param: op str: The operator deemed to be invalid.
+            """
             self.operator = op
 
         def __str__(self):
             return 'Invalid operator: ' + self.operator
 
-    class UnexpectedToken(SyntaxError):
+    class UnexpectedTokenError(SyntaxError):
+        """ A SyntaxError that is raised when a token was encountered
+        and the parser did not know what to do with it.
+        """
         def __str__(self):
             msg = ''
             if self.token:
@@ -1713,7 +2029,8 @@ class entitiesmeta(type):
             arts = artists & presentations
             assert isinstance(arts, artists)
 
-        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+        The SELECT for ``arts`` (arts.orm.select) will be something
+        like::
             
             SELECT *
             FROM artists a
@@ -2320,7 +2637,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             arts = artists() & presentations
 
-        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+        The SELECT for ``arts`` (arts.orm.select) will be something
+        like::
             
             SELECT *
             FROM artists a
@@ -2807,6 +3125,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         super().append(e, uniq)
 
+    # TODO This method should be in the ORM class and it should be called
+    # '_prepare'
     def _preparepredicate(self, _p1='', _p2=None, *args, **kwargs):
         p1, p2 = _p1, _p2
 
@@ -2824,7 +3144,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         args = list(args)
         for k, v in kwargs.items():
             if p1: 
-                p1 += ' and '
+                p1 += ' AND '
             p1 += '%s = %%s' % k
             args.append(v)
 
@@ -2849,8 +3169,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        # If there is an security().proprietor and the entities collection is
-        # not a chunk, then add a proprietor filter.
+        # If there is a security().proprietor and the entities
+        # collection is not a chunk, then add a proprietor filter.
         #
         # There is no need to append a proprietor filter to a chunked
         # entities collection. The streamed entities collection will
@@ -2861,14 +3181,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
-                    p1 += f'{map.name} = _binary %s'
+                    p1 += f'{map.name} IN (_binary %s, _binary %s)'
                     args.append(security().proprietorid.bytes)
+
+                    from party import parties
+                    args.append(parties.PublicId.bytes)
                     break
 
         if p1:
             self.orm.where = where(self, p1, args)
-            self.orm.where.demandvalid()
-            self.orm.where.args = self.orm.parameterizepredicate(args)
+            self.orm.where.demand()
+            self.orm.where.args = self.orm.parameterize(args)
 
     def clear(self):
         """ Remove all elements from the entities collection.
@@ -3495,6 +3818,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     if vs.ispopulated:
 
+                        # NOTE These are used for debugging. See
+                        # e7b15632 
+                        usr = security().user
+                        propr = security().proprietor
+
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         # Raise an AuthorizationError
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -3839,6 +4167,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # it is a str, it will have been strip()ed).
             def setattr0(_, __, v):
                 map.value = v
+
+            # TODO:aa1efc3b There needs to be work done to prevent the
+            # call to self._setvalue from needlessly loading entities.
+            # We can control this by setting cmp to False.
+            # 
+            # At least one example is when v is an entity object, and
+            # the entitymapping for that entity object has a corresponding
+            # foreignkeymapping mapping. In this case, if v.id equals the
+            # foreignkeymapping's `value` property, we could set cmp to
+            # False to prevent a load the entity in _setvalue. At the
+            # moment, it doesn't appear to be the case that an
+            # entitymapping references its foreignkeymapping, though
+            # this could probably done easily by adding a
+            # `foreignkeymapping` @property to the `entitymapping`
+            # class.
 
             # Comparisons (cmp) are expensive because they require
             # getting the old value. If the entity isnew, then we know
@@ -4329,7 +4672,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         # constituent is being moved to
                                         # a different composite.
                                         setattr(e, map.name, self.id)
-
                                         break
 
                             # Call save(). If there is an Exception,
@@ -7887,7 +8229,7 @@ class security:
         proprietor's UUID. Normally we will get a full-bodied proprietor
         object (a party.party, typically a party.company or some other
         subtype thereof). However, sometimes it more conventient to give
-        a UUID.  See ``party.company.carapacian`` for an example of
+        a UUID.  See ``party.companies.carapacian`` for an example of
         using UUID instead of a party.party object.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
@@ -7907,7 +8249,10 @@ class security:
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sup = v
         while sup:
-            sup.proprietor = v
+            # Set as root because _setvalue tends to reload the
+            # proprietor for comparison. See aa1efc3b.
+            with sudo():
+                sup.proprietor = v
             sup = sup.orm.super
 
     @property
@@ -8012,7 +8357,7 @@ class security:
         return False
 
     def __repr__(self):
-        """ Return a string represenation of the security object.
+        """ Return a string representation of the security object.
         """
         r = f'{type(self).__name__}(\n'
         r += f'  owner={self.owner!r}\n'
@@ -8487,6 +8832,7 @@ class orm:
         except Exception as ex:
             return 'Exception: %s ' % (str(ex),)
 
+    # TODO Consider renaming to isstruck
     @property
     def ismarkedfordeletion(self):
         """ Returns True if the entity is marked for deletion. When an
@@ -9075,7 +9421,7 @@ class orm:
             pred = pred.match or pred
 
             # Get the column name referenced by the predicate
-            # FIXME If multiple columns are supported, fix below
+            # FIXME If multiple columns are supported, fix below.
             col = pred.columns[0]
 
             e = top or self.entity.orm.super
@@ -9084,7 +9430,7 @@ class orm:
                 # Find the map based on the column name
                 map = e.orm.mappings(col) 
 
-                # Is map the proprietor FK
+                # Is `map` the proprietor FK
                 isfk = isinstance(map, foreignkeyfieldmapping)
                 isproprietor = isfk and map.isproprietor
 
@@ -9093,7 +9439,6 @@ class orm:
                 # ('proprietor__partyid') since every entity has a
                 # proprietor foreignkeymappings.
                 if map and not isproprietor:
-
                     # If we found the map, we found the entity we want
                     # to query, so assign it to `top` and break.
                     top = e.orm.entities
@@ -9619,7 +9964,11 @@ class orm:
         entity to be loaded.
         """
         # Create the basic SELECT query.
-        sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
+        sql = textwrap.dedent(f'''
+            SELECT * 
+            FROM {self.table} 
+            WHERE id = _binary %s 
+        ''')
 
         # Search on the `id`'s bytes.
         args = [id.bytes]
@@ -9631,11 +9980,13 @@ class orm:
         # level. This restricts entity records not associated with
         # security().proprietor from being loaded.
         propr = security().proprietor
-        from party import party
+        from party import party, parties
         if propr:
             for map in self.mappings.foreignkeymappings:
-                if map.fkname == 'proprietor':
-                    sql += f' AND {map.name} = _binary %s'
+                if map.isproprietor:
+                    name = map.name
+                    sql = sql.strip() + ' '
+                    sql += f' AND ({name} = _binary %s OR {name} = _binary %s)'
                     if isinstance(propr, UUID):
                         bytes = propr.bytes
                     elif isinstance(propr, party):
@@ -9644,7 +9995,7 @@ class orm:
                         # Shouldn't happen
                         raise TypeError('Proprietor is incorrect type')
 
-                    args.append(bytes)
+                    args.extend([bytes, parties.PublicId.bytes])
                     break
 
         ress = None
@@ -9745,6 +10096,18 @@ class orm:
             name = self.instance.__class__.__name__
             mod = self.instance.__module__
             cls = mod + '.' + name
+
+            # NOTE:e7b15632 Capture the security attributes. This is
+            # useful for post mortem debugging because, by the time we
+            # enter into post mortem (pdb.post_mortem), the context
+            # managers that change the security attributes will have
+            # changed, meaning that, if we examin print(security())
+            # during post mortem, we will get different values that the
+            # ones that existed at the time the exception was actually
+            # raised.
+            owner = security().owner
+            propr = security().proprietor
+
             raise db.RecordNotFoundError(
                 'Unable to find record for '
                 f'<{cls}>:{id.hex}'
@@ -9935,8 +10298,7 @@ class orm:
             return s[1:-1]
         return s
 
-    # TODO s/parameterizepredicate/parameterize/
-    def parameterizepredicate(self, args):
+    def parameterize(self, args):
         """ In the where clause (``self.instance.orm.where``), look for
         literals, i.e.::
 
@@ -9995,15 +10357,16 @@ class orm:
 
         :param: db.result|db.resultset ress: A ``db.result`` or
         ``db.resultset`` instance containing the results of the SELECT
-        for this entities collection. See (orm.sql) to see how the
+        for this entities collection. See `orm.select` to see how the
         SELECT is generated.
         """
 
         if type(ress) is db.result:
             # If we are given one resultset (simple), we are probably
-            # loading an a single entity by id, i.e.::
+            # loading an a single entity by id, i.e.:
             #
-            #     ent = entity(id).
+            #     ent = entity(id)
+            #
             ress = [ress]
             simple = True
             maps = self.mappings
@@ -10026,10 +10389,10 @@ class orm:
 
         es = self.instance
 
-        # Iterate records
+        # Iterate over records in the resultset...
         for res in ress:
 
-            # Iterate over the record's fields
+            # Iterate over the record's fields...
             for i, f in func.enumerate(res.fields):    # TODO s/func.//
                 alias, _, col = f.name.rpartition('.')
 
@@ -10061,8 +10424,27 @@ class orm:
                         if skip:
                             continue
 
-                        # Instantiate an object from entity class.
-                        e = eclass()
+                        with proprietor(None):
+                            # Instantiate an object from entity class.
+                            # Above we set the proprietor to None so the
+                            # constructor does not assign e's
+                            # `proprietor` attribute to the *current*
+                            # proprietor. The underlying id for the
+                            # entity's proprietor will be pulled from
+                            # the database (proprietor__partyid) and
+                            # that value will be used to lazy-load the
+                            # proprietor attribute when/if needed.
+                            #
+                            # Normally, a proprietor will only have
+                            # access its own records (by definition),
+                            # but in the case of public records
+                            # (party.parties.public), we need to make
+                            # sure that the current proprietor is not
+                            # used to overwrite the public proprietor
+                            # which is what would happen if we do not
+                            # nullify the current proprietor before
+                            # instantiation.
+                            e = eclass()
 
                         # Add to entity dict
                         edict[key]= e
@@ -10071,7 +10453,6 @@ class orm:
                         # self.instance. First, is e an instance of
                         # self.instance's type.
                         if isinstance(e, es.orm.entity):
-
                             # Take the field name (i.e., alias) and
                             # split it on '.' to create a list of
                             # abbreviations.
@@ -10137,7 +10518,6 @@ class orm:
                         # super's record from the database here
                         # somewhere in `ress`, e.orm.super will be set
                         # by orm.link() to that superentity.
-                        
                         e.orm.super = None
 
                         e.orm.persistencestate = (False,) * 3
@@ -10150,28 +10530,26 @@ class orm:
                 # above for which.
                 maps[col]._value = f.value
 
-        ''' At this point, `es` can have multiple entity objects with
-        the same id but with different positions in the class hierarchy.
-        For example, we could have a ``product.product`` entity and a
-        ``product.good`` entity. It's very much preferable to the user
-        that we have the most specialized version of this entity (which
-        would, of course, be ``product.good`, since a good (or service)
-        is a type of product). In this case, the following logic would
-        remove the ``product.product`` from es and keep the
-        ``product.good``.
-        '''
+        # At this point, `es` can have multiple entity objects with the
+        # same id but with different positions in the class hierarchy.
+        # For example, we could have a ``product.product`` entity and a
+        # ``product.good`` entity. It's very much preferable to the user
+        # that we have the most specialized version of this entity
+        # (which would, of course, be ``product.good`, since a good (or
+        # service) is a type of product). In this case, the following
+        # logic would remove the ``product.product`` from es and keep
+        # the ``product.good``.
 
         # If the resultset had multiple records
         if not simple:
-            
-            # Get all the id values edict's keys
+            # Get all the id values from edict's keys
             ids = set([x[0] for x in edict])
 
             # For each of those id...
             for id in ids:
                 lowest = None
 
-                # Iterate over edict
+                # Iterate over edict...
                 for id1, eclass in edict:
 
                     # Find the most-specialized (lowest) subentity of
@@ -10205,11 +10583,11 @@ class orm:
     @staticmethod
     def link(edict):
         """ For each entity or entities object in <edict>, search
-        <edict> for any composites, constituents and supers then assign
+        <edict> for any composites, constituents and supers, then assign
         them to the entity's appropriate mapping object. 
 
         :param dict[tuple, entity] edict: A dict of entity or entites
-                                          objects
+        objects
 
         :returns: void
 
@@ -10219,7 +10597,7 @@ class orm:
         value as the artist entity's id), the location entity will be
         assigned to the artist entity's locations collection. So when
         the method is complete, the location entity can be obtained from
-        the artist entity via its `locations` collection, i.e.:: 
+        the artist entity via its `locations` collection, i.e.:
             
             edict = dict()
             edict[(art.id, type(art)] = art
@@ -10237,10 +10615,8 @@ class orm:
         subentity. In those cases, the class is needed to distinguish
         between the subentity and the superentity. 
         """
-
         # For each entity in edict
         for e in edict.values():
-            
             # Does `e` have a foreign key that is the id of another
             # entity in edict, i.e., is `e` a child (or constituent) of
             # another entity in edict.
@@ -10345,10 +10721,11 @@ class orm:
         object.
 
         """
-        # Note, since generating the SELECT statement involves
-        # recursion, we need a regular method. The user would rather
-        # call a property (orm.sql), however, so this is a private
-        # method normally accessed through the orm.sql method.
+        # NOTE, since generating the SELECT statement involves
+        # recursion, this needs to be a regular method. The user would
+        # rather call a property (orm.select), however, so this is a
+        # private method normally accessed through the orm.select
+        # property.
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -10575,9 +10952,13 @@ class orm:
         inplaceholder  =  False
         argix          =  0
 
-        # Iterate over sql instead of using a simple search-and-replace
-        # approach so we don't add introducer to quoted instances of the
-        # placeholder token.
+        # TODO Should we use the shlex tokenizer here insteaded of
+        # iterating over `sql`? If so, rewrite to use shlex. If not,
+        # write a comment explaining the decision not to.
+
+        # Iterate over `sql` instead of using a simple
+        # search-and-replace approach so we don't add introducer to
+        # quoted instances of the placeholder token.
         for s in sql:
             # Detect quotes
             if s == "'":
@@ -10591,8 +10972,8 @@ class orm:
             if inplaceholder:
                 if s == 's':
                     if type(args[argix]) in (bytearray, bytes):
-                        # Here we add the _binary introducer because the arg is
-                        # binary and we are not in quoted text
+                        # Here we add the _binary introducer because the
+                        # arg is binary and we are not in quoted text
                         r += '_binary %s'
                     else:
                         # A non-binary placeholder
@@ -10600,8 +10981,8 @@ class orm:
                     argix += 1
                 else:
                     # False alarm. The previous '%' didn't indicate a
-                    # placeholder token so just append '%' + s to the return
-                    # string
+                    # placeholder token so just append '%' + s to the
+                    # return string
                     r += '%' + s
 
                 inplaceholder = False
@@ -10759,7 +11140,7 @@ class orm:
         including those inherited from superentities.
         """
 
-        # Get list of propreties for this class
+        # Get list of properties for this class
         props = [x.name for x in self.mappings]
 
         # Look for properties in the super. Not that this will ascend
@@ -11203,6 +11584,7 @@ class orm:
                 for i, map in builtins.enumerate(maps):
                     if map.name == 'proprietor':
                         continue
+
                     if orm.issub(map.entity, self.entity):
                         if ass.orm.isreflexive:
                             if map.issubjective:
@@ -11593,10 +11975,25 @@ class migration:
 
         return f'{self.table}\n{self.entity.orm.altertable}'
             
-# ORM Exceptions
-class InvalidColumn(ValueError): pass
-class InvalidStream(ValueError): pass
-class ConfusionError(ValueError): pass
+''' ORM Exceptions '''
+class InvalidColumn(ValueError):
+    """ An exception raised when a predicate expression is discovered to
+    contain a column name that does not exist as an entity attribute.
+    """
+
+class InvalidStream(ValueError):
+    """ Raised when an entity is joined to another entity that is in
+    streaming mode.
+    """
+
+class ConfusionError(ValueError):
+    """ Raised by `orm.altertable` if it gets confused when comparing
+    the existing database table with the entity's attributes. 
+
+    The algorithm shouldn't get confused, however, as it is under
+    development, there are still potential areas where it can't continue
+    under certain conditions.
+    """
 
 class ProprietorError(ValueError):
     """ An error caused by the proprietor not being set correctly for
@@ -11721,7 +12118,7 @@ class violations(entitiesmod.entities):
         """
         # NOTE:a22826fe At this point, it is not clear how anonymous or
         # unauthenicated users will work.  We have an anonymous person
-        # (party.party.anonymous). It should have an associated user
+        # (party.parties.anonymous). It should have an associated user
         # record. This could be represent any unauthenicated user.
         import ecommerce
         if not isinstance(security().user, ecommerce.user):

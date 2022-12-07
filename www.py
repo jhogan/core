@@ -231,10 +231,7 @@ class application:
                 res.headers += 'Content-Type: text/html'
 
             try:
-                if self.request.forfile:
-                    res.status = ex.status
-
-                elif self.request.isxhr:
+                if self.request.isxhr:
                     # Create an <article> that explains the exception
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
@@ -439,8 +436,8 @@ class request:
         See `request.forfile` for more.
         """
 
-        # TODO To distinguish between page and file request, we should
-        # at least see if the first element of the path (e.g.,
+        # TODO:bea5347d To distinguish between page and file request, we
+        # should at least see if the first element of the path (e.g.,
         # '/en/index') is an ISO language code (probably ISO 639-1)
         # probably using the pycountry package.
         #
@@ -458,7 +455,6 @@ class request:
         # and developing a content negotiation strategy
         # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation)
         # may be the solution here.
-
         return not self.forfile
 
     def __repr__(self):
@@ -1052,10 +1048,10 @@ class request:
                     par = self.user.party
                     hit.user = self.user
                 else:
-                    par = party.party.anonymous
+                    par = party.parties.anonymous
 
                 if par is None:
-                    par = party.party.anonymous
+                    par = party.parties.anonymous
 
                 # Get the party's visitor role
                 visitor = par.visitor

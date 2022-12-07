@@ -26,6 +26,7 @@ import inspect
 import io
 import json
 import logs
+import party
 import pdb
 import pom
 import primative
@@ -267,7 +268,7 @@ class principle(entities.entity):
 
         :param: recreate bool: If True, recerate the test user, test
         company and the standard Carapacian company
-        (ecommerce.company.carapacian).
+        (ecommerce.companies.carapacian).
         """
         logs.info('Creating principles ...')
 
@@ -307,13 +308,13 @@ class principle(entities.entity):
             import party
             # Carapacian will recreate itself when called as long as its
             # private field is None
-            party.company._carapacian = None
+            party.companies._carapacian = None
 
         self.iscreated = True
 
     def recreate(self):
         """ Rereate the principles, i.e., the test user, company and
-        carapacian company (ecommerce.company.carapacian).
+        carapacian company (ecommerce.companies.carapacian).
         """
         self.create(recreate=True)
 
@@ -322,7 +323,7 @@ class principle(entities.entity):
         """ Return a test user object. Ensure its in the database if it
         is not already.
         """
-        Id = uuid.UUID(hex='574d42d0-9937-4fa7-a008-b885a9a77a9a')
+        Id = uuid.UUID(hex='574d42d099374fa7a008b885a9a77a9a')
         if not hasattr(self, '_user'):
             import orm, db
             with orm.sudo():
@@ -338,7 +339,7 @@ class principle(entities.entity):
         """ Return a test company object. Ensure its in the database if
         it is not already.
         """
-        Id = uuid.UUID(hex='574d42d0-625e-4b2b-a79e-28d981616545')
+        Id = uuid.UUID(hex='574d42d0625e4b2ba79e28d981616545')
         if not hasattr(self, '_company'):
             import party, orm, db
 
@@ -407,6 +408,10 @@ class tester(entities.entity):
                 # Clear radix cache
                 with suppress(AttributeError):
                     del file.directory._radix
+
+            if 'party' in mods:
+                with suppress(AttributeError):
+                    del party.parties._public
 
         # Create and set principles at ORM level for testing
         sec = orm.security()
@@ -1109,31 +1114,31 @@ class tester(entities.entity):
         
     def assertUuid(self, id, msg=None):
         if isinstance(id, uuid.UUID):
-            raise ValueError('Assert type instead')
+            raise builtins.ValueError('Assert type instead')
 
         try: 
             uuid.UUID(str(id), version=4)
-        except ValueError: 
+        except builtins.ValueError: 
             self._failures += failure()
 
     def uuid(self, id, msg=None):
         if isinstance(id, uuid.UUID):
-            raise ValueError('Assert type instead')
+            raise builtins.ValueError('Assert type instead')
 
         try: 
             uuid.UUID(str(id), version=4)
-        except ValueError: 
+        except builtins.ValueError: 
             self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
     def true(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
@@ -1145,13 +1150,13 @@ class tester(entities.entity):
 
     def assertFalse(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
     def false(self, actual, msg=None):
         if type(actual) != bool:
-            raise ValueError('actual must be bool')
+            raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
@@ -1231,13 +1236,11 @@ class tester(entities.entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
-    # FIXME The assertions `lt` and `le` are broken. they have the
-    # expect and actual mixed up. `ge` was corrected recently.
     def lt(self, expect, actual, msg=None):
-        if not (expect < actual): self._failures += failure()
+        if not (actual < expect): self._failures += failure()
 
     def le(self, expect, actual, msg=None):
-        if not (expect <= actual): self._failures += failure()
+        if not (actual <= expect): self._failures += failure()
 
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
@@ -1455,7 +1458,7 @@ class tester(entities.entity):
         # it does).
         try:
             if not callable(fn):
-                raise NotCallableError((
+                raise TypeError((
                     'The fn parameter must be a callable object. '
                     'Consider using a function or lambda instead of '
                     'a: ' + type(fn).__name__
@@ -1737,7 +1740,15 @@ class failure(entities.entity):
                 pass
 
             try:
-                self._message = inspect.getargvalues(stack[1][0])[3]['msg']
+                msg = inspect.getargvalues(stack[1][0])[3]['msg']
+
+                if isinstance(msg, str) or msg is None:
+                    self._message = msg
+                else:
+                    self._message = None
+                    raise TypeError(
+                        'Assertion message must be of type str'
+                    )
             except KeyError:
                 pass
 
@@ -1941,12 +1952,11 @@ class cli:
                     # Validate flags
                     for flag in flags:
                         if flag not in ('p',):
-                            raise ValueError(
+                            raise builtins.ValueError(
                                 f'Invalid flag: "{flag}"'
                             )
 
                     self.testers.profile = 'p' in flags
-                    
 
     def _testers_onbeforeinvoketest(self, src, eargs):
         ''' Get tracked objects count '''
@@ -1971,5 +1981,8 @@ class cli:
         # Print stats with current test method being tested
         print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
-class NotCallableError(Exception):
+class ValueError(builtins.ValueError):
+    """ An exception raised by test units to indicate that the values in
+    the testing environment are invalid.
+    """
     pass

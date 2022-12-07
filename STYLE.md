@@ -384,7 +384,7 @@ inside a method or function, it may be a good idea to use the
     from x import y
 
 form. This is because within a method, the potential for name collision
-is greately reduced. Consider:
+is greatly reduced. Consider:
 
     class robot:
 
@@ -416,7 +416,7 @@ to use these in the framework.
         # database.
 
     * TODO comments indicate that the code should be modified at
-      a future, but indefinite date. A TODO comment should coorsponding
+      a future, but indefinite date. A TODO comment should corresponding
       to a ticket in the ticketing system. The TODO should be proceeded
       by a : and 4 random bytes written in hex:
 
@@ -453,7 +453,7 @@ to use these in the framework.
       parts of the source code when viewed in `git-log`, `git-diff` and
       other analysis tools used during code reviews and code analysis.
       Changes made to these areas of source code should receive more
-      attention and scrutenty. Use these liberaly in areas dealing with
+      attention and scrutiny. Use these liberally in areas dealing with
       authentication, authorization and other sensitive areas.
 
       <!-- TODO Note that accessibility methods should only contain
@@ -474,9 +474,9 @@ It's normal for bugs and and code optimizations of varying severity to be
 noted and accumulated in source code. Having standard, well defined
 comment tags helps categorize the severity of the issues.
 
-The 4 bytes of random hex is intended to be a unique identifier for the
-comment. The identifier can be used in other comments to reference the
-original issue.
+The 4 bytes of random hex, sometimes called a snowflake, is intended to
+be a unique identifier for the comment. The identifier can be used in
+other comments to reference the original issue.
 
 At the moment, there is no ticket system, but there are plans to write a
 program that creates tickets based on the comments found in the source
@@ -490,7 +490,7 @@ None.
 Your text editor should be configured to highlight the comment tag. Vim
 does this by default for TODO, FIXME and NOTE in Python comments.
 
-The random hex digits can be generate using `uuidgen`:
+The random hex digits (snowflake) can be generated using `uuidgen`:
 
     uuidgen | cut -c1-8
 
@@ -1280,7 +1280,7 @@ Unlike docstrings, the concluding single quotes should exist on the same
 line as the last line of comment text.
 
 Whether the comment token is a triple quote (''' or """ ) or an
-octothorpe, a single space should seperate the token from the comment.
+octothorpe, a single space should separate the token from the comment.
 
 ### Example
 

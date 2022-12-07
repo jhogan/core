@@ -285,7 +285,7 @@ class pom_menu_items(tester.tester):
 
 class site(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'apriori'
+        mods = 'party', 'apriori', 'file', 'asset'
         super().__init__(mods=mods, *args, **kwargs)
 
         orm.security().override = True
@@ -605,6 +605,9 @@ class site(tester.tester):
             orm.forget(squatnet)
 
     def it_ensures(self):
+        ''' Setup '''
+
+        # Truncate relevent tables
         es = (
             party.party,                  party.organization,
             party.legalorganization,      party.company,
@@ -617,11 +620,13 @@ class site(tester.tester):
 
         ws = foonet()
 
-        # Test foonet
+        # Test foonet site
         self.eq(ecommerce.users.RootUserId, ws.owner.id)
         self.eq(foonet.Proprietor.id, ws.proprietor.id)
 
         self.eq((False, False, False), ws.orm.persistencestate)
+
+        ''' Test the site's main directory '''
         with orm.proprietor(ws.proprietor):
             ws.orm.reloaded()
             self.expect(None, ws.orm.reloaded)
@@ -633,8 +638,17 @@ class site(tester.tester):
                 f'{file.directory.radix.path}/pom/site/{ws.id.hex}',
                 dir.path
             )
+
             self.eq((False, False, False), dir.orm.persistencestate);
 
+        # Test the parent directory site/
+        site = dir.inode
+        self.eq('site', site.name)
+        self.eq((False, False, False), site.orm.persistencestate)
+        self.eq(party.parties.PublicId, site.proprietor.id)
+        self.eq(ecommerce.users.RootUserId, site.owner.id)
+
+        ''' Test the association between site and its proprietor '''
         aps = ws.asset_parties
         self.populated(aps)
         aps = aps.where(
@@ -642,7 +656,7 @@ class site(tester.tester):
         )
         self.one(aps)
 
-        # Test foonet's super: `site`
+        ''' Test foonet's super: `site` '''
         ws1 = ws
         ws = ws.orm.super
 
@@ -774,23 +788,20 @@ class page(tester.tester):
 
         req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'carapacian.com'}
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             self.type(carapacian_com.site, req.site)
 
         req = www.request(www.application())
         req.app.environment = {'HTTP_HOST': 'www.carapacian.com'}
 
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
-            # FIXME:9e3a0bbe This call to req.site fails when trying to
-            # load the site/ directory. 
-            return
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             self.type(carapacian_com.site, req.site)
 
         req = www.request(www.application())
         req.app.environment = {
             'HTTP_HOST': '380753fc.www.carapacian.com'
         }
-        with orm.sudo(), orm.proprietor(party.company.carapacian):
+        with orm.sudo(), orm.proprietor(party.companies.carapacian):
             self.type(carapacian_com.site, req.site)
 
     def it_gets_page_using_X_FORWARDED_FOR(self):
@@ -1514,19 +1525,18 @@ class page(tester.tester):
         tab = self.browser().tab()
         res = tab.get('/i-dont-exist.ico', ws)
         self.status(404, res)
-        self.empty(res.body)
-        content_length = res.headers['content-length']
-        self.eq(0, content_length)
+
+        # The below assertions where a mistake. Commenting out for
+        # illustration. Since there is no real way to determine if a url
+        # is for a file or a page at the moment (see bea5347d), the
+        # response for a file that doesn't exist should be a 404 along
+        # with a 404 webpage. Ideally, the user would just get a simple 
+        # HTTP 404 in response.
+        #self.empty(res.body)
+        #content_length = res.headers['content-length']
+        #self.eq(0, content_length)
     
     def it_raises_404(self):
-        # FIXME:9e3a0bbe This test creates derpnet which, in some cases,
-        # creates /pom/sites directory. This is a problem because foonet
-        # expects to be able to access these directories, but it can't
-        # if it doesn't own them. We need a 'public' proprietor to own
-        # these inodes. Without this, we cannot adequately support
-        # multitenancy.
-        return
-
         class derpnets(pom.sites):
             pass
 

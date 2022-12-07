@@ -26,7 +26,7 @@ def clear():
     for p in party.party.orm.getsubentities(accompany=True):
         p.orm.truncate()
 
-    party.company._carapacian = None
+    party.companies._carapacian = None
 
 class bot_(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -46,7 +46,7 @@ class bot_(tester.tester):
         
         msgs = ['d', 'i', 'w', 'e', 'cr', 'ex']
         b = bot.sendbot()
-        with orm.proprietor(party.company.carapacian), orm.su(b.user):
+        with orm.proprietor(party.companies.carapacian), orm.su(b.user):
             for v in range(5, -1, -1):
                 eargss = list()
 
@@ -69,7 +69,7 @@ class bot_(tester.tester):
         with orm.sudo():
             b = bot.sendbot(iterations=0, verbosity=5) 
 
-        with orm.proprietor(party.company.carapacian), orm.su(b.user):
+        with orm.proprietor(party.companies.carapacian), orm.su(b.user):
             # Create an abstract bot
 
             # Log two info's. The calls to the log methods will result
@@ -137,7 +137,7 @@ class bot_(tester.tester):
     def it_uses_carapacian_as_proprietor(self):
         self._clear()
 
-        cara = party.company.carapacian
+        cara = party.companies.carapacian
 
         sb = bot.sendbot(iterations=1, verbosity=5)
         sb()
@@ -208,7 +208,7 @@ class test_sendbot(tester.tester):
         bot.sendbot._user = None
 
         b = bot.sendbot(iterations=1)
-        with orm.proprietor(party.company.carapacian), orm.su(b.user):
+        with orm.proprietor(party.companies.carapacian), orm.su(b.user):
             msg = message.message.email(
                 from_    =  'from@example.com',
                 replyto  =  'replyto@example.com',
@@ -302,7 +302,7 @@ class test_sendbot(tester.tester):
             sb()
 
 
-            cara = party.company.carapacian
+            cara = party.companies.carapacian
             self.is_(cara, orm.security().proprietor)
 
             self.is_(sb.user, orm.security().owner)
@@ -319,7 +319,7 @@ class test_sendbot(tester.tester):
         args = '--verbosity 5 --iterations=2 sendbot'
         pnl = bot.panel(args=args, dodisplay=False)
         usr = pnl.bot.user
-        with orm.proprietor(party.company.carapacian), orm.su(usr):
+        with orm.proprietor(party.companies.carapacian), orm.su(usr):
             pnl.bot.onbeforeiteration += bot_onbeforeiteration
             pnl()
 
@@ -340,7 +340,7 @@ class test_sendbot(tester.tester):
         pnl = bot.panel(args=args, dodisplay=False)
         usr = pnl.bot.user
 
-        with orm.proprietor(party.company.carapacian), orm.su(usr):
+        with orm.proprietor(party.companies.carapacian), orm.su(usr):
             pnl.bot.onbeforeiteration += bot_onbeforeiteration
             pnl()
 
@@ -353,7 +353,7 @@ class test_sendbot(tester.tester):
         args = '--verbosity 5'
 
         pnl = bot.panel(args=args, dodisplay=False)
-        with orm.proprietor(party.company.carapacian):
+        with orm.proprietor(party.companies.carapacian):
             try:
                 pnl()
             except bot.TerminateError as ex:
@@ -377,7 +377,7 @@ class test_sendbot(tester.tester):
         # This instatiation will create the record in the sendbot table.
         sb = bot.sendbot(iterations=0, verbosity=2)
 
-        with orm.proprietor(party.company.carapacian), orm.su(sb.user):
+        with orm.proprietor(party.companies.carapacian), orm.su(sb.user):
             # This instatiated will retrieve the record from the sendbot
             # table
             sb1 = bot.sendbot(iterations=1, verbosity=3)

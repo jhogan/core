@@ -26,19 +26,24 @@ from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
-from tester import *
 from uuid import uuid4
+import sys
+import types
 import account
 import asset
+import inspect
 import auth
 import base64
 import budget
+import builtins
 import codecs
 import dateutil
+import uuid
 import db
 
 # TODO use an alias here
 import decimal; dec=decimal.Decimal
+import ecommerce
 import effort
 import entities
 import exc
@@ -63,6 +68,7 @@ import testcarapacian_com
 import testdom
 import testecommerce
 import testentities
+import tester
 import testfile
 import testlogs
 import testmessage
@@ -112,7 +118,7 @@ def la2gr(chars):
             r += ' '
     return r
         
-class test_jwt(tester):
+class test_jwt(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
@@ -185,7 +191,7 @@ class test_jwt(tester):
         t = auth.jwt('an invalid token')
         self.invalid(t)
 
-class test_datetime(tester):
+class test_datetime(tester.tester):
     def it_calls__init__(self):
         utc = timezone.utc
         
@@ -224,19 +230,13 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
-class test_date(tester):
+class test_date(tester.tester):
     def it_calls__init__(self):
         # Test date with standard args
         args = (2003, 10, 11)
         expect = date(*args)
         actual = primative.date(*args)
         self.eq(expect, actual)
-
-# TODO Can we remove this?
-class mycli(cli):
-    def registertraceevents(self):
-        ts = self.testers
-        ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
 
 ##################################################################################
 ''' ORM Tests '''
@@ -960,7 +960,7 @@ class artist_artist(orm.association):
     def processing(self, v):
         self._processing = v
 
-class orm_(tester):
+class orm_(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'apriori', 'file',
         super().__init__(mods=mods, *args, **kwargs)
@@ -989,7 +989,7 @@ class orm_(tester):
 
         # TODO Replace all `with self._chrontest()` with `with ct()`
         for meth in type(self).__dict__.items():
-            if type(meth[1]) != FunctionType: 
+            if type(meth[1]) != types.FunctionType: 
                 continue
             if meth[0][0] == '_': 
                 continue
@@ -2713,12 +2713,6 @@ class orm_(tester):
 
         for i in range(10):
             self.eq(abbrs, [e.orm.abbreviation for e in es])
-
-            # FIXME:9e3a0bbe When e is a subclass of pom.site, its
-            # _ensure method is run and fails because it tries to load
-            # the site/ directory.
-            return
-
             self.eq(abbrs, [e().orm.abbreviation for e in es])
 
     def it_calls_count_on_class(self):
@@ -10703,7 +10697,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         arts.save()
 
         for op in '', 'NOT':
-            # Load an INNER JOIN where both tables have [NOT] IN WHERE clause
+            # Load an INNER JOIN where both tables have [NOT] IN WHERE
+            # clause
             # 	SELECT *
             # 	FROM artists
             # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
@@ -10726,7 +10721,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 if op == 'NOT':
                     self.gt(1, art1.weight)
                 else:
-                    self.le(art1.weight, 1)
+                    self.le(1, art1.weight)
 
                 self.one(art1.artist_artifacts)
                 fact1 = art1.artist_artifacts.first.artifact
@@ -10735,7 +10730,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 if op == 'NOT':
                     self.gt(11, fact1.weight)
                 else:
-                    self.le(fact1.weight, 11)
+                    self.le(11, fact1.weight)
 
         artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
         factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
@@ -11223,10 +11218,9 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # correctly identify literals and columns in WHERE predicates.
         # Because of this, until we have a proof that the predicate
         # parser is invincible to malicious attacts, we should continue
-        # to insist that the user use the `args` tuple to pass in
-        # varient values when querying entities collections so the
-        # underlying MySQL library can safely deal with these arguments
-        # seperately.
+        # to insist that users use the `args` tuple to pass in variant
+        # values when querying entities collections so the underlying
+        # MySQL library can safely deal with these arguments seperately.
 
         arts = artists("firstname = '1234'", ())
         self.eq("1234", arts.orm.where.args[0])
@@ -11236,8 +11230,11 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.eq("1234", arts.orm.where.args[0])
         self.eq("5678", arts.orm.where.args[1])
         for i, pred in enumerate(arts.orm.where.predicate):
-            self.eq("%s", pred.operands[1])
-            self.lt(i, 3)
+            if pred.columns[0] == 'proprietor__partyid':
+                self.eq("_binary %s", pred.operands[1])
+            else:
+                self.eq("%s", pred.operands[1])
+            self.lt(3, i)
 
         expr = (
             "firstname between '1234' and '5678' or "
@@ -11249,9 +11246,13 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.eq("5678", arts.orm.where.args[1])
         self.eq("2345", arts.orm.where.args[2])
         self.eq("6789", arts.orm.where.args[3])
+
         for i, pred in enumerate(arts.orm.where.predicate):
-            self.eq("%s", pred.operands[1])
-            self.lt(i, 3)
+            if pred.columns[0] == 'proprietor__partyid':
+                self.eq("_binary %s", pred.operands[1])
+            else:
+                self.eq("%s", pred.operands[1])
+            self.lt(3, i)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.InvalidColumn, lambda: artists(notacolumn = 1234))
@@ -11259,7 +11260,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
     def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(
         self):
 
-        # TODO This should raise an exception
+        # FIXME This should raise an exception
         arts1 = artists('id = 123', ())
         return
         arts1 &= artifacts()
@@ -11670,7 +11671,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.one(arts1.orm.joins)
         self.type(presentations, arts1.orm.joins.first.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
@@ -11686,7 +11687,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.type(presentations, arts1.orm.joins.first.entities)
         self.type(locations, arts1.orm.joins.second.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
@@ -11706,7 +11707,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.type(presentations, arts1.orm.joins.first.entities)
         self.type(locations, arts1.orm.joins.second.entities)
 
-        self.le(arts.count, arts1.count)
+        self.le(arts1.count, arts.count)
 
         for art in arts:
             art1 = arts1(art.id)
@@ -11862,10 +11863,10 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         '''
 
         pairs = (
-            (orm.predicate.ParentheticalImbalance,  parens),
-            (orm.predicate.SyntaxError,             syntax),
-            (orm.predicate.UnexpectedToken,         unexpected),
-            (orm.predicate.InvalidOperator,         invalidop),
+            (orm.predicate.ParentheticalImbalanceError,  parens),
+            (orm.predicate.SyntaxError,                  syntax),
+            (orm.predicate.UnexpectedTokenError,         unexpected),
+            (orm.predicate.InvalidOperatorError,         invalidop),
         )
 
         for ex, exprs in pairs:
@@ -12280,7 +12281,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         expr = "col = 'can''t won''t shan''t'"
         test(expr, pred, 'col', '=', "'can''t won''t shan''t'")
 
-        for op in orm.predicate.Specialops:
+        for op in orm.predicate.SpecialOps:
             expr = 'col %s 123' % op
             pred = orm.predicate(expr)
             test(expr, pred, 'col', op, '123')
@@ -12299,21 +12300,45 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         expr = 'col = %s'
         pred = orm.predicate(expr)
         test(expr, pred, 'col', '=', '%s')
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         ## Parse introducers#
         expr = 'id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('id = _binary %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # _binary id = %s
         expr = '_binary id = %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # _binary id = _binary %s
         expr = '_binary id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = _binary %s', str(pred))
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'id')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '%s')
+            self.eq(0, i)
 
         # col in (123) 
         exprs = (
@@ -12374,6 +12399,13 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s)", str(pred))
 
+        for i, pred in enumerate(pred):
+            self.two(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            # The operands list excludes the introducer
+            self.eq(pred.operands[1], '_binary %s')
+            self.eq(0, i)
+
         exprs = (
             'col in (_binary %s, _binary %s)',
             'col IN(_binary %s,_binary %s)',
@@ -12382,6 +12414,13 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         for expr in exprs:
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s, _binary %s)", str(pred))
+
+        for i, pred in enumerate(pred):
+            self.three(pred.operands)
+            self.eq(pred.operands[0], 'col')
+            self.eq(pred.operands[1], '_binary %s')
+            self.eq(pred.operands[2], '_binary %s')
+            self.eq(0, i)
 
     def it_saves_recursive_entity(self):
         def recurse(com1, com2, expecteddepth, curdepth=0):
@@ -14502,7 +14541,346 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
-class benchmark_orm_cpu(benchmark):
+    def it_persists_publicly_owned_entity(self):
+        """ Make sure that entity's whose proprietor is
+        `party.parties.public` are persisted correctly. Public entities
+        should be readable by any proprietor but only writable by the
+        `party.parties.public` proprietor.
+        """
+
+        ''' Setup '''
+        # Get the public proprietor (party)
+        pub = party.parties.public
+
+        # Instantiate art as public
+        with orm.proprietor(pub):
+            art = artist.getvalid()
+            self.is_(pub, art.proprietor)
+            self.is_(orm.security().owner, art.owner)
+
+        lastname = uuid4().hex
+        art.lastname = lastname
+
+        ''' Assert testing environment '''
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        stdcompanyid = '574d42d0625e4b2ba79e28d981616545'
+        if orm.security().proprietor.id.hex != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        stduserid = '574d42d099374fa7a008b885a9a77a9a'
+        if orm.security().owner.id.hex != stduserid:
+            raise tester.ValueError('Invalid default owner')
+
+        ''' Creation tests '''
+        # We shouldn't expect to be able to save an entity just because
+        # it's public. 
+        self.expect(orm.ProprietorError, art.save)
+
+        # Switch back to public proprietor
+        with orm.proprietor(pub):
+            # We should be able to save artist now
+            self.expect(None, art.save)
+
+        ''' Retrieval tests '''
+        # Since the artist is "public property", we should be able to
+        # reload now even though we are back to the default proprietor
+        # ("Standard Company 0")
+        art1 = art.orm.reloaded()
+
+        # Assert that the security attributes of the reloaded artist are
+        # correct.
+        self.eq(pub.id, art1.proprietor.id)
+        self.eq(orm.security().owner.id, art1.owner.id)
+
+        # Create a non-public artist for testing
+        nonpub = artist.getvalid()
+        nonpub.lastname = lastname
+        nonpub.save()
+
+        # We should now have two with the given last name, one public,
+        # and one non-public
+        arts = artists(lastname=lastname)
+        self.two(arts)
+        self.true(art.id in arts.pluck('id'))
+        self.true(nonpub.id in arts.pluck('id'))
+
+        # If we are public, we should only see the public artist
+        with orm.proprietor(pub):
+            arts = artists(lastname=lastname)
+            self.one(arts)
+            self.eq(art.id, arts.only.id)
+
+        # Repeat the above but with streaming
+        arts = artists(orm.stream, lastname=lastname)
+        self.two(arts)
+        self.true(art.id in arts.pluck('id'))
+        self.true(nonpub.id in arts.pluck('id'))
+
+        with orm.proprietor(pub):
+            arts = artists(orm.stream, lastname=lastname)
+            self.one(arts)
+            self.eq(art.id, arts.only.id)
+
+        ''' Modification tests '''
+        art1.firstname = uuid4().hex
+
+        # A regular proprietor shouldn't, be default, be able create or
+        # modify a public entity; only read.
+        self.expect(orm.ProprietorError, art1.save)
+
+        # Save as public proprietor
+        with orm.proprietor(pub):
+            self.expect(None, art1.save)
+            
+        # Read as regular proprietor
+        self.expect(None, art1.orm.reloaded)
+
+        ''' Deletion tests '''
+        # Regular proprietor shouldn't be able to delete public
+        # property by default.
+        self.expect(orm.ProprietorError, art.delete)
+
+        # Delete as public
+        with orm.proprietor(pub):
+            self.expect(None, art.delete)
+
+            # Ensure it is actually deleted
+            self.expect(db.RecordNotFoundError, art.orm.reloaded)
+
+    def it_persists_publicly_owned_subentity(self):
+        """ Make sure that subentity's whose proprietor is
+        `party.parties.public` are persisted correctly. Public entities
+        should be readable by any proprietor but only writable by the
+        `party.parties.public` proprietor.
+        """
+
+        ''' Assert testing environment '''
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        stdcompanyid = '574d42d0625e4b2ba79e28d981616545'
+        if orm.security().proprietor.id.hex != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        stduserid = '574d42d099374fa7a008b885a9a77a9a'
+        if orm.security().owner.id.hex != stduserid:
+            raise tester.ValueError('Invalid default owner')
+
+        ''' Setup '''
+        # Get the public proprietor (party)
+        pub = party.parties.public
+
+        # Instantiate sng as public
+        with orm.proprietor(pub):
+            sng = singer.getvalid()
+            both = sng, sng.orm.super
+
+            for e in both:
+                self.is_(pub, e.proprietor)
+                self.is_(orm.security().owner, e.owner)
+
+        lastname = uuid4().hex
+        voice = uuid4().hex
+        sng.lastname = lastname
+        sng.voice = voice
+
+        ''' Creation tests '''
+        # We shouldn't expect to be able to save an entity just because
+        # it's public. 
+        for e in both:
+            self.expect(orm.ProprietorError, e.save)
+
+        # Switch back to public proprietor
+        with orm.proprietor(pub):
+            # We should be able to save singer now
+            self.expect(None, sng.save)
+
+        ''' Retrieval tests '''
+        # Since the singer is "public property", we should be able to
+        # reload now even though we are back to the default proprietor
+        # ("Standard Company 0")
+        sng1 = sng.orm.reloaded()
+
+        # Assert the security attributes of the reloaded singer are
+        # correct.
+        both = sng1, sng1.orm.super
+        for e in both:
+            self.eq(pub.id, e.proprietor.id)
+            self.eq(orm.security().owner.id, e.owner.id)
+
+
+        # Create a non-public singer for testing
+        nonpub = singer.getvalid()
+        nonpub.lastname = lastname
+        nonpub.voice = voice
+        nonpub.save()
+
+        # We should now have two with the given last name, one public,
+        # and one non-public
+        sngs = singers(lastname=lastname, voice=voice)
+        self.two(sngs)
+        self.true(sng.id in sngs.pluck('id'))
+        self.true(nonpub.id in sngs.pluck('id'))
+
+        # If we are public, we should only see the public singer
+        with orm.proprietor(pub):
+            sngs = singers(lastname=lastname)
+            self.one(sngs)
+            self.eq(sng.id, sngs.only.id)
+
+        # Repeat the above but with streaming. 
+        # NOTE that we have to use voice instead of lastname because
+        # querying the base classes attribute while streaming is
+        # currently not supported. See the comments about streaming and
+        # joints at orm.entities.__init__.
+        sngs = singers(orm.stream, voice=voice)
+        self.true(sng.id in sngs.pluck('id'))
+
+        self.two(sngs)
+        self.true(nonpub.id in sngs.pluck('id'))
+
+        with orm.proprietor(pub):
+            sngs = singers(orm.stream, voice=voice)
+            self.one(sngs)
+            self.eq(sng.id, sngs.only.id)
+
+        ''' Modification tests '''
+        sng1.firstname = uuid4().hex
+
+        # A regular proprietor shouldn't, be default, be able create or
+        # modify a public entity; only read.
+        self.expect(orm.ProprietorError, sng1.save)
+
+        # Save as public proprietor
+        with orm.proprietor(pub):
+            self.expect(None, sng1.save)
+            
+        # Read as regular proprietor
+        self.expect(None, sng1.orm.reloaded)
+
+        ''' Deletion tests '''
+        # Regular proprietor shouldn't be able to delete public
+        # property by default.
+        self.expect(orm.ProprietorError, sng.delete)
+
+        # Delete as public
+        with orm.proprietor(pub):
+            self.expect(None, sng.delete)
+
+            # Ensure it is actually deleted
+            self.expect(db.RecordNotFoundError, sng.orm.reloaded)
+
+    def it_persists_publicly_owned_constituents(self):
+        """ Make sure that the constituent collections owned by entity
+        objects are persisted correctly when at least some of their
+        entity objects are owned by the paryt.parties.public proprietor.
+        Public entities should be readable by any proprietor but only
+        writable by the public proprietor.
+        """
+
+        ''' Setup '''
+        pub = party.parties.public
+        stdcompanyid = uuid.UUID('574d42d0625e4b2ba79e28d981616545')
+        stduserid = uuid.UUID('574d42d099374fa7a008b885a9a77a9a')
+
+        ''' Assert testing environment '''
+        # Assert that we are using the (non-public) default proprietor
+        # ("Standard Company 0")
+        if orm.security().proprietor.id != stdcompanyid:
+            raise tester.ValueError('Invalid default proprietor')
+
+        if orm.security().owner.id != stduserid:
+            raise tester.ValueError('Invalid default owner')
+
+        ''' Creation tests '''
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+        self.eq(stdcompanyid, art.presentations.last.proprietor.id)
+        art.save()
+
+        with orm.proprietor(pub):
+            for _ in range(2):
+                art.presentations += presentation.getvalid()
+                self.is_(pub, art.presentations.last.proprietor)
+
+            art.save()
+
+        ''' Retrieval tests '''
+        art1 = self.expect(None, art.orm.reloaded)
+
+        self.eq(stdcompanyid, art1.proprietor.id)
+
+
+        press = art.presentations
+        press1 = art1.presentations
+
+        self.three(press)
+        self.three(press1)
+
+        self.eq(stdcompanyid, press1[press.first].proprietor.id)
+        self.eq(pub.id, press1[press.third].proprietor.id)
+
+        with orm.proprietor(pub):
+            self.expect(db.RecordNotFoundError, art.orm.reloaded)
+            for pres in art.presentations:
+                if pres.id == art.presentations.first.id:
+                    self.expect(
+                        db.RecordNotFoundError, pres.orm.reloaded
+                    )
+                else:
+                    self.eq(pub.id, pres.orm.reloaded().proprietor.id)
+
+        ''' Modification tests '''
+        descs = list()
+
+        descs.extend([uuid4().hex for x in range(3)])
+
+
+        art.presentations.first.description = descs[0]
+
+        self.expect(None, art.save)
+
+        art.presentations.second.description = descs[1]
+        art.presentations.third.description = descs[2]
+
+        self.expect(orm.ProprietorError, art.save)
+
+        with orm.proprietor(pub):
+            self.expect(None, art.save)
+
+        art1 = self.expect(None, art.orm.reloaded)
+
+        for i, pres in art.presentations.enumerate():
+            pres1 = art1.presentations[pres]
+            self.eq(descs[i], pres1.description)
+            if pres.id == art.presentations.first.id:
+                self.eq(stdcompanyid, pres1.proprietor.id)
+            else:
+                self.eq(pub.id, pres1.proprietor.id)
+        
+        ''' Deletion tests '''
+        for i, pres in art.presentations.enumerate():
+            if i.first:
+                continue
+
+            pres.orm.ismarkedfordeletion = True
+
+        self.expect(orm.ProprietorError, art.save)
+
+        for i, pres in art.presentations.enumerate():
+            self.expect(None, pres.orm.reloaded)
+
+        with orm.proprietor(pub):
+            art.save()
+
+        for i, pres in art.presentations.enumerate():
+            if i.first:
+                self.expect(None, pres.orm.reloaded)
+                continue
+
+            self.expect(db.RecordNotFoundError, pres.orm.reloaded)
+
+class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True
@@ -14675,7 +15053,7 @@ class benchmark_orm_cpu(benchmark):
 
         self.time(18.0, 19.0, f, 100)
 
-class orm_migration(tester):
+class orm_migration(tester.tester):
     def it_calls_table(self):
         class cats(orm.entities):
             pass
@@ -14691,7 +15069,7 @@ class orm_migration(tester):
         mig = orm.migration(e=cat)
         orm.forget(cat)
 
-class crust_migration(tester):
+class crust_migration(tester.tester):
     def it_shows_migrants(self):
         # Drop all table in db
         db.tables().drop()
@@ -14848,7 +15226,7 @@ class crust_migration(tester):
 Test General Entities Model (GEM)
 '''
 
-class gem_shipment(tester):
+class gem_shipment(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'shipment', 'order', 'party', 'ecommerce'
         super().__init__(mods=mods, *args, **kwargs)
@@ -15272,7 +15650,7 @@ class gem_shipment(tester):
         # docs1 has one entity tha has a non-None documenttype attribute
         self.one([x for x in docs1.pluck('documenttype') if x is not None])
 
-class gem_effort(tester):
+class gem_effort(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'effort', 'apriori', 'party', 'asset', 'order'
         super().__init__(mods=mods, *args, **kwargs)
@@ -16053,7 +16431,7 @@ class gem_effort(tester):
         self.eq(st.asset.id, st1.asset.id)
         self.eq(st.asset.name, st1.asset.name)
 
-class gem_invoice(tester):
+class gem_invoice(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'product', 'invoice', 'party', 'apriori'
         super().__init__(mods=mods, *args, **kwargs)
@@ -16421,7 +16799,7 @@ class gem_invoice(tester):
         self.eq(dec('182.20'), ip1.amount)
         self.eq(dec('182.20'), ip1.payment.amount)
 
-class gem_account(tester):
+class gem_account(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -16692,7 +17070,7 @@ class gem_account(tester):
             self.eq(assmeth.method.name,     assmeth1.method.name)
             self.eq(assmeth.method.formula,  assmeth1.method.formula)
 
-class gem_budget(tester):
+class gem_budget(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
@@ -17066,7 +17444,7 @@ class gem_budget(tester):
             self.eq(ita.id, ita1.id)
             self.eq(ita.percent, ita1.percent)
 
-class gem_hr(tester):
+class gem_hr(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.rebuildtables:
@@ -17200,7 +17578,6 @@ class gem_hr(tester):
                 fp1.position.positiontype.name
             )
             
-
     @staticmethod
     def getvalidposition():
         pos = hr.position()
@@ -17231,7 +17608,6 @@ class gem_hr(tester):
 
         postyp.name = "Machine Learning and Signal Processing Engineer"
         return postyp
-
 
     def it_updates_position(self):
         pos = self.getvalidposition()
@@ -17845,7 +18221,7 @@ class gem_hr(tester):
             self.eq(duct.deductiontype.name, duct1.deductiontype.name)
             self.eq(duct.amount, duct1.amount)
 
-class primative_uuid(tester):
+class primative_uuid(tester.tester):
     def it_creates_uuid(self):
         id = primative.uuid()
         self.true(isinstance(id, uuid.UUID))
@@ -17860,4 +18236,4 @@ class primative_uuid(tester):
         self.eq(id, id1)
 
 if __name__ == '__main__':
-    cli().run()
+    tester.cli().run()

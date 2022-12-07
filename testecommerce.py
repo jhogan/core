@@ -12,6 +12,7 @@
 import apriori; apriori.model()
 
 from dbg import B
+from contextlib import suppress
 import ecommerce
 import orm
 import party
@@ -150,7 +151,7 @@ class ecommerce_(tester.tester):
     def it_creates_visits(self):
         parties = party.parties()
 
-        anon = party.party.anonymous
+        anon = party.parties.anonymous
         parties += anon
         visitor = ecommerce.visitor()
         anon.roles += visitor
@@ -267,26 +268,58 @@ class users(tester.tester):
         if self.testers.rebuildtables:
             ecommerce.users._anon = None
 
+    def it_calls_root(self):
+        # Remove the memoized instance so we can test loading and
+        # memoization
+
+        with suppress(AttributeError):
+            del ecommerce.users._root
+        
+        # Call twice to make sure root is being memoized
+        root = ecommerce.users.root
+        self.is_(root, ecommerce.users.root)
+        self.true(hasattr(ecommerce.users, '_root'))
+
+        # Ensure id matches constant
+        self.eq(ecommerce.users.RootUserId, root.id)
+
+        # Ensure null owner
+        self.none(root.owner)
+
+        # Ensure null proprietor
+        self.none(root.proprietor)
+
+        with orm.override(), orm.proprietor(None):
+            # Verify its actually in the database
+            self.expect(None, root.orm.reloaded)
+
     def it_calls_anonymous(self):
-        # Call twice to make sure anonymous is being memoized
+        # Remove the memoized instance so we can test loading and
+        # memoization
+
+        with suppress(AttributeError):
+            del ecommerce.users._anon
+        
+        # Call twice to make sure anon is being memoized
         anon = ecommerce.users.anonymous
         self.is_(anon, ecommerce.users.anonymous)
+        self.true(hasattr(ecommerce.users, '_anon'))
 
         # Ensure id matches constant
         self.eq(ecommerce.users.AnonymousUserId, anon.id)
 
-        cara = party.company.carapacian
-        with orm.sudo(), orm.proprietor(cara):
+        root = ecommerce.users.root
+        pub = party.parties.public
+
+        # Ensure root owner
+        self.eq(root.id, anon.owner.id)
+
+        # Ensure public proprietor
+        self.eq(pub.id, anon.proprietor.id)
+
+        with orm.override(), orm.proprietor(pub):
             # Verify its actually in the database
             self.expect(None, anon.orm.reloaded)
-
-            # Test the id of the parent party
-            self.eq(party.party.AnonymousId, anon.party.id)
-
-        # The proprietor of the anon user should be Carapacian
-        # (although, maybe there should be a "commons" that owns anon)
-        self.eq(party.company.CarapacianId, anon.proprietor__partyid)
-        self.eq(ecommerce.users.RootUserId, anon.owner__userid)
 
 class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):

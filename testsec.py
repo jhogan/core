@@ -370,9 +370,8 @@ class authorization(tester.tester):
 
             assert eng.proprietor.name == 'Microsoft'
 
-            with orm.proprietor(party.company.carapacian):
+            with orm.proprietor(party.companies.carapacian):
                 self.expect(orm.ProprietorError, eng.save)
-        
 
     ''' RETRIEVABILITY '''
     def it_cant_retrieve_entity(self):
@@ -825,44 +824,6 @@ class owner(tester.tester):
         self.eq('valid', eng.brokenrules.first.type)
         self.is_(eng, eng.brokenrules.first.entity)
 
-class root(tester.tester):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        orm.security().override = True
-        if self.rebuildtables:
-            orm.orm.recreate(
-                ecommerce.user,
-            )
-
-    def it_cannot_create_multiple_root_users(self):
-        # TODO:887c6605 Lift restriction on multiple users being named
-        # root. Now that we have root's id hardcoded, we can rely on
-        # that as the identifier of the system's root.
-        ecommerce.user.orm.truncate()
-        root = ecommerce.user(name='root')
-        self.expect(None, root.save)
-
-        root1 = ecommerce.user(name='root')
-        self.expect(entities.BrokenRulesError, root1.save)
-        self.one(root1.brokenrules)
-        br = root1.brokenrules.first
-        self.eq('valid', br.type)
-        self.is_(root1, br.entity)
-
-    def it_assigns_root_a_consistent_id(self):
-        Id = uuid.UUID(hex='93a7930b-2ae4-402a-8c77-011f0ffca9ce')
-
-        for _ in range(2):
-            ecommerce.user.orm.truncate()
-            ecommerce.users._root = None
-
-            self.eq(Id, ecommerce.users.root.id)
-
-            ecommerce.user.orm.truncate()
-
-            self.eq(Id, ecommerce.users.root.id)
-
 class proprietor(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -902,10 +863,10 @@ class proprietor(tester.tester):
         eng.save()
 
         eng = eng.orm.reloaded()
-        self.is_(tsla, eng.engineer_projects.last.proprietor)
+        self.eq(tsla.id, eng.engineer_projects.last.proprietor.id)
 
         proj = proj.orm.reloaded()
-        self.is_(tsla, proj.engineer_projects.last.proprietor)
+        self.eq(tsla.id, proj.engineer_projects.last.proprietor.id)
 
         self.expect(None, e_p.orm.reloaded)
 

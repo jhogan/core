@@ -62,9 +62,11 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    AnonymousUserId  =  uuid.UUID('616e6f6e-7573-6572-8a2e-882b3978ef54')
-    RootUserId       =  uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+    AnonymousUserId  =  uuid.UUID('616e6f6e757365728a2e882b3978ef54')
+    RootUserId       =  uuid.UUID('4001930b2ae4402a8c77011f0ffca9ce')
 
+    # TODO Create a `_produce` classmethod to consolidate users.root and
+    # users.anonymous
     @classproperty
     def root(cls):
         """
@@ -74,39 +76,20 @@ class users(orm.entities):
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if not hasattr(cls, '_root') or not cls._root:
-            from pom import site
-            for map in user.orm.mappings.foreignkeymappings:
-                if map.entity is site:
-                    break
-            else:
-                raise ValueError(
-                    'Could not find site foreign key'
-                )
-                
-            # TODO Why are we not loading using the RootUserId?
-            usrs = users(
-                f'name = %s and {map.name} is %s', 'root', None
-            )
-
-            if usrs.isplurality:
-                # TODO Replace with IntegrityError
-                raise ValueError('Multiple roots found')
-
-            if usrs.issingular:
-                cls._root = usrs.first
-            else:
-                cls._root = user(id=cls.RootUserId, name='root')
-
-                with orm.override():
+            with orm.override(), orm.proprietor(None), orm.su(None):
+                try:
+                    cls._root = user(cls.RootUserId)
+                except db.RecordNotFoundError:
+                    cls._root = user(id=cls.RootUserId, name='root')
                     cls._root.save()
-
+                
         return cls._root
 
     @classproperty
     def anonymous(cls):
         if not hasattr(cls, '_anon') or not cls._anon:
-            cara = party.company.carapacian
-            with orm.sudo(), orm.proprietor(cara):
+            pub = party.parties.public
+            with orm.sudo(), orm.proprietor(pub):
                 try:
                     cls._anon = user(cls.AnonymousUserId)
                 except db.RecordNotFoundError:
@@ -115,9 +98,8 @@ class users(orm.entities):
                         name = 'anonymous',
                     )
 
-                    cls._anon.party = party.party.anonymous
+                    cls._anon.party = party.parties.anonymous
                     cls._anon.save()
-
 
         return cls._anon
         
@@ -401,37 +383,7 @@ class user(orm.entity):
 
     @property
     def isroot(self):
-        # TODO:887c6605 Change this to:
-        #
-        #    return self.id = '93a7930b-2ae4-402a-8c77-011f0ffca9ce'.
-        #
-        # I think we can get rid of the self.site test.
-        return self.name == 'root' and self.site is None
-
-    @property
-    def brokenrules(self):
-        brs = entities.brokenrules()
-
-        # Get site foreignkey name
-        from pom import site
-        for map in users.orm.mappings.foreignkeymappings:
-            if map.entity is site:
-                break
-        else:
-            raise ValueError(
-                'Could not find site foreign key'
-            )
-
-        if self.orm.isnew and self.isroot:
-            usrs = users(
-                f'name = %s and {map.name} is %s', 'root', None
-            )
-            if usrs.count:
-                brs += entities.brokenrule(
-                    'Root already exists', 'name', 'valid', self
-                )
-
-        return brs
+        return self.id.hex == '4001930b2ae4402a8c77011f0ffca9ce'
 
     def su(self):
         """ A context manager to switch current user to self.

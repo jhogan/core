@@ -42,7 +42,7 @@ class site(tester.tester):
         self.eq(Id, carapacian_com.site().id)
 
     def it_has_correct_proprietor(self):
-        cara = party.company.carapacian
+        cara = party.companies.carapacian
         self.is_(cara, carapacian_com.site().Proprietor)
 
     def it_has_correct_host(self):
@@ -58,7 +58,7 @@ class site(tester.tester):
 
     def it_has_carapacian_as_its_proprietor(self):
         ws = carapacian_com.site()
-        self.eq(ws.proprietor.id, party.company.carapacian.id)
+        self.eq(ws.proprietor.id, party.companies.carapacian.id)
 
 ''' Page tests '''
 

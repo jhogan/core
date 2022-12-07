@@ -41,7 +41,7 @@ class site(pom.site):
         # because the ORM's caches were prematurly filled. The current
         # solution works fine, but we should have a rethink about the
         # way proprietor's are associated with `site` classes.
-        return party.company.carapacian
+        return party.companies.carapacian
 
     @property
     def favicon(self):
@@ -281,7 +281,7 @@ class tickets(pom.page):
         ''' Multiple events, single widget '''
         span = dom.span()
         span1 = dom.span()
-        lbl = dom.label('Enter only numbers: ')
+        lbl = dom.label('Enter only numbers (tab out to validate): ')
         inp = dom.input()
         inp.oninput += self.inp_oninput3, span
         inp.onblur += self.inp_onblur, span1
