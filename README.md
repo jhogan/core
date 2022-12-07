@@ -572,7 +572,7 @@ The above sample shows the (very truncated) output of `./test.py orm\_`.
 Though we see a lot of WARNING lines with error messages in them, the
 last line indicate that `orm_` passed. The error messages are the result
 of the tests ensuring that the unhappy path (such as library code
-raising exception under certain conditions) are excuting as expected.
+raising exception under certain conditions) are executing as expected.
 The last lines of output (those that contain the tags "pass" or "FAIL")
 are the ones to look out for. Underneath the FAIL ones will be printed
 the error messages that need to be addressed.
