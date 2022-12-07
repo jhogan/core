@@ -6421,7 +6421,40 @@ with book('Hacking Carapacian Core'):
           ''')
 
         with section('Full text indexes'):
-            ...
+          print('''
+            MySQL full-text indexes can also be created by the ORM.
+            These indexes allow for searches on columns where the
+            search criteria do not perfectly match the records.
+
+            Creating a full-text index is similar to creating a
+            regular index:
+          ''')
+
+          with listing('Declaring full-text indexes'):
+            class person(orm.entity):
+                firstname = str
+                lastname = str
+                bio = str, orm.fulltext
+
+          print('''
+            When the table is created for this entity, it will contain a
+            full-text index on the `bio` column.
+
+            We can use the `MATCH() AGAINST()` clause to query the
+            full-text index:
+          ''')
+
+          with listing('Query the full-text indexes'):
+            pers = persons(
+              'MATCH(bio) AGAINST (%s)', 'python programmer'
+            )
+
+          print('''
+            A query like this could be used to help us find `persons`
+            who mention that they are Python programmers (or maybe just
+            programmers) in their bio's.
+          ''')
+
 
     with section('Testing ORM entities'):
       ...
