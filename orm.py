@@ -1014,9 +1014,10 @@ class where(entitiesmod.entity):
 
                 if map.name == col:
                     if ft and type(map.index) is not fulltext:
-                        msg = 'MATCH column "%s" must be have a fulltext index'
-                        msg %= col
-                        raise InvalidColumn(msg)
+                        raise InvalidColumn(
+                            f'MATCH column "{col}" must have a '
+                            'full-text index'
+                        )
                     break
             else:
                 e = self.entities.orm.entity.__name__
@@ -1027,13 +1028,12 @@ class where(entitiesmod.entity):
         for pred in self.predicate:
             if pred.match:
                 for col in pred.match.columns:
-                    demand(col, exists=True, ft=True)
-
+                    demand(col, ft=True)
                 continue
 
             for op in pred.operands:
                 if predicate.iscolumn(op):
-                    demand(op, exists=True)
+                    demand(op)
 
     def __repr__(self):
         """ Return a string represention of this `where` object.

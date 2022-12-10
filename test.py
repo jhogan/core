@@ -11473,8 +11473,9 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             if t == 'class':
                 continue
 
-            arts1    =  artists('firstname = %s or '
-                                'lastname = %s' , ('fn-0', 'ln-2'))
+            arts1 = artists(
+                'firstname = %s or lastname = %s', ('fn-0', 'ln-2')
+            )
 
             if t == 'class':
                 join(arts1, presentations, 'innerjoin')
@@ -11502,8 +11503,9 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             # Test that the correct graph was loaded
             for art1 in arts1:
                 self.eq(fff, art1.orm.persistencestate)
-                self.true(art1.firstname == 'fn-0' or
-                          art1.lastname  == 'ln-2')
+                self.true(
+                    art1.firstname == 'fn-0' or art1.lastname  == 'ln-2'
+                )
 
                 arts.first.presentations.sort('name')
                 press1 = art1.presentations.sorted('name')
@@ -11526,13 +11528,19 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.zero(self.chronicles)
 
         for t in jointypes:
-            arts1 = artists('firstname = %s and lastname = %s', 
-                            ('fn-0', 'ln-1'))
-            locs  = locations('address = %s or description = %s', 
-                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+            arts1 = artists(
+                'firstname = %s and lastname = %s', ('fn-0', 'ln-1')
+            )
 
-            artlocs  =  locations('address = %s or description = %s', 
-                                 ('art-loc-addr-0', 'art-loc-desc-2'))
+            locs = locations(
+                'address = %s or description = %s', 
+                ('pres-loc-addr-0', 'pres-loc-desc-2')
+            )
+
+            artlocs = locations(
+                'address = %s or description = %s', 
+                ('art-loc-addr-0', 'art-loc-desc-2')
+            )
 
             if t == 'class':
                 join(arts1, presentations, 'innerjoin')
@@ -11562,8 +11570,10 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.two(locs)
             for loc in locs:
                 self.eq(fff, loc.orm.persistencestate)
-                self.true(loc.address     == 'art-loc-addr-0' or 
-                          loc.description == 'art-loc-desc-2')
+                self.true(
+                    loc.address     == 'art-loc-addr-0' or 
+                    loc.description == 'art-loc-desc-2'
+                )
 
             # Test arts1.first.presentations' locations
             press = arts1.first.presentations
@@ -11576,8 +11586,10 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 self.two(pres.locations)
                 for loc in pres.locations:
                     self.eq(fff, loc.orm.persistencestate)
-                    self.true(loc.address     == 'pres-loc-addr-0' or 
-                              loc.description == 'pres-loc-desc-2')
+                    self.true(
+                        loc.address     == 'pres-loc-addr-0' or 
+                        loc.description == 'pres-loc-desc-2'
+                    )
 
             self.zero(self.chronicles)
 
@@ -11587,8 +11599,10 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             # where predicate has unusual recursion logic that is sensitive to
             # top-level joins not having `where` objects so we need to make
             # sure this doesn't get broken.
-            locs  = locations('address = %s or description = %s', 
-                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+            locs = locations(
+                'address = %s or description = %s', 
+                ('pres-loc-addr-0', 'pres-loc-desc-2')
+            )
 
             if t == 'class':
                 arts1 = artists.join(presentations)
