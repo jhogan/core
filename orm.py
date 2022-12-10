@@ -859,22 +859,21 @@ class joins(entitiesmod.entities):
     # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
-        """
-        Return the table name for this ``joins`` collection
-
-        :rtype: str
-        :returns: The name of the table for this ``joins`` collection.
+        """ Return the table name for this ``joins`` collection. 
         """
         return self.entities.orm.table
 
     @property
     def abbreviation(self):
-        """ Returns the entities' abbreviation 
+        """ Returns the entities' abbreviation.
         """
         return self.entities.orm.abbreviation
 
     @property
     def wheres(self):
+        """ Return a `wheres` collection containing each of the `where`
+        objects of this `joins` collection.
+        """
         return wheres(initial=[x.where for x in self if x.where])
 
     def __contains__(self, key):
@@ -888,7 +887,8 @@ class joins(entitiesmod.entities):
         return super().__contains__(key)
 
 class join(entitiesmod.entity):
-    """ Represents an SQL JOIN clause. 
+    """ Represents a joining between two entities. Analogous to the JOIN
+    clause in a SELECT query.
     
     An entities collection class can have zero or more join objects in
     its ``joins`` collection. These are used to generate the JOIN
@@ -901,9 +901,9 @@ class join(entitiesmod.entity):
     Outer = 1
 
     def __init__(self, es, type):
-        """ Sets the initial properties of the join. 
+        """ Sets the initial properties of this `join`. 
 
-        :param: entities es: The :class:`entities` that this join
+        :param: entities es: The `entities` object that this join
         corresponds to.
 
         :param: int type: The type of join (e.g., INNER, OUTER, etc.)
@@ -919,14 +919,14 @@ class join(entitiesmod.entity):
 
     @property
     def table(self):
-        """ Returns the table name for the join. This is the same as the
-        table name for the entities' table.
+        """ Returns the table name for this `join`. This is the same as
+        the table name for the entities' table.
         """
         return self.entities.orm.table
 
     @property
     def keywords(self):
-        """ Get the SQL keyword for the join type. 
+        """ Return the SQL keyword for the join type. 
         """
 
         if self.type == join.Inner:
@@ -937,7 +937,7 @@ class join(entitiesmod.entity):
             raise ValueError('Invalid join type')
 
     def __repr__(self):
-        """ Returns a representation of the ``join`` object useful for
+        """ Returns a representation of the ``join`` object. Useful for
         debugging.
         """
         name = type(self.entities).__name__
@@ -948,7 +948,8 @@ class wheres(entitiesmod.entities):
     """ A collection of ``where`` objects """
 
 class where(entitiesmod.entity):
-    """ Represents a WHERE clause of an SQL statement. """
+    """ Represents a WHERE clause of an SQL statement.
+    """
 
     def __init__(self, es, pred, args):
         """ Sets the initial properties for the ``where`` object. 
@@ -993,7 +994,20 @@ class where(entitiesmod.entity):
         return wh
 
     def demand(self):
-        def demand(col, exists=False, ft=False):
+        """ Cause an exception to be raised if any of the columns in
+        this `where` object's `predicate` are not found in the `where`
+        object`s entity's mappings collection.
+        """
+
+        def demand(col, ft=False):
+            """ Raise exception if `col` is not in the mappings
+            collection.
+
+            :param: col str: The column name to be tested.
+
+            :param: ft bool: Insist the col be associated with a
+            full-text index.
+            """
             for map in self.entities.orm.mappings.all:
                 if not isinstance(map, fieldmapping):
                     continue
@@ -1022,6 +1036,8 @@ class where(entitiesmod.entity):
                     demand(op, exists=True)
 
     def __repr__(self):
+        """ Return a string represention of this `where` object.
+        """
         return '%s\n%s' % (self.predicate, self.args)
     
 class predicates(entitiesmod.entities):

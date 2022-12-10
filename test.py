@@ -3747,7 +3747,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             for fact in art.get_artifacts(orm.stream):
                 ...
 
-        However, this has not been implemented.
+        However, this has not been implemented (see 8210b80c)
         '''
 
         fns = (
@@ -11312,8 +11312,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             comps2.last.id
         )
 
-        # Reload using the explicit loading, join method and update the record
-        # added above. Ensure that the new data presists.
+        # Reload using the explicit loading, join method and update the
+        # record added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
         arts3.orm.collect()
         art3 = arts3[art2.id]
@@ -11347,16 +11347,16 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             elif type  == 'inplace':
                 joiner &= joinee
 
-            # Incorrect implementation of & and &= can nullify `joiner`, even
-            # though the actual join was successful, so ensure `joiner` is
-            # notnone
+            # Incorrect implementation of & and &= can nullify `joiner`,
+            # even though the actual join was successful, so ensure
+            # `joiner` is notnone
             self.notnone(joiner)
 
         arts = self._create_join_test_data()
 
         jointypes = 'innerjoin', 'join', 'standard', 'inplace', 'class'
 
-        # Inner join where only artist has a where clause
+        # Innerjoin where only artist has a where clause
         for t in jointypes:
             arts1 = artists(firstname = 'fn-0')
 
@@ -11463,10 +11463,12 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             self.zero(self.chronicles)
 
-        # Inner join query: Artist has a conjoined predicate
-        # i.e, (x=1 and y=1)
-        # firstname=firstname will match the last artist while lifeform=organic
-        # will match the first artist.
+        # Inner join query: Artist has a conjoined predicate:
+        # 
+        #     (x=1 and y=1)
+        #
+        # `firstname=firstname` will match the last artist while
+        # `lifeform=organic` will match the first artist.
         for t in jointypes:
             if t == 'class':
                 continue
@@ -11544,7 +11546,6 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 join(press,  locs,     t)
 
             # Test join counts
-
             self.four(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
@@ -11567,7 +11568,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             # Test arts1.first.presentations' locations
             press = arts1.first.presentations
 
-            # All four presentations were match by the location predicate
+            # All four presentations were matched by the location
+            # predicate
             self.four(press) 
             for pres in press:
                 self.eq(fff, pres.orm.persistencestate)
