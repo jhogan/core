@@ -6372,7 +6372,7 @@ with book('Hacking Carapacian Core'):
           performance on these often-searched fields.
         ''')
 
-        with section('Composite indexes'):
+        with section('Composite indexes', id='3abd9436'):
           print('''
             Composite indexes are indexes that span multiple columns.
             These type of indexes can improve the performance of queries
@@ -6422,9 +6422,9 @@ with book('Hacking Carapacian Core'):
 
         with section('Full text indexes'):
           print('''
-            MySQL full-text indexes can also be created by the ORM.
-            These indexes allow for searches on columns where the
-            search criteria do not perfectly match the records.
+            MySQL full-text indexes can also be created and used by
+            entities.  These indexes allow for searches on columns where
+            the search criteria do not perfectly match the records.
 
             Creating a full-text index is similar to creating a
             regular index:
@@ -6440,7 +6440,7 @@ with book('Hacking Carapacian Core'):
             When the table is created for this entity, it will contain a
             full-text index on the `bio` column.
 
-            We can use the `MATCH() AGAINST()` clause to query the
+            We can use the `MATCH() AGAINST()` syntax to query the
             full-text index:
           ''')
 
@@ -6455,12 +6455,45 @@ with book('Hacking Carapacian Core'):
             programmers) in their bio's.
           ''')
 
+        with section('Full-text indexes on multiple columns'):
+          print('''
+            As in the above section on [composite indexes](#3abd9436),
+            we can create full-text indexes on multiple columns. The
+            syntax is basically the same a that of composite indexes.
+          ''')
 
-    with section('Testing ORM entities'):
-      ...
+          with listing(
+            'Declaring full-text indexes on multiple columns'
+          ):
+            class person(orm.entity):
+                firstname = str, orm.fulltext('name', 0)
+                lastname = str, orm.fulltext('name', 1)
 
-    with section('ORM events'):
-      ...
+          print('''
+            Above, we are declaring a full-text index on `firstname` and
+            `lastname` called "name". `firstname` will come first in the
+            index (ordinal 0) and `lastname` will come second (ordinal
+            1).
+
+            The create table will look like:
+
+              CREATE TABLE `persons`(
+                  `id` binary(16) primary key,
+                  `proprietor__partyid` binary(16),
+                  `owner__userid` binary(16),
+                  `createdat` datetime(6),
+                  `updatedat` datetime(6),
+                  `firstname` varchar(255),
+                  `lastname` varchar(255),
+                  INDEX proprietor__partyid_ix (proprietor__partyid),
+                  INDEX owner__userid_ix (owner__userid),
+                  FULLTEXT name_ftix (firstname, lastname)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            As you can see, a full-text index is being created in the
+            database called `name_ftix` with `firstname` coming first and
+            `lastname` coming second.
+          ''')
 
     with section('Retrieving data'):
 
@@ -6469,6 +6502,12 @@ with book('Hacking Carapacian Core'):
 
       with section('Eager loading')
         ...
+
+    with section('Testing ORM entities'):
+      ...
+
+    with section('ORM events'):
+      ...
 
     with section('Streaming'):
       ...
