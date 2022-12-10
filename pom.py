@@ -678,11 +678,15 @@ function ajax(e){
     // The control that the event happened to
     src = e.target
 
+    // Is the element a navigation link
     isnav = is_nav_link(src)
 
+    // Assume we are in SPA mode if the the element is a navigation link
     inspa = isnav
 
     if (isnav){
+        // Prevent the browser from trying to load the HREF at the
+        // navigation link. We will do that here.
         e.preventDefault()
     }
 
@@ -729,7 +733,7 @@ function ajax(e){
 
             main = document.querySelector('main')
 
-            // If success
+            // If success...
             if (this.status < 400){
 
                 // Parse the HTML response
@@ -1136,7 +1140,7 @@ class menu(dom.nav):
                 If str, o is the text used for the menu item.
                 If page, the menu item links to that page.
 
-            :param: o str: The optional hyperlink to use. Used in
+            :param: href str: The optional hyperlink to use. Used in
             conjunction with o to create a link when it is a str.
             """
             super().__init__(*args, **kwargs)
@@ -1354,6 +1358,7 @@ class pages(entities.entities):
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
+                # Remove the language code, e.g., /en/
                 del segs[0] #
 
         elif isinstance(path, list):
@@ -1433,7 +1438,8 @@ class page(dom.html):
 
     @property
     def resources(self):
-        """ Return a collection of resource objects the page will use.
+        """ Return the collection of `file.resource` objects the page
+        will use.
         """
         if self._resources is None:
             self._resources = file.resources()
@@ -1444,6 +1450,9 @@ class page(dom.html):
 
     @resources.setter
     def resources(self, v):
+        """ Set the collection of `file.resource` objects that this page
+        will use.
+        """
         self._resources = v
 
     def _resources_onbeforeadd(self, scr, eargs):

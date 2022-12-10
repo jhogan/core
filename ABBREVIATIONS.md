@@ -19,6 +19,7 @@ proprietor:    propr
 remove:        rm
 result:        res
 return-value:  r
+segment:       seg
 switch-user:   su
 tuple:         tup
 where:         wh

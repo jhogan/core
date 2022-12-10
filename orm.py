@@ -3089,7 +3089,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         :param: orm.entity e: The entity being appended. If e is an
         orm.entities collection, each entity in that collection will be
-        appended one-at-a-time.
+        appended one at a time.
 
         :param: bool uniq: Do not append if `e` is already in the
         collection.
