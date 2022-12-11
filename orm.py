@@ -2435,7 +2435,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         elif self:
             return self._orm
 
-
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
         *args. This is a thin wrapper around orm.join. More information
@@ -2499,7 +2498,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             WHERE (art.weight BETWEEN %s AND %s)
             AND (fact.weight BETWEEN %s AND %s)
 
-        Note that the ORM is able to infere the need for the
+        Note that the ORM is able to infer the need for the
         ``artist_artifacts`` association table to be joined. Also note
         that the operands have been replaced with placeholder (%s)
         indicating they have been parameterized.
@@ -2507,8 +2506,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         :param: cls type: A reference to a class that inherits
         from ``orm.entities``. ``es`` will be joined to this object.
 
-        :param: es type/entities: A class or object reference that
-        inherits from `orm.entities`. This object will be joined to
+        :param: es type<entities>|entities: A class or object reference
+        that inherits from `orm.entities`. This object will be joined to
         ``cls``.
 
         :param: type: The type of join (INNER/OUTER). Currently, only
@@ -2560,7 +2559,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Consider that .joinsupers() wants to join `rapper` to
             # `singer`.  Normally, we would look for the association
             # collection `artist_artist` so we could get the
-            # many-to-many relationship implied by the expression::
+            # many-to-many relationship implied by the expression:
             #
             #     rpr.singers
             #
@@ -2582,15 +2581,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 sup = self.orm.entity
                 while sup:
                     # For each of self's associations mappings and the
-                    # associations mappings of it's superentities
+                    # associations mappings of its superentities
                     for map in sup.orm.mappings.associationsmappings:
-
                         # If the association is reflexive, we are only
                         # interested in it if `es` is, or inherits from
                         # the objective entity of the association.
                         if map.associations.orm.isreflexive:
                             obj = map.associations.orm \
-                                  .mappings['object'] \
+                                  .mappings['object']  \
                                   .entity
 
                             if not isinstance(es, obj.orm.entities):
