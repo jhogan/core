@@ -4457,6 +4457,12 @@ with book('Hacking Carapacian Core'):
             firstname = str
             lastname = str
 
+            # Customers shipping address
+            address = str
+            city = str
+            state = str
+            zipcode = int
+
             # This line establishes the relationship.
             orders = orders
 
@@ -4468,6 +4474,8 @@ with book('Hacking Carapacian Core'):
 
             # Will be True if order is canceled
             canceled = bool
+
+            amount = dec
 
         print('''
           Above we have created a `customer` and `order` entity along
@@ -6495,13 +6503,56 @@ with book('Hacking Carapacian Core'):
             `lastname` coming second.
           ''')
 
-    with section('Retrieving data'):
 
-      with section('Joins')
-        ...
+    with section('Join queries')
+      print('''
+        The queries we have created so far have filtered on only one
+        entity. For example, to retrieve all customers in the state of
+        Alaska (AK), we could write the following:
 
-      with section('Eager loading')
-        ...
+          custs = customers(state = %s, 'AK')
+
+        This is simple enough. However, what we wanted to get all the
+        customers in Alaska who made orders for over $100. For a query
+        like that we need to use the join operators.
+      ''')
+
+      with section('Using join queries'):
+        custs = customers('state=%s', 'AK') & orders('amount > %s', 100)
+
+      print('''
+        In the above query, we use the `&` operator on the two
+        `entities` collections to join their two predicates. If an
+        attribute is called on `custs`, a SELECT statement similar to
+        the one below will be used to retrive data for `custs`.
+
+          SELECT *
+          FROM customers AS cust
+          INNER JOIN orders AS ord
+              ON cust.id = ord.customerid
+          WHERE cust.state = %s AND ord.amount > %s
+
+        The following values will be passed to MySQL for the
+        placeholders (%s):
+
+          ['AK', 100]
+
+        This query willl be used to populate the `customer` elements of
+        `custs`, as well as the `order` elements returned by
+        `cust.orders`. Thus, regardless of what is in the database, we
+        can make the following assertions regarding `cust` and its
+        `orders` attribute.
+      ''')
+
+      with section('Asserting the data loaded from the join'):
+        
+        for cust in custs:
+          eq('AK', cust.state)
+          for org in cust.orders:
+            gt(100, ord.amount)
+
+    with section('Eager loading')
+      ...
 
     with section('Testing ORM entities'):
       ...
