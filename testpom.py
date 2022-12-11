@@ -53,6 +53,7 @@ class foonet(pom.site):
         self.pages += contact_us()
         self.pages += blogs()
         self.pages += admin()
+        self.pages += spa()
 
         ''' Error pages '''
         pgs = self.pages['/en/error'].pages
@@ -2594,13 +2595,7 @@ class page(tester.tester):
         self.eq('I should remain unchanged', sec.elements.second.text)
 
     def it_patches_page_on_menu_click(self):
-        class spa(pom.page):
-            def main(self):
-                self.header.makemain()
-                self.main += dom.p('Welcome to the SPA')
-
         ws = foonet()
-        ws.pages += spa()
 
         tab = self.browser().tab()
 
@@ -2676,6 +2671,11 @@ class home(pom.page):
     @property
     def name(self):
         return 'index'
+
+class spa(pom.page):
+    def main(self):
+        self.header.makemain()
+        self.main += dom.p('Welcome to the SPA')
 
 class google(pom.page):
     def main(self, **kwargs):
