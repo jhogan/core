@@ -1446,6 +1446,20 @@ class page(dom.html):
         self.clear()
 
     @property
+    def spa(self):
+        """
+             XXX Comment
+        """
+        pg = self.page
+        while pg:
+            if isinstance(pg, spa):
+                return pg
+
+            pg = pg.page
+
+        return None
+
+    @property
     def resources(self):
         """ Return the collection of `file.resource` objects the page
         will use.
