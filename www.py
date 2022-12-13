@@ -940,6 +940,20 @@ class request:
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
+                # Get the main SPA application page for the page.
+                if spa := pg.spa:
+                    # If one exists, call it
+                    spa()
+
+                    # Embed the sub page's contents into the SPA pages
+                    # <main> tag.
+                    spa.main = pg.main
+
+                    # We want to return the SPA page, so make it the
+                    # `pg` so it's contents will be returned by the
+                    # following code.
+                    pg = spa
+
                 if not self.ishead:
                     # If we are processing an event
                     if self.isevent:
