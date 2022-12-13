@@ -2594,7 +2594,7 @@ class page(tester.tester):
         self.eq('I am changed', sec.elements.first.text)
         self.eq('I should remain unchanged', sec.elements.second.text)
 
-    def it_patches_page_on_menu_click(self):
+    def it_patches_spa_subpage_on_menu_click(self):
         ws = foonet()
 
         tab = self.browser().tab()

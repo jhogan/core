@@ -5249,9 +5249,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 map.value = es
 
                 # Assign the composite reference to the constituent
-                # collection.
-                #   i.e., art.presentations.artist = art
-
+                # collection, i.e.:
+                #
+                #   art.presentations.artist = art
+                #
+                # This is also where the composite reference of a
+                # reflexive entity gets set:
+                #
+                #    com.comments.comment = com
+                #
                 sup = self_orm.entity
                 while sup:
                     setattr(map.value, sup.__name__, self)

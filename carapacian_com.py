@@ -351,12 +351,12 @@ class ticketsspa(pom.spa):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        mnuspa = pom.menu(name='spa')
-        self.header.menus += mnuspa
+        mnu = pom.menu(name='spa')
+        self.header.menus += mnu
 
-        mnuspa.items  +=  pom.menu.item('Backlog',  'backlog')
-        mnuspa.items  +=  pom.menu.item('New',      'new')
-        mnuspa.items  +=  pom.menu.item('Search',   'search')
+        mnu.items  +=  pom.menu.item('Backlog',  'backlog')
+        mnu.items  +=  pom.menu.item('New',      'new')
+        mnu.items  +=  pom.menu.item('Search',   'search')
 
     class backlog(dom.main):
         pass

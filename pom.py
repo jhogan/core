@@ -1359,6 +1359,9 @@ class pages(entities.entities):
             segs = [x for x in path.split('/') if x]
             if len(segs):
                 # Remove the language code, e.g., /en/
+                # XXX:1358fc1e This seems to be a bug. We should check
+                # if segs[0] is in a list of ISO country codes (with
+                # pycountry). If it is, then delete.
                 del segs[0] #
 
         elif isinstance(path, list):
@@ -1389,11 +1392,17 @@ class pages(entities.entities):
         :param: obj page: The page to add.
         """
         obj._parentpages = self
+
+        # XXX Do we need this
         obj.name in [x.name for x in self]
+
         for pg in self:
             if pg.name == obj.name:
+                # XXX What use caes does this address. Comment on why
+                # this is useful to have.
                 del self[pg.path]
                 break
+
         super().append(obj, uniq)
 
 class page(dom.html):
@@ -1747,7 +1756,7 @@ class page(dom.html):
         self._attemped = False
 
     def __call__(self, eargs=None, *args, **qsargs):
-        """ This method calls into the page's `main` method that the
+        """ This method calls into this `page`'s `main` method which the
         web developer writes.
 
             class mypage(page):
