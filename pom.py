@@ -1155,7 +1155,7 @@ class menu(dom.nav):
                     self.body = dom.text(self.text)
             elif isinstance(o, page):
                 self.page = o
-                self.body = dom.a(self.page.name, href=self.page.path)
+                self.body = dom.a(self.page.Name, href=self.page.path)
             else:
                 raise TypeError('Item requires text or page object')
 
