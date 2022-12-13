@@ -2672,10 +2672,23 @@ class home(pom.page):
     def name(self):
         return 'index'
 
-class spa(pom.page):
+class spa(pom.spa):
+    ''' Subpages '''
+    class subpage(pom.page):
+        def main(self):
+            self.main += dom.p('I am the subpage')
+
+    def __init__(self):
+        super().__init__()
+        self.pages += spa.subpage('subpage')
+
     def main(self):
         self.header.makemain()
         self.main += dom.p('Welcome to the SPA')
+
+        ''' SPA Menu '''
+        mnu = pom.menu(name='spa')
+        self.header.menus += mnu
 
 class google(pom.page):
     def main(self, **kwargs):

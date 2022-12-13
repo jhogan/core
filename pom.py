@@ -1935,6 +1935,16 @@ class page(dom.html):
         r += ')'
         return r
 
+class spas(pages):
+    """
+        XXX Comment
+    """
+
+class spa(page):
+    """
+        XXX Comment
+    """
+
 class header(dom.header):
     """ Represents the header portion of a web page.
 

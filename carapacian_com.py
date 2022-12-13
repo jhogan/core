@@ -338,7 +338,7 @@ class tickets(pom.page):
 
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
 
-class ticketsspa(pom.page):
+class ticketsspa(pom.spa):
     class new(pom.page):
         def main(self):
             self.main += dom.p('Create a ticket')
