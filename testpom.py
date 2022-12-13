@@ -2612,14 +2612,49 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
-    def it_navigates_to_pages_when_spa_is_disabled(self):
-        class spa(pom.page):
-            def main(self):
-                self.header.makemain()
-                self.main += dom.p('Welcome to the SPA')
+    def it_resolves_subpage_to_spa(self):
+        """ Make sure that when a subpage of an SPA application is
+        accessed with a GET, we get the full SPA with the subpage
+        embedded within it.
+
+        The SPA page itself may have menu items in its <head>, for
+        example, which the subpage alone would not be aware of and could
+        not produce. Thus the SPA page needs to be returned with the
+        subpage embedded in ins <main> tag.
+        """
 
         ws = foonet()
-        ws.pages += spa()
+
+        tab = self.browser().tab()
+
+        tab.inspa = True
+
+        # GET the subpage
+        tab.navigate('/en/spa/subpage', ws)
+
+        # Assert that main's data-path attribute is set to
+        # /spa/subpage
+        #
+        #     <main data-path="/spa/subpage">
+        #
+        attrs = tab.html['main'].only.attributes
+        self.eq('/spa/subpage', attrs['data-path'].value)
+
+        # Assert there is one menu item for /spa/subpage. This would
+        # only exist if we were getting the spa page; the subpage would
+        # not have it.
+        self.one(tab['header>section>nav a[href|="/spa/subpage"]'])
+
+        ps = tab['main p']
+
+        self.one(ps)
+
+        # Make sure the one paragraph in <main> identities itself as the
+        # subpage. 
+        self.eq('I am the subpage', ps.only.text)
+
+    def it_navigates_to_pages_when_spa_is_disabled(self):
+        ws = foonet()
 
         tab = self.browser().tab()
 
