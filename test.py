@@ -10684,11 +10684,15 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
         arts = artists()
         for i in range(8):
+            ''' Create artist '''
             art = artist.getvalid()
             art.weight = i
 
+            ''' Create association '''
             aa = artist_artifact.getvalid()
             art.artist_artifacts += aa
+
+            ''' Create artifact '''
             aa.artifact = artifact.getvalid()
             aa.artifact.weight = i + 10
 
@@ -10709,8 +10713,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
 
             arts1 = artists('weight %s BETWEEN 0 AND 1' % op, ()).join(
-                        artifacts('weight %s BETWEEN 10 AND 11' %op, ())
-                    )
+                artifacts('weight %s BETWEEN 10 AND 11' %op, ())
+            )
 
             if op == 'NOT':
                 self.six(arts1)
@@ -10735,14 +10739,13 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
         factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
         arts1 = artists(artwhere, ()).join(
-                    artifacts(factwhere, ())
-                )
+            artifacts(factwhere, ())
+        )
 
         self.four(arts1)
 
         for art1 in arts1:
             self.true(art1.weight in (0, 1, 3, 4))
-
 
             self.one(art1.artist_artifacts)
 
