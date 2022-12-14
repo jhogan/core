@@ -1332,7 +1332,8 @@ class pages(entities.entities):
 
     @property
     def site(self):
-        """ The site that this pages collection belongs to. 
+        """ Return `site` object that this `pages` collection belongs
+        to. 
 
         None is returned if the site doesn't exist or can't be found.
         """
@@ -1898,7 +1899,7 @@ class page(dom.html):
 
     @property
     def site(self):
-        """ Return the web ``site`` that this page belongs to.
+        """ Return the web ``site`` that this `page` belongs to.
         """
         rents = self._parentpages
 

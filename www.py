@@ -219,6 +219,7 @@ class application:
             # XXX Make sure that, when an SPA page (or any page) throws
             # an exception upon GET, its stacktrace is included in the
             # HTML.
+
             # Log exception to syslog
             logs.exception(ex)
 
