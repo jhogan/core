@@ -6512,44 +6512,134 @@ with book('Hacking Carapacian Core'):
 
           custs = customers(state = %s, 'AK')
 
-        This is simple enough. However, what we wanted to get all the
-        customers in Alaska who made orders for over $100. For a query
-        like that we need to use the join operators.
+        This is simple enough. However, what if we wanted to get all the
+        customers in Alaska who made orders for over $100. This would
+        involve querying not only the `customers` table but also the
+        its child table `orders`. For a query like that we need to use
+        the join operators.
       ''')
 
       with section('Using join queries'):
         custs = customers('state=%s', 'AK') & orders('amount > %s', 100)
 
-      print('''
-        In the above query, we use the `&` operator on the two
-        `entities` collections to join their two predicates. If an
-        attribute is called on `custs`, a SELECT statement similar to
-        the one below will be used to retrive data for `custs`.
+        print('''
+          In the above query, we use the `&` operator on the two
+          `entities` collections to join their two predicates. If an
+          attribute is called on `custs`, a `SELECT` statement similar
+          to the one below will be used to retrieve data for `custs`.
 
-          SELECT *
-          FROM customers AS cust
-          INNER JOIN orders AS ord
-              ON cust.id = ord.customerid
-          WHERE cust.state = %s AND ord.amount > %s
+            SELECT *
+            FROM customers AS cust
+            INNER JOIN orders AS ord
+                ON cust.id = ord.customerid
+            WHERE cust.state = 'AK' AND ord.amount > 100
 
-        The following values will be passed to MySQL for the
-        placeholders (%s):
+          This query will be used to populate the `customer` elements of
+          `custs`, as well as the `order` elements returned by
+          `cust.orders`. Thus, regardless of what is in the database, we
+          can make the following assertions regarding `custs` and its
+          `orders` attribute.
+        ''')
 
-          ['AK', 100]
+        with listing('Asserting the data loaded from the join'):
+          for cust in custs:
+            # Each customer will be in the state of Alaska
+            eq('AK', cust.state)
 
-        This query willl be used to populate the `customer` elements of
-        `custs`, as well as the `order` elements returned by
-        `cust.orders`. Thus, regardless of what is in the database, we
-        can make the following assertions regarding `cust` and its
-        `orders` attribute.
-      ''')
+            # Each of these customers will have an order where the
+            # amount is greater than $100. Also, only those orders will
+            # be in `customer`s' `orders` collection.
+            for org in cust.orders:
+              gt(100, ord.amount)
 
-      with section('Asserting the data loaded from the join'):
-        
-        for cust in custs:
-          eq('AK', cust.state)
-          for org in cust.orders:
-            gt(100, ord.amount)
+        with section('Alternative syntax for joins'):
+          print('''
+            In the above query, we used the the `&` operator to join two
+            `entities` classes. However, there are alternative ways to
+            create joins which use slightly different operators and
+            methods. 
+          ''')
+
+          with listing('Alternative syntax for joins'):
+            # This is the original query from above
+            custs1 = customers('state=%s', 'AK') & orders('amount > %s', 100)
+
+            # Alternative one using the `join` method instead of the &
+            # operator.
+						custs2 = customers('state = %s', 'AK').join(
+								orders('amount > %s', 100)
+						)
+            
+            # Alternative using the &= operator
+            custs3 = customers('state = %s', 'AK')
+            custs3 &= orders('amount > %s', 100)
+
+            eq(custs1.orm.select, custs2.orm.select)
+            eq(custs2.orm.select, custs3.orm.select)
+
+          print('''
+            Above, we have 3 join queries. At the bottom of the listing,
+            we assert the all 3 produce the same `SELECT` statement and
+            therefore will load the same data.
+
+            The framework provides these alternatives so the developer
+            is able to choose the one that is most capable of
+            producing the cleanest code. Though the above example only
+            joins of two entities, other join queries may involve the
+            joining of multiple entities and may become unwieldy, thus
+            having the option to write join queries as cleanly as
+            possible is important for readability.
+
+            In the above listing it could be argued that the first
+            querty (`cust1`) is the best because it occupies one line
+            and uses fewer characters because it uses an operator
+            instead of the `join` method. However, if it were found
+            within nested code, we may need to break the line to conform
+            to the style guide lines. In that case, the `join` method,
+            used in `custs2`, may be the better option. The &=, which
+            appends joint to an existing query, can use used as a way to
+            break the creation of the query into multiple lines as well.
+
+            In the above examples, we've joined *instances* of the
+            `entities` classes to one another. However, it is also
+            possible to join references to the `entities` *class* to
+            another `entities` class or instance. For example, let's say
+            we want to modify the above query to return all orders of
+            customers that have orders greater than $100. In that case,
+            we could use a reference to the `customers` class instead of
+            an instance of it.
+          ''')
+
+          with listing('Alternative syntax for joins'):
+            # Using the & operator
+            custs1 = customers() & orders('amount > %s', 100)
+            custs2 = customers & orders('amount > %s', 100)
+
+            # Using the `join` method
+						custs3 = customers().join(orders('amount > %s', 100))
+						custs4 = customers.join(orders('amount > %s', 100))
+            
+            # Using the &= operator
+            custs5 = customers()
+            custs5 &= orders('amount > %s', 100)
+
+            custs6 = customers
+            custs6 &= orders('amount > %s', 100)
+
+            # Assert type
+            type(customers, custs1)
+            type(customers, custs2)
+            type(customers, custs3)
+            type(customers, custs4)
+            type(customers, custs5)
+            type(customers, custs6)
+
+            # Assert that all queries produce the same SELECT
+            eq(custs1.orm.select, custs2.orm.select)
+            eq(custs2.orm.select, custs3.orm.select)
+            eq(custs3.orm.select, custs4.orm.select)
+            eq(custs4.orm.select, custs5.orm.select)
+            eq(custs5.orm.select, custs6.orm.select)
 
     with section('Eager loading')
       ...
