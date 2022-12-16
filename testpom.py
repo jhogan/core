@@ -2612,6 +2612,25 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
+        sel = 'header>section>nav a[href|="/spa/subpage"]'
+        a_subpage = tab[sel].only
+
+        # XXX When we
+        #
+        #     print(tab)
+        #
+        # we get:
+        #
+        #     <nav aria-label="Spa">
+        #         <ul>
+        #         </ul>
+        #     </nav>
+        #
+        # Why do we get an empty <nav>
+        a_subpage.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/spa/subpage', attrs['data-path'].value)
+
     def it_resolves_subpage_to_spa(self):
         """ Make sure that when a subpage of an SPA application is
         accessed with a GET, we get the full SPA with the subpage
