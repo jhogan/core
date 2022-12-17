@@ -4093,7 +4093,7 @@ with book('Hacking Carapacian Core'):
         with section('Querying with collection entities'):
           print('''
             One of the most powerful feature of ORM entities is that they can
-            query the database through their constructor. As we've seen: 
+            query the database through thier constructor. As we've seen: 
             passing no arguments to the entities constructor does nothing
             more than provide us with an empty collection object. However,
             through the constructor we are able to specify arguments that
@@ -4101,10 +4101,10 @@ with book('Hacking Carapacian Core'):
             the database. The results from the `SELECT` will be used to
             populate the collection.
 
-            Though we will see that we can give full Boolean expressions
-            (similar to `WHERE` clauses) to the constructor, let's start
-            with what is perhaps the simplest type of query: a simple
-            equality test:
+            Though we will see that we can give full Boolean
+            expressions, called **predicates**, to the constructor,
+            let's start with what is perhaps the simplest type of query:
+            a simple equality test:
           ''')
 
           with listing('Performing a simple equality query'):
@@ -4173,12 +4173,12 @@ with book('Hacking Carapacian Core'):
           However, this is rarely necessary and would be functionally
           equivalent to calling any other attribute on it.
 
-          Lets rewrite the above listing to use the more the Boolean
-          expression query form:
+          Let's rewrite the above listing to use the Boolean expression
+          query form:
         ''')
 
         with listing(
-          'Using a Boolean expression for a simple equality query'
+          'Using a predicate expression for a simple equality query'
         ):
           # Query the database for all dogs that have the name "Rex"
           dgs = dogs("name = %s", 'Rex')
@@ -4191,11 +4191,10 @@ with book('Hacking Carapacian Core'):
 
       print('''
         This listing does the same thing as the prior listing, however
-        here we are using a Boolean expression (the kind of thing you
-        would use in a `WHERE` clause). 
+        here we are using a Boolean expression called a **predicate**.
 
         In this query, a placeholder (%s) is used to seperate the value
-        "Rex" from the query string.  This is an important feature to
+        "Rex" from the predicate.  This is an important feature to
         prevent against SQL injection attacts, particularly when the
         data being replaced is a variable which contains user input.
 
@@ -4205,7 +4204,7 @@ with book('Hacking Carapacian Core'):
       ''')
 
         with listing(
-          'Using a Boolean expression for multiple equality tests'
+          'Using a predicate expression for multiple equality tests'
         ):
           # Query the database for all dogs that have the name "Rex"
           dgs = dogs("name = %s or name = %s", 'Rex', 'Bandit')
@@ -4238,30 +4237,30 @@ with book('Hacking Carapacian Core'):
           which element is which. Without the call to `sort()`, the
           order of the elements would be indeterminate.
 
-          The Boolean expressions we are able to use for construction
+          The predicate expressions we are able to use for construction
           are similar to the the `WHERE` clauses used in SQL, however
-          they are not identical. The framework parses the queries
-          (which it calls "predicates") and stores them in internal data
-          structures which are later used to generate actual 'WHERE'
-          clause arguments. 
+          they are not identical. The framework parses the predicates
+          and stores them in internal data structures which are later
+          used to generate actual 'WHERE' clause arguments. 
 
           That being said, the syntax is nearly identical to the type of
           expressions you would give to a `WHERE` clause. All the
           standard comparative operator are supported. Also, using
-          paranthesis to nest expressions works. However, you shouldn't
-          expect MySQL function such as `TRIM()` or `LENGTH()` to work
-          nor should you expect non-comparative operators, such as
-          those used in arthmatic expessions, to work.
+          parenthesis to nest expressions and define precedence works.
+          However, you shouldn't expect MySQL function such as `TRIM()`
+          or `LENGTH()` to work nor should you expect non-comparative
+          operators, such as those used in arthmatic expessions, to
+          work.
 
           If you want to see the SQL that the entities collection will
           produce, you can `print` out the collection's `where` object.
 
             dgs = dogs('name IN (%s, %s)', ('Rex', 'Bandit'))
 
-          In this example, we used the IN operator which you will be
-          familiar with from SQL. Let's see what SQL the ORM will
-          issue to the database for this query. If we print the `where`
-          object:
+          In this example, we used the `IN` operator which you will be
+          familiar with from SQL. Let's see what `WHERE` clause the ORM
+          will issue to the database for this predicate. If we print the
+          `where` object:
 
             print(dgs.orm.where)
 
@@ -4270,7 +4269,7 @@ with book('Hacking Carapacian Core'):
             name IN (%s, %s)
             ['Rex', 'Bandit']
 
-          The first line contains the SQL. As you can see, the SQL
+          The first line contains the `WHERE` clause. As you can see, it
           matches our query expression exactly. The second line contains
           our arguments. for the parameterized SQL of the first line.
           To see the entire SQL statement, you can use:
@@ -6549,8 +6548,23 @@ with book('Hacking Carapacian Core'):
             # Each of these customers will have an order where the
             # amount is greater than $100. Also, only those orders will
             # be in `customer`s' `orders` collection.
-            for org in cust.orders:
+            for ord in cust.orders:
               gt(100, ord.amount)
+
+        print('''
+          Note that each `cust` and `ord` object will be fully hydrated
+          with data. The only catch is that the only `order` objects
+          returned from `cust.orders` will be those whose amounts are
+          greater that $100. You could reload each `cust` object if it
+          was imported to get all the customer's orders:
+
+            for cust in custs:
+              cust = cust.orm.reloaded()
+              ...
+
+          This would force a full load of `cust.orders` when it is next
+          invoked.
+        ''')
 
         with section('Alternative syntax for joins'):
           print('''
@@ -6578,27 +6592,29 @@ with book('Hacking Carapacian Core'):
             eq(custs2.orm.select, custs3.orm.select)
 
           print('''
-            Above, we have 3 join queries. At the bottom of the listing,
-            we assert the all 3 produce the same `SELECT` statement and
-            therefore will load the same data.
+            Above, we have 3 join queries, each created using a slightly
+            different syntax. At the bottom of the listing, we assert
+            that all 3 produce the same `SELECT` statement. Given that,
+            we know that each will load the same data.
 
             The framework provides these alternatives so the developer
             is able to choose the one that is most capable of
-            producing the cleanest code. Though the above example only
-            joins of two entities, other join queries may involve the
-            joining of multiple entities and may become unwieldy, thus
+            producing the cleanest code. Though the above examples only
+            join two entities, other join queries may involve
+            multiple entities and will therefore become unwieldy. Thus
             having the option to write join queries as cleanly as
             possible is important for readability.
 
             In the above listing it could be argued that the first
             querty (`cust1`) is the best because it occupies one line
-            and uses fewer characters because it uses an operator
+            It also fewer characters because it uses the `&` operator
             instead of the `join` method. However, if it were found
             within nested code, we may need to break the line to conform
-            to the style guide lines. In that case, the `join` method,
-            used in `custs2`, may be the better option. The &=, which
-            appends joint to an existing query, can use used as a way to
-            break the creation of the query into multiple lines as well.
+            to the style guide lines on line length. In that case, the
+            `join` method, used in `custs2`, may be the better option.
+            The `&=` operator, which appends joins to an existing query,
+            can use used as a way to break the creation of the query
+            into multiple lines as well.
 
             In the above examples, we've joined *instances* of the
             `entities` classes to one another. However, it is also
@@ -6607,10 +6623,10 @@ with book('Hacking Carapacian Core'):
             we want to modify the above query to return all orders of
             customers that have orders greater than $100. In that case,
             we could use a reference to the `customers` class instead of
-            an instance of it.
+            an instance of it. Let's look at some ways to do this:
           ''')
 
-          with listing('Alternative syntax for joins'):
+          with listing('Joining to instances and to class references'):
             # Using the & operator
             custs1 = customers() & orders('amount > %s', 100)
             custs2 = customers & orders('amount > %s', 100)
@@ -6640,6 +6656,39 @@ with book('Hacking Carapacian Core'):
             eq(custs3.orm.select, custs4.orm.select)
             eq(custs4.orm.select, custs5.orm.select)
             eq(custs5.orm.select, custs6.orm.select)
+
+          print('''
+            All six queries produce the same `SELECT` statement. We can
+            see that, when no predicate needs to be supplied to the
+            `customers`' constructor, we can either use an instance of
+            `customers` or a reference to the class itself regardless of
+            the join operator/method we are using. Using a class
+            reference is preferable here because it allows us to omit
+            the parenthesis thus reducing line length slightly while
+            giving the reader's eyes less code to parse.
+
+            Let's now move on to a slightly more complicated join where
+            we join 3 entities together. Let's say we want to load all
+            customer's that have made an order with contains a line item
+            with a quantity greater than 99.
+          ''')
+
+          with listing('Join 3 entities together'):
+            custs = customers & (orders & lineitems('quantity > %s', 99))
+
+            for cust in custs:
+              for ord in cust.orders:
+                for itm in ord.lineitems:
+                  gt(99, itm.quantity)
+
+          print('''
+            Here we join `customers`, `orders` and `lineitems` together.
+            Later we assert that all the line items loaded will have
+            quantities greater that 99. This test should pass no matter
+            what is in the database. Note that the `cust`, `ord`, and
+            `itm` objects themselves will be fully hydrated so you are
+            able to access each of their attributes.
+          ''')
 
     with section('Eager loading')
       ...
