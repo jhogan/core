@@ -5204,10 +5204,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    # NOTE Though we've switch to deferred loading for
-                    # entities and associations, we should still force
-                    # an immediately load here for the sake of
-                    # predictability.
+                    # NOTE Force an immediately load here for the sake
+                    # of predictability.
                     es = map_entities(map1.name, self.id)
                     es.orm.collect()
 
@@ -5269,7 +5267,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # want to start loading super entities from the database unless
         # we know that the attr is actually in one of them.
         elif not map and attr in self_orm.mappings.supermappings:
-            
             # First lets check if we are trying to get a composite that
             # comes from a super. For example, say we are trying to get
             # the `singer` composite of a battle:
@@ -5277,7 +5274,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             #     btl.singer
             #
             # The above would normally go to the btl's super, concert,
-            # and get its composite, singer. However, now that we
+            # and get its composite, singer. However, since we
             # specialize composites, the singer we would be getting
             # would just be the more specialized rapper of the battle::
             #
@@ -5285,7 +5282,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             #
             # In order to not have to load the
             # `btl.orm.super.orm.concerts`, we can just return the
-            # rapper object by scanning this classes entitymappings and
+            # rapper object by scanning this class's entitymappings and
             # seeing if the attr is in one of the entitymapping's
             # entity's base classes.
             for map1 in self_orm.mappings.entitymappings:
@@ -5305,24 +5302,24 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # necessary until we finally find the entity that has the
             # attribute that we are looking for.
             sup = self_orm.super
-            while sup: # :=
+            while sup:
                 sup_orm = sup.orm
                 map = sup_orm.mappings(attr)
                 if map:
                     map_type = type(map)
                         
                     v = getattr(sup, map.name)
+
                     # Assign the composite reference to the constituent
                     #   i.e., sng.presentations.singer = sng
                     if map_type is entitiesmapping:
 
-                        # Assigne v to es to clarify it is an entities
+                        # Assign v to es to clarify it is an entities
                         # collecion.
                         es = v
 
                         # Iterate over each element in the entities
-                        # collection including the entities entities
-                        # itself:
+                        # collection including the entities itself:
                         #
                         #     for e in [es, es[0], es[1], ...]
                         #
@@ -5338,26 +5335,27 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # composite of the entities collection to
                             # the super:
                             #
-                            #     sng.presentations.artist = sng.orm.super
+                            #     sng.presentations.artist = \
+                            #         sng.orm.super
                             #
                             # However, so the user will get the most
                             # specialized composite, we replace that
-                            # with self.orm.specialized:
+                            # with self.orm.specialist:
                             #
                             #     sng.presentations.artist = sng
                             #
                             # And we do it by ascending the inheritance
-                            # tree, this works
+                            # tree so the following will work.
                             #
-                            # 
                             #     assert rpr.presentations.rapper is rpr
                             #     assert rpr.presentations.singer is rpr
                             #     assert rpr.presentations.artist is rpr
+                            #
                             sups1 = self_orm.entity.orm.getsupers(
                                 withself=True
                             )
 
-                            # For each super class starting with self
+                            # For self and for each superentity of self
                             for sup1 in sups1:
 
                                 # Get name
@@ -5366,7 +5364,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # Get most specialized version of self
                                 spec = self_orm.specialist
 
-                                # if e is an entity; not an entities
+                                # if e is an `entity`, not an `entities'
                                 if isinstance(e, entity):
 
                                     # Ascend inheritence tree
@@ -11330,6 +11328,7 @@ class orm:
 
         return self.instance is not None
 
+    # TODO s/withself/accompany/
     def getsupers(self, withself=False):
         """ Returns a list of entity classes or entity objects
         (depending on whether or not self.isinstance) of which self is a

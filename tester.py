@@ -689,12 +689,11 @@ class tester(entities.entity):
                 # Subscribe to element_event for each anchor tag's click
                 # event.
 
-                # XXX This should do what we need it to. For some
-                # reason, we need to put a space between nav and ul.
-                # This appears to be a bug in CSS selection. Run
-                # it_patches_spa_subpage_on_menu_click and try to select
-                # the 'subpage' menu.
-                # as_ = v['nav>ul>li a']
+                # This should do what we need it to. However, due to
+                # efa5825e, we to add a space between nav and ul. When
+                # efa5825e is fixed, we should be able to uncommment
+                # this.
+                #as_ = v['nav>ul>li a']
                 as_ = v['nav ul>li a']
                 for a in as_:
                     ev = a.onclick

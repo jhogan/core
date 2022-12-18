@@ -1922,7 +1922,7 @@ class markdown(tester.tester):
 
         self.eq(expect, md.pretty)
 
-class test_selectors(tester.tester):
+class selectors(tester.tester):
     # TODO Running all the tests in test_selectors takes around 10
     # seconds at the time of this writting. We should run the profiler
     # on the following test:
@@ -2692,8 +2692,6 @@ class test_selectors(tester.tester):
 
         els = html['h2 ~ *']
         self.zero(els)
-
-
 
     def it_selects_with_chain_of_elements(self):
         html = self._shakespear
