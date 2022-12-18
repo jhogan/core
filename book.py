@@ -5136,7 +5136,7 @@ with book('Hacking Carapacian Core'):
           return `None`.
         ''')
         
-      with section('Many-to-many relationships (or associations)'):
+      with section('Many-to-many relationships with associations'):
         print('''
           Many-to-many relationships between entities are established
           and supported by **associations**. `association` objects are a
@@ -5151,7 +5151,7 @@ with book('Hacking Carapacian Core'):
           people.
         ''')
 
-        with listing('An simple object model that uses association'):
+        with listing('An simple object model that uses an association'):
           ''' Create the person entity '''
           class persons(orm.entities):
             pass
@@ -6669,7 +6669,7 @@ with book('Hacking Carapacian Core'):
 
             Let's now move on to a slightly more complicated join where
             we join 3 entities together. Let's say we want to load all
-            customer's that have made an order with contains a line item
+            customer's that have made an order which contains a line item
             with a quantity greater than 99.
           ''')
 
@@ -6684,10 +6684,59 @@ with book('Hacking Carapacian Core'):
           print('''
             Here we join `customers`, `orders` and `lineitems` together.
             Later we assert that all the line items loaded will have
-            quantities greater that 99. This test should pass no matter
-            what is in the database. Note that the `cust`, `ord`, and
-            `itm` objects themselves will be fully hydrated so you are
-            able to access each of their attributes.
+            quantities greater that 99. This code will be able to assert
+            itself no matter what is in the database. Note that the
+            `cust`, `ord`, and `itm` objects themselves will be fully
+            hydrated so you are able to access each of their attributes.
+
+            Note that additional parentheses in the query. They are
+            necessary to specify the correct precedence. For example, if
+            we write:
+
+              customers & orders & lineitems('quantity > %s', 99)
+
+            the precedence would default to:
+
+              (customers & orders) & lineitems('quantity > %s', 99)
+
+            The expression `(customers & orders)` evaluates to a
+            `customers` object with an `orders` object joined to it.
+            That customers object is then joined to `lineitems`. Since
+            `lineitems` is not a constiuents of `customers`, we get an
+            error. To correct this issue, we add the parentheses:
+
+              custs = customers & (orders & lineitems('quantity > %s', 99))
+
+            Here the expression:
+
+              (orders & lineitems('quantity > %s', 99))
+
+            evaluates to an `orders` object with a `lineitems` objected
+            joined to it. So far so good. This `orders` object is then
+            joined to the `customers` class (which results in a
+            `customers` object.
+
+            An alternative way to write this is
+
+              custs = customers()
+              ords = orders & lineitems('quantity > %s', 99)
+              custs &= ords
+
+            Using this syntax, we are able to see line-by-line what is
+            going on. It may if the query becomes more complex or
+            unwieldy.
+
+            By the way, if you are debugging issues with joins, you can
+            interrogate the `joins` collection of the `orm` class. For
+            example, in the above code, we can see that `custs` is
+            joined to `ords` by this line.
+
+              assert custs.orm.joins.only.entities is ords
+
+            Additionally, we can see that `ords` is joint to the
+            lineitems object by doing this:
+
+              assert type(ords.orm.joins.only.entities) is lineitems
           ''')
 
     with section('Eager loading')
