@@ -2097,6 +2097,73 @@ class selectors(tester.tester):
             els = html[sel]
             self.zero(els)
 
+    def it_selects_with_child_then_descendant_combinator(self):
+        """ Test to ensure that a child combinator (>) followed by a
+        descendant combinator ( ), works:
+
+            el['nav>ul a']
+
+        """
+
+        # FIXME:efa5825e This selector pattern does not work fully.
+        # Search for efa5825e to see the commented out assertions that
+        # don't currently work.
+        html = dom.html('''
+          <section>
+            <nav aria-label="Main">
+              <ul>
+                <li>
+                  <a href="/spa">
+                    Spa
+                  </a>
+                  <div>
+                    <li>
+                      <a href="/spa/subpage">
+                        Subpage
+                      </a>
+                    </li>
+                  </div>
+                </li>
+              </ul>
+            </nav>
+          </section>
+        ''')
+
+        as_ = html['nav a']
+        hrefs = as_.pluck('href')
+        self.two(hrefs)
+        self.in_(hrefs, '/spa/subpage')
+        self.in_(hrefs, '/spa')
+
+        as_ = html['nav li a']
+        hrefs = as_.pluck('href')
+        self.two(hrefs)
+        self.in_(hrefs, '/spa/subpage')
+        self.in_(hrefs, '/spa')
+
+        as_ = html['nav>ul a']
+        hrefs = as_.pluck('href')
+        self.two(hrefs)
+        self.in_(hrefs, '/spa/subpage')
+        self.in_(hrefs, '/spa')
+
+        as_ = html['nav ul>li a']
+        hrefs = as_.pluck('href')
+
+        # Commented out for efa5825e
+        #self.two(hrefs)
+        #self.in_(hrefs, '/spa/subpage')
+        self.in_(hrefs, '/spa')
+
+        as_ = html['nav>ul>li a']
+        hrefs = as_.pluck('href')
+
+        # Commented out for efa5825e
+        #self.two(hrefs)
+        #self.in_(hrefs, '/spa/subpage')
+
+        self.in_(hrefs, '/spa')
+
     def it_selects_with_groups(self):
         html = self._shakespear
 
