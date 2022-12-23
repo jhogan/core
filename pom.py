@@ -1815,7 +1815,14 @@ class page(dom.html):
                     # req would be None.
                     req = None
                     
-                if req and req.isevent:
+                # Determine if page is being called from an event
+                # trigger (e.g., when a menu item is clicked and the SPA
+                # loads a subpage.  If `eargs is not None`, then we are
+                # being called by an event handler. 
+                # XXX Do we need to test req.isevent
+                isevent = bool(eargs)
+
+                if isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)
                     else:
