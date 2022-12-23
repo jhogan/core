@@ -533,15 +533,24 @@ class tester(entities.entity):
                             </ul>
                         </nav>
                     """
-                    tree = dom.a, dom.li, dom.ul, dom.nav
+                    # XXX Revise JS version to match this revision
+                    # XXX Make the CSS selector a constant
+                    rent = e.parent
 
-                    for c in tree:
-                        if not isinstance(e, c):
-                            return False
+                    while rent:
+                        if type(rent) is dom.nav:
+                            nav = rent
+                            break
+                        rent = rent.parent
+                    else:
+                        return False
 
-                        e = e.parent
+                    as_ = rent['nav ul>li a']
+                    for a in as_:
+                        if a is e:
+                            return True
 
-                    return True
+                    return False
 
                 def replace(this, that):
                     """ Take `this` and replace it with `that`.
