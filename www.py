@@ -933,6 +933,13 @@ class request:
                 # targeting.
                 pg = self.page
 
+                # Clear the page before we invoke it. This is for when
+                # test scripts use the same website object to make
+                # subsequent calls to the same page. The website object
+                # will use the same page object and the page will
+                # raise an exception because it has already been called.
+                pg.clear()
+
                 # If we are dealing with a page, the content-type will
                 # be text/html.
                 res.headers += 'Content-Type: text/html'
@@ -943,6 +950,10 @@ class request:
 
                 # Get the main SPA application page for the page.
                 if spa := pg.spa:
+                    
+                    # Clear page. See the comment above on why we clear.
+                    spa.clear()
+
                     # If one exists, call it
                     spa()
 
