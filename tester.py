@@ -550,7 +550,7 @@ class tester(entities.entity):
                     identifies a unique element in self that should be
                     replaced.
 
-                    :param: that dom.elements The elements to tha will
+                    :param: that dom.elements The elements to will
                     replace `this`.
                     """
 
@@ -573,6 +573,10 @@ class tester(entities.entity):
                     # Remove `this` from its parent and thus the DOM
                     # self.
                     this.remove()
+
+                    # XXX .insert`ing `that` does not update
+                    # that.parent; it ends up leaving it as None. Fix
+                    # this and write test for it.
 
                     # Put `that` where `this` was
                     rent.elements.insert(ix, that)

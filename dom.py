@@ -1042,6 +1042,7 @@ class elements(entities.entities):
         """
         if not hasattr(self, '_parent'):
             self._parent = None
+
         return self._parent
 
     def _setparent(self, v):
@@ -1678,6 +1679,7 @@ class element(entities.entity):
         """
         if not hasattr(self, '_parent'):
             self._parent = None
+
         return self._parent
 
     @property

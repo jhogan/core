@@ -108,7 +108,6 @@ class site(asset.asset):
                 self._ensure()
             finally:
                 site._ensuring = False
-        
 
     # Host name of the site
     host = str
@@ -1784,9 +1783,12 @@ class page(dom.html):
             # "Calling" the page ends up calling the main() method
             # defined above.
             pg() 
+
+            XXX Document parameters
         """
 
-        self._attemped = True  # A call was attemped
+        # A call was attemped
+        self._attemped = True
 
         if len(args):
             raise ValueError('Use kwargs when calling page object')
@@ -1803,13 +1805,14 @@ class page(dom.html):
             try:
                 self._calling = True
 
-                # NOTE It's possible to __call__ a page object directly
-                # (not through an HTTP request). In that case, the
-                # req would be None.
-                app = www.application.current
-                if app:
+                # If we are in a web context
+                if app := www.application.current:
+                    # Get the current request object
                     req = app.request
                 else:
+                    # It's possible to __call__ a page object directly
+                    # (not through an HTTP request). In that case, the
+                    # req would be None.
                     req = None
                     
                 if req and req.isevent:
@@ -1843,6 +1846,7 @@ class page(dom.html):
                     # here but the web developer will call it `main`.
                     self._mainfunc(**self._arguments)
                 self._called = True
+
             finally:
                 self._calling = False
 

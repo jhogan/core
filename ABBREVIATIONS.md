@@ -14,6 +14,7 @@ object:        obj
 operation:     op
 owner:         own
 parent:        rent
+page:          pg
 parenthesis:   paren
 proprietor:    propr
 remove:        rm
@@ -22,4 +23,5 @@ return-value:  r
 segment:       seg
 switch-user:   su
 tuple:         tup
+website:       ws
 where:         wh
