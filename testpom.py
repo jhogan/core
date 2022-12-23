@@ -2740,7 +2740,8 @@ class spa(pom.spa):
         self.pages += spa.subpage('subpage')
 
     def main(self):
-        self.header.makemain()
+        if not self.header.menu:
+            self.header.makemain()
         self.main += dom.p('Welcome to the SPA')
 
         ''' SPA Menu '''
