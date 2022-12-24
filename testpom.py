@@ -2594,6 +2594,79 @@ class page(tester.tester):
         self.eq('I am changed', sec.elements.first.text)
         self.eq('I should remain unchanged', sec.elements.second.text)
 
+    def it_gets_same_page_twice(self):
+        """ There were issues when tests would use the same website
+        object (ws) to make multiple requests to the same page. For the
+        sake of automated testing, we want to make sure that there are
+        no problems doing this.
+        
+
+        XXX Complete
+        """
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        ''' Test Non-SPA '''
+        tab.navigate('/en/index', ws)
+        html = tab.html.html
+
+        self.expect(None, lambda: tab.navigate('/en/index', ws))
+        html1 = tab.html.html
+
+        self.eq(html, html1)
+
+        ''' Test SPA '''
+        tab.inspa = True
+        tab.navigate('/en/spa', ws)
+        html = tab.html.html
+
+        self.expect(None, lambda: tab.navigate('/en/spa', ws))
+        html1 = tab.html.html
+
+        # XXX
+        #self.eq(html, html1)
+
+        ''' Test subpage '''
+        tab.navigate('/en/spa/subpage', ws)
+        html = tab.html.html
+
+        self.expect(None, lambda: tab.navigate('/en/spa/subpage', ws))
+        html1 = tab.html.html
+
+        # XXX
+        #self.eq(html, html1)
+
+        ''' Test multiple events '''
+        # XXX
+
+        ''' Test SPA subpage navigation'''
+        tab.navigate('/en/spa', ws)
+
+        # Click on the Blog menu item twice
+        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+
+        a_blog.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/blogs', attrs['data-path'].value)
+
+        a_blog.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/blogs', attrs['data-path'].value)
+
+        # Click on the Subpage menu item twice
+        sel = 'header>section>nav a[href|="/spa/subpage"]'
+
+        a_subpage = tab[sel].only
+
+        a_subpage.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/spa/subpage', attrs['data-path'].value)
+
+        a_subpage.click()
+        attrs = tab.html['main'].only.attributes
+        self.eq('/spa/subpage', attrs['data-path'].value)
+
     def it_patches_spa_subpage_on_menu_click(self):
         ws = foonet()
 
