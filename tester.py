@@ -637,7 +637,8 @@ class tester(entities.entity):
                 if isnav:
                     # Replace the <main> element with the response
                     # (res.html)
-                    replace(this='main', that=res.html)
+                    main = res.html.only
+                    replace(this='main', that=main)
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
