@@ -1447,8 +1447,8 @@ class page(dom.html):
 
     @property
     def spa(self):
-        """
-             XXX Comment
+        """ If this `page` object is a subpage of a SPA, return its SPA
+        `page`. Otherwise, return None.
         """
         pg = self.page
         while pg:
@@ -1784,7 +1784,26 @@ class page(dom.html):
             # defined above.
             pg() 
 
-            XXX Document parameters
+        :param: eargs dom.eventargs: If the call is made by an event,
+        (e.g., the click of a button on a web page), eargs will be a
+        dom.eventargs object. This object will contain a reference to
+        the event handler needed to process the event as well as the
+        HTML from the webpage from which the event was fired.
+
+        :param: *args tuple: Do not use. If an attempt is made to use
+        it, a ValueError will be raised encouraging the useng to use
+        **kwargs (i.e., qsargs)
+
+        :param: *qsargs dict: A dictionary that holds the query string
+        arguments the webpage is being called with. For example, if the
+        URL look like:
+            
+            /en/time?greet=1&tz=America/Phoenix&a=1&b=2
+
+        qsargs will be:
+
+            {'a': '1', 'b': '2', 'greet': '1', 'tz': 'America/Phoenix'}
+
         """
 
         # A call was attemped

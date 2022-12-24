@@ -584,10 +584,6 @@ class tester(entities.entity):
                     # self.
                     this.remove()
 
-                    # XXX .insert`ing `that` does not update
-                    # that.parent; it ends up leaving it as None. Fix
-                    # this and write test for it.
-
                     # Put `that` where `this` was
                     rent.elements.insert(ix, that)
 

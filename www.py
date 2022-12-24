@@ -1756,12 +1756,8 @@ class response():
 
     @property
     def html(self):
-        """ Returns a dom.html object representing the HTML in the
-        body.
-
-        # XXX This doesn't return a dom.html object, it returns a
-        # dom.elements object. Update the docstring but first write an
-        # `assert` to make sure that this is indeed always the case.
+        """ Returns a dom.elements collection representing the HTML in
+        the body.
         """
         # TODO If the body is not HTML (perhaps it's JSON or the
         # content-type isn't HTML), we should probably raise a
