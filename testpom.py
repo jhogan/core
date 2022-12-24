@@ -2602,10 +2602,8 @@ class page(tester.tester):
         tab.inspa = True
 
         # GET the clickme page
-        
-        # XXX Write test to ensure GETting the same page twice works.
         tab.navigate('/en/spa', ws)
-        tab.navigate('/en/spa', ws)
+
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 

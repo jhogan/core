@@ -713,10 +713,12 @@ sockets, you can create a socket file and bind `gunicorn` to it:
     gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'
 
 This command will create the socket file `c13fa8ce.sock`. Note you may
-need to change the socket's group or owner to give NGINX access to it,
-e.g.:
+need to change the socket's group to give NGINX access to it, e.g.:
 
-    chown www-data:www-data /run/carapacian.com/c13fa8ce.sock
+    chown www-data /run/carapacian.com/c13fa8ce.sock
+
+You can do this without using `sudo` if your user account is in the same
+group as the group specified (i.e. `www-data`).
 
 You should now be able to use `curl` to access the socket from a special
 URL through the reverse proxy, e.g.:

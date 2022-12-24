@@ -490,7 +490,7 @@ class tester(entities.entity):
 
                 # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
-                # like a global JavaScript varibale. The user may be
+                # like a global JavaScript variable. The user may be
                 # given the option of turning SPA mode on or off. This
                 # would be a useful option to give users for a number of
                 # reasons:
@@ -499,16 +499,17 @@ class tester(entities.entity):
                 #     that has no JavaScript support.
                 #
                 #   * They are using a legacy browser that has poor
-                #     JavaScript support
+                #     JavaScript support.
                 #   
-                #   * They have JavaScript support disable, perhaps for
-                #     security reasons.
+                #   * They have JavaScript support disable -- perhaps
+                #     for security reasons.
                 # 
                 #   * The "browser" is actually a bot, such as a web
                 #     crawler, whose willingness to execute JavaScript is
                 #     not well understood. In this case, you may want to
                 #     let the crawler index the page as if the site were a
                 #     multi-page application.
+                #
                 self.inspa     =  False
 
             def element_event(self, src, eargs):
