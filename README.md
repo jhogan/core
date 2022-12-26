@@ -1,13 +1,5 @@
 Carapacian Core
 ================
-
-<!-- XXX Explain reloading gunicorn in production 
-    https://serverfault.com/questions/823546/automated-graceful-reload-of-gunicorn-in-production
--->
-
-<!-- XXX Explain that you need to stop (CTRL-Z) gunicorn then change the
-socket's user and group to www-data.
--->
 Carapacian Core is a web framework written and maintained to
 facilitate the creation of web application that deal with business data.
 It offers the following features:
@@ -712,13 +704,21 @@ sockets, you can create a socket file and bind `gunicorn` to it:
 
     gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'
 
-This command will create the socket file `c13fa8ce.sock`. Note you may
-need to change the socket's group to give NGINX access to it, e.g.:
+This command will create the socket file `c13fa8ce.sock.  Note that you
+may want to run the `gunicorn` process as another group, such as
+`www-data`. This will ensure that the socket file is is in the www-data
+group. To do this, run the `gunicorn` command like:
 
-    chown www-data /run/carapacian.com/c13fa8ce.sock
+    sg www-data -c "gunicorn --bind unix:/run/carapacian.com/c13fa8ce.sock --reload --timeout 0 'www:application()'"
 
-You can do this without using `sudo` if your user account is in the same
-group as the group specified (i.e. `www-data`).
+You can do this without using sudo`if your user account is in the same
+group as the group specified (i.e. `www-data`). The process will be
+owned by your user account, but its gid will be www-data. The socket
+file will have a similar security configuration thus making it
+accessable to the the reverse proxy:
+
+    $ ls -l /run/carapacian.com/c13fa8ce.sock
+    srwxrwx--- 1 jhogan www-data 0 Dec 24 17:06 /run/carapacian.com/c13fa8ce.sock
 
 You should now be able to use `curl` to access the socket from a special
 URL through the reverse proxy, e.g.:

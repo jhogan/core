@@ -1030,15 +1030,15 @@ class menus(entities.entities, dom.section):
         return els
 
 class menu(dom.nav):
-    # TODO:c0336221 Currently, there issues altering attributes en masse
-    # with menu and its subsidiaries:
+    # TODO:c0336221 Currently, there are issues altering attributes en
+    # masse with menu and its subsidiaries:
     #
     #   for itm in menu_items.all:
     #       itm.id = False
     # 
     # Part of this is an issue with the way attributes aren't properly
     # set or deleted. These issue (12c29ef9) will be addressed
-    # eventually in pom.attributen code. When thes are, tests should be
+    # eventually in pom.attributen code. When they are, tests should be
     # written to ensure that mass assignments of attributes work for
     # menus because there are issues with the way menu and its
     # subsidiaries clone and memoizes elements.
@@ -1990,13 +1990,17 @@ class page(dom.html):
         return r
 
 class spas(pages):
-    """
-        XXX Comment
+    """ A collection of `spa` pages.
     """
 
 class spa(page):
-    """
-        XXX Comment
+    """ The main page of a single-page application (SPA).
+
+    `spa` objects are used to build the main page of the SPA that get's
+    loaded with an HTTP GET. As the user navigates to other pages within
+    the SPA, those pages are loaded through XHR requests and their
+    content replace whatever is in the main SPA page's <main> element.
+    These pages are called the *subpages* of the SPA. 
     """
 
 class header(dom.header):
