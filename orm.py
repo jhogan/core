@@ -8497,6 +8497,18 @@ class orm:
             # of each entity class. See orm.subentities @property
             cls.orm._subclasses = None
 
+    @contextmanager
+    def initialization(self):
+        """ XXX
+        """
+        isiniting = self.isiniting
+
+        try:
+            self.isiniting = True
+            yield
+        finally:
+            self.isiniting = isiniting
+
     @property
     def entities(self):
         """ Return the entities class that corresponds to this

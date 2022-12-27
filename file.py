@@ -84,10 +84,8 @@ class inodes(orm.entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # TODO:fae234dd This forces a premature (non-deferred) load of
-        # inodes. We should create an onbeforeadd property where the
-        # subscription happens once. See fae234dd in git-log.
-        self.onbeforeadd += self._self_onbeforeadd
+        with self.orm.initialization():
+            self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
         """ An event handler to process inode objects as they are being
