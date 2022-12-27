@@ -3848,8 +3848,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Post super().__init__() events
             self.onaftervaluechange += self._self_onaftervaluechange
         finally:
-            if self_orm:
-                self_orm.initing = False
+            try:
+                self_orm
+            except NameError:
+                # Pass on NameError. The need for this is for rare bugs
+                # such as maximimum recursion errors that crop up during
+                # coding. By passing here, we end up not concealing the
+                # actual error with a NameError.
+                pass
+            else:
+                if self_orm:
+                    self_orm.isiniting = False
 
     @property
     def onbeforesave(self):
