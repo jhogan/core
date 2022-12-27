@@ -2222,6 +2222,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self_orm.isiniting       =  True
 
+            # If True, the entities collection is being
+            # hydrated/populated during a load.
+            self_orm.ispopulating  =  False
 
             self_orm.isloaded      =  False
             self_orm.isloading     =  False
@@ -8511,6 +8514,18 @@ class orm:
         finally:
             self.isiniting = isiniting
 
+    @contextmanager
+    def populating(self):
+        """ XXX
+        """
+        ispopulating = self.ispopulating
+
+        try:
+            self.ispopulating = True
+            yield
+        finally:
+            self.ispopulating = ispopulating
+
     @property
     def entities(self):
         """ Return the entities class that corresponds to this
@@ -10458,7 +10473,8 @@ class orm:
                             # field will be for the root entity which is
                             # above any joins from the SELECT.
                             if i.first:
-                                es += e
+                                with es.orm.populating():
+                                    es += e
                             else:
                                 # If we are here, we must be at an 'id'
                                 # field but not the first one, i.e., one
@@ -10491,7 +10507,8 @@ class orm:
                                 # that was OUTER JOINed in order to
                                 # collect subentities of self.instance.
                                 if abbrs == abbrs1:
-                                    es += e
+                                    with es.orm.populating():
+                                        es += e
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The

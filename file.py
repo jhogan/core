@@ -96,6 +96,11 @@ class inodes(orm.entities):
         caches to make sure the correct composite is being set on the
         inode being added (see code below).
         """
+
+        # Don't process when populating
+        if self.orm.ispopulating:
+            return
+            
         flts = directory._floaters
         radix = directory.radix
         nd = eargs.entity
