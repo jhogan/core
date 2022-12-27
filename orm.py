@@ -2203,13 +2203,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     'Check that the entity inherits from the '
                     'correct base class.' % type(self).__name__
                 )
+
             try:
                 # NOTE Use self_orm for the rest of this method to take
                 # the burden off __getattribute__. This helps with
                 # performance.
-
-
                 self_orm = self._orm = type(self).orm.clone()
+
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -2220,16 +2220,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self_orm.instance = self
 
-            self_orm.initing = True # change to isiniting
+            self_orm.isiniting       =  True
 
-            self_orm.isloaded   =  False
-            self_orm.isloading  =  False
-            self_orm.stream     =  None
-            self_orm.where      =  None
-            self_orm.ischunk    =  False
-            self.join           =  self._join
 
-            # If a stream or eager is found in the first or second
+            self_orm.isloaded      =  False
+            self_orm.isloading     =  False
+            self_orm.stream        =  None
+            self_orm.where         =  None
+            self_orm.ischunk       =  False
+            self.join              =  self._join
+
+            # If a `stream` or `eager` is found in the first or second
             # argument, move it to args
             args = list(args)
             if  isinstance(initial, (stream, eager)):
@@ -2312,7 +2313,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         finally:
             if hasattr(type(self), 'orm'):
                 if hasattr(self, 'orm'):
-                    self_orm.initing = False
+                    self_orm.isiniting = False
 
     @property
     def onbeforereconnect(self):
@@ -2850,7 +2851,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= attr != '__class__'
 
             # Don't load if the entities collection is __init__'ing
-            load &= not self_orm.initing
+            load &= not self_orm.isiniting
 
             # Don't load if the entities collection is currently being
             # loading
@@ -3705,6 +3706,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO Support eager loading:
         #
         #     art = artist(name=name, eager('presentations'))
+
         self._orm = None
         try:
             self_orm = self.orm.clone()
@@ -3714,7 +3716,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             #     self.orm = self_orm
             object.__setattr__(self, 'orm', self_orm)
 
-            self_orm.initing = True # TODO change to `isiniting`
+            self_orm.isiniting = True
             self_orm.instance = self
 
             super().__init__()
@@ -8459,7 +8461,7 @@ class orm:
         self.dotrash               =  True
         self._joins                =  None
         self._abbreviation         =  str()
-        self.initing               =  False
+        self.isiniting             =  False
         self._sub                  =  undef
 
         self.recreate = self._recreate
@@ -10559,10 +10561,15 @@ class orm:
                 for (id1, eclass), e in edict.items():
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
+                            # NOTE We will likely want to put this in
+                            # the es.orm.populating() contextmanager.
                             es.remove(e, trash=False)
 
             #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             # Ensure the user has read access to the entity.
+            #
+            # NOTE We may want to put this in the es.orm.populating()
+            # contextmanager.
             es.orm.redact()
             #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
