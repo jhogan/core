@@ -5085,7 +5085,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return brs
 
     def __getattribute__(self, attr):
-        """ Implements all attributes accesses for an entity.
+        """ Implements all attributes accesses for this `entity`.
 
         In addition to returning the values for standard @property's,
         methods and fields declared on the class, the __getattribute__
@@ -8513,8 +8513,47 @@ class orm:
 
     @contextmanager
     def initialization(self):
-        """ XXX
+        """ A context manager that temporarily puts the `orm` into
+        initialization mode (self.isiniting). When the context manager
+        exits, the initialization mode is restored to whatever it was
+        before the context manager was entered into. This should only be
+        used for `orm` objects attached to an entities collection:
+
+            pers = persons()
+            with pers.orm.initialization():
+                assert pers.orm.isiniting
+
+            assert not pers.orm.isiniting
+
+        This is useful for code in the constructor of entities that call
+        attributes of `self`. Calling attributes of `self` will cause
+        the entities collection to load itself prematurely which is
+        likely undisirable. This context manager will prevent that:
+
+            class persons(orm.entities):
+                def __init__(*args, **kwargs)
+                    # Initialize base class
+                    super().__init__(*args, **kwargs)
+
+                    with self.orm.initialization():
+                        # More initialization code
+                        ...
+
         """
+        # TODO This should encapsulate the call to the base class's
+        # __init__. Instead of the example in the docstring, we should
+        # be able to do this:
+        #
+        #   class persons(orm.entities):
+        #       def __init__(*args, **kwargs)
+        #           with self.orm.initialization(*args, **kwargs)
+        #               # More initialization code
+        #               ...
+        #
+        # Above, we would assume that self.orm.initialization is calling
+        # the base class's __init__ and passing in the *args and
+        # **kwargs arguments.
+        
         isiniting = self.isiniting
 
         try:
@@ -8525,10 +8564,11 @@ class orm:
 
     @contextmanager
     def populating(self):
-        """ XXX
+        """ A context manager that temporarily puts the `orm` into
+        populating mode (self.ispopulating). When the context manager
+        exits, the populating mode is restored to whatever it was
+        before the context manager was entered into.
         """
-        ispopulating = self.ispopulating
-
         try:
             self.ispopulating = True
             yield
@@ -10482,6 +10522,7 @@ class orm:
                             # field will be for the root entity which is
                             # above any joins from the SELECT.
                             if i.first:
+                                # Put es into populating mode for append
                                 with es.orm.populating():
                                     es += e
                             else:
@@ -10516,6 +10557,7 @@ class orm:
                                 # that was OUTER JOINed in order to
                                 # collect subentities of self.instance.
                                 if abbrs == abbrs1:
+                                    # Put es into populating mode
                                     with es.orm.populating():
                                         es += e
 
@@ -10631,7 +10673,7 @@ class orm:
             
             assert loc in art.locations
 
-        Noticed that the keys for <edict> are tuples of the entity's id
+        Notice that the keys for <edict> are tuples of the entity's id
         and type.  Usually, id is enough to distinguish between two
         entities. However, a superentity will have the same id as its
         subentity. In those cases, the class is needed to distinguish
@@ -10675,10 +10717,10 @@ class orm:
                 #
                 # Note we need to ascend the inheritance tree to include
                 # all the superentities as well. This is for loading
-                # subentity objects joined to super entity association:
+                # subentity objects joined to superentity association:
                 #
                 #   singers.join(
-                #       artist_artists('role = 'sng-art_art-role-0')
+                #       artist_artists('role = sng-art_art-role-0')
                 #   )
                 #
                 # In the above, the `comp` will be `singers`. However,
@@ -10690,6 +10732,8 @@ class orm:
                 mapgens = list()
                 while sup:
                     mapgens.append(sup.orm.mappings.entitiesmappings)
+
+                    # XXX This line exceeds 72 chars
                     mapgens.append(sup.orm.mappings.associationsmappings)
                     sup = sup.orm.super
 
