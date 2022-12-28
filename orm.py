@@ -10749,7 +10749,16 @@ class orm:
                     if isinstance(e, map1.entities.orm.entity):
                         if not map1.isloaded:
                             map1._value = map1.entities()
-                        map1._value += e
+
+                        # Assign the map's value to `es` because it will
+                        # be either an entities collection or an
+                        # associations collection.
+                        es = map1._value
+
+                        # Put es into 'populating' mode
+                        with es.orm.populating():
+                            # XXX Use: es += e
+                            map1._value += e
 
                 # For each entity mapping of `e`, if the `comp` is the
                 # same type as the mapping, then assign `comp` to that
