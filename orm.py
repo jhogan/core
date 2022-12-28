@@ -8568,6 +8568,15 @@ class orm:
         populating mode (self.ispopulating). When the context manager
         exits, the populating mode is restored to whatever it was
         before the context manager was entered into.
+
+        Turning populating code on is necessary for certain event
+        handlers to perform correctly. For example, when we are
+        populating, we are likely triggering methods that handle
+        entities.onbeforeadd and entities.onadd events. These handlers
+        may have data access code in them which shouldn't be run when
+        the collection is being populated. These handlers can test the
+        `entities.orm.ispopulating` attribute to determine if the
+        entities collection is in populating mode.
         """
         try:
             self.ispopulating = True
