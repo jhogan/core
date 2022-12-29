@@ -8580,8 +8580,7 @@ class orm:
         entities.onbeforeadd and entities.onadd events. These handlers
         may have data access code in them which shouldn't be run when
         the collection is being populated. These handlers can test the
-        `entities.orm.ispopulating` attribute to determine if the
-        entities collection is in populating mode.
+        `entities.orm.ispopulating
         """
         ispopulating = self.ispopulating
         try:
@@ -10815,10 +10814,9 @@ class orm:
         return self._getselect()
 
     def _getselect(self, graph=str(), whstack=None, joiner=None, join=None):
-        """ The lower-level private method which bulids and returns the
+        """ The lower-level private method which builds and returns the
         SELECT statement for the entities (self.instance) collection
         object.
-
         """
         # NOTE, since generating the SELECT statement involves
         # recursion, this needs to be a regular method. The user would
