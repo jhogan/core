@@ -11140,6 +11140,21 @@ class orm:
         """
         self._isdirty = v
 
+    def setdirty(self, v, ascend=False):
+        """
+            XXX
+        """
+        self.isdirty = v
+
+        if not ascend:
+            return
+
+        sup = self
+        # XXX Comment on using the private _super atttr here
+        while sup:
+            sup.isdirty = v
+            sup = sup._super and sup._super.orm
+
     @property
     def forentities(self):
         """ Returns True if this ``orm`` instance corresponds to an
