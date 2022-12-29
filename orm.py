@@ -10776,9 +10776,10 @@ class orm:
 
                             # Appending e to es can cause it to become
                             # dirty because the append sets e's
-                            # composite. Therefore we need to re-set the
-                            # isdirty flag to False.
-                            e.orm.isdirty = False
+                            # composite. Therefore we need to re-set its
+                            # dirty flag, and the dirty flag of all its
+                            # supers, to False.
+                            e.orm.setdirty(False, ascend=True)
 
                             name = type(comp).__name__
                             setattr(map1._value, name, comp)
