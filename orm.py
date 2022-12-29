@@ -8583,6 +8583,7 @@ class orm:
         `entities.orm.ispopulating` attribute to determine if the
         entities collection is in populating mode.
         """
+        ispopulating = self.ispopulating
         try:
             self.ispopulating = True
             yield
