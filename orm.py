@@ -3126,6 +3126,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # Assign the composite reference of this collection to
                 # the e being appended, i.e.:
                 #    e.composite = self.composite
+                #
+                # NOTE This can dirty e which means appending `e` to a
+                # collection can cause e to be dirtied. This was a
+                # problem for orm.populate() so that code sets the
+                # e.isdirty back to False.
                 setattr(e, clscomp.__name__, objcomp)
 
         super().append(e, uniq)
@@ -10768,6 +10773,15 @@ class orm:
                         with es.orm.populating():
                             # XXX Use: es += e
                             map1._value += e
+
+                            # Appending e to es can cause it to become
+                            # dirty because the append sets e's
+                            # composite. Therefore we need to re-set the
+                            # isdirty flag to False.
+                            e.orm.isdirty = False
+
+                            name = type(comp).__name__
+                            setattr(map1._value, name, comp)
 
                 # For each entity mapping of `e`, if the `comp` is the
                 # same type as the mapping, then assign `comp` to that
