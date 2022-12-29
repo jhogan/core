@@ -2127,6 +2127,17 @@ class case(tester.tester):
         )
 
         comm = cs.communications.last
+
+        # TODO Here we use the + operator to create an entities.entities
+        # collection of the party.objective objects. We should, however,
+        # override the orm.entity.__add__ method to return this set in a 
+        # `party.objectives` collection, or whatever the complement of
+        # its operands is. Some things won't work correctly without this
+        # behaviour. Consider that when we append
+        # (see orm.entities.append) this entities.entites collection to
+        # comm.objectives, append() checks if the type is orm.entities
+        # but doesn't check if it is entities.entities which can lead to
+        # problems.
         comm.objectives += \
             party.objective(
                 objectivetype = \
