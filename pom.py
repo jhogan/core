@@ -384,8 +384,8 @@ class site(asset.asset):
         except IndexError:
             pub = file.directory('public')
             dir += pub
-        finally:
-            return pub
+
+        return pub
 
     @property
     def resources(self):

@@ -2203,13 +2203,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     'Check that the entity inherits from the '
                     'correct base class.' % type(self).__name__
                 )
+
             try:
                 # NOTE Use self_orm for the rest of this method to take
                 # the burden off __getattribute__. This helps with
                 # performance.
-
-
                 self_orm = self._orm = type(self).orm.clone()
+
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
@@ -2220,16 +2220,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self_orm.instance = self
 
-            self_orm.initing = True # change to isiniting
+            self_orm.isiniting       =  True
 
-            self_orm.isloaded   =  False
-            self_orm.isloading  =  False
-            self_orm.stream     =  None
-            self_orm.where      =  None
-            self_orm.ischunk    =  False
-            self.join           =  self._join
+            # If True, the entities collection is being
+            # hydrated/populated during a load.
+            self_orm.ispopulating  =  False
 
-            # If a stream or eager is found in the first or second
+            self_orm.isloaded      =  False
+            self_orm.isloading     =  False
+            self_orm.stream        =  None
+            self_orm.where         =  None
+            self_orm.ischunk       =  False
+            self.join              =  self._join
+
+            # If a `stream` or `eager` is found in the first or second
             # argument, move it to args
             args = list(args)
             if  isinstance(initial, (stream, eager)):
@@ -2312,7 +2316,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         finally:
             if hasattr(type(self), 'orm'):
                 if hasattr(self, 'orm'):
-                    self_orm.initing = False
+                    self_orm.isiniting = False
 
     @property
     def onbeforereconnect(self):
@@ -2850,7 +2854,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= attr != '__class__'
 
             # Don't load if the entities collection is __init__'ing
-            load &= not self_orm.initing
+            load &= not self_orm.isiniting
 
             # Don't load if the entities collection is currently being
             # loading
@@ -3122,6 +3126,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # Assign the composite reference of this collection to
                 # the e being appended, i.e.:
                 #    e.composite = self.composite
+                #
+                # NOTE This can dirty e which means appending `e` to a
+                # collection can cause e to be dirtied. This was a
+                # problem for orm.populate() so that code sets the
+                # e.isdirty back to False.
                 setattr(e, clscomp.__name__, objcomp)
 
         super().append(e, uniq)
@@ -3705,6 +3714,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO Support eager loading:
         #
         #     art = artist(name=name, eager('presentations'))
+
         self._orm = None
         try:
             self_orm = self.orm.clone()
@@ -3714,7 +3724,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             #     self.orm = self_orm
             object.__setattr__(self, 'orm', self_orm)
 
-            self_orm.initing = True # TODO change to `isiniting`
+            self_orm.isiniting = True
             self_orm.instance = self
 
             super().__init__()
@@ -3843,8 +3853,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Post super().__init__() events
             self.onaftervaluechange += self._self_onaftervaluechange
         finally:
-            if self_orm:
-                self_orm.initing = False
+            try:
+                self_orm
+            except NameError:
+                # Pass on NameError. The need for this is for rare bugs
+                # such as maximimum recursion errors that crop up during
+                # coding. By passing here, we end up not concealing the
+                # actual error with a NameError.
+                pass
+            else:
+                if self_orm:
+                    self_orm.isiniting = False
 
     @property
     def onbeforesave(self):
@@ -5071,7 +5090,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return brs
 
     def __getattribute__(self, attr):
-        """ Implements all attributes accesses for an entity.
+        """ Implements all attributes accesses for this `entity`.
 
         In addition to returning the values for standard @property's,
         methods and fields declared on the class, the __getattribute__
@@ -8463,7 +8482,7 @@ class orm:
         self.dotrash               =  True
         self._joins                =  None
         self._abbreviation         =  str()
-        self.initing               =  False
+        self.isiniting             =  False
         self._sub                  =  undef
 
         self.recreate = self._recreate
@@ -8500,6 +8519,79 @@ class orm:
             # Nullify the _subclass instance field for each orm object
             # of each entity class. See orm.subentities @property
             cls.orm._subclasses = None
+
+    @contextmanager
+    def initialization(self):
+        """ A context manager that temporarily puts the `orm` into
+        initialization mode (self.isiniting). When the context manager
+        exits, the initialization mode is restored to whatever it was
+        before the context manager was entered into. This should only be
+        used for `orm` objects attached to an entities collection:
+
+            pers = persons()
+            with pers.orm.initialization():
+                assert pers.orm.isiniting
+
+            assert not pers.orm.isiniting
+
+        This is useful for code in the constructor of entities that call
+        attributes of `self`. Calling attributes of `self` will cause
+        the entities collection to load itself prematurely which is
+        likely undisirable. This context manager will prevent that:
+
+            class persons(orm.entities):
+                def __init__(*args, **kwargs)
+                    # Initialize base class
+                    super().__init__(*args, **kwargs)
+
+                    with self.orm.initialization():
+                        # More initialization code
+                        ...
+
+        """
+        # TODO This should encapsulate the call to the base class's
+        # __init__. Instead of the example in the docstring, we should
+        # be able to do this:
+        #
+        #   class persons(orm.entities):
+        #       def __init__(*args, **kwargs)
+        #           with self.orm.initialization(*args, **kwargs)
+        #               # More initialization code
+        #               ...
+        #
+        # Above, we would assume that self.orm.initialization is calling
+        # the base class's __init__ and passing in the *args and
+        # **kwargs arguments.
+        
+        isiniting = self.isiniting
+
+        try:
+            self.isiniting = True
+            yield
+        finally:
+            self.isiniting = isiniting
+
+    @contextmanager
+    def populating(self):
+        """ A context manager that temporarily puts the `orm` into
+        populating mode (self.ispopulating). When the context manager
+        exits, the populating mode is restored to whatever it was
+        before the context manager was entered into.
+
+        Turning populating code on is necessary for certain event
+        handlers to perform correctly. For example, when we are
+        populating, we are likely triggering methods that handle
+        entities.onbeforeadd and entities.onadd events. These handlers
+        may have data access code in them which shouldn't be run when
+        the collection is being populated. These handlers can test the
+        `entities.orm.ispopulating
+        """
+        ispopulating = self.ispopulating
+        try:
+            self.ispopulating = True
+            yield
+        finally:
+            self.ispopulating = ispopulating
 
     @property
     def entities(self):
@@ -10448,7 +10540,9 @@ class orm:
                             # field will be for the root entity which is
                             # above any joins from the SELECT.
                             if i.first:
-                                es += e
+                                # Put es into populating mode for append
+                                with es.orm.populating():
+                                    es += e
                             else:
                                 # If we are here, we must be at an 'id'
                                 # field but not the first one, i.e., one
@@ -10481,7 +10575,9 @@ class orm:
                                 # that was OUTER JOINed in order to
                                 # collect subentities of self.instance.
                                 if abbrs == abbrs1:
-                                    es += e
+                                    # Put es into populating mode
+                                    with es.orm.populating():
+                                        es += e
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The
@@ -10551,10 +10647,15 @@ class orm:
                 for (id1, eclass), e in edict.items():
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
+                            # NOTE We will likely want to put this in
+                            # the es.orm.populating() contextmanager.
                             es.remove(e, trash=False)
 
             #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             # Ensure the user has read access to the entity.
+            #
+            # NOTE We may want to put this in the es.orm.populating()
+            # contextmanager.
             es.orm.redact()
             #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
@@ -10590,7 +10691,7 @@ class orm:
             
             assert loc in art.locations
 
-        Noticed that the keys for <edict> are tuples of the entity's id
+        Notice that the keys for <edict> are tuples of the entity's id
         and type.  Usually, id is enough to distinguish between two
         entities. However, a superentity will have the same id as its
         subentity. In those cases, the class is needed to distinguish
@@ -10634,10 +10735,10 @@ class orm:
                 #
                 # Note we need to ascend the inheritance tree to include
                 # all the superentities as well. This is for loading
-                # subentity objects joined to super entity association:
+                # subentity objects joined to superentity association:
                 #
                 #   singers.join(
-                #       artist_artists('role = 'sng-art_art-role-0')
+                #       artist_artists('role = sng-art_art-role-0')
                 #   )
                 #
                 # In the above, the `comp` will be `singers`. However,
@@ -10649,6 +10750,8 @@ class orm:
                 mapgens = list()
                 while sup:
                     mapgens.append(sup.orm.mappings.entitiesmappings)
+
+                    # XXX This line exceeds 72 chars
                     mapgens.append(sup.orm.mappings.associationsmappings)
                     sup = sup.orm.super
 
@@ -10664,7 +10767,26 @@ class orm:
                     if isinstance(e, map1.entities.orm.entity):
                         if not map1.isloaded:
                             map1._value = map1.entities()
-                        map1._value += e
+
+                        # Assign the map's value to `es` because it will
+                        # be either an entities collection or an
+                        # associations collection.
+                        es = map1._value
+
+                        # Put es into 'populating' mode
+                        with es.orm.populating():
+                            # XXX Use: es += e
+                            map1._value += e
+
+                            # Appending e to es can cause it to become
+                            # dirty because the append sets e's
+                            # composite. Therefore we need to re-set its
+                            # dirty flag, and the dirty flag of all its
+                            # supers, to False.
+                            e.orm.setdirty(False, ascend=True)
+
+                            name = type(comp).__name__
+                            setattr(map1._value, name, comp)
 
                 # For each entity mapping of `e`, if the `comp` is the
                 # same type as the mapping, then assign `comp` to that
@@ -10697,10 +10819,9 @@ class orm:
         return self._getselect()
 
     def _getselect(self, graph=str(), whstack=None, joiner=None, join=None):
-        """ The lower-level private method which bulids and returns the
+        """ The lower-level private method which builds and returns the
         SELECT statement for the entities (self.instance) collection
         object.
-
         """
         # NOTE, since generating the SELECT statement involves
         # recursion, this needs to be a regular method. The user would
@@ -11023,6 +11144,21 @@ class orm:
         :param: v bool: The value to set isdirty to.
         """
         self._isdirty = v
+
+    def setdirty(self, v, ascend=False):
+        """
+            XXX
+        """
+        self.isdirty = v
+
+        if not ascend:
+            return
+
+        sup = self
+        # XXX Comment on using the private _super atttr here
+        while sup:
+            sup.isdirty = v
+            sup = sup._super and sup._super.orm
 
     @property
     def forentities(self):

@@ -84,10 +84,8 @@ class inodes(orm.entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # XXX:fae234dd This forces a premature (non-deferred) load of
-        # inodes. We should create an onbeforeadd property where the
-        # subscription happens once. See fae234dd in git-log.
-        self.onbeforeadd += self._self_onbeforeadd
+        with self.orm.initialization():
+            self.onbeforeadd += self._self_onbeforeadd
 
     def _self_onbeforeadd(self, src, eargs):
         """ An event handler to process inode objects as they are being
@@ -98,6 +96,11 @@ class inodes(orm.entities):
         caches to make sure the correct composite is being set on the
         inode being added (see code below).
         """
+
+        # Don't process when populating
+        if self.orm.ispopulating:
+            return
+            
         flts = directory._floaters
         radix = directory.radix
         nd = eargs.entity
