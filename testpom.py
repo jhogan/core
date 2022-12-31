@@ -306,7 +306,7 @@ class site(tester.tester):
 
     def it_calls__init__(self):
         ws = foonet()
-        self.six(ws.pages)
+        self.seven(ws.pages)
 
     def it_appends_menu_items(self):
         ws = foonet()
@@ -315,7 +315,7 @@ class site(tester.tester):
         mnu.items += main.items
 
         uls = dom.html(mnu.items.html)['ul>li']
-        self.count(17, uls)
+        self.count(19, uls)
 
         self.eq(main.items.html, mnu.items.html)
         self.eq(main.items.pretty, mnu.items.pretty)
@@ -426,19 +426,23 @@ class site(tester.tester):
 
         ws = foonet()
         mnu = ws.header.makemain()
-        self.five(mnu.items)
+
+        self.six(mnu.items)
 
         self.eq(
-            ['/index', '/about', '/contact-us', '/blogs', '/admin'],
+            [
+                '/index', '/about', '/contact-us', 
+                '/blogs', '/admin', '/spa'
+            ],
             mnu.items.pluck('page.path')
         )
 
         self.eq(
-            [home, about, contact_us, blogs, admin],
+            [home, about, contact_us, blogs, admin, spa],
             [type(x) for x in  mnu.items.pluck('page')]
         )
 
-        blg = mnu.items.penultimate
+        blg = mnu.items.antepenultimate
         self.eq(
             ['/blogs/categories', '/blogs/posts', '/blogs/comments'],
             blg.items.pluck('page.path')
@@ -480,7 +484,7 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.five(mnu.items)
+        self.six(mnu.items)
 
         # Blogs item
         itm = mnu.items.fourth
@@ -508,7 +512,7 @@ class site(tester.tester):
 
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
-        self.six(mnu.items)
+        self.seven(mnu.items)
 
         sels = dom.selectors('li')
         self.true('My Profile' in (x.text for x in mnu[sels]))
