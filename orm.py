@@ -10749,10 +10749,10 @@ class orm:
                 sup = comp
                 mapgens = list()
                 while sup:
-                    mapgens.append(sup.orm.mappings.entitiesmappings)
-
-                    # XXX This line exceeds 72 chars
-                    mapgens.append(sup.orm.mappings.associationsmappings)
+                    mapgens.extend([
+                        sup.orm.mappings.entitiesmappings,
+                        sup.orm.mappings.associationsmappings
+                    ])
                     sup = sup.orm.super
 
                 # Chain the above mapping generators so we can interate

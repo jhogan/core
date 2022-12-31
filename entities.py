@@ -31,16 +31,17 @@ lookups by attributes. These indexes are useful for ``entities``
 collections with large numbers of elements.
 """
 from datetime import datetime
-from random import randint, sample
-import re
-import sys
-import builtins
-from pprint import pprint
-from functools import total_ordering
-import decimal
-import string
-from func import getattr, enumerate
 from dbg import B
+from func import getattr, enumerate
+from functools import total_ordering
+from pprint import pprint
+from random import randint, sample
+import builtins
+import decimal
+import re
+import string
+import sys
+import textwrap
 
 # TODO Throughout the code base, we should look for instances of:
 #

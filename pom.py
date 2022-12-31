@@ -1838,7 +1838,6 @@ class page(dom.html):
                 # trigger (e.g., when a menu item is clicked and the SPA
                 # loads a subpage.  If `eargs is not None`, then we are
                 # being called by an event handler. 
-                # XXX Do we need to test req.isevent
                 isevent = bool(eargs)
 
                 if isevent:

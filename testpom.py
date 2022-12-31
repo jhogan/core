@@ -482,7 +482,7 @@ class site(tester.tester):
         mnu = ws.header.makemain()
         self.five(mnu.items)
 
-        # blogs item
+        # Blogs item
         itm = mnu.items.fourth
 
         ''' It updates a menu item '''
