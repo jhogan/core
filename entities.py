@@ -1600,11 +1600,29 @@ class entities:
 
         try:
             for i, t in enumerate(self):
-                r += indent + fn(t) + '\n'
+                r += fn(t) + '\n'
         except Exception as ex:
-            # If we aren't able to enumerate (perhaps the self._ls hasn't been
-            # set), just ignore.
+            # If we aren't able to enumerate (perhaps the self._ls
+            # hasn't been set), just ignore.
             pass
+
+        if indent:
+            count = 0
+            def f(s):
+                """ A predicate for textwrap.indent to (see below) to
+                cause it to not indent the header but to indent all
+                subsequent lines.
+                """
+                nonlocal count
+                count += 1
+
+                # If we aren't including the header, indent all.
+                if not includeHeader:
+                    return True
+
+                return count > 1
+            
+            r = textwrap.indent(r, indent, f)
 
         return r
 
