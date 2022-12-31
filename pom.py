@@ -1395,8 +1395,13 @@ class pages(entities.entities):
 
         for pg in self:
             if pg.name == obj.name:
-                # XXX What use caes does this address. Comment on why
-                # this is useful to have.
+                # We want to be able to add a page even if a page with
+                # the same name already exists.
+
+                # NOTE This was appearently found useful at some point,
+                # although, looking back on it, it seems like a bad idea
+                # because it could conceal logic errors. It was added in
+                # commit c972a46b.
                 del self[pg.path]
                 break
 

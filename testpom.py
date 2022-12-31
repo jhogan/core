@@ -2604,7 +2604,6 @@ class page(tester.tester):
         sake of automated testing, we want to make sure that there are
         no problems doing this.
         
-
         XXX Complete
         """
         ws = foonet()

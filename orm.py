@@ -11145,18 +11145,42 @@ class orm:
         self._isdirty = v
 
     def setdirty(self, v, ascend=False):
-        """
-            XXX
+        """ A method to set the `self.isdirty` flag.
+
+        By default, this method is identical to using the `isdirty`
+        setter:
+
+            # This
+            e.orm.isdirty = True
+
+            # is the same as this
+            e.orm.setdirty(True)
+
+        The `ascend` flag allow us to indicate that, not only do we want
+        this entity's `isdirty` be set to `v`, but we also want the
+        isdirty flag of all its supers to be set to `v`:
+
+            e.orm.setdirty(False, ascend=True)
+
+        :param: v bool: The value to which self.orm.isdirty is set.
+
+        :param: ascend bool: If True, set this entity's `isdirty` flag,
+        and that of all its supers to v.
         """
         self.isdirty = v
 
         if not ascend:
             return
 
+        # Ascend
         sup = self
-        # XXX Comment on using the private _super atttr here
         while sup:
             sup.isdirty = v
+
+            # Use the private field ._super instead of the public
+            # @property .super. Calling .super forces a load of this
+            # entity's super which we don't want. ._super will be None
+            # if the super has not been loaded yet. 
             sup = sup._super and sup._super.orm
 
     @property
