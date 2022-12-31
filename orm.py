@@ -10775,8 +10775,7 @@ class orm:
 
                         # Put es into 'populating' mode
                         with es.orm.populating():
-                            # XXX Use: es += e
-                            map1._value += e
+                            es += e
 
                             # Appending e to es can cause it to become
                             # dirty because the append sets e's

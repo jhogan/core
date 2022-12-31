@@ -1393,9 +1393,6 @@ class pages(entities.entities):
         """
         obj._parentpages = self
 
-        # XXX Do we need this
-        obj.name in [x.name for x in self]
-
         for pg in self:
             if pg.name == obj.name:
                 # XXX What use caes does this address. Comment on why

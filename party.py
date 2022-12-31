@@ -127,9 +127,6 @@ class parties(orm.entities):
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     par = e(id=id, name=name)
                     par.save()
-                except Exception:
-                    # XXX What's this?
-                    raise
                 finally:
                     setattr(cls, fld, par)
 
