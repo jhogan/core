@@ -243,15 +243,7 @@ class application:
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
                     # by the JavaScript.
-                    art = dom.article()
-                    art.classes += 'exception'
-                    art += dom.h1('''
-                        An unexpected error occured.
-                    ''')
-
-                    art += dom.span(str(ex), class_='message')
-                    art += pom.traceback(ex)
-                    res.body = art.html
+                    res.body = pom.message(ex)
 
                     if isinstance(ex, HttpError):
                         res.status = ex.status
@@ -310,11 +302,7 @@ class application:
                         # Create a response to report a default 500
                         # Internal Server Error
                         res.status = 500
-                        p = dom.p()
-                        p += dom.text('Error: ')
-                        p += dom.span(type(ex).__name__, class_='type')
-                        p += dom.text(' ')
-                        p += dom.pre(str(ex), class_='message')
+                        msg = pom.message(ex)
 
                         # Getting get.page can sometimes raise an error
                         # because it calls req.site which may have
@@ -326,15 +314,15 @@ class application:
                             # HACK:10d9a676 We shoudn't have to prepend
                             # DOCTYPE here. See TODO:10d9a676.
 
-                            # XXX:72793403 Make sure that the HTML returned ends
-                            # with a linefeed. This used to be the case
-                            # but now `curl` will not display a linefeed
-                            # which makes the output hard to read. Make
-                            # sure tests are ensuring this linefeed
-                            # exists.
-                            res.body = f'<!DOCTYPE html>\n{p.html}'
+                            # XXX:72793403 Make sure that the HTML
+                            # returned ends with a linefeed. This used
+                            # to be the case but now `curl` will not
+                            # display a linefeed which makes the output
+                            # hard to read. Make sure tests are ensuring
+                            # this linefeed exists.
+                            res.body = f'<!DOCTYPE html>\n{msg.html}'
                         else:
-                            pg.flash(p)
+                            pg.flash(msg)
                             # HACK:10d9a676 We shoudn't have to prepend
                             # DOCTYPE here. See TODO:10d9a676.
 
@@ -345,22 +333,7 @@ class application:
             # ensure the response is 500 with a simple error message.
             except Exception as ex:
                 res.status = 500
-
-                # TODO We should probably run the output of
-                # str(ex) through html.escape(). 
-
-                # TODO Add traceback to output
-                # TODO Add tests to ensure exception messages are
-                # escaped properly
-                cls = type(ex).__name__
-                msg = html.escape(str(ex))
-                res.body = dom.dedent(
-                    f'''
-                        <p>
-                            <strong>{cls}</strong>: {msg}
-                        </p>
-                    '''
-                )
+                res.body = pom.message(ex).html
 
         finally:
             sec.owner = own
