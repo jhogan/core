@@ -2257,16 +2257,76 @@ class traceback(dom.article):
         # 'traceback' class: <article class="traceback">...
         self.classes += 'traceback'
 
+        ul = dom.ul()
+        self += ul
+
         # Build the DOM
         for tb in exc.traces(ex):
-            div = dom.div()
-            self += div
-            div  +=  dom.text('File ')
-            div  +=  dom.span(tb.file,    class_='file')
-            div  +=  dom.text(', at ')
-            div  +=  dom.span(tb.lineno,  class_='lineno')
-            div  +=  dom.text(', in ')
-            div  +=  dom.span(tb.name,    class_='name')
+            li = dom.li()
+            ul += li
+            li  +=  dom.text('File ')
+            li  +=  dom.span(tb.file,    class_='file')
+            li  +=  dom.text(', at ')
+            li  +=  dom.span(tb.lineno,  class_='lineno')
+            li  +=  dom.text(', in ')
+            li  +=  dom.span(tb.name,    class_='name')
+
+class message(dom.article):
+    """ An <article> that contains a message for the user.
+
+    The message can be a simple string message, or a report on an object
+    such as an `Exception`.
+    """
+    def __init__(self, msg, *args, **kwargs):
+        """ Create the message <article>.
+
+        :param: msg str|Exception: The object to report the message on.
+            if str:
+                The message object simply displays `msg` to the user in
+                a <p> tag.
+
+            if Exception:
+                The Exception's message is reported and a traceback is
+                created in a <details> element.
+        """
+        super().__init__(*args, **kwargs)
+        self.message = msg
+        self._build()
+
+    def _build(self):
+        """ A private message to build the DOM object. Called during
+        construction.
+        """
+        ex = None
+        msg = None
+
+        if isinstance(self.message, Exception):
+            ex = self.message
+            msg = str(ex)
+        elif isinstance(self.message, str):
+            msg = self.message
+
+        p = dom.p(class_='message')
+        self += p
+
+        if ex:
+            p += dom.span(type(ex).__name__, class_='type')
+            p += dom.text(': ')
+
+            # XXX We should probably run the output of
+            # str(ex) through html.escape(). 
+
+            # XXX Add tests to ensure exception messages are
+            # escaped properly
+            p += dom.span(str(ex), class_='message')
+
+            details = dom.details(class_='traceback')
+            self += details
+
+            details += dom.summary('Traceback')
+            details += traceback(ex)
+        else:
+            p.text = msg
 
 class _404(page):
     """ An error page to show that the requested page was not found.
