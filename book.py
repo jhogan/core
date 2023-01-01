@@ -6703,7 +6703,7 @@ with book('Hacking Carapacian Core'):
             `customers` object with an `orders` object joined to it.
             That customers object is then joined to `lineitems`. Since
             `lineitems` is not a constiuents of `customers`, we get an
-            error. To correct this issue, we add the parentheses:
+            error. To correct this issue, we must add the parentheses:
 
               custs = customers & (orders & lineitems('quantity > %s', 99))
 
@@ -6711,10 +6711,10 @@ with book('Hacking Carapacian Core'):
 
               (orders & lineitems('quantity > %s', 99))
 
-            evaluates to an `orders` object with a `lineitems` objected
+            evaluates to an `orders` object with a `lineitems` object
             joined to it. So far so good. This `orders` object is then
             joined to the `customers` class (which results in a
-            `customers` object.
+            `customers` object).
 
             An alternative way to write this is
 
@@ -6723,8 +6723,8 @@ with book('Hacking Carapacian Core'):
               custs &= ords
 
             Using this syntax, we are able to see line-by-line what is
-            going on. It may if the query becomes more complex or
-            unwieldy.
+            going on. This syntax may be useful if the query becomes
+            more complex or unwieldy.
 
             By the way, if you are debugging issues with joins, you can
             interrogate the `joins` collection of the `orm` class. For
@@ -6737,6 +6737,13 @@ with book('Hacking Carapacian Core'):
             lineitems object by doing this:
 
               assert type(ords.orm.joins.only.entities) is lineitems
+
+            The `orm.joins` collection is used by the ORM to store the
+            joins that are made during `entities` construction. They
+            expose the actual `join` objects. They are can be examined
+            for debugging purpose, but are inteded for use by the ORM's
+            internal logic. So, as with most members beyond the `orm`
+            object, it would be unwise to mutate them.
           ''')
 
     with section('Eager loading')
