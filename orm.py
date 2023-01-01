@@ -1948,7 +1948,7 @@ class eager:
         press = arts.first.presentations
 
     In the above example, two SQL statements are sent to the database.
-    The ``eager`` class would allow only one statement to be sent::
+    The ``eager`` class would allow only one statement to be sent:
 
         # SELECT * 
         # FROM ARTISTS A
@@ -1992,7 +1992,7 @@ class eager:
         self._graphs = graphs
 
     def join(self, to):
-        """ Create a ``join`` object heirarchy from ``self`` on ``to``
+        """ Create a ``join`` object hierarchy from ``self`` on ``to``
         where ``to`` is an ``orm.entities`` collection (invoked from
         ``orm.entities.__init__``). Since eager-loading is accomplished
         via INNER JOINs, this method is used to establish those JOINs.
@@ -2005,6 +2005,8 @@ class eager:
         for graph in self._graphs:
             graphs.append(graph.split('.'))
 
+        # TODO Rename e to es since it stores references to `entities`
+        # collections.
         for graph in graphs:
             parent = to
             for node in graph:
@@ -2257,28 +2259,32 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args.append(_p2)
                 _p2 = None
 
-            # Look in *args for stream class or a stream object. If
-            # found, ensure the element is an instantiated stream and
-            # set it to self._stream.  Delete the stream from *args.
-
             # TODO We should probably interate over this in reverse so
             # the `del`etions are reliable, Although, at the moment, I
             # don't think this is a problem because, for example, you
             # wouldn't pass `stream` and `chunk` at the same time.
 
+            # TODO Refactor to call `del args[i]` in only one place
+
+            # Scan *args for `stream` class, `stream` object, `eager`
+            # object, and `chunk` object.
             for i, e in enumerate(args):
                 if e is stream:
+                    # If stream class, objectify and set to `.stream`
                     self_orm.stream = stream()
                     self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, stream):
+                    # If e is a stream, set to `.stream`
                     self_orm.stream = e
                     self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, eager):
+                    # If eager, join
                     e.join(to=self)
                     del args[i]
                 elif e is stream.chunk:
+                    # If e is a chunk, set self.orm.ischunk = True
                     self_orm.ischunk = True
                     del args[i]
 
