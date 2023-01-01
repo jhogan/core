@@ -231,7 +231,10 @@ class application:
 
             if not res:
                 res = response(self)
+
+                # XXX I think we can remove this line
                 respones = res
+
                 res.headers += 'Content-Type: text/html'
 
             try:
@@ -295,7 +298,8 @@ class application:
                         res.body = pg.html
                         res.status = ex.status
 
-                    # If the exception is an HttpException i.e., HTTP 300s. 
+                    # If the exception is an HttpException i.e., HTTP
+                    # 300s. 
                     elif isinstance(ex, HttpException):
                         # Allow the exception to make modifications to
                         # the response.
@@ -1015,7 +1019,7 @@ class request:
                 raise ValueError(
                     'Request is neither for a page or a file'
                 )
-                    
+
         except HttpError as ex:
             # Set the responses status to the exception's status. 
             res.status = ex.status
