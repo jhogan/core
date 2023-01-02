@@ -216,10 +216,6 @@ class application:
             res = req()
 
         except Exception as ex:
-            # XXX Make sure that, when an SPA page (or any page) throws
-            # an exception upon GET, its stacktrace is included in the
-            # HTML.
-
             # Log exception to syslog
             logs.exception(ex)
 
@@ -231,10 +227,6 @@ class application:
 
             if not res:
                 res = response(self)
-
-                # XXX I think we can remove this line
-                respones = res
-
                 res.headers += 'Content-Type: text/html'
 
             try:

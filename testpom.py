@@ -2692,18 +2692,6 @@ class page(tester.tester):
         sel = 'header>section>nav a[href|="/spa/subpage"]'
         a_subpage = tab[sel].only
 
-        # XXX When we
-        #
-        #     print(tab)
-        #
-        # we get:
-        #
-        #     <nav aria-label="Spa">
-        #         <ul>
-        #         </ul>
-        #     </nav>
-        #
-        # Why do we get an empty <nav>
         a_subpage.click()
         attrs = tab.html['main'].only.attributes
         self.eq('/spa/subpage', attrs['data-path'].value)

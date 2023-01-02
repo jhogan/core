@@ -1550,6 +1550,7 @@ class page(dom.html):
                 self._header = self.site.header.clone()
             else:
                 self._header = dom.header()
+
         return self._header
 
     @property
@@ -2297,9 +2298,7 @@ class message(dom.article):
         """ A private message to build the DOM object. Called during
         construction.
         """
-        ex = None
-        msg = None
-
+        ex = msg = None
         if isinstance(self.message, Exception):
             ex = self.message
             msg = str(ex)
@@ -2313,11 +2312,8 @@ class message(dom.article):
             p += dom.span(type(ex).__name__, class_='type')
             p += dom.text(': ')
 
-            # XXX We should probably run the output of
-            # str(ex) through html.escape(). 
-
-            # XXX Add tests to ensure exception messages are
-            # escaped properly
+            # TODO Add tests to ensure exception messages are escaped
+            # properly
             p += dom.span(str(ex), class_='message')
 
             details = dom.details(class_='traceback')
