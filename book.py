@@ -6747,7 +6747,39 @@ with book('Hacking Carapacian Core'):
           ''')
 
     with section('Eager loading')
-      ...
+      print('''
+        As we've discussed, constituents are lazy-loaded by default.
+
+          # Load all Arizona customers from the database
+          custs = customers(state = 'AZ')
+
+          for cust in custs:
+            # This line loads the orders from the database
+            ords = cust.orders
+
+        This is typically prefered because an entity can have a number
+        of different constituents, and it's not necessarily the case
+        that we want to load any of them, thus the ORM will only load
+        them when they are requested. 
+
+        However, it may be the case that you will want to specify that
+        certain constituents are loaded when the composites are loaded.
+        You can do this with the `eager` class.
+
+        For example, to rewrite the above code to load the customers and
+        their ordes in one trip to the database, we could do the
+        following:
+      ''')
+        
+      with section('Use eager loading'):
+        # Load all Arizona customers and their orders from the database
+        custs = customers(state = 'AZ', orm.eager('orders'))
+
+        for cust in custs:
+
+          # This line loads nothing from the database because the orders
+          # have already been loaded above.
+          ords = cust.orders
 
     with section('Testing ORM entities'):
       ...
