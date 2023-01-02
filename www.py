@@ -235,7 +235,7 @@ class application:
                     # and gives traceback information. The article can
                     # be presented to the user (as a modal, for example)
                     # by the JavaScript.
-                    res.body = pom.message(ex)
+                    res.body = pom.message(ex).html
 
                     if isinstance(ex, HttpError):
                         res.status = ex.status
