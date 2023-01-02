@@ -1361,7 +1361,7 @@ class page(tester.tester):
         main = mains.first
         self.eq('418', main['.status'].first.text)
 
-        self.four(main['article.traceback>div'])
+        self.four(main['article.traceback>ul>li'])
         self.one(res['main[data-path="/error"]'])
 
         ''' Ensure the exception was logged '''
@@ -2551,8 +2551,8 @@ class page(tester.tester):
 
         self.one(tab['main>.error-modal'])
         self.one(tab['main>.error-modal'])
-        self.one(tab['main>.error-modal .message'])
-        self.one(tab['main>.error-modal .traceback'])
+        self.one(tab['main>.error-modal p.message'])
+        self.one(tab['main>.error-modal details.traceback'])
 
     def it_replaces_correct_fragment(self):
         """ This was written due to a bug found in
