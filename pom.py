@@ -1763,14 +1763,18 @@ class page(dom.html):
 
     def clear(self):
         """ Used to initialize the page's <main> element and set it's
-        data-path attribute to the path of the page.
+        data-path attribute to the path of the page. Also is used to
+        clear any state data that may continue to exist between calls to
+        the same page.
         """
-        # NOTE "clear" is a bit of a misnomer. Maybe this should be
-        # renamed to 'init' or something.
         self.main = dom.main()
         self.main.attributes['data-path'] = self.path
         self._called = False
         self._attemped = False
+
+        # Invalid the header so it will be recreated (if needed) when
+        # page is re-invoked.
+        self._header = None
 
     def __call__(self, eargs=None, *args, **qsargs):
         """ This method calls into this `page`'s `main` method which the

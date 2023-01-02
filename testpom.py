@@ -2627,8 +2627,7 @@ class page(tester.tester):
         self.expect(None, lambda: tab.navigate('/en/spa', ws))
         html1 = tab.html.html
 
-        # XXX
-        #self.eq(html, html1)
+        self.eq(html, html1)
 
         ''' Test subpage '''
         tab.navigate('/en/spa/subpage', ws)
@@ -2637,8 +2636,7 @@ class page(tester.tester):
         self.expect(None, lambda: tab.navigate('/en/spa/subpage', ws))
         html1 = tab.html.html
 
-        # XXX
-        #self.eq(html, html1)
+        self.eq(html, html1)
 
         ''' Test multiple events '''
         # XXX
