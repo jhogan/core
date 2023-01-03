@@ -997,7 +997,6 @@ class request:
         """ Return the ``hit`` entity. If it does not yet exist for this
         request, create it.
         """
-
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
