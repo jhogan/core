@@ -6749,25 +6749,18 @@ with book('Hacking Carapacian Core'):
     with section('Eager loading')
       print('''
         As we've discussed, constituents are lazy-loaded by default.
-
-          # Load all Arizona customers from the database
-          custs = customers(state = 'AZ')
-
-          for cust in custs:
-            # This line loads the orders from the database
-            ords = cust.orders
-
         This is typically prefered because an entity can have a number
-        of different constituents, and it's not necessarily the case
-        that we want to load any of them, thus the ORM will only load
-        them when they are requested. 
+        of different constituents, and it's not clear to the ORM, during
+        initialization, which if any we want to load, so the ORM will
+        only load them when they are requested. 
 
         However, it may be the case that you will want to specify that
-        certain constituents are loaded when the composites are loaded.
-        You can do this with the `eager` class.
+        certain constituents are loaded when the composites are loaded,
+        for example, to improve performance.  This can be accomplished
+        using the `eager` class.
 
-        For example, to rewrite the above code to load the customers and
-        their ordes in one trip to the database, we could do the
+        For example, to write code that loads a customers collection and
+        their orders in one trip to the database, we could do the
         following:
       ''')
         
@@ -6776,10 +6769,40 @@ with book('Hacking Carapacian Core'):
         custs = customers(state = 'AZ', orm.eager('orders'))
 
         for cust in custs:
-
           # This line loads nothing from the database because the orders
           # have already been loaded above.
           ords = cust.orders
+
+      print('''
+        During construction of the `customers` class, we pass an `eager`
+        object to indicate that we want the `orders` collection loaded.
+        This causes the customer data, along with the orders data, to be
+        loaded from the database in one trip.
+
+        The name of the constituent that we pass to the `eager`
+        constructor can be nested. For example, if we the above could to
+        also load the `orders`' as well, we could would pass
+        'orders.lineitems'. The nesting can be as deep as necessary
+        (n-level).
+      ''')
+
+      with section('Use eager loading n-level depth'):
+        # Load all Arizona customers, their orders, and the lineitems of
+        # each order.
+        custs = customers(state = 'AZ', orm.eager('orders.lineitems'))
+
+        for cust in custs:
+          # All the database access will have been done at this point.
+          # The call to `cust.orders` and `ord.lineitems` will not
+          # require access to the database.
+          ords = cust.orders
+
+          for ord in ords:
+            itms = ord.lineitems
+
+      print('''
+        
+      ''')
 
     with section('Testing ORM entities'):
       ...
