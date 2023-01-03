@@ -339,21 +339,9 @@ class application:
                 # the payload.
                 start_response(res.message, res.headers.list)
 
-                if body := res.body:
-                    pass
-                else:
-                    # In the case of HEAD request, body will be None, so
-                    # assign empty str for the bytes() function.
-                    body = ''
-
                 # Return the responses body to the browser in accordance
                 # with the WSGI protocol
-                if isinstance(body, bytes):
-                    return iter([body])
-                else:
-                    # Before returning, assume body is a UTF-8 str so
-                    # convert accordingly.
-                    return iter([bytes(body, 'UTF-8')]) 
+                return iter([bytes(res)])
 
             type(self)._set_current(None)
 
@@ -1778,8 +1766,7 @@ class response():
         if not isinstance(self._headers, headers):
             self._headers = headers(self._headers)
 
-        clen = len(self.body) if self.body else 0
-        self._headers['Content-Length'] = clen
+        self._headers['Content-Length'] = len(bytes(self))
         
         # if XHR
         '''
@@ -1794,6 +1781,26 @@ class response():
     @headers.setter
     def headers(self, v):
         self._headers = v
+
+    def __bytes__(self):
+        """ Returns the `body` of this `respones` converted to a `bytes`
+        object.
+        """
+
+        # Get the body
+        body = self.body
+
+        if not body:
+            # If self is a response to a HEAD request, body will be
+            # None, so assign empty str for the bytes() function below.
+            body = ''
+
+        if isinstance(body, bytes):
+            # If body is already a bytes object, just return it
+            return body
+        else:
+            # Assume body is a UTF-8 str
+            return bytes(body, 'UTF-8')
 
     def __repr__(self, pretty=False):
         """ Returns a string representation of this HTTP response
