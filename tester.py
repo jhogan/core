@@ -528,9 +528,14 @@ class tester(entities.entity):
 
                         <nav>
                             <ul>
-                                <li>
-                                    <a>I'm an nav link</a>
+                                <li
+                                    <a>I'm a nav link</a>
                                 </li>
+                                <ul>
+                                    <li>
+                                        <a>I'm a nav link from a submenu</a>
+                                    </li>
+                                </ul>
                             </ul>
                         </nav>
                     """

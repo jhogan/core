@@ -305,20 +305,11 @@ class application:
                         except Exception:
                             # HACK:10d9a676 We shoudn't have to prepend
                             # DOCTYPE here. See TODO:10d9a676.
-
-                            # XXX:72793403 Make sure that the HTML
-                            # returned ends with a linefeed. This used
-                            # to be the case but now `curl` will not
-                            # display a linefeed which makes the output
-                            # hard to read. Make sure tests are ensuring
-                            # this linefeed exists.
                             res.body = f'<!DOCTYPE html>\n{msg.html}'
                         else:
                             pg.flash(msg)
                             # HACK:10d9a676 We shoudn't have to prepend
                             # DOCTYPE here. See TODO:10d9a676.
-
-                            # XXX:72793403
                             res.body = f'<!DOCTYPE html>\n{pg.html}'
 
             # In there was an exception processing the exception,
@@ -941,8 +932,6 @@ class request:
                     else:
                         # HACK:10d9a676 We shoudn't have to prepend
                         # DOCTYPE here. See TODO:10d9a676.
-
-                        # XXX:72793403
                         res.body = f'<!DOCTYPE html>\n{pg.html}'
 
             elif self.forfile:
