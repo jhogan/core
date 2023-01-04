@@ -354,9 +354,14 @@ class ticketsspa(pom.spa):
         mnu = pom.menu(name='spa')
         self.header.menus += mnu
 
+        # Main
         mnu.items  +=  pom.menu.item('Backlog',  'backlog')
         mnu.items  +=  pom.menu.item('New',      'new')
         mnu.items  +=  pom.menu.item('Search',   'search')
+
+        # People
+        mnu.items += pom.menu.item('People',  'people')
+        mnu.items.last.items += pom.menu.item('Add',  'add')
 
     class backlog(dom.main):
         pass
