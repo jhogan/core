@@ -656,16 +656,37 @@ class site(asset.asset):
 
         r = '''
 function is_nav_link(e){
-    tree = ['A', 'LI', 'UL', 'NAV']
+    /* Returns true if the element `e` is a "nav link",
+    i.e., it is an anchor tag nested within a <nav>.
+    */
 
-    for(tag of tree){
-        if (e.tagName != tag)
-            return false
+    rent = e.parentNode
 
-        e = e.parentNode
+    found = false
+    while (rent){
+        if (rent.tagName == 'NAV'){
+            nav = rent
+            found = true
+            break
+        }
+        rent = rent.parentNode
     }
 
-    return true
+    if (!found) return false
+'''
+
+        r += f'''
+    as = rent.querySelectorAll('{page.IsNavSelector}')
+'''
+
+        r += '''
+    for(a of as){
+        if (a === e){
+            return true
+        }
+    }
+
+    return false
 }
 
 function ajax(e){
