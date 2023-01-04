@@ -546,7 +546,7 @@ class tester(entities.entity):
                     else:
                         return False
 
-                    as_ = rent['nav ul>li a']
+                    as_ = rent[pom.page.IsNavSelector]
                     for a in as_:
                         if a is e:
                             return True
@@ -699,13 +699,7 @@ class tester(entities.entity):
 
                 # Subscribe to element_event for each anchor tag's click
                 # event.
-
-                # This should do what we need it to. However, due to
-                # efa5825e, we to add a space between nav and ul. When
-                # efa5825e is fixed, we should be able to uncommment
-                # this.
-                #as_ = v['nav>ul>li a']
-                as_ = v['nav ul>li a']
+                as_ = v[pom.page.IsNavSelector]
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.element_event)

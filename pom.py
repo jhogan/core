@@ -1436,6 +1436,13 @@ class page(dom.html):
         ('true', '1', 'yes', 'y')
     )
 
+    # The CSS selector to determine if an anchor is a nav link
+    # NOTE This should do what we need it to. However, due to
+    # efa5825e, we need to add a space between nav and ul. When efa5825e
+    # is fixed, we should be able to uncommment this.
+    #IsNavSelector = 'nav>ul>li a'
+    IsNavSelector = 'nav ul>li a'
+
     def __init__(self, name=None, pgs=None, *args, **kwargs):
         """ Create a web page.
 
