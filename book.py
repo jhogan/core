@@ -6775,18 +6775,18 @@ with book('Hacking Carapacian Core'):
 
       print('''
         During construction of the `customers` class, we pass an `eager`
-        object to indicate that we want the `orders` collection loaded.
-        This causes the customer data, along with the orders data, to be
-        loaded from the database in one trip.
+        object to indicate that we want the `orders` collection eagerly
+        loaded.  This causes the customer data, along with the orders
+        data, to be loaded from the database in one trip.
 
         The name of the constituent that we pass to the `eager`
-        constructor can be nested. For example, if we the above could to
-        also load the `orders`' as well, we could would pass
-        'orders.lineitems'. The nesting can be as deep as necessary
-        (n-level).
+        constructor can be nested. For example, we could re-write the
+        above code to load the customers, orders and lineitems in one
+        trip by passing 'orders.lineitems' to the `eager` constructor.
+        The nesting can be as deep as necessary (n-level).
       ''')
 
-      with section('Use eager loading n-level depth'):
+      with section('Use eager loading with n-level depth'):
         # Load all Arizona customers, their orders, and the lineitems of
         # each order.
         custs = customers(state = 'AZ', orm.eager('orders.lineitems'))
@@ -6801,8 +6801,40 @@ with book('Hacking Carapacian Core'):
             itms = ord.lineitems
 
       print('''
-        
+        <aside>
+          Note that with these examples, the actual call database
+          happens when we start the interation of `custs`. 
+
+            for cust in custs:
+
+          As you know, collections are loaded the first time an
+          attribute of a collection object is called. When we iterato
+          over the `custs` object using the `for` keyword, we are
+          implicitly calling its `__iter__` method. Obviously, this
+          method is an attribute therefore the data gets loaded. It's a
+          good thing too because, without the data for `cust` being
+          lodaded, there would be nothing to iterate over.
+        </aside>
+
+        Another consideration for eager loading is when we want to
+        eagerly load multiple constituents at the same level. For
+        example, say we want to not only eager load the `customers`'
+        `orders` but also the `customers`' email addresses. We have
+        only to pass a second argument of 'emails' to `eager`
+        constructor:
       ''')
+
+      with section('Eager load multiple constiuents'):
+        # Load all Arizona customers, their orders, and their email
+        # addresses
+        custs = customers(state = 'AZ', orm.eager('orders', 'emails'))
+
+        for cust in custs:
+          # All the database access will have been done at this point.
+          # The call to `cust.orders` and `cust.emails` will not
+          # require access to the database.
+          ords = cust.orders
+          emails = cust.emails
 
     with section('Testing ORM entities'):
       ...
