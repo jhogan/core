@@ -539,8 +539,6 @@ class tester(entities.entity):
                             </ul>
                         </nav>
                     """
-                    # XXX Revise JS version to match this revision
-                    # XXX Make the CSS selector a constant
                     rent = e.parent
 
                     while rent:
