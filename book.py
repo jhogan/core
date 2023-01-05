@@ -6775,7 +6775,7 @@ with book('Hacking Carapacian Core'):
 
       print('''
         During construction of the `customers` class, we pass an `eager`
-        object to indicate that we want the `orders` collection eagerly
+        object to indicate that we want the `orders` constituent eagerly
         loaded.  This causes the customer data, along with the orders
         data, to be loaded from the database in one trip.
 
@@ -6783,7 +6783,7 @@ with book('Hacking Carapacian Core'):
         constructor can be nested. For example, we could re-write the
         above code to load the customers, orders and lineitems in one
         trip by passing 'orders.lineitems' to the `eager` constructor.
-        The nesting can be as deep as necessary (n-level).
+        The nesting can be as deep as necessary.
       ''')
 
       with section('Use eager loading with n-level depth'):
@@ -6802,17 +6802,17 @@ with book('Hacking Carapacian Core'):
 
       print('''
         <aside>
-          Note that with these examples, the actual call database
+          Note that with these examples, the actual call to the database
           happens when we start the interation of `custs`. 
 
             for cust in custs:
 
           As you know, collections are loaded the first time an
-          attribute of a collection object is called. When we iterato
+          attribute of a collection object is called. When we iterate
           over the `custs` object using the `for` keyword, we are
           implicitly calling its `__iter__` method. Obviously, this
           method is an attribute therefore the data gets loaded. It's a
-          good thing too because, without the data for `cust` being
+          good thing too because, without the data for `custs` being
           lodaded, there would be nothing to iterate over.
         </aside>
 
@@ -6820,7 +6820,7 @@ with book('Hacking Carapacian Core'):
         eagerly load multiple constituents at the same level. For
         example, say we want to not only eager load the `customers`'
         `orders` but also the `customers`' email addresses. We have
-        only to pass a second argument of 'emails' to `eager`
+        only to pass a second argument of 'emails' to `eager`'s
         constructor:
       ''')
 
@@ -6835,6 +6835,48 @@ with book('Hacking Carapacian Core'):
           # require access to the database.
           ords = cust.orders
           emails = cust.emails
+
+      print('''
+        As the comments explain, all database access will be completed
+        when iteration starts. Calls to `cust.orders` and `cust.emails`
+        will not require database access.
+
+        <aside>
+          You may be wondering if you can eagerly load constituents of
+          an entity object. For example, what if, instead of loading a
+          collection of `customers` from the database, we already had
+          the id for one a customer, and we wanted to load it, along
+          with all its orders in one go. The syntax would look something
+          like the following:
+
+            # NOTE The following code will not work!
+
+            # The customer and its orders are loaded from the database
+            # at this line
+            cust = customer(custid, orm.eager('orders'))
+            
+            # This line should not result in any data being loaded
+            # from the database
+            ords = cust.orders
+
+          Unfortunately, the above will not work. This functionality
+          simply hasn't been implemented at the time of this writing.
+          There is currently a TODO (07141cbd) to address this
+          defefiency. We can work around it, however, by simply doing
+          the following:
+
+            # Load the customer collection filtering on id
+            custs = customers(id = custid, orm.eager('orders'))
+
+            # Get the single customer that would result from the query
+            cust = custs.only
+
+            # This line should not result in any data being loaded from
+            # the database
+            ords = cust.orders
+
+        </aside>
+      ''')
 
     with section('Testing ORM entities'):
       ...
