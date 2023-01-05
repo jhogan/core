@@ -25,6 +25,7 @@ import itertools
 import orm
 import primative
 import textwrap
+import pycountry
 import party
 import www
 import MySQLdb
@@ -1365,7 +1366,7 @@ class pages(entities.entities):
 
         return None
 
-    def __getitem__(self, path):
+    def __getitem__(self, path, recursing=False):
         """ An indexer to get the page in the collection given a path.
 
         :param: path str|list: The path of the page to get. For example, 
@@ -1377,17 +1378,20 @@ class pages(entities.entities):
             ['en', 'bio', 'luser']
         """
         if isinstance(path, str):
-            segs = [x for x in path.split('/') if x]
-            if len(segs):
-                # Remove the language code, e.g., /en/
-                # XXX:1358fc1e This seems to be a bug. We should check
-                # if segs[0] is in a list of ISO country codes (with
-                # pycountry). If it is, then delete.
-                del segs[0] #
+            if not recursing:
+                segs = [x for x in path.split('/') if x]
+                if len(segs):
+                    # Remove the language code, e.g., /en/
+                    B(segs[0] not in ('en', 'error', 'None'))
+                    if pycountry.languages.get(alpha_2=segs[0]):
+                        del segs[0]
+
+                    # XXX:1358fc1e This seems to be a bug. We should check
+                    # if segs[0] is in a list of ISO country codes (with
+                    # pycountry). If it is, then delete.
 
         elif isinstance(path, list):
             segs = path
-
         else:
             return super().__getitem__(path)
            
@@ -1396,7 +1400,9 @@ class pages(entities.entities):
         for pg in self:
             if pg.name == seg:
                 if len(segs) > 1:
-                    return pg.pages[segs[1:]]
+                    return pg.pages.__getitem__(
+                        segs[1:], recursing = True
+                    )
                 return pg
                 
         raise IndexError('Path not found')
