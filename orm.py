@@ -3723,9 +3723,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         the values the constructor should assign to its attributes.
         """
         
-        # TODO Support eager loading:
+        # TODO:07141cbd Support eager loading for entity objects (not
+        # just entities collections). For example, we should be able to
+        # do this.
         #
-        #     art = artist(name=name, eager('presentations'))
+        #     art = artist(id, eager('presentations'))
+        #
         self._orm = None
         try:
             self_orm = self.orm.clone()
