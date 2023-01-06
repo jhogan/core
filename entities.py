@@ -912,6 +912,7 @@ class entities:
             e = key
         else:
             e = self[key]
+
         self.remove(e)
 
     def remove(self, e):
