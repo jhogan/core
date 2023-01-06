@@ -1427,7 +1427,7 @@ class pages(entities.entities):
                 # although, looking back on it, it seems like a bad idea
                 # because it could conceal logic errors. It was added in
                 # commit c972a46b.
-                del self[pg.path]
+                del self[pg]
                 break
 
         super().append(obj, uniq)

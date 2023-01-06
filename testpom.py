@@ -56,7 +56,7 @@ class foonet(pom.site):
         self.pages += spa()
 
         ''' Error pages '''
-        pgs = self.pages['/en/error'].pages
+        pgs = self.pages['error'].pages
         pgs += _404()
 
         # TODO This init logic probably should mostly put in overridden
