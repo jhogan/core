@@ -530,13 +530,12 @@ class site(asset.asset):
 
     @property
     def languages(self):
-        ''' A list of accepted languages for the site. For example::`
+        ''' A list of accepted languages for the site. For example:
             
             ['en', 'es', 'fr', 'de']
 
-            Sites that wish to accept a different set of languages can
-            override this property. The default is to always accept
-            English.
+        Sites that wish to accept a different set of languages can
+        override this property. The default is to always accept English.
         '''
 
         # Always accept English
@@ -1382,7 +1381,6 @@ class pages(entities.entities):
                 segs = [x for x in path.split('/') if x]
                 if len(segs):
                     # Remove the language code, e.g., /en/
-                    B(segs[0] not in ('en', 'error', 'None'))
                     if pycountry.languages.get(alpha_2=segs[0]):
                         del segs[0]
 
