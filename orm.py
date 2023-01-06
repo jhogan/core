@@ -2337,6 +2337,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onbeforereconnect(self):
+        """ The event that is triggered before a reconnection has
+        occured. 
+
+        See the comment about reconnections in db.executor.__init__ for
+        more information.
+        """
         if not hasattr(self, '_onbeforereconnect'):
             self._onbeforereconnect  =  entitiesmod.event()
         return self._onbeforereconnect
@@ -2347,6 +2353,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onafterreconnect(self):
+        """ The event that is triggered after a reconnection has
+        occured. 
+
+        See the comment about reconnections in db.executor.__init__ for
+        more information.
+        """
         if not hasattr(self, '_onafterreconnect'):
             self._onafterreconnect = entitiesmod.event()
         return self._onafterreconnect
@@ -2357,6 +2369,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onafterload(self):
+        """ Triggered after the `entities` collection has been loaded.
+        """
         if not hasattr(self, '_onafterload'):
             self._onafterload = entitiesmod.event()
             self._onafterload += self._self_onafterload
@@ -2389,13 +2403,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         interaction of the load to the db.chronicler singleton.  The
         onafterload event is raised in orm.collect(). 
         """
-
         # Get a reference to the chronicler singleton
         chron = db.chronicler.getinstance()
 
-        # Add a chonicle instance to the chronicler as a way of
+        # Add a chronicle instance to the chronicler as a way of
         # recording, in memory, the database interaction (i.e., the SQL
-        # and operation type, that occured.
+        # and operation type, that occured).
         chron += db.chronicle(
           eargs.entity, eargs.op, eargs.sql, eargs.args
         )
@@ -3872,6 +3885,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onbeforesave(self):
+        """ Returns the event that is triggered before an entity is
+        saved.
+        """
         if not hasattr(self, '_onbeforesave'):
             self._onbeforesave = entitiesmod.event()
         return self._onbeforesave
@@ -3882,6 +3898,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onaftersave(self):
+        """ Returns the event that gets triggered after this `entity` is
+        saved.
+        """
         if not hasattr(self, '_onaftersave'):
             self._onaftersave = entitiesmod.event()
             self._onaftersave += self._self_onaftersave
@@ -4606,8 +4625,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # We must be clean if we just updated the database
                     self.orm.isdirty = False
 
-                    # Entity must not be marked for deletion of we just
-                    # updated the database
+                    # Entity must not be marked for deletion since we
+                    # just updated the database
                     self.orm.ismarkedfordeletion = False
 
                     # Raise event

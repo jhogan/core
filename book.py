@@ -6845,9 +6845,9 @@ with book('Hacking Carapacian Core'):
           You may be wondering if you can eagerly load constituents of
           an entity object. For example, what if, instead of loading a
           collection of `customers` from the database, we already had
-          the id for one a customer, and we wanted to load it, along
-          with all its orders in one go. The syntax would look something
-          like the following:
+          the id for a customer, and we wanted to load it, along with
+          all its orders in one go. The syntax would look something like
+          the following:
 
             # NOTE The following code will not work!
 
@@ -6877,9 +6877,6 @@ with book('Hacking Carapacian Core'):
 
         </aside>
       ''')
-
-    with section('Testing ORM entities'):
-      ...
 
     with section('ORM events'):
       ...
