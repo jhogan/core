@@ -500,7 +500,7 @@ class site(asset.asset):
         return repr(self)
 
     def __getitem__(self, path):
-        """ An indexer to get a page in the site::
+        """ An indexer to get a page in the site:
 
             ws = mysite()
             about_page = ws['/en/about']
@@ -522,6 +522,8 @@ class site(asset.asset):
 
     @property
     def lang(self):
+        """ Returns the default language for tihs `site`.
+        """
         return self._lang
 
     @lang.setter
@@ -537,7 +539,6 @@ class site(asset.asset):
         Sites that wish to accept a different set of languages can
         override this property. The default is to always accept English.
         '''
-
         # Always accept English
         return ['en']
 
@@ -847,7 +848,6 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         old = document.querySelector('main')
 
         old.parentNode.replaceChild(new_, old)
-        console.log('popstate', e)
     });
 
     main = document.querySelector('main')

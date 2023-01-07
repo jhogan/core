@@ -10,6 +10,7 @@ from base64 import b64decode
 from contextlib import suppress
 from datetime import timezone, datetime, date
 from dbg import B
+from entities import classproperty
 from func import enumerate, getattr
 from pprint import pprint
 from uuid import uuid4, UUID
@@ -2339,7 +2340,6 @@ class page(tester.tester):
 
         # GET the clickme page
         res = tab.navigate('/en/clickme', ws)
-
         self.status(200, res)
 
         # Get the <button> from the response
@@ -2603,8 +2603,6 @@ class page(tester.tester):
         object (ws) to make multiple requests to the same page. For the
         sake of automated testing, we want to make sure that there are
         no problems doing this.
-        
-        XXX Complete
         """
         ws = foonet()
 
