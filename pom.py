@@ -2349,6 +2349,9 @@ class message(dom.article):
         self += p
 
         if ex:
+            # NOTE The JavaScript (eventjs) requires this class.
+            self.classes += 'exception'
+
             p += dom.span(type(ex).__name__, class_='type')
             p += dom.text(': ')
 
