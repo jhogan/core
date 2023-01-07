@@ -226,7 +226,7 @@ class application:
                 raise
 
             if not res:
-                res = response(self)
+                res = response(req)
                 res.headers += 'Content-Type: text/html'
 
             try:
