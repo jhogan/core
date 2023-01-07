@@ -255,7 +255,7 @@ class application:
                         # Call the sites error page for the given
                         # status 
                         lang = req.language
-                        path = '/%s/error/%s' % (lang, ex.status)
+                        path = f'/error/{ex.status}'
                         pg = req.site(path)
 
                         # If the page was provided by the site
@@ -268,7 +268,7 @@ class application:
                         else:
                             # Use the default error page, e.g.,
                             # /en/error
-                            pg = req.site['/%s/error' % lang]
+                            pg = req.site['error']
 
                             # TODO This alternative block is redundant
                             # with the consequent block
@@ -780,7 +780,9 @@ class request:
         etc. 
         """
         ws = self.site
-        path = self.path
+
+        # XXX Comment
+        path = self.getpath()
 
         try:
             return ws[path]
@@ -1146,6 +1148,14 @@ class request:
             if path == '/':
                 path = '/en/index'
             return path
+
+    def getpath(self, lang=False):
+        """ XXX """
+        path = self.path
+        if lang:
+            return path
+
+        return type(self.site)._strip(path)
 
     @property
     def size(self):

@@ -508,7 +508,7 @@ class site(asset.asset):
         :param: path str: The path to the web ``page``.
         """
         if path in ('/', ''):
-            path = '/en/index'
+            path = '/index'
 
         return self.pages[path]
 
@@ -517,7 +517,7 @@ class site(asset.asset):
         found, None is returned.
         """
 
-        path = self.lang + '/index' if path == '/' else path
+        path = '/index' if path == '/' else path
         return self.pages(path)
 
     @property
@@ -530,8 +530,8 @@ class site(asset.asset):
     def lang(self, v):
         self._lang = v
 
-    @property
-    def languages(self):
+    @classproperty
+    def languages(cls):
         ''' A list of accepted languages for the site. For example:
             
             ['en', 'es', 'fr', 'de']
@@ -541,6 +541,21 @@ class site(asset.asset):
         '''
         # Always accept English
         return ['en']
+
+    @classmethod
+    def _strip(cls, path):
+        """
+        XXX
+        """
+        segs = [x for x in path.split('/') if x]
+
+        if len(segs):
+            seg = segs[0]
+            if seg in cls.languages:
+                return '/'.join(segs[1:])
+        else:
+            return None
+        
 
     @property
     def charset(self):
@@ -1365,7 +1380,7 @@ class pages(entities.entities):
 
         return None
 
-    def __getitem__(self, path, recursing=False):
+    def __getitem__(self, path):
         """ An indexer to get the page in the collection given a path.
 
         :param: path str|list: The path of the page to get. For example, 
@@ -1377,16 +1392,7 @@ class pages(entities.entities):
             ['en', 'bio', 'luser']
         """
         if isinstance(path, str):
-            if not recursing:
-                segs = [x for x in path.split('/') if x]
-                if len(segs):
-                    # Remove the language code, e.g., /en/
-                    if pycountry.languages.get(alpha_2=segs[0]):
-                        del segs[0]
-
-                    # XXX:1358fc1e This seems to be a bug. We should check
-                    # if segs[0] is in a list of ISO country codes (with
-                    # pycountry). If it is, then delete.
+            segs = [x for x in path.split('/') if x]
 
         elif isinstance(path, list):
             segs = path
@@ -1398,9 +1404,7 @@ class pages(entities.entities):
         for pg in self:
             if pg.name == seg:
                 if len(segs) > 1:
-                    return pg.pages.__getitem__(
-                        segs[1:], recursing = True
-                    )
+                    return pg.pages[segs[1:]]
                 return pg
                 
         raise IndexError('Path not found')

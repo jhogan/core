@@ -951,7 +951,9 @@ class tester(entities.entity):
                     import urllib
                     url = urllib.parse.urlparse(pg)
 
-                    pg = ws(url.path)
+                    pg = type(ws)._strip(url.path)
+
+                    pg = ws(pg)
                     path = url.path
                     qs = url.query
 

@@ -98,25 +98,32 @@ class foonet(pom.site):
 
         ''' Footer  '''
 
+    @classproperty
+    def languages(cls):
+        ''' A list of accepted languages by this site.
+        '''
+        # Always accept English
+        return ['en', 'es']
+
     @property
     def _adminmenu(self):
         mnu = pom.menu('admin')
         mnu.items += pom.menu.item('Users')
 
         mnu.items.last.items \
-            += pom.menu.item(self['/en/admin/users/statistics'])
+            += pom.menu.item(self['admin/users/statistics'])
 
         mnu.items += pom.menu.item('Reports')
 
         rpt = mnu.items.last
 
-        pg = self['/en/admin/reports/netsales']
+        pg = self['admin/reports/netsales']
 
         rpt.items += pom.menu.item(pg)
 
         rpt.seperate()
 
-        pg = self['/en/admin/reports/accountsummary']
+        pg = self['admin/reports/accountsummary']
         rpt.items += pom.menu.item(pg)
 
         return mnu
@@ -330,11 +337,11 @@ class site(tester.tester):
         
     def it_calls__getitem__(self):
         ws = foonet()
-        for path in ('/', '', '/en/index'):
+        for path in ('/', '', 'index'):
             self.type(home, ws[path])
 
-        self.type(about, ws['/en/about'])
-        self.type(about_team, ws['/en/about/team'])
+        self.type(about, ws['/about'])
+        self.type(about_team, ws['/about/team'])
 
     def it_raise_on_invalid_path(self):
         ws = foonet()
@@ -958,7 +965,7 @@ class page(tester.tester):
 
     def it_clones_site_objects(self):
         ws = foonet()
-        pg = ws['/en/blogs']
+        pg = ws['/blogs']
         self.notnone(pg.site)
 
         self.none(pg.header.menu)
@@ -970,9 +977,9 @@ class page(tester.tester):
 
     def it_calls_site(self):
         ws = foonet(name='foo.net')
-        self.is_(ws, ws['/en/blogs'].site)
-        self.is_(ws, ws['/en/blogs/comments'].site)
-        self.is_(ws, ws['/en/blogs/comments/rejected'].site)
+        self.is_(ws, ws['/blogs'].site)
+        self.is_(ws, ws['/blogs/comments'].site)
+        self.is_(ws, ws['/blogs/comments/rejected'].site)
 
     def it_changes_sidebars_from_main(self):
         class stats(pom.page):
