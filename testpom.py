@@ -2644,7 +2644,37 @@ class page(tester.tester):
         self.eq(html, html1)
 
         ''' Test multiple events '''
-        # XXX
+        class clickme(pom.page):
+            def btn_onclick(self, src, eargs):
+                eargs.html['p'].only.text = primative.datetime.utcnow()
+
+            def main(self):
+                div = dom.div()
+                btn = dom.button('Click me')
+                self.main += div
+
+                div += dom.p()
+                div += btn
+
+                btn.onclick += self.btn_onclick, div
+
+        ws = foonet()
+        ws.pages += clickme()
+
+        res = tab.navigate('/en/clickme', ws)
+        self.status(200, res)
+
+        btn = tab['div>button'].only
+
+        btn.click()
+        p = tab['main>div>p'].only
+        first = primative.datetime(p.text)
+
+        btn.click()
+        p = tab['main>div>p'].only
+        second = primative.datetime(p.text)
+
+        self.gt(first, second)
 
         ''' Test SPA subpage navigation'''
         tab.navigate('/en/spa', ws)
