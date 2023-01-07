@@ -1528,7 +1528,12 @@ class element(entities.entity):
 
     @text.setter
     def text(self, v):
+        """ XXX """
         self.elements.clear()
+
+        # XXX Comment
+        v = str(v)
+
         self += text(v)
 
     @property
