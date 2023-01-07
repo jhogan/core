@@ -1838,36 +1838,6 @@ class response():
         """
         return self.__repr__(pretty=True)
 
-class controller:
-    """ This is an old object that is not currently in use. It my be
-    revived when XHR processing is revisited.
-    """
-
-    # TODO Determine if this is dead code.
-    def __init__(self, app):
-        self._app = app
-
-    @property
-    def application(self):
-        return self._app
-
-    @property
-    def data(self):
-        return self.application.requestdata
-
-    @property
-    def _arguments(self):
-        return self.application.requestdata['args']
-
-    def getargument(self, arg):
-        args = self._arguments
-        try:
-            return args[arg]
-        except KeyError:
-            raise www.UnprocessableEntityError(
-                'Argument not supplied: ' + arg
-            )
-
 class HttpException(Exception):
     """ An abstract class for HTTP Exception. 
     
