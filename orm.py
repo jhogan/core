@@ -57,7 +57,7 @@ TODOs:
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
 
-    TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
+    TODO Add bytes(n) as data type. Having to type `bytes, 16, 16` is not
     fun.
     
     FIXME:1de11dc0 There is an issue with the way superentities
@@ -159,9 +159,9 @@ TODOs:
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
 
-    TODO Reflexive associations currently can currently be loaded only
-    by the subject-side of the association. For example, if the
-    'director' hr.position has direct reports (accessible through
+    FIXME:28ca6113 Reflexive associations currently can currently be
+    loaded only by the subject-side of the association. For example, if
+    the 'director' hr.position has direct reports (accessible through
     hr.position_position), we can discover them like this::
 
         assert director.position_positions.ispopulated
@@ -175,7 +175,7 @@ TODOs:
         assert direct_report.position_positions.ispopulated
 
     TODO Instead of ``decimal``, we may want to create a ``currency``
-    datatype. Currently, it's assumed that the values stored in decimal
+    data type. Currently, it's assumed that the values stored in decimal
     attributes are dollars, but obviously this will not always be the
     case.
 
@@ -253,8 +253,6 @@ TODOs:
           associations, etc. should have behavior that supports
           overriding.
 """
-
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
@@ -263,12 +261,12 @@ from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
 from func import enumerate
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
 from shlex import shlex
 from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
-import MySQLdb
 import builtins
 import dateutil
 import db
@@ -279,6 +277,7 @@ import gc
 import inflect
 import inspect
 import itertools
+import MySQLdb
 import os
 import primative
 import re
@@ -318,7 +317,7 @@ class alias:
 class text(alias):
     """ An alias for:
 
-            str, 1, 65535
+        str, 1, 65535
 
     Many entity objects in the GEM simply want what would be
     equivalent to a MySQL ``text`` date type. This alias allows a
@@ -399,8 +398,8 @@ class span:
     The user class will now expose three attributes:
 
         u = user()
-        assert type(u.beginactive) is primative date
-        assert type(u.endactive) is primative date
+        assert type(u.beginactive) is primative.date
+        assert type(u.endactive) is primative.date
         assert type(u.active) is datespan
 
     The `active` atttribute is a ``datespan`` object that exposes the
@@ -420,8 +419,8 @@ class span:
     field on the entity.
 
     The above used the ``datespan`` subclass. A ``timespan`` subclass is
-    similar but uses a datetime datatype instead of a date datatype to
-    include the time.
+    similar but uses a datetime data type instead of a date data type in
+    order to include the time.
     """
     
     def __init__(self, prefix=None, suffix=None, e=None):
@@ -562,8 +561,8 @@ class span:
         setattr(self.entity, self.str_end, v)
 
     def __contains__(self, dt):
-        """ Answers the qustion: is ``dt`` within this timespan. If
-        true, return True; False otherwise.
+        """ Answers the qustion: is ``dt`` within (inclusive) this
+        timespan. If so, return True, otherwise return False.
 
         :param: dt datetime: The datetime in question.
         """
@@ -589,13 +588,13 @@ class span:
         return '%s(begin=%s, end=%s)' % (name, begin, end)
 
 class datespan(span):
-    """ A time span where that begins with a date datatype and ends with
-    a date datatype. See the super class ``span`` for more.
+    """ A time span where that begins with a date data type and ends with
+    a date data type. See the super class ``span`` for more.
     """
 
 class timespan(span):
-    """ A time span where that begins with a datetime datatype and ends
-    with a datetime datatype. See the super class ``span`` for more.
+    """ A time span that begins with a datetime data type and ends
+    with a datetime data type. See the super class ``span`` for more.
     """
 
 class undef:
@@ -860,22 +859,21 @@ class joins(entitiesmod.entities):
     # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
-        """
-        Return the table name for this ``joins`` collection
-
-        :rtype: str
-        :returns: The name of the table for this ``joins`` collection.
+        """ Return the table name for this ``joins`` collection. 
         """
         return self.entities.orm.table
 
     @property
     def abbreviation(self):
-        """ Returns the entities' abbreviation 
+        """ Returns the entities' abbreviation.
         """
         return self.entities.orm.abbreviation
 
     @property
     def wheres(self):
+        """ Return a `wheres` collection containing each of the `where`
+        objects of this `joins` collection.
+        """
         return wheres(initial=[x.where for x in self if x.where])
 
     def __contains__(self, key):
@@ -889,7 +887,8 @@ class joins(entitiesmod.entities):
         return super().__contains__(key)
 
 class join(entitiesmod.entity):
-    """ Represents an SQL JOIN clause. 
+    """ Represents a joining between two entities. Analogous to the JOIN
+    clause in a SELECT query.
     
     An entities collection class can have zero or more join objects in
     its ``joins`` collection. These are used to generate the JOIN
@@ -902,9 +901,9 @@ class join(entitiesmod.entity):
     Outer = 1
 
     def __init__(self, es, type):
-        """ Sets the initial properties of the join. 
+        """ Sets the initial properties of this `join`. 
 
-        :param: entities es: The :class:`entities` that this join
+        :param: entities es: The `entities` object that this join
         corresponds to.
 
         :param: int type: The type of join (e.g., INNER, OUTER, etc.)
@@ -920,14 +919,14 @@ class join(entitiesmod.entity):
 
     @property
     def table(self):
-        """ Returns the table name for the join. This is the same as the
-        table name for the entities' table.
+        """ Returns the table name for this `join`. This is the same as
+        the table name for the entities' table.
         """
         return self.entities.orm.table
 
     @property
     def keywords(self):
-        """ Get the SQL keyword for the join type. 
+        """ Return the SQL keyword for the join type. 
         """
 
         if self.type == join.Inner:
@@ -938,7 +937,7 @@ class join(entitiesmod.entity):
             raise ValueError('Invalid join type')
 
     def __repr__(self):
-        """ Returns a representation of the ``join`` object useful for
+        """ Returns a representation of the ``join`` object. Useful for
         debugging.
         """
         name = type(self.entities).__name__
@@ -949,7 +948,8 @@ class wheres(entitiesmod.entities):
     """ A collection of ``where`` objects """
 
 class where(entitiesmod.entity):
-    """ Represents a WHERE clause of an SQL statement. """
+    """ Represents a WHERE clause of an SQL statement.
+    """
 
     def __init__(self, es, pred, args):
         """ Sets the initial properties for the ``where`` object. 
@@ -994,16 +994,30 @@ class where(entitiesmod.entity):
         return wh
 
     def demand(self):
-        def demand(col, exists=False, ft=False):
+        """ Cause an exception to be raised if any of the columns in
+        this `where` object's `predicate` are not found in the `where`
+        object`s entity's mappings collection.
+        """
+
+        def demand(col, ft=False):
+            """ Raise exception if `col` is not in the mappings
+            collection.
+
+            :param: col str: The column name to be tested.
+
+            :param: ft bool: Insist the col be associated with a
+            full-text index.
+            """
             for map in self.entities.orm.mappings.all:
                 if not isinstance(map, fieldmapping):
                     continue
 
                 if map.name == col:
                     if ft and type(map.index) is not fulltext:
-                        msg = 'MATCH column "%s" must be have a fulltext index'
-                        msg %= col
-                        raise InvalidColumn(msg)
+                        raise InvalidColumn(
+                            f'MATCH column "{col}" must have a '
+                            'full-text index'
+                        )
                     break
             else:
                 e = self.entities.orm.entity.__name__
@@ -1014,15 +1028,16 @@ class where(entitiesmod.entity):
         for pred in self.predicate:
             if pred.match:
                 for col in pred.match.columns:
-                    demand(col, exists=True, ft=True)
-
+                    demand(col, ft=True)
                 continue
 
             for op in pred.operands:
                 if predicate.iscolumn(op):
-                    demand(op, exists=True)
+                    demand(op)
 
     def __repr__(self):
+        """ Return a string represention of this `where` object.
+        """
         return '%s\n%s' % (self.predicate, self.args)
     
 class predicates(entitiesmod.entities):
@@ -1933,7 +1948,7 @@ class eager:
         press = arts.first.presentations
 
     In the above example, two SQL statements are sent to the database.
-    The ``eager`` class would allow only one statement to be sent::
+    The ``eager`` class would allow only one statement to be sent:
 
         # SELECT * 
         # FROM ARTISTS A
@@ -1977,7 +1992,7 @@ class eager:
         self._graphs = graphs
 
     def join(self, to):
-        """ Create a ``join`` object heirarchy from ``self`` on ``to``
+        """ Create a ``join`` object hierarchy from ``self`` on ``to``
         where ``to`` is an ``orm.entities`` collection (invoked from
         ``orm.entities.__init__``). Since eager-loading is accomplished
         via INNER JOINs, this method is used to establish those JOINs.
@@ -1990,6 +2005,8 @@ class eager:
         for graph in self._graphs:
             graphs.append(graph.split('.'))
 
+        # TODO Rename e to es since it stores references to `entities`
+        # collections.
         for graph in graphs:
             parent = to
             for node in graph:
@@ -2246,28 +2263,32 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args.append(_p2)
                 _p2 = None
 
-            # Look in *args for stream class or a stream object. If
-            # found, ensure the element is an instantiated stream and
-            # set it to self._stream.  Delete the stream from *args.
-
             # TODO We should probably interate over this in reverse so
             # the `del`etions are reliable, Although, at the moment, I
             # don't think this is a problem because, for example, you
             # wouldn't pass `stream` and `chunk` at the same time.
 
+            # TODO Refactor to call `del args[i]` in only one place
+
+            # Scan *args for `stream` class, `stream` object, `eager`
+            # object, and `chunk` object.
             for i, e in enumerate(args):
                 if e is stream:
+                    # If stream class, objectify and set to `.stream`
                     self_orm.stream = stream()
                     self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, stream):
+                    # If e is a stream, set to `.stream`
                     self_orm.stream = e
                     self_orm.stream.entities = self
                     del args[i]
                 elif isinstance(e, eager):
+                    # If eager, join
                     e.join(to=self)
                     del args[i]
                 elif e is stream.chunk:
+                    # If e is a chunk, set self.orm.ischunk = True
                     self_orm.ischunk = True
                     del args[i]
 
@@ -2320,6 +2341,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onbeforereconnect(self):
+        """ The event that is triggered before a reconnection has
+        occured. 
+
+        See the comment about reconnections in db.executor.__init__ for
+        more information.
+        """
         if not hasattr(self, '_onbeforereconnect'):
             self._onbeforereconnect  =  entitiesmod.event()
         return self._onbeforereconnect
@@ -2330,6 +2357,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onafterreconnect(self):
+        """ The event that is triggered after a reconnection has
+        occured. 
+
+        See the comment about reconnections in db.executor.__init__ for
+        more information.
+        """
         if not hasattr(self, '_onafterreconnect'):
             self._onafterreconnect = entitiesmod.event()
         return self._onafterreconnect
@@ -2340,6 +2373,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def onafterload(self):
+        """ Triggered after the `entities` collection has been loaded.
+        """
         if not hasattr(self, '_onafterload'):
             self._onafterload = entitiesmod.event()
             self._onafterload += self._self_onafterload
@@ -2372,13 +2407,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         interaction of the load to the db.chronicler singleton.  The
         onafterload event is raised in orm.collect(). 
         """
-
         # Get a reference to the chronicler singleton
         chron = db.chronicler.getinstance()
 
-        # Add a chonicle instance to the chronicler as a way of
+        # Add a chronicle instance to the chronicler as a way of
         # recording, in memory, the database interaction (i.e., the SQL
-        # and operation type, that occured.
+        # and operation type, that occured).
         chron += db.chronicle(
           eargs.entity, eargs.op, eargs.sql, eargs.args
         )
@@ -2423,7 +2457,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         # If we are calling from an instance
         elif self:
             return self._orm
-
 
     def innerjoin(self, *args):
         """ Creates an INNER JOIN for each entities collection in
@@ -2488,7 +2521,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             WHERE (art.weight BETWEEN %s AND %s)
             AND (fact.weight BETWEEN %s AND %s)
 
-        Note that the ORM is able to infere the need for the
+        Note that the ORM is able to infer the need for the
         ``artist_artifacts`` association table to be joined. Also note
         that the operands have been replaced with placeholder (%s)
         indicating they have been parameterized.
@@ -2496,8 +2529,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         :param: cls type: A reference to a class that inherits
         from ``orm.entities``. ``es`` will be joined to this object.
 
-        :param: es type/entities: A class or object reference that
-        inherits from `orm.entities`. This object will be joined to
+        :param: es type<entities>|entities: A class or object reference
+        that inherits from `orm.entities`. This object will be joined to
         ``cls``.
 
         :param: type: The type of join (INNER/OUTER). Currently, only
@@ -2549,7 +2582,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Consider that .joinsupers() wants to join `rapper` to
             # `singer`.  Normally, we would look for the association
             # collection `artist_artist` so we could get the
-            # many-to-many relationship implied by the expression::
+            # many-to-many relationship implied by the expression:
             #
             #     rpr.singers
             #
@@ -2571,15 +2604,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 sup = self.orm.entity
                 while sup:
                     # For each of self's associations mappings and the
-                    # associations mappings of it's superentities
+                    # associations mappings of its superentities
                     for map in sup.orm.mappings.associationsmappings:
-
                         # If the association is reflexive, we are only
                         # interested in it if `es` is, or inherits from
                         # the objective entity of the association.
                         if map.associations.orm.isreflexive:
                             obj = map.associations.orm \
-                                  .mappings['object'] \
+                                  .mappings['object']  \
                                   .entity
 
                             if not isinstance(es, obj.orm.entities):
@@ -3539,8 +3571,10 @@ class entitymeta(type):
 
             elif type(v) is tuple:
                 # `v` will be a tuple if multiple, comma seperated type
-                # arguments are declared, i.e., `str, 0, 1,
-                # orm.fulltext`
+                # arguments are declared, i.e.: 
+                #
+                #     str, 0, 1, orm.fulltext
+                #
                 args, kwargs = [], {}
 
                 # Iterate over tuple
@@ -3597,7 +3631,7 @@ class entitymeta(type):
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
-                    # `v` represents an imperitive attribute. It will
+                    # `v` represents an imperative attribute. It will
                     # contain its own mapping object so just assign
                     # reference. See the `attr` class.
                     map = v.mapping
@@ -3627,7 +3661,7 @@ class entitymeta(type):
                 # this class in orm.mappings, we can delete them.
                 prop = body[map.name]
 
-                # Delete attribute if it is not an imperitive attribute.
+                # Delete attribute if it is not an imperative attribute.
                 if type(prop) is not ormmod.attr.wrap:
                     del body[map.name]
 
@@ -3711,9 +3745,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         the values the constructor should assign to its attributes.
         """
         
-        # TODO Support eager loading:
+        # TODO:07141cbd Support eager loading for entity objects (not
+        # just entities collections). For example, we should be able to
+        # do this.
         #
-        #     art = artist(name=name, eager('presentations'))
+        #     art = artist(id, eager('presentations'))
+        #
+        #
 
         self._orm = None
         try:
@@ -3867,6 +3905,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onbeforesave(self):
+        """ Returns the event that is triggered before an entity is
+        saved.
+        """
         if not hasattr(self, '_onbeforesave'):
             self._onbeforesave = entitiesmod.event()
         return self._onbeforesave
@@ -3877,6 +3918,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onaftersave(self):
+        """ Returns the event that gets triggered after this `entity` is
+        saved.
+        """
         if not hasattr(self, '_onaftersave'):
             self._onaftersave = entitiesmod.event()
             self._onaftersave += self._self_onaftersave
@@ -4110,10 +4154,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """
         ls = super().__dir__() + self.orm.properties
 
-        # Remove duplicates. If an entity has an imperitive attribute, the name
-        # of the attribute will come in from the call to super().__dir__()
-        # while the name of its associated map will come in through
-        # self.orm.properties
+        # Remove duplicates. If an entity has an imperative attribute,
+        # the name of the attribute will come in from the call to
+        # super().__dir__() while the name of its associated map will
+        # come in through self.orm.properties
         return list(set(ls))
 
     def __setattr__(self, attr, v, cmp=True, imp=False):
@@ -4131,12 +4175,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         `cmp` variable in that method for more.
 
         :param: bool imp: If True, indicates that __setattr__ is being
-        called by an imperitive setter. If this is the case, we want to
+        called by an imperative setter. If this is the case, we want to
         avoid infinite recursion by not calling the setter. Instead, we
         allow the normal behavior of finding the ``mapping`` object
         associated with the setter and setting its ``value`` attribute
         to the ``v`` argument. By default, it is False, because this is
-        only necessary for imperitive setters.
+        only necessary for imperative setters.
         """
 
         # Need to handle 'orm' first, otherwise the code below that
@@ -4499,7 +4543,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # a superentity of self is invalid, the recursive _save
             # method will eventually try to save it and fail, causing a
             # rollback. We don't want to collect brokenrules more than
-            # once because the imperitive brokenrules properties that
+            # once because the imperative brokenrules properties that
             # ORM users write can potentially be slow (such as when they
             # need to make a database calls).
 
@@ -4601,8 +4645,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # We must be clean if we just updated the database
                     self.orm.isdirty = False
 
-                    # Entity must not be marked for deletion of we just
-                    # updated the database
+                    # Entity must not be marked for deletion since we
+                    # just updated the database
                     self.orm.ismarkedfordeletion = False
 
                     # Raise event
@@ -6607,7 +6651,7 @@ class indexes(entitiesmod.entities):
 
 class index(entitiesmod.entity):
     """ The ``index`` class is used by entity declarations to specify
-    that a database index should be applied by the mapping::
+    that a database index should be applied by the mapping:
         
         class artist(orm.entity):
             ssn = str, orm.index
@@ -6624,7 +6668,7 @@ class index(entitiesmod.entity):
                 INDEX ssn_ix (ssn)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-        # Notice that the artist's CREATE TABLE  DDL has the line:
+        # Notice that the artist's CREATE TABLE DDL has the line:
         #
         #     INDEX ssn_ix (ssn)
         #
@@ -6656,7 +6700,7 @@ class index(entitiesmod.entity):
         return name
 
     def __str__(self):
-        """ Strung indexes are the index's name.
+        """ Return the name of the index.
         """
         return self.name
     
@@ -6666,7 +6710,7 @@ class index(entitiesmod.entity):
         return super().__repr__() + ' ' + self.name
 
 class fulltexts(indexes):
-    """ A collection of fulltext objects.
+    """ A collection of `fulltext` objects.
     """
 
 class fulltext(index):
@@ -6684,7 +6728,7 @@ class fulltext(index):
         return name
 
 class attr:
-    """ This class makes imperitive attributes possible. 
+    """ This class makes imperative attributes possible. 
 
     Most attributes for orm.entity classes are declaritive::
 
@@ -6793,9 +6837,9 @@ class attr:
 
     Setters
     -------
-    Creating imperitive setters is as easy as creating getters. You only
+    Creating imperative setters is as easy as creating getters. You only
     need to specify a `v` as the first argument of the setter to
-    indicate that it is such::
+    indicate that it is such:
 
         class artist(orm.entity):
             @orm.attr(str):
@@ -6828,9 +6872,9 @@ class attr:
             class artist(orm.entity):
                 name = str
 
-        Any ORM type can be passed in just the same way they are
-        notated in a class declaration. For example, the two statements
-        are equivalent::
+        Any ORM type or ORM class reference can be passed in just the
+        same way they are notated in a class declaration. For example,
+        the two statements are equivalent::
 
             class artist(orm.entity):
                 @orm.attr(float, 5, 1)
@@ -6847,7 +6891,7 @@ class attr:
         self.kwargs = kwargs
 
     def __call__(self, meth):
-        """ This method is invoked when the imperitive attribute is
+        """ This method is invoked when the imperative attribute is
         called. The ``meth`` argument passed in is the actual getter or
         setter that must be called. The ``meth`` is first wrapped by
         attr.wrap and returned to the caller. The caller then invokes
@@ -6863,7 +6907,7 @@ class attr:
 
         When the attr() function is called, either with or without a
         parameter, the __call__ method is invoked. This allows the
-        imperitive attribute to correctly access and mutate its
+        imperative attribute to correctly access and mutate its
         underlying mapping value.
 
             class myentity(orm.entity):
@@ -6943,7 +6987,7 @@ class attr:
             self.inner = ex
 
     class wrap:
-        """ A decorator to make a method an imperitive attribute. 
+        """ A decorator to make a method an imperative attribute. 
         """
         def __init__(self, *args, **kwargs):
             args = list(args)
@@ -6971,7 +7015,7 @@ class attr:
 
         @property
         def mapping(self):
-            """ Returns an mapping for the imperitive attribute.
+            """ Returns an mapping for the imperative attribute.
 
             For example, in the below entity declaration, a
             ng`` would be returned for the `mime` property.
@@ -6984,12 +7028,14 @@ class attr:
             """
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
+
             elif entities in self.args[0].mro():
-                # Make entitiesmapping work with orm.attr decorator
-                # This was to get bot.logs, a getter for
-                # apriori.logs, working. It still may need some more
-                # testing. NOTE Untested
+                # Make entitiesmapping work with orm.attr decorator This
+                # was to get bot.logs, a getter for apriori.logs,
+                # working. It still may need some more testing. NOTE
+                # Untested
                 map = entitiesmapping(self.fget.__name__, self.args[0])
+
             else:
                 map = fieldmapping(*self.args, **self.kwargs)
 
@@ -7028,7 +7074,7 @@ class attr:
 
                 myattr = attr.attr(meth.__name__, instance)
 
-                # Inject attr() reference into user-level imperitive attribute
+                # Inject attr() reference into user-level imperative attribute
                 meth.__globals__['attr'] = myattr
             except AttributeError as ex:
                 # Any AttributeError raised here would be swolled by
@@ -7038,7 +7084,7 @@ class attr:
                 raise Exception(str(ex)) from ex
 
             try:
-                # Invoke the imperitive attribute
+                # Invoke the imperative attribute
                 if isget:
                     return meth(instance)
                 elif isset:
@@ -7135,10 +7181,10 @@ class fieldmapping(mapping):
         :param: isexplicit bool: <To be removed>
 
         :param: isgetter bool: Indicates the mapping is for an
-        imperitive getter.
+        imperative getter.
 
         :param: issetter bool: Indicates the mapping is for an
-        imperitive setter.
+        imperative setter.
 
         :param: span span: A ``timespan`` or a ``datespan`` reference.
         """
@@ -7317,6 +7363,7 @@ class fieldmapping(mapping):
 
         if self.isbytes or self.isstr:
             return self.max == self.min
+
         return False
 
     @property
@@ -7346,7 +7393,7 @@ class fieldmapping(mapping):
 
         elif self.isint:
             if self._min is None:
-                return -2147483648
+                return -2_147_483_648
 
         elif self.isfloat:
             if self._min is None:
@@ -7438,7 +7485,7 @@ class fieldmapping(mapping):
 
         elif self.isint:
             if self._max is None:
-                return 2147483647
+                return 2_147_483_647
             else:
                 return self._max
 
@@ -7536,16 +7583,22 @@ class fieldmapping(mapping):
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
+
         elif self.isdatetime:
             return 'datetime'
+
         elif self.isdate:
             return 'date'
+
         elif self.isbool:
             return 'bit'
+
         elif self.isfloat:
             return 'double'
+
         elif self.isdecimal:
             return 'decimal'
+
         elif self.isbytes:
             if self.isfixed:
                 return 'binary'
@@ -7613,16 +7666,22 @@ class fieldmapping(mapping):
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
+
         elif self.isdatetime:
             return 'datetime(6)'
+
         elif self.isdate:
             return 'date'
+
         elif self.isbool:
             return 'bit'
+
         elif self.isfloat:
             return 'double(%s, %s)' % (self.precision, self.scale)
+
         elif self.isdecimal:
             return 'decimal(%s, %s)' % (self.precision, self.scale)
+
         elif self.isbytes:
             if self.isfixed:
                 return 'binary(%s)' % self.max
@@ -7693,17 +7752,24 @@ class fieldmapping(mapping):
                     pass
 
             elif self.isbool:
+                # FIXME We need to us `bool()` to convert non-boolean
+                # values to `bool` values. See the try:except block for
+                # self.isint below.
                 if type(self._value) is bytes:
-                    # Convert the bytes string from MySQL's byytes type
+                    # Convert the bytes string from MySQL's bytes type
                     # to a bool.
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
 
             elif self.isint:
+                # TODO Replace try-except's with 
+                #
+                #   `with suppress(Exception)`
                 try:
                     self._value = int(self._value)
                 except:
                     pass
+
             elif self.isfloat:
                 try:
                     self._value = round(float(self._value), self.scale)
@@ -9499,7 +9565,7 @@ class orm:
 
             e = top or self.entity.orm.super
 
-            while e: # :=
+            while e:
                 # Find the map based on the column name
                 map = e.orm.mappings(col) 
 
@@ -11843,9 +11909,11 @@ class associations(entities):
                                 # tests.
                                 setattr(e, map.name, comp)
                                 break
+
                     elif isinstance(comp, map.entity):
                         setattr(e, map.name, comp)
                         break
+
                 else:
                     e = e.orm.super  # Ascend
                     continue

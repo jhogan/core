@@ -239,7 +239,7 @@ with book('Hacking Carapacian Core'):
 
         A question may arise regarding whether these tests are properly
         refered to as "unit tests". A unit tests is an automated test
-        where sections, or *units*, of source code are tested for
+        where sections, or *units* of source code are tested for
         correct behavior.  However, as stated above, we are interested
         in ensuring that *features* work as expected; not sections, thus
         the term "unit test" would not be appropriate here.
@@ -254,7 +254,7 @@ with book('Hacking Carapacian Core'):
 
         As stated, the goal of the framework's tests is to ensure that
         features continue to work, and that bugs are not allowed to
-        resurface. Given that, we can call the tests regression tests. 
+        resurface. Given that, we can call the tests "regression tests". 
 
         Additionally, the phase "automated integration tests" would be
         appropriate because, as stated elsewhere, the features are
@@ -529,7 +529,7 @@ with book('Hacking Carapacian Core'):
             with with overrides of tester.__init__. -->
           ''')
 
-      with section('Benchmarking', id=0xd89c06c2)
+      with section('Benchmarking', id='d89c06c2')
         print('''
           A special class of tests, called benchmarks, are built into
           the testing framework which measure the amount of time that
@@ -569,7 +569,8 @@ with book('Hacking Carapacian Core'):
           the allowable duration, the user is informed.
         ''')
 
-      with section('Tests as Effort Statements', id=0xd89c06c2)
+
+      with section('Tests as effort statements'):
         ...
 
   with chapter("Entity and entities objects", id='64baaf7a'):
@@ -2561,7 +2562,7 @@ with book('Hacking Carapacian Core'):
         database. Let's recreate those classes to be ORM class.
       ''')
 
-      with listing('Creating a ORM class'):
+      with listing('Creating an ORM class'):
         # Import the orm module
         import orm
         from datetime import date
@@ -3272,6 +3273,744 @@ with book('Hacking Carapacian Core'):
           entity.
         ''')
 
+      with section('ORM data types'):
+        print('''
+          As you have seen, defining an attributes type is rather
+          simple. Types in the ORM behave as much like Python
+          types as possible in order to make using them easy for the
+          developer.  For example, to define an attribute, we use a
+          reference to the builtin Python class `str` instead of
+          creating a new, ORM-specific reference (such as `orm.string`).
+          Additionally, attributes defined as `str` default to empty
+          strings because that is the default for a Python `str`.
+
+          The simplicity of the typing system, so far, would seem to
+          ignore the need to define typical database constraints such as
+          a maximum length given to the `varchar` type, or the precision
+          and scale of a float. On the contrary, these additional
+          parameters can be defined during class definition. It turns
+          out, however, that they are almost never needed because the
+          default constraints are sufficient. Consider that under most
+          circumstances, you just want your variable to be a string,
+          integer, decimal or Boolean.  However, when the need arises to
+          provide additional constaints to the data types (for example,
+          to improved performence) that capability does exist.
+        ''')
+
+        with section ('`str` attributes'):
+          
+          with listing('Example'):
+            
+            class persons(orm.entities):
+              pass
+
+            class person(orm.entity):
+              # Declare a str called `name`
+              name = str
+
+              # Declare a `phone` number property that must be at least
+              # 7 characters, and can be a maximum of 9.
+              number = str, 7, 9
+
+            per = person()
+
+            ''' Test the name property '''
+            # Defaults to an empty string
+            empty(per.name)
+
+            # Bothe `name` and `number` are emtpy str's by default so
+            # the `per` objects starts life as invalid.
+            invalid(per)
+
+            # Assign a sting to the name attribute with surrounding
+            # whitespace.
+            per.name = '   Peter Griffin    '
+
+            # Note that the surrounding whitespace is removed
+            eq('Peter Griffin', per.name)
+
+            # The str() function is used to convert non-str values 
+            per.name = 123
+
+            eq('123', per.name)
+            type(str, per.name)
+
+            ''' Test the number property '''
+
+            # Defaults to an empty string
+            empty(per.phone)
+
+            # Set the phone number property to a valid value
+            per.number = 2053921  # 7 characters
+
+            # Notice the conversion to a str value
+            eq('2053921', per.number)
+            type(str, per.number)
+
+            # Now that the attributes are non-empty str, `per` is valid
+            valid(per)
+
+            # Make `per` invalid again by assigning an invalid sting to
+            # `number`
+            per.number = 1234567890  # 10 characters; to short
+            invalid(per)
+            
+            per.number = 123456  # 6 characters; too short
+            invalid(per)
+
+            per.number = 123456789  # 9 characters; just right
+            valid(per)
+        print('''
+          `str` attributes can contain (and reliabily persist) any
+          string of unicode character. By default, `str` attributes are
+          empty strings (`''`).  Like all types, `str` attributes can be
+          set to `None` which will be saved to the database as `null`.  
+
+          By default, a `varchar(255)` column will be created for `str`
+          attributes in the entity's database table. If we declare the
+          maximum character to be more than 4000, the database type
+          becomes a `longtext`. If the number of maximum characters is
+          below 4000 and the minimum number of characters equals the
+          maximum number of characters, a database type of `char` is
+          used.  In the listing abavo, we can see how a developers can
+          specify the minimum and maximum value. However, if you want a
+          fixed-length string, it is recommended you use the
+          [chr](#fe56ed82) type-alias instead. If you want to store
+          really long strings of text, such as for a user's bio, or a
+          blog entry, it is recommend that you use the `text`
+          pseudotypes](#0822acc6) instead of specify a large maximum.
+
+          Notably, `str` attributes automatically strip any surrounding
+          whitespace in a string they are assigned. This is virtually
+          always what you want (except for rare cases, such as with a
+          password). This makes it possible to accept user input which
+          may have accidental whitespace at the begining or end without
+          having to remember to call `str.strip` yourself before
+          assigning it to the attribute. Currently, there is no way to
+          disable this automatic stripping (although it shouldn't be
+          difficult to develop a way, possibly with the use of a context
+          manager).
+
+          `str` attributes use the `str()` function to convert non-`str`
+          Python data types to `str` data types. For example, if we
+          assign an integer to a `str` attribute, it will immediately be
+          converted to a `str`. `str` attributes always return a value
+          of type `str` no matter what they are assigned (unless, of
+          course, the attribute's value is `None`).
+
+          `str` attributes must, by default, contain at least 1
+          character for their entity object to be considered valid
+          (`.isvalid`) (even though `str` attributes default to empty).
+          This is because empty `str` attributes are rarely meaningful
+          and are often synonymous with `None` (`null') values. If you
+          intend to indicate that there is no value for a given
+          `str` attribute (e.g., because a  user has chosen to leave a
+          field blank in the user interface), it is recommended that you
+          set the attribute to `None`. In cases where you do need to
+          have the option of assiging a `str` attribute both empty
+          `str`'s and `None` values, just specify a minimum value of 0.
+
+          Since the database type for a `str` attribute is, by default,
+          `varchar(255)`, you would be correct in guessing that 255 is
+          the maximum number of characters the attribute can have in
+          order for the entity to be considered valid. As you can see in
+          the listing above, we can change the minimum and maximum size
+          for a `str` attributes in the declaration: It's rare that you
+          would need to specify the size of the `str` attribute,
+          however. If you need a an attribute that can contain more text
+          than 255, you should consider a [text](#0822acc6) attribute
+          instead.
+        ''')
+
+        with section ('`chr` attributes', id='fe56ed82')
+          print('''
+            Occasionally, you will want an attribute that can only
+            contain a fixed-width string. A fixed-width string is one
+            where the only valid value is one that contains an exact
+            number of  pre-declared characters.  In that case, the `chr`
+            attribute is handy.
+          ''')
+
+          with listing('`chr` example'):
+            class debits(orm.entities):
+              pass
+
+            class debit(orm.entity):
+              """ Represents a debit card.
+              """
+
+              # The pin number for the debit card
+              pin = chr(4)
+
+            dbt = debit()
+
+            # Assign the pin a number
+            dbt.pin = 12345
+
+            # Note that the pin gets converted to a str
+            eq('12345', dbt.pin)
+
+            # However, the pin number must be exactly 4 characters so
+            # this debit card is "invalid"
+            invalid(dbt)
+
+            # Assign the pin attribute a valid number
+            dbt.pin = 1234
+
+            # Now the entity is valid
+            valid(per)
+
+          print('''
+            In the above example, a `debit` card class is declared with
+            a `pin` number that must be exactly 4 characters. Since pin
+            numbers (at least in this example) must be 4 characters,
+            using `chr(4)` is a convenient choice to enforce this
+            constraint. Anything more or less that 4 characters would
+            make the `debit` card entity invalid.
+
+            Since `chr` types are fixed-width unicode strings, they are
+            stored as `char` types in the database.
+
+            Note that `chr` types are considered alias-types since they
+            are just a shorthand for declaring a fixed with `str`
+            attribute. For example, the above `debit` card class could
+            have been written:
+
+              class debit(orm.entity)
+                pin = str, 4, 4
+
+            As far as the ORM is concerned, the above notation is
+            equivalent to using `chr(4)'. However, by using the `chr`
+            alias-type, we are better able to express the fact that
+            `pin` numbers are fixed-width &mdash; and we can do so with
+            fewer characters.
+          ''')
+
+        with section ('`text` attributes', id='0822acc6'):
+          print('''
+            The `text` data type is similar to the `str` data type but
+            is useful for situations where the attribute needs to store
+            large amounts of text. `text` attributes are good for things
+            like user bio's, blog posts, news articles, etc.
+
+            `text` attributes must have at least one character and a
+            maximum of 65,535 characters. If the attribute contains an
+            empty str, its entity is considered invalid. If you need to
+            indicate that there is no text for the attribute, assign the
+            `None` value to it. 
+
+            `text` attributes are stored in MySQL `longtext` columns in
+            the database.
+
+            `text` attributes are alias-types: using the `text` data
+            type is equivelent to using:
+              
+              str 1, 65_535
+
+            Though most types are denoted by builtin Python types (e.g.,
+            the `str` ORM type is denoted by the Python `str` type),
+            `text` types are denoted by referencing the internal `orm`
+            class `orm.text`.
+          ''')
+
+          with listing('Using `text` attributes'):
+            
+            # Create a person entity
+            class person(orm.entity):
+              # Create a text attribute
+              bio = orm.text
+
+            per = person()
+
+            # 65535 is a valid number of characters
+            per.bio = 'X' * 65535
+            valid(per)
+
+            # Any more characters and the person becomes invalid
+            per.bio += 'X'
+            invalid(per)
+
+        with section ('bool` attributes'):
+          print('''
+            `bool` attributes are used to store `True`/`False` values.
+            They are also nullable, meaning you can assign a value of
+            `None` to them.
+
+            Like the Python `bool` types, `bool` attributes default to
+            `False`.
+
+            The MySQL database type for `bool` attributes is `bit`.
+          ''')
+
+          with listing('Using `bool` attributes'):
+            # Create a person entity
+            class person(orm.entity):
+              # Create a bool field
+              active = bool
+
+            per = person()
+
+            false(per.active)
+
+            per.active = True
+
+            true(per.active)
+
+            per.active = None
+
+            none(per.active)
+
+        with section ('`int` attributes'):
+          print('''
+            `int` data type are used when there is a need to store a
+            non-decimal, numeric value.
+
+            By default, their database columns are of `INT SIGNED`. This
+            means that any number equal to or greater than
+            -2_147_483_648 and less than or equal to 2_147_483_647 is a
+            valid value. However, it is possible to change the minimum
+            and maximun value in which case the database type will
+            change accordingly. For example, if you declare an `int` as
+            follows:
+
+              class myclass(orm.entity):
+                myattr = int, -128, 127
+
+            The underlying database type will be a `TINYINT` because a
+            database field declared as such could hold an integer
+            between -128 and 127. The ORM tries to find the smallest
+            database type for a given range of values when deciding upon
+            an integer-based data type. The ORM will may choose between
+            `TINYINT`, `SMALLINT`, MEDIUMINT`, `INT` and `BIGINT`.
+            Additionally, it will only cause them to be `SIGNED` if the
+            range allows for a negative value, otherwise they will be
+            declared as `UNSIGNED`. This may be important information
+            when trying to find ways to improve the performance of the
+            database. However, as an ORM user, it shouldn't concern you
+            much since the only thing that will matter when programming
+            ORM entity objects will be the range of allowable values.
+            Typically, you can start with a regular `int` remembering to
+            resist the temptation to optimize prematurely.
+          ''')
+
+          with listing('Using `int` attributes'):
+
+            class person(orm.entity):
+              age = int
+
+            per = person()
+
+            # 44 is a valid `int`
+            per.age = 44
+            valid(per)
+
+            # -2_147_483_648-1 would be invalid
+            per.age = -2_147_483_648 - 1
+            invalid(per)
+
+        with section ('`float` attributes'):
+          print('''
+            `float` attributes represent floating-point numbers. They
+            are similar to Python `float`s but conform to MySQL
+            `DOUBLE`s since that is their underlying database type.
+
+            The `DOUBLE`s have a default precision of 12 and a default
+            scale of 2. If needed these values can be change using the
+            following notation:
+
+              class myentity(orm.entity):
+                myflt = float, 13, 3
+
+            Above, `myflt` has a precision of 13 and a scale of 3.
+
+            `floats` are useful in scientific applications but can cause
+            problems in business applications due to the fact that they
+            store approximate values but not exact value. You can easily
+            see this problem by multipling .3 by 3 in the Python REPL:
+
+              >>> .3 * 3
+              0.8999999999999999
+
+            Due to the lack of precision, you don't get the .9 you would
+            expect. Consequently, `float`s are never used by the GEM.
+            [`Decimal`](#794f2ac1) data types are preferred since they
+            don't have this precision problem.
+          ''')
+
+          with listing('Using `float` attributes'):
+            class person(orm.entity):
+              weight = float
+
+            per = person()
+
+            # Assign a valid floating-point number
+            per.weight = 166.66
+            eq(166.66, per.weight)
+            valid(per)
+
+        with section ('`Decimal` attributes', id'794f2ac1'):
+          print('''
+            The `Decimal` data type is used to store numeric values that
+            can contain decimal point. Unlike the `float` data type, the
+            `Decimal` data type presevers exact precision. `Decimal`
+            types are used whenever precision needs to be preserve, for
+            example, when money is invoved.
+
+            The underlying database type for `Decimal` values is
+            `DECIMAL(12,2)` (a precision of 12 and a scale of 2).
+            Consequently, numbers between -999,9999,999.99' and 
+            9,999,999,999.99' are valid.
+
+            If the precision or scale needs to be change, the following
+            syntax can be used:
+
+              import decimal
+              class myentity(orm.entity):
+                mydec = decimal.Decimal, 14, 3
+
+            Above, we have declared `mydec` to have a precision of 14
+            and a scale of 3.
+
+            As you can see in the above example, the `Decimal` types are
+            denoted by the `Decimal` class in the `decimal` module. This
+            is also the Python type that is used to store the actual
+            value in memory. It's convential to `import` `Decimal` as an
+            alias:
+
+              from decimal import Decimal as dec
+
+            This way we can use `dec` to denote the `Decimal` type.
+            Thus the above example should have been written.
+
+              from decimal import Decimal as dec
+
+              class myentity(orm.entity):
+                mydec = dec, 14, 3
+            
+            Though the attribute always returns a `decimal.Decimal`
+            Python type, you can assign Python `str`s, `int`'s or `floats`
+            to the attributes. Internally, it will convert these values
+            using the `decimal.Decimal` constructor after stringifying
+            them first.
+
+              decimal.Decimal(str(x))
+          ''')
+
+          with listing('Using `float` attributes'):
+            from decimal import Decimal as dec
+            class person(orm.entity):
+              weight = dec
+
+            per = person()
+
+            # Set with an int
+            per.weight = 166
+
+            # Returns a Decimal value of 166
+            eq(dec('166'), per.weight)
+
+            # Always returns a Decimal type
+            type(dec, per.weight)
+
+            # Set with a float
+            per.weight = 166.66
+            eq(dec('166.66'), per.weight)
+            type(dec, per.weight)
+
+            # Set with a str
+            per.weight = '167.66'
+            eq(dec('167.66'), per.weight)
+            type(dec, per.weight)
+
+            # Set with another Decimal
+            per.weight = dec(168.66)
+            eq(dec('168.66'), per.weight)
+            type(dec, per.weight)
+
+        with section ('`bytes` attributes'):
+          print('''
+            The `bytes` data type is analogous to the Python's native
+            `bytes` data type. This type contains a string of binary
+            values (or a sequence of integers depending on how you like
+            to think about it). Thus the `bytes` data type is used when
+            there is a need to store binary values.
+
+            By default, the database type for `bytes` is
+            `VARBINARY(255)', thus a maximum of 255 bytes are allowed by
+            default. This can be change using the following syntax:
+
+              class myentity(orm.entity):
+                mybytes = bytes, 1, 10
+
+            In the above code, `mybytes` will be able to contain 1 to 10
+            bytes. Any more or less would make a `myentity` invalid.
+
+            If the `bytes` attribute is declared to have a minimum and
+            maximum which is equal to one another, then the `BINARY`
+            database type will be used. For example, if `mybytes` were
+            redeclared as:
+
+              class myentity(orm.entity):
+                mybytes = bytes, 10, 10
+
+            The database type would be `BINARY(10)`
+          ''')
+
+          with listing('Using `bytes` attributes'):
+            from uuid import uuid4, UUID
+            class person(orm.entity):
+              # A univeral identifier for a person (note that this would
+              # be redundent with the person's `id` property)
+              uuid = bytes 16, 16
+
+            # Assign a binary representation of a UUID
+            per.uuid = uuid4().bytes
+
+            type(UUID, per.uuid)
+            type(UUID, per.id)
+
+          print('''
+            In the above code, we add a `uuid` field to capture a
+            UUID for the `person`. The `.bytes` property of the UUID
+            object gives us a 16 byte binary value. Note that this is
+            pretty much equivelent to how the `id` attributes already
+            work, except for the fact that the `id` attribute is
+            assigned a UUID on entity creation.
+          ''')
+
+        with section ('`date` attributes'):
+          print('''
+            The `date` attribute is used for date values which do not
+            require a time component. `date` attributes default to
+            `None`.`date` attributes are stored in MySQL as `DATE` data
+            types thus a valid date can be between between '1000-01-01'
+            to '9999-12-31'. This is convenient because it means that
+            the ORM is free of any Y2K or Y38 problems (at least not for
+            a really long time).
+
+            A nice feature of the `date` attribute is that it can parse
+            date stings (using the
+            [dateutile.parser](https://dateutil.readthedocs.io/en/stable/parser.html)
+            class). This means than reasonably unabigious date string
+            formats, such as "2006/01/01", "Jan 2, 2001" will be parsed
+            intelligently without the need for a format string.
+          ''')
+
+          with listing('Using `date` attributes'):
+            import primative
+            from datetime import date
+
+            class person(orm.entity):
+              dob = date
+
+            per = person()
+            
+            # Assign the dob using a string
+            per.dob = '2006-01-01'
+
+            # A `primative.date` type is always returned (unless the
+            # value is None)
+            self.type(primative.date, per.dob)
+            self.eq(primative.date(2006, 1, 1), per.dob)
+
+            # However, the returned value will also be equivalent to a
+            # regular Python `date` object with the same date
+            # parameters 
+            elf.eq(date(2006, 1, 1), per.dob)
+
+
+            # We can also assign a `date` object or a `primative.date`
+            # object.
+            per.dob = primative.date(2006, 1, 2)
+
+            # The above assertions will still work with the new value
+            self.type(primative.date, per.dob)
+            self.eq(primative.date(2006, 1, 2), per.dob)
+            self.eq(date(2006, 1, 2), per.dob)
+
+          print('''
+            As you can see, the return type is the framework`s own date
+            object `primative.date`. However, since this is just a
+            subclass of Python's `date` class, either can be used to
+            evaluate the return value.
+          ''')
+
+        with section ('`datetime` attributes'):
+          print('''
+            `datetime` attributes are used whenever you need to store a
+            precices date and time together. They are based on Python's
+            `datetime` class. `datetime` attributes default
+            to `None` and can store up to 6 digits of microsecond
+            precision. They have a range of '1000-01-01
+            00:00:00' to '9999-12-31 23:59:59'. Their database data type
+            is `DATETIME` which imposes this range (Python's `datetime`
+            can be as low as 1 CE). This expansive range ensures that
+            datetime values are not prone to the Y2038 bug (using
+            MySQL's `TIMESTAMP` data type currently would make
+            applications using the ORM subject to the Y2038 problem).
+
+            An important feature of `datetime` attributes is that they
+            are always UTC. If the attribute is set to a datetime object
+            that has no time zone information, the UTC time zone will be
+            added. If the datetime has a non-UTC time zone, the value
+            will be converted to UTC and the UTC time zone will be added
+            to the value. (Note that time zones aren't stored in the
+            database, they are just assumed to be UTC.) Through this,
+            the ORM always stores datetime values as UTC. Of course, the
+            end user will usually want want to work with datetimes in
+            their own time zone. It is up to the user interface's logic
+            to capture the user's time zone so that time zone aware
+            datetimes are given to the ORM.  Likewise, when presenting a
+            datetime to the user, the user interface logic must make
+            sure that the datetime is converted to the user's local time
+            zone from UTC (if necessary).  
+          ''')
+
+        with section ('`timespan` attributes', id='39672a76'):
+          print('''
+            Oftentimes when writing entity classes, you will need to
+            declare a **begin** and **end** datetimes. For example, a
+            `user` class may have a `begin` and `end` field which
+            indicate when the user is active.
+
+              class user(orm.entity):
+                  # The date the user became active
+                  begin = datetime
+
+                  # The date the user became inactive
+                  end = datetime
+
+            This basic need to indicate a general time range for an
+            entity is so common that the framework provides a shorthand
+            that can do the above with only one attribute declaration
+            instead of two:
+          ''')
+
+          with listing('Using the `timespan` attribute'):
+            from orm import timespan
+
+            class user(orm.entity):
+              # A timesspan to indicate when the user account was active
+              active = timespan
+
+          print('''
+            The above declaration of `user` is equivalent to the
+            original declaration in that we still get `begin` and `end`
+            datetime attributes.
+          ''')
+
+          with listing('Demonstrating the `timespan` attribute'):
+            
+            usr = user()
+            usr.begin = '2001-01-01 10:10 PM'
+            usr.end = '2012-12-12 12:12 PM'
+            type(primative.datetime, usr.begin)
+            type(primative.datetime, usr.end)
+
+          print('''
+            The name `active` doesn't really matter to much at this
+            point. We still get the `begin` and `end` attributes.
+
+            `timespan` attributes can also tell us if a given date
+            falls within this date range. Since we declared the name of
+            the `timespan` to be `active`, we can ask whether on not a
+            given datetime falls within the `span`.
+          ''')
+
+          with listing(
+            'Demonstrating the `in` operator with the '
+            '`timespan` attribute'
+          ):
+            true('2010-10-10' in usr.active)
+            fals('2020-10-10' in usr.active)
+            
+          print('''
+            Usually, an entity will need only one timespan. However, if
+            you need multiple timespans, you can add a `prefix` to
+            additional timespans attributes:
+          ''')
+
+          with listing('Using multiple timespans'):
+            class user(orm.entity):
+              # A timesspan to indicate when the user account was active
+              active = timespan
+
+              # A timespan to indicate when the user subscribed to the
+              # for-pay services
+              subscribed = timespan(prefix='subscribed')
+
+            usr = user()
+
+            # Set the datetime range for when the user was *active*
+            usr.begin = '2001-01-01 10:10 PM'
+            usr.end = '2012-12-12 12:12 PM'
+
+            # Set the datetime range for when the user was *subscribe*
+            usr.subscribedbegin = '2001-02-01 10:10 PM'
+            usr.subscribedend = '2012-12-12 12:12 PM'
+
+          print('''
+          The above syntax works fine, but an even better way to access
+          the attributes would be like the following
+          ''')
+
+          with listing('Using the timespan attribute'):
+            # Set the datetime range for when the user was *active*
+            usr.active.begin = '2001-01-01 10:10 PM'
+            usr.active.end = '2012-12-12 12:12 PM'
+
+            # Set the datetime range for when the user was *subscribe*
+            usr.subscribed.begin = '2001-02-01 10:10 PM'
+            usr.subscribed.begin = '2012-12-12 12:12 PM'
+
+          print('''
+            The above takes advantage of the fact that the timespans can
+            be distinguished by the attribute names (i.e., `active` and
+            `subscribed`)
+
+            The prefix is still needed because the ORM wants to ensure
+            that the less verbose notation works. Note that a `suffix`
+            parameter is available which can be used to append a suffix
+            to the end of the attribute name. Thus, had we used `suffix`
+            instead of `prefix`, the attributes would have been
+            `usr.beginsubscribed` and usr.endsubscribed'.
+          ''')
+
+        with section ('`datespan` attributes'):
+          print('''
+            The `datespan` attribute works just like the timespan
+            attribute except that the `begin` and `end` attributes that
+            are provided are of type `date` instead of `datetime`
+            &mdash; thus `datespan`s don't store time information; only
+            dates. See the section on [`timespan attributes`](#39672a76)
+            for more.
+          ''')
+
+          with listing('Using datespan'):
+            from orm import datespan
+
+            class user(orm.entity):
+              # A datespan to indicate when the user account was active
+              active = datespan
+
+              # A datespan to indicate when the user subscribed to the
+              # for-pay services
+              subscribed = datespan(prefix='subscribed')
+
+            usr = user()
+
+            # Set the date range for when the user was *active*
+            usr.active.begin = '2001-01-01'
+            usr.active.end = '2012-12-12'
+            eq(primative.date(2001, 01, 01), usr.active.end)
+            eq(primative.date(2012, 12, 12), usr.active.end)
+
+            # Set the date range for when the user was *subscribe*
+            usr.subscribed.begin = '2001-02-01'
+            usr.subscribed.end = '2012-12-12'
+            eq(primative.date(2001, 02, 01), usr.subscribed.end)
+            eq(primative.date(2012, 12, 12), usr.subscribed.end)
+
     with section('Using ORM entities collections'):
         with section(
           'Collecting and saving with ORM entities collections'
@@ -3354,7 +4093,7 @@ with book('Hacking Carapacian Core'):
         with section('Querying with collection entities'):
           print('''
             One of the most powerful feature of ORM entities is that they can
-            query the database through their constructor. As we've seen: 
+            query the database through thier constructor. As we've seen: 
             passing no arguments to the entities constructor does nothing
             more than provide us with an empty collection object. However,
             through the constructor we are able to specify arguments that
@@ -3362,10 +4101,10 @@ with book('Hacking Carapacian Core'):
             the database. The results from the `SELECT` will be used to
             populate the collection.
 
-            Though we will see that we can give full Boolean expressions
-            (similar to `WHERE` clauses) to the constructor, let's start
-            with what is perhaps the simplest type of query: a simple
-            equality test:
+            Though we will see that we can give full Boolean
+            expressions, called **predicates**, to the constructor,
+            let's start with what is perhaps the simplest type of query:
+            a simple equality test:
           ''')
 
           with listing('Performing a simple equality query'):
@@ -3434,12 +4173,12 @@ with book('Hacking Carapacian Core'):
           However, this is rarely necessary and would be functionally
           equivalent to calling any other attribute on it.
 
-          Lets rewrite the above listing to use the more the Boolean
-          expression query form:
+          Let's rewrite the above listing to use the Boolean expression
+          query form:
         ''')
 
         with listing(
-          'Using a Boolean expression for a simple equality query'
+          'Using a predicate expression for a simple equality query'
         ):
           # Query the database for all dogs that have the name "Rex"
           dgs = dogs("name = %s", 'Rex')
@@ -3452,11 +4191,10 @@ with book('Hacking Carapacian Core'):
 
       print('''
         This listing does the same thing as the prior listing, however
-        here we are using a Boolean expression (the kind of thing you
-        would use in a `WHERE` clause). 
+        here we are using a Boolean expression called a **predicate**.
 
         In this query, a placeholder (%s) is used to seperate the value
-        "Rex" from the query string.  This is an important feature to
+        "Rex" from the predicate.  This is an important feature to
         prevent against SQL injection attacts, particularly when the
         data being replaced is a variable which contains user input.
 
@@ -3466,7 +4204,7 @@ with book('Hacking Carapacian Core'):
       ''')
 
         with listing(
-          'Using a Boolean expression for multiple equality tests'
+          'Using a predicate expression for multiple equality tests'
         ):
           # Query the database for all dogs that have the name "Rex"
           dgs = dogs("name = %s or name = %s", 'Rex', 'Bandit')
@@ -3499,30 +4237,30 @@ with book('Hacking Carapacian Core'):
           which element is which. Without the call to `sort()`, the
           order of the elements would be indeterminate.
 
-          The Boolean expressions we are able to use for construction
+          The predicate expressions we are able to use for construction
           are similar to the the `WHERE` clauses used in SQL, however
-          they are not identical. The framework parses the queries
-          (which it calls "predicates") and stores them in internal data
-          structures which are later used to generate actual 'WHERE'
-          clause arguments. 
+          they are not identical. The framework parses the predicates
+          and stores them in internal data structures which are later
+          used to generate actual 'WHERE' clause arguments. 
 
           That being said, the syntax is nearly identical to the type of
           expressions you would give to a `WHERE` clause. All the
           standard comparative operator are supported. Also, using
-          paranthesis to nest expressions works. However, you shouldn't
-          expect MySQL function such as `TRIM()` or `LENGTH()` to work
-          nor should you expect non-comparative operators, such as
-          those used in arthmatic expessions, to work.
+          parenthesis to nest expressions and define precedence works.
+          However, you shouldn't expect MySQL function such as `TRIM()`
+          or `LENGTH()` to work nor should you expect non-comparative
+          operators, such as those used in arthmatic expessions, to
+          work.
 
           If you want to see the SQL that the entities collection will
           produce, you can `print` out the collection's `where` object.
 
             dgs = dogs('name IN (%s, %s)', ('Rex', 'Bandit'))
 
-          In this example, we used the IN operator which you will be
-          familiar with from SQL. Let's see what SQL the ORM will
-          issue to the database for this query. If we print the `where`
-          object:
+          In this example, we used the `IN` operator which you will be
+          familiar with from SQL. Let's see what `WHERE` clause the ORM
+          will issue to the database for this predicate. If we print the
+          `where` object:
 
             print(dgs.orm.where)
 
@@ -3531,7 +4269,7 @@ with book('Hacking Carapacian Core'):
             name IN (%s, %s)
             ['Rex', 'Bandit']
 
-          The first line contains the SQL. As you can see, the SQL
+          The first line contains the `WHERE` clause. As you can see, it
           matches our query expression exactly. The second line contains
           our arguments. for the parameterized SQL of the first line.
           To see the entire SQL statement, you can use:
@@ -3690,18 +4428,17 @@ with book('Hacking Carapacian Core'):
 
     with section('Relationships'):
 
-      with section('One-to-many'):
+      with section('One-to-many relationships'):
         print('''
           Defining a one-to-many relationship between to classes is
           pretty straightforward. Let's say that we are building an
           order entry system. In the system, we want to model customers
           and sales orders. Each customer can have zero or more sales
-          orders. Lets define those class and the one-to-many
+          orders. Let's define those class and the one-to-many
           relationship between them:
         ''')
 
         with listing('Defining a one-to-many relationship'):
-
           ''' Define the collection classes first. '''
           class customers(orm.entities):
             """ Represents a collection of customers.
@@ -3719,6 +4456,12 @@ with book('Hacking Carapacian Core'):
             firstname = str
             lastname = str
 
+            # Customers shipping address
+            address = str
+            city = str
+            state = str
+            zipcode = int
+
             # This line establishes the relationship.
             orders = orders
 
@@ -3730,6 +4473,8 @@ with book('Hacking Carapacian Core'):
 
             # Will be True if order is canceled
             canceled = bool
+
+            amount = dec
 
         print('''
           Above we have created a `customer` and `order` entity along
@@ -4097,7 +4842,7 @@ with book('Hacking Carapacian Core'):
           print('''
             In the above example, we have been saving the composite
             (i.e., the `cust` object`) and allowing the persistence to
-            propogate down to its constituents. However, if we call
+            propagate down to its constituents. However, if we call
             `save()` on a constituent, an attempt will be made to
             persist its composite as well. Take the following code for
             example:
@@ -4161,7 +4906,7 @@ with book('Hacking Carapacian Core'):
             newly loaded entity is a feature we haven't seen yet. For
             the sake of clarity, this composite is a freshly loaded
             `customer` since `ord1_0` is freshly loaded (i.e., it's not
-            derived from an in-memory cache somewhere). Also, it is
+              derived from an in-memory cache somewhere). Also, it is
             lazy-loaded: the database interaction to retrieve the data
             for the composite is performed only when `.customer` is
             called. That being said, it is a composite and you should
@@ -4170,226 +4915,1971 @@ with book('Hacking Carapacian Core'):
             future persistence operations.
 
             Once `ord1` has been reloaded, the final part of the listing
-            demonstrates through assertion that the `customer` and its
+            demonstrates, through assertion, that the `customer` and its
             two `orders` were successfully saved to the database and
             subsequently reloaded back into new entity objects.
 
             Normally, you will call `save()` on the highest level
-            composite and allow the persistence to propogated down to
-            the constituents. This is a more intuitive approach to
-            writing persistence logic, after all. However, it's
-            important to know that the ORM is keeping track of these
-            hierarchies and will try to persist upwards as well as
-            downwards.
+            composite and allow the persistence to propagated down to
+            the constituents since this is a more intuitive approach to
+            writing persistence logic. However, it's important to know
+            that the ORM is keeping track of these hierarchies and will
+            try to persist upwards as well as downwards.
           ''')
 
-      with section('ORM Data types'):
+      with section('Recursive relationships'):
         print('''
-          As you have seen, defining an attributes type is rather
-          simple. Types in the ORM behave as much like Python
-          types as possible in order to make their use easy for the developer.
-          For example, to define an attribute, we use a reference to the
-          builtin Python class `str` instead of creating a new, ORM
-          specific reference (such as `orm.string`). Additionally,
-          attributes defined as `str` default to empty strings because
-          that is the default for a Python `str`.
+          It is common that an entity will need to have a one-to-many
+          relationship with itself. In data modeling, this relatioship
+          is called a self-referential relationships, and is established
+          by having the foreign key of a table reference the primary key
+          of the same table.
 
-          The simplicity of the typing system so far would seem to
-          ignore the need to define typical database constraints such
-          as a maximum length given to the `varchar` type, or the
-          precision and scale of a float. On the contrary, these
-          additional parameters can be defined during class definition. It
-          turns out, however, that they are almost never needed because
-          the default constraints are sufficient. Consider that under
-          most circumstances, you just want your variable to be a
-          string, integer, decimal or Boolean.  However, when the need
-          arises to provide additional parameters to the data types to
-          improved database performence, that capability does exist.
+          A good example of a recursive relationship is the comments for
+          a social media post.  Once a comment is made, someone else can
+          comment on the comment, then someone can comment on that
+          comment and so on *ad infinitum*.
+
+          Luckily, creating recursive relationships is easy using the
+          ORM. Let's say we have a website where you can post pictures
+          of castles that people can comment on:
+        ''')
+        
+        with listing('Example of a recursive relationship'):
+          class castles(orm.entities):
+            pass
+
+          class castle(orm.entity):
+            # The name of the castle
+            name = str
+
+            # Comments about the castle
+            comments = comments
+
+          class comments(orm.entities):
+              pass
+
+          class comment(orm.entity):
+            # The name of the person creating the comment
+            commentator = str
+
+            # The body of the comment
+            text = str
+
+            # The collection of comments that have been written about
+            # this comment
+            comments = comments
+
+        print('''
+          Above we have create two entities: a `castle` entity an a
+          `comments` entity. We have created a one-to-many relationship
+          between `castle` and `comment` with the declaration:
+
+            class castle(orm.entity):
+              ...
+              comments = comments
+
+          This is the standard one-two-many relationship we have seen
+          above. We need the `castle` entity to have something for the
+          `comment` entity to record comments on.
+          
+          The `comment` entity has some attributes like `commentator` and
+          `text` to capture the basic data about a `comment`. The
+          final attribute declaration:
+
+            comments = comments
+
+          states that we want `comment` objects to have a `comments`
+          attribute that references a `comments` collection, i.e., we've
+          set up a recursive relationship on the `comments` entity. This
+          is no different than setting up regular one-to-many
+          relationship; here we are simply referencing the same entity
+          instead of a different one.
+
+          Let's use the comment entity capture the famous dialogue from
+          the movie *Monty Python and the Holy Grail* when the knights
+          arrive at Camelot.
+
+            [CAMELOT]
+              "Camelot!" by King Arthur:
+              "Camelot!" by Sir Galahad:
+              "Camelot!" by Sir Lancelot:
+                "It's only a model!" by Patsy
+                  "Shh!" by King Arthur:
+
+          Here we can see the nested structure of the commentary. The
+          three knights exclaim "Camelot!" in awe. Patsy derisively
+          makes a comment on Sir Lancelot comment that "It's only a
+          model!". (He is really commenting on the above three comments
+          but our object model won't take such a nuance into account).
+          King Arthur, then, makes a comment on Patsy comment
+          instructing him to shush.
+
+          The code below captures this dialog and its structure using
+          the `castle` and `comment` entities. 
         ''')
 
-        with section ('`str` attributes'):
-          
-          with listing('Example'):
+        with listing('Using a recursive relationship'):
+          camelot = castle(name='Camelot')
+
+          # Take advantage of the one-to-many relationship between
+          # castles and comments to create three child comments for the
+          # castle camelot.
+          camelot.comments += comment(
+            commentator = 'King Arthur',
+            text = '[in awe] Camelot!',
+          )
+
+          # Root comments will have no parent
+          none(camelot.comments.last)
+
+          camelot.comments += comment(
+            commentator = 'Sir Galahad',
+            text = '[in awe] Camelot!',
+          )
+
+          # Again, root comments will have no parent
+          none(camelot.comments.last)
+
+          camelot.comments += comment(
+            commentator = 'Sir Galahad',
+            text = '[in awe] Camelot!',
+          )
+
+          # Create Patsy's comment
+          its_only_a_model += comment(
+            commentator = 'Patsy',
+            text = "[derisively] It's only a model!",
+          )
+
+          # Take advantage of the recursive relationship comments have
+          # with themselves to make Patsy's comment a comment on Sir
+          # Galahad's comment
+
+          # Sir Galahad's comment
+          # -----------------|
+          #                  |
+          # Sir Galahad's comment's collection of comments
+          # -----------------|-----|
+          #                  |     |
+          #                  V     V
+          camelot.comments.last.comments += its_only_a_model
+
+          # The parent of its_only_a_model can be accessed through its
+          # `comment` attribute. Here we assert that the parent of
+          # its_only_a_model is the last comment added to camelot (Sir
+          # Galahad's comment)
+          is_(its_only_a_model.comment, camelot.comments.last)
+
+          # Create King Arthur's Shh! comment
+          ssh = comment(
+            commentator = 'King Arthur',
+            text = 'Shh!',
+          )
+
+          # Make King Arthur's Shh! comment a comment on Patsy's
+          # its_only_a_model comment.
+          its_only_a_model.comments += ssh
+
+          # Save camelot and its comments
+          camelot.save()
+
+          # Reload camelot to make sure all the comments made it to the
+          # database.
+          camelot1 = camelot.orm.reloaded()
+
+          # Iterate through camelot's comments
+          for comment1 in camelot1.comments:
             
+            # Find Sir Galahad's comments
+            if comment1.commentator == 'Sir Galahad':
+              
+              # Get Patsy's comment on Sir Galahad's comment
+              its_only_a_model1 = comment1.comments.only
+
+              # Assert the id's match
+              eq(its_only_a_model.id, its_only_a_model1.id)
+
+              # Again we get the the parent comment to
+              # its_only_a_model1. This is the last comment that was
+              # added to camelot (i.e, Sir Galahad's)
+              eq(its_only_a_model1.comment.id, camelot.comments.last.id)
+
+              # Get the only comment on Patsy's comment
+              ssh1 = its_only_a_model1.comments.only
+              eq('King Arthur', ssh1.commentator)
+              eq('Shh!', ssh1.text)
+              eq(ssh.id, ssh1.id)
+            else:
+              fail("Sir Galahad's comment wasn't found")
+
+        print('''
+          Above we are able to create the `castle` and its `comments`.
+          By calling the `save()` method on the `camelot` object, we are
+          able to save it and all the comments (in their nested
+          structure) to the database in an atomic transaction. The end
+          of the code reloads the castle which gives us access to all of
+          its `comments` on demand (i.e., comments are lazy-loaded like
+          other child collections). We then test the reloaded `camelot`
+          to ensure that it and its `comments` made it to the database
+          and back.
+
+          You will also notice that when we append a comment, or reload
+          a tree of comments, we can get the parent of any comment
+          through its `comment` attribute. Like their `comments`
+          collection, which gives us its child comments, the
+          ORM provides us with the `comment` attribute to get to the
+          parent. The ORM will assume we want this attribute to be named
+          after the type which is why we didn't have to set this in the
+          class declaration. The root comment, i.e., the comments that
+          don't have a parent, will have `comment` attributes that
+          return `None`.
+        ''')
+        
+      with section('Many-to-many relationships with associations'):
+        print('''
+          Many-to-many relationships between entities are established
+          and supported by **associations**. `association` objects are a
+          special type of `orm.entity'. They act as a bridge between two
+          other entity objects. Like regular entity classes, association
+          classes map to an associative table in the database. Like
+          association entities, this table links the tables of the two
+          entity classes.
+
+          Let's see an example of how we can use an association class to
+          model movies and the many-to-many relatioship they have with
+          people.
+        ''')
+
+        with listing('An simple object model that uses an association'):
+          ''' Create the person entity '''
+          class persons(orm.entities):
+            pass
+
+          class person(orm.entity):
+            # The name of the person
+            name = str
+
+          ''' Create the movie entity '''
+          class movies(orm.entities):
+            pass
+
+          class movie(orm.entity):
+            # The name of the movie
+            name = str
+
+          ''' Create the movie_person association entity '''
+          class movie_persons(orm.associations):
+            pass
+
+          class movie_person(orm.association):
+            # The `person` side of the relatioship
+            person = person
+
+            # The `movies` side of the relatioship
+            movie = movie
+
+            # The role a person plays in the creation of the movie
+            role = str
+
+        print('''
+          In the above listing, we've established two simple entity
+          classes: `person` and `movie`. Note that within their
+          declaration there is nothing to suggest that they have a
+          many-to-many relatioship with one another.
+
+          The listing ends with the declaration of the `movie_person`
+          association. Notice that it shares a lot in common with
+          regulare `entity` classes. First, it needs a pluralized form
+          (`movie_persons`) which inherits from the `orm.associations`,
+          while the singular form (`movie_person`) inherits from
+          `orm.association`. It also contains within it a declaration of
+          a primative attribute (`role`) as well as the two collection
+          classes `persons` and `movies`. These last two  declaration
+          establish the many-to-many relatioship between `movies` and
+          `person`. 
+
+          Another thing to note is that we named the association class
+          `movie_person(s)` instead of `person_movie(s)`. Here we are
+          adhering to the convention that the association classes should
+          be named after the two entity classes they associate, and that
+          the ordering should be done alphabetically.
+
+          Let's use these classe to record the relationships people had
+          with *Monty Python and the Holy Grail*.
+        ''')
+
+        with listing(
+          'Using an object model that contains an association'
+        ):
+          # Ensure the tables exists and are empty
+          person.orm.recreate()
+          movie.orm.recreate()
+          movie_person.orm.recreate()
+
+          # Create the movie object
+          mov = movie(name="Monty Python and the Holy Grail")
+
+          # Create two person objects
+          gilliam = person(name='Terry Gilliam')
+          cleese  = person(name='John Cleese')
+
+          # `mov.movie_persons` returns a `movie_persons` association
+          # collection
+          type(movie_persons, mov.movie_persons)
+
+          # Create an association (movie_person) where gilliam is the
+          # person and his role is 'actor'. Append it to the movie's
+          # `movie_persons` collection of associations.
+          mov.movie_persons += movie_person(
+            person = gilliam, role='actor'
+          )
+
+          # Assert that the new association's `person` attribute is
+          # indeed gilliam. Also note that its `movie` attribute is
+          # `mov` even though we did not explicitly make the assignment.
+          # The append operation was smart enough to do that for us.
+          is_(gilliam, mov.movie_persons.last.person)
+          is_(mov, mov.movie_persons.last.movie)
+
+          # In addition to acting in the movie, Gilliam also co-directed
+          # it. Create an additional association for his role in
+          # directing the movie.
+          mov.movie_persons += movie_person(
+            person = gilliam, role='director'
+          )
+
+          # Add another association stating that cleese was an "actor"
+          # in `mov` as wel.
+          mov.movie_persons += movie_person(
+            person = cleese, role='actor'
+          )
+
+          # Save `mov`. Persistent operations propogate so this will
+          # have effect of saving `mov` and its three constinuents
+          # association (movie_persons) as well as the associated
+          # `person` entity objects `gilliam` and `clees`.
+          mov.save()
+
+          # Reload the movie. This should give us a movie object that
+          # will have its own associations loaded from the database.
+          mov1 = mov.orm.reloaded()
+
+          # Assert the movie was correctly reloaded
+          eq(mov.id, mov1.id)
+          eq(mov.name, mov1.name)
+
+          # Assert the three associations were loaded
+          three(mov1.movie_persons)
+
+          # Sort the association collection by its persons' names in
+          # situ
+          mov.movie_persons.sort('person.name')
+
+          # Assert that the association objects contain the correct
+          # person objects.
+
+          # Get a collection of both movie_persons sorted by id
+          mps = mov.movie_persons.sorted()
+          mps1 = mov1.movie_persons.sorted()
+
+          # Assert the associations were reloaded correctly
+          for mp, mp1 in zip(mps, mps1):
+            eq(mp.person.id,  mp1.person.id)
+            eq(mp.movie.id,   mp1.movie.id)
+            eq(mp.role,       mp1.role)
+
+        print('''
+          Above we have created a `movie` object, `mov`, to represent
+          *Monty Python and the Holy Grail*. The first thing to note is
+          that it provides us with a `movie_persons` attribute. This
+          attribute, unsurprisingly, returns an association of type
+          `movie_persons`. It is this collection where we append
+          `movie_person` `association` objects. 
+
+          The `association` objects we append are assigned a reference
+          to the `person` entity of the association as well as a value
+          for the `role`. We don't need to specify the `movie` entity in
+          the association's construction;  it will be added for us when
+          the association is appended to `mov.movie_person`.
+          
+          Later in the listing, we call the `save()` method on the `mov`
+          object. In addition to saving the `movie`, this invocation
+          will save the association objects as well as the `person`
+          objects that they reference. As always, these mutations are
+          done in an atomic transaction.
+
+          The listing ends with the movie object being reloaded. We are
+          able to compare it to the original movie object that was saved
+          thus proving that the movie made it to the database and back
+          into the entity objects. We are also able to reload the
+          movie's associations and the entity objects (`person` and
+          `movie`) that they reference. Assertions are made to prove
+          this happened successfully.
+
+          Note that, as when accessing `entities` constituents, the
+          accessing of `associations` constituents
+          (`mov1.movie_persons`) causes the data to be lazy-loaded from
+          the database. The same is true when we access their entity
+          references (`mov1.movie_persons.first.person`).  
+
+          So far, we've appendend `person` objects to a `movie`
+          object via an `association`. This is similar to the one-to-many
+          relationships we used above. However, we've also recorded
+          the `role` that the `persons` played in the movie.
+          Furthermore, we are able to use associations to associate the
+          same `person` more than one time with a movie &mdash; we were
+          able to record that Terry Gilliam played an *acting* `role` in
+          the movie as well a a *directing* role.
+
+          These abilities would give associations a significant
+          advantage over the one-to-many relationship. But the real
+          utility
+          of `association` objects arises out of the need to establish
+          many-to-many relationships between entity classes. I.e., it's
+          not enough, in other words, to associate a collection of
+          persons with a movie. We need to go the other way around and
+          association a colection of movies with an individual person
+          since a person can act in (as well as write and direct) zero
+          or more movies.  The next listing will demonstrate this by
+          record Terry Gilliam's roles in two other movies: *Monty
+          Python's The Meaning of Life* and *Monty Python's Life of
+          Brian*.
+        ''')
+
+        with listing('The other side of the association'):
+          # Reload gilliam so we know we are working with a fresh copy
+          gilliam = gilliam.orm.reloaded()
+
+          # Like `movie` objects, `person` objects also have a
+          # `movie_persons` attribute that returns its `movie_persons`
+          # association.
+          type(movie_persons, gilliam.movie_persons)
+
+          # gilliam is already associated with "Monty Python and the
+          # Holy Grail" from the previous listing - once as an actor and
+          # once as a director. Let's demonstrate this:
+          mps = gilliam.movie_persons
+          two(mps)
+
+          # Both associations were for the movie Monty Python and the
+          # Holy Grail
+          for mp in mps:
+            eq('Monty Python and the Holy Grail', mp.movie.name)
+
+          # One of the associations was for the role of actor
+          one(mps.where(lambda x: x.role == 'actor'))
+
+          # The other association was for the role of director
+          one(mps.where(lambda x: x.role == 'director'))
+
+          # Now lets associate two new movies to gilliam
+          lob = movie(name="Monty Python's Life of Brian")
+          mol = movie(name="Monty Python's The Meaning of Life")
+
+          # gilliam co-wrote Life of Brian
+          mps += movie_person(
+            movie = lob,
+            role = 'writer'
+          )
+
+          # gilliam directed Life of Brian
+          mps += movie_person(
+            movie = lob,
+            role = 'director'
+          )
+
+          # gilliam co-wrote The Meaning of Life
+          mps += movie_person(
+            movie = mol,
+            role = 'writer'
+          )
+
+          # gilliam acted in The Meaning of Life
+          mps += movie_person(
+            movie = mol,
+            role = 'actor'
+          )
+
+          # Save gilliam. gilliam itself won't be saved since it already
+          # exist in the database and we didn't make any updates to it.
+          # However, its collection of `movie_person` associations
+          # objects will be saved as well as the two new movies we
+          # created above since they are referenced by the associations.
+          gilliam.save()
+
+          # Reload the person object from the database
+          gilliam1 = gilliam.orm.reloaded()
+
+          # Get a reference to its movie_persons collection
+          mps1 = gilliam1.movie_persons
+
+          # Both movie_persons collections should have six association
+          # objects; two for each movie. 
+          six(mps)
+          six(mps1)
+
+          # Sort both association collections by id
+          mps.sort()
+          mps1.sort()
+
+          # Since both association collecions have six element and have
+          # been sorted by id, we can use zip() to iterate over them and
+          # ensure their attributes match each other.
+          for mp, mp1 in zip(mps, mps1):
+            # Assert that the reloaded association matches the original
+            eq(mp.id, mp1.id)
+
+            # Assert that the reloaded association's `role` matches the
+            # original
+            eq(mp.movie.id, mp1.movie.id)
+
+            # Assert that the reloaded association's `person` matches
+            # the original
+            eq(mp.person.id, mp1.person.id)
+
+            # Assert that the reloaded association's `movie` matches the
+            # original
+            eq(mp.movie.id, mp1.movie.id)
+
+        print('''
+          The above listing demontrates creating associations from
+          person-to-movie (as opposed to movie-to-person, as in the
+          prior listing).  We were able reload the person object
+          `gilliam` and see that its associations from the prior listing
+          were successfully associated to it. Then we were able to add
+          new associations to two other movies gilliam had played a role
+          in.  Like always, we saved the `person` object (thus saving
+          its constiuents), reloaded the `person`, and assert that the
+          associations and the new movie objects were saved to the
+          database.
+        ''')
+
+        with section('Reflexive associations'):
+          print('''
+            A special type of association occures when the same two
+            entities need to have a many-to-many relationship with each
+            other.  These associations are called reflexive.
+
+            Consider a social networking company.  In this company, we
+            would have persons who need to be associationed with other
+            persons (such as when you "friend" someone on Facebook).
+            This is an example of a many-to-many relationship between
+            members of the same class (`person`).
+
+            Let's create and use a `person_person` association to see
+            how such a we can use the ORM to accomplish establish this
+            type of relationship.
+          ''')
+
+          with listing('Creating a reflexive association'):
+            # Forget the `person` entity so we can recreate it to make sure the
+            # tests still works.
+            orm.forget(person)
+
             class persons(orm.entities):
               pass
 
             class person(orm.entity):
+              # The name of the person
               name = str
 
-            per = person()
+            class person_persons(orm.associations):
+              pass
 
-            # Defaults to an empty string
-            empty(per.name)
+            class person_person(orm.association):
+              # References to both sides of the association
+              subject = person
+              object = person
 
-            # The minimum number of characters a str attribute can be is
-            # 1, so the entity starts out as invalid
-            invalid(per)
+              # The type of relationship the `subject` has with the
+              # `object` (e.g., "friend", "co-worker", "parent", etc.)
+              role = str
 
-            # Assign a sting to the attribute with surrounding
-            # whitespace.
-            per.name = '   Peter Griffin    '
+            person_person.orm.recreate()
 
-            # Now that the attribute has a non-empty str, it is valid
-            valid(per)
-
-            # Note that the surrounding whitespace is removed
-            eq('Peter Griffin', per.name)
-
-            # The str() function is used to convert non-str values 
-            per.name = 123
-
-            eq('123', per.name)
-            type(str, per.name)
-
-
-        print('''
-          `str` attributes can contain (and reliabily persist) any
-          string of unicode character. By default they are empty strings
-          (`''`).
-
-          By default, a `varchar(255)` column will be created for `str`
-          attributes in the entity's database table. Like all types,
-          they can be set to `None` which will be saved to the database
-          as `null`. `varchar` will be used for all `str` attributes
-          except when the developer specifies a minimum and maximum size
-          of equal value. In that case, a `char` is used. In the listing
-          below, we can see how a developers can specify the minimum and
-          maximum value. However, if you want a fixed-length string, it
-          is recommended you use the [chr](#fe56ed82) pseudotype
-          instead.
-
-          Notably, `str` attributes automatically strip any surrounding
-          whitespace in a string they are assigned. This is virtually
-          always what you want (except for rare cases, such as with a
-          password). This makes it possible to accept user input which
-          may have accidental whitespace at the begining or end.  This
-          way, you don't have to remember to call `str.strip` yourself
-          before assigning it to the attribute. Currently, there is no
-          way to disable this automatic stripping.
-
-          `str` attributes use the `str()` function to convert
-          non-`str` Python data types to `str` data types. For example,
-          if we assign an integer to a `str` attribute, it will
-          immediately be converted a `str`. `str` attributes always
-          return a value of type `str` no matter what they are assigned
-          (unless, of course, the attribute's value is `None`).
-
-          `str` attributes must, by default, contain at least 1
-          character for their entity object to be considered valid
-          (`.isvalid`) (even though `str` attributes default to empty).
-          This is because empty `str` attributes are rarely meaningful
-          and are often synonymous with `None` (`null') values. If you
-          intend to indicate that there is no value for a given
-          `str` attribute (e.g., because a  user has chosen to leave a
-          field blank in the user interface), it is recommended that you
-          set the attribute to `None`.
-
-          Since the database type for a `str` attribute is, by default,
-          `varchar(255)`, you would be correct in guessing that 255 is
-          the maximum number of characters the attribute can have in
-          order for the entity to be considered valid.
-
-          We can change the minimum and maximum size for a `str`
-          attributes in the declaration:
-        ''')
-
-        with listing('Change minimum and maximum size of a str'):
-          class person(orm.entity):
-            # Declare that `name` is a str that can be a minimum of 0
-            # characters and a maximum of 50 characters.
-            name = str, 0, 50
-
-          per = person()
-
-          # The default empty string is now valid since the minimum
-          # number of characters is 0
-          valid(per)
-
-          # More than 50 characters makes the entity invalid
-          per.name = 'X' * 51
-          invalid(per)
-
-          # 50 characters (or less) and the entity is valid again
-          per.name = 'X' * 50
-          valid(per)
-
-        print('''
-          It's rare that you would need to specify the size of the `str`
-          attribute, however. If you need a an attribute that can
-          contain more text than 255, you should consider a
-          [text](#0822acc6) attribute instead.
-        ''')
-
-        with section ('`chr` attributes', id='fe56ed82')
           print('''
-            Occasionally, you will want to store a fixed-width string. A
-            fixed-width string is one where the only valid value is on
-            that contains a pre-declared number of characters. In that
-            case, the `chr` attribute is handy.
+            We see above that the association uses the attributes names
+            `subject` and `object` to reference the same type. This is
+            how you know the association is reflexive. The ORM needs the
+            attributes to be named `subject` and `object` and to
+            reference the same type in order for it to recognize the
+            association as reflexive.
+
+            In addition to "friend" relationships, our association
+            objecs will allow us to capture additional relationships
+            types which we will record with string literals in the
+            `role` attribute.
+
+            Let's now use our association to record the relationships
+            Steve Jobs has with Steve Wozniak and Laurene Powell Jobs.
+            We've already created the `person` entity in the prior
+            listing so we will continue to use it.
           ''')
 
-          with listing('`chr` example'):
-            class debit(orm.entity):
-              """ Represents a debit card.
+          with listing('Using a reflexive association'):
+            with orm.override(), orm.sudo():
+              sjobs = person(name='Steve Jobs')
+              ljobs = person(name='Laurene Powell Jobs')
+              woz = person(name='Steve Wozniak')
+
+              # Associate Wozniak as a "friend" of Jobs
+              sjobs.person_persons += person_person(
+                object = woz,
+                role = 'friend'
+              )
+
+              # The append automatically makes sjobs the `subject` of the
+              # association.
+              is_(sjobs, sjobs.person_persons.last.subject)
+
+              # Associate Wozniak as a business partner of Jobs
+              sjobs.person_persons += person_person(
+                object = woz,
+                role = 'partner'
+              )
+
+              # Again, the append automatically makes sjobs the `subject`
+              # of the association.
+              is_(sjobs, sjobs.person_persons.last.subject)
+
+              # Associate Laurene as Jobs' spouse
+              sjobs.person_persons += person_person(
+                object = ljobs,
+                role = 'spouse'
+              )
+
+              # Save sjobs which will also save the association objects and
+              # `woz`
+              sjobs.save()
+
+              # Reload `sjobs`
+              sjobs1 = sjobs.orm.reloaded()
+
+              # Assert that the reloaded sjobs has three person_person
+              # associations.
+              three(sjobs1.person_persons)
+
+              # One of the associations is Jobs' friendship with Wozniak
+              one(sjobs1.person_persons.where(
+                lambda x: x.object.id == woz.id and x.role == 'friend'
+              ))
+
+              # One of the associations is Jobs' business relationship
+              # with Wozniak
+              one(sjobs1.person_persons.where(
+                lambda x: x.object.id == woz.id and x.role == 'partner'
+              ))
+
+              # One of the associations is Jobs' marital relationship with 
+              # Laurene.
+              one(sjobs1.person_persons.where(
+                lambda x: x.object.id == ljobs.id and x.role == 'spouse'
+              ))
+
+          print('''
+            Above, we creates a person object for Steve Jobs called
+            `sjobs`. We wanted to record two associations that Jobs has
+            with Wozniak: he was his friend and a business partner. Then
+            we recorded an association Jobs had with his wife Laurene. 
+
+            The `object` attribute is used for the entity acting as the
+            object of the association. The `subject` attribute is
+            `sjobs` because it is the subject of the association, i.e.,
+            the entity to which the association is appended.
+
+            The `role` attribute was added so we could distinguish
+            different types of relationships. Though `subject` and
+            `object` are required to be the names of the entity
+            attributes in reflexive associations, `role` is an arbitrary
+            attribute we just decided to create and use. Most social
+            media platforms seem to only be able to associate a person
+            with another as a "friend", however, we want this
+            association to handle multiple relationship types.
+            
+            So far, we've assocated Steve Jobs to his two people: Steve
+            Wozniak and Laurene Powell Jobs. However, these people have
+            their own collection of people with whom they are
+            associated. Let's reload `woz` and associate him to his
+            brother, Mark Wozniak and Janet Hill, his wife.
+          ''')
+
+          with listing(
+            'Using the objective side of a reflexive association'
+          ):
+
+            with orm.override(), orm.sudo():
+              # Create Wozniak's associates
+              mwoz = person(name='Mark Wozniak')
+              hill = person(name='Janet Hill')
+
+              # Reload woz so we no we have a reloaded its data from the
+              # database
+              woz = woz.orm.reloaded()
+
+              """
+              This currently doesn't work. See FIXME:28ca6113
+              # His two current associtions with Steve Jobs were persisted
+              # in the above listing.
+
+              two(woz.person_persons)
+              # One of his associations with Jobs was as a friend
+                one(woz.person_persons.where(
+                lambda x: x.subject.id == sjobs.id and x.role == 'friend'
+              ))
+
+              # The other association was with Jobs as a business partner
+              one(woz.person_persons.where(
+                lambda x: x.subject.id == sjobs.id and x.role == 'partner'
+              ))
               """
 
-              # The pin number for the debit card
-              pin = chr(4)
+              # Associate Wozniak to his brother mwoz
+              woz.person_persons += person_person(
+                object = mwoz,
+                role = 'sibling'
+              )
 
-            dbt = debit()
+              # Associate Wozniak to his spouse
+              woz.person_persons += person_person(
+                object = hill,
+                role = 'spouse'
+              )
 
-            # Assign the pin a number
-            dbt.pin = 12345
+              # Persist woz again. This will persist the two associations
+              # and their entity references mwoz and hill
+              woz.save()
 
-            # Note that the pin gets converted to a str
-            eq('12345', dbt.pin)
+              # Reload woz for testing purposes
+              woz1 = woz.orm.reloaded()
 
-            # The pin number must be exactly 4 characters.
-            invalid(dbt)
+              # Now woz has two person-to-person associations: ones we just recorded
+              # for his brother and wife.
+              two(woz1.person_persons)
 
-            # Assign the pin attribute a valid number
-            dbt.pin = 1234
+              '''
+              See FIXME:28ca6113
+              # One of the associations is Wozniak's friendship with Jobs
+              one(woz1.person_persons.where(
+                lambda x: x.subject.id == sjobs.id and x.role == 'friend'
+              ))
 
-            # Now the entity is valid
-            valid(per)
+              # One of the associations is Wozniak's partnership with Jobs
+              one(woz1.person_persons.where(
+                lambda x: x.subject.id == sjobs.id and x.role == 'partner'
+              ))
+              '''
 
-        with section ('`text` attributes', id='0822acc6'):
-          ...
+              # One of the associations is Wozniak's fraternal relationhips
+              # with mwoz
+              one(woz1.person_persons.where(
+                lambda x: x.object.id == mwoz.id and x.role == 'sibling'
+              ))
 
-        with section ('`int` attributes'):
-          ...
+              # One of the associations is Wozniak's spousal relationhips
+              # with hill
+              one(woz1.person_persons.where(
+                lambda x: x.object.id == hill.id and x.role == 'spouse'
+              ))
 
+      with section('Many-to-one relationships'):
+        print('''
+          Many-to-one relationships are an unusual case in ORM
+          programming. This is because they are essentially a
+          one-to-many in reverse. However, there is a reason for them.
 
+          Normally, when we create a one-to-many relationship, we
+          reference the plural class from the singular class. Consider
+          the following example:
+        ''')
 
+        with listing('Basic example of one-to-many relationship'):
+          ''' Define the entities classes '''
+          class customers(orm.entities):
+            pass
 
-    with section('Custom properties'):
-      ...
+          class orders(orm.entities):
+            pass
 
-    with section('Indexes'):
-        with section('Full text indexes'):
-            ...
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            orders = orders
+            
+          class order(orm.entity):
+            pass
+
+        print('''
+          In the above, we can see that a `customer` *has* an `orders`
+          collection, i.e., there is a one-to-many relatioship between
+          a customer and an order. However, we can establish this
+          relatioship in the opposite direction. Consider the following
+          code:
+        ''')
+
+        with listing('Basic example of many-to-one relationship'):
+          ''' Define the entities classes '''
+          class customers(orm.entities):
+            pass
+
+          class orders(orm.entities):
+            pass
+
+          ''' Define the entity classes '''
+          class customer(orm.entity):
+            pass
+            
+          class order(orm.entity):
+            customer = customer
+
+        print('''
+          In the above listing, as is made clear by the declaration:
+
+            class order(orm.entity):
+              customer = customer
+
+          each `order` can have one `customer`. Now let's see an example
+          of these classes being used:
+        ''')
+
+        with listing('Using a many-to-one relationship'):
+          ord = order()
+          cust = customer()
+
+          ord.customer = cust
+
+          ord.save()
+
+          ord1 = ord.orm.reloaded()
+
+          eq(ord.id, ord1.id)
+          eq(cust.id, ord1.customer.id)
+
+        print('''
+          As you can see above, the `order` is able to reference its
+          customer, and persist itself along with its customer. However,
+          can `cust` access its own `orders` attribute? In other words,
+          can we do this:
+
+            ords = cust.orders
+
+          Currently the answer is no. There is a TODO:9b700e9a in the
+          ORM that seeks to allow this to happen which, when completed,
+          will allow ORM users to get around the circular import issue
+          described below.
+
+          However, you are probably wondering why we would want to set
+          up a one-to-many relationship in reverse order in the first
+          place. The answer is many-to-one relatioships are usd to
+          establish relationships that wouldn't otherwise be possible
+          due to circular import errors that sometimes happen when one
+          class references another which is in a different module.
+
+          Consider a `customer` entity class that is located in a module called
+          `crm.py` (for "customer relationship management"). Second,
+          imagine an `order`entity class in a module called oe.py (for "order
+          entry"). If the `customer` class wants to establish a
+          one-to-many relatioship with the `order` class, it must import
+          the `oe.py` module first in order to reference the `order`
+          class.  However, if `oe.py` imports `crm.py`, and it already
+          references attributes of `crm.py`, then a circular import
+          error will arise making the relationship impossible. With the
+          many-to-one relatioship, we can reference `customer` from
+          `oe.py` and establish the relationship instead of requiring
+          that `crm.py` import and reference attributes of `oe.py`.
+          
+          If that's confusing, don't worry. You will likely know when
+          you've run into this issue. The error message will look
+          something like this:
+
+            AttributeError: partially initialized module 'order.py' has
+            no attribute 'orders' (most likely due to a circular import)
+
+          This is when a many-to-one relatioship should be used.
+          Otherwise, there is no reason to use them.
+        ''')
 
     with section('Imperitive attributes'):
-      ...
+      print('''
+        Most ORM attributes are simple declarations of name and type
+        with basic logic provided by the ORM to set and get their
+        values, and ensure that those values are persisted to the
+        database. However, there are times when you need to associate
+        logic with the setting and or getting of these attributes. For
+        that, we can use a special syntax provided by the ORM.
+
+        To illustrate, let's take a person class with a name and an
+        email attribute.
+      ''')
+
+      with listing('Email address as a imperative attribute'):
+        class persons(orm.entities):
+          pass
+
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address.
+          email = str
+
+      print('''
+        In the above `person` class, we can set its email address with a
+        simple string. 
+      ''')
+
+      with listing('Getting an imperative attribute'):
+        per = person()
+        per.email = 'JesseHogan@example.com'
+
+        eq('JesseHogan@example.com', per.email)
+        ne('jessehogan@example.com', per.email)
+
+      print('''
+        In the above example, we can see that, unsurprisingly, the case
+        of the email address is preserved. This means that testing the
+        equality of the email address against an all lowercase version
+        of the email address will be false (`ne`). This could be a source of
+        bugs because case is meaniningless in email addresses and people
+        usually only use lowercase letters in email address. Let's
+        standardize on lowercase email addresses by getting `person.email` to
+        always return all lowercase emails despite what case is used
+        when assigning.
+      ''')
+
+      with listing('Writing imperative attributes'):
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address.
+          @orm.attr(str)
+          def email(self):
+            addr = attr()
+            return addr.lower()
+
+        per = person()
+        per.email = 'JesseHogan@example.com'
+
+        eq('jessehogan@example.com', per.email)
+
+      print('''
+        In the above example, we replaced the declaration:
+          
+          email = str
+
+        with
+
+          @orm.attr(str)
+          def email(self):
+            ...
+
+        By using the `orm.attr` decorator, we are able to write a Python
+        property that controls exactly what is returned. We name the
+        property `email` to indicate that this is how we will referer to
+        the attribute.
+
+        You will notice on the next line:
+
+          addr = attr()
+
+        This `attr()` function will seem odd because it does not appear
+        to be declared anywhere. However, it is declared by the ORM
+        behind the scenes and sort of injected into any declarative
+        property. Its purpose is to provide us access to the attribute's
+        underlying value that the ORM holds at any given moment in time.
+        By assigning its return value to `addr`, we are simply getting
+        the value that we set above with the line.
+        
+          per.email = 'JesseHogan@example.com'
+
+        Thus the following would be True
+
+          assert 'JesseHogan@example.com' == addr
+
+        So now that we have the unadulterated value, we can smash its
+        case with the next line and return the value:
+          
+          return addr.lower()
+
+        So now, whenever we call `person.email`, all of its characters
+        will be lowercase, allowing the following to be asserted:
+
+          eq('jessehogan@example.com', per.email)
+
+        Note also that the ORM will read the attributes this way when
+        creating INSERT and UPDATE statements meant to be issued against
+        the database, so what we return in declarative getters will end
+        up being what is stored in the database. The return value of
+        declarative getters are also used in validation.
+
+        This example provides a fairly trivial use of declarative
+        attributes. However, the ability to control the output of ORM
+        attribtues is extremely important because it gives us the
+        ability to encapsulate logic in the getters and setters (the
+        imperative attributes) which is an essential feature of
+        object-oriented design.
+      ''')
+
+      with section('Memoization'):
+        print('''
+          The injected `attr()` function, as described above, returns
+          the ORM's underlying value for the attribute. However, we can
+          also use `attr()` to set the attributes underlying value by
+          passing values to it. This can be useful for memoization to
+          speed up performance.
+
+          For example, let's say our person entity has an `address`
+          attribute which stores a street address. A street address can
+          be expressed in a number of ways. For example, we could write
+          "123 N. Fake steet" or "123 north Fake st.", or any variations
+          thereof. There are third-party API's that we can call that
+          will parse the address and give us a standardized version of
+          the address. The problem is, this may take a while, so we
+          wouldn't mulitple calls to the `address` attribute to result in
+          more that one call to the API. This would be a waist of time,
+          computer resources, and likely money.
+          
+          We can use memoization to solve this problem:
+        ''')
+
+        with listing('Using memoization'):
+          class person(orm.entity):
+            @orm.attr(str):
+            def address(self):
+                addr = attr()
+                
+                # If address is a simple string, it hasn't been
+                # normalized yet.
+                if isinstance(addr, str):
+                  # Make expensive call to API to normalize `addr`,
+                  # e.g.,:
+                  #
+                  #     addr = apis.address.normalize(addr)
+
+                  # Store the object (non-string value) we get back from
+                  # the normalization services
+                  attr(addr)
+
+                # Return the string version of the normalized address
+                # object
+                return str(addr)
+
+          per = person()
+          per.address = '123 north Fake street mesa, AZ'
+
+          # Assert first call to per.address
+          eq('123 N Fake Street Mesa, AZ', per.address)
+
+          # Subsequent calls to per.address won't result in additional
+          # calls to the normalization services.
+
+        print('''
+          Here we are setting the underlying value of the `address`
+          attribute with the object that the mapping service returns to
+          us. We return a strigified version of the fictional address
+          object because we want the `address` attritute to always
+          return a string. If subsequent calls are made to
+          `person.address`, `attr()` will return the object that the
+          mapping services returned (instead of the `str` that it was
+          originally set to).  This type distinction determines whether
+          the call to the mapping service should be made, thus
+          subsequent calls (such as the one that would be made were we
+          to call `per.save()`) will be more performant and use less
+          resources.
+
+          You may think a similar solution would be to have a private
+          member variable memoize the object returned by the mapping
+          services. However, this would cause a problem if the `address`
+          attribute were to ever be changed through a subsequent
+          assignment.  Were that the case, we would need to create an
+          imperative setter to invalidate the private member. Thus,
+          using `attr()` to do the memoization is the right way to go.
+        ''')
+
+      print('''
+       It usually makes the most sense to make the getter imperative
+       while allowing the ORM to take care of setting the attribute's
+       value. This allows the code to be sort of lazy about things
+       &mdash; only performing the logic when and if needed. 
+
+       However, occasionally you will find it necessary to create
+       imperative setters. The distingushing characterstic of a
+       imperative setter is the fact that the `@property` must take a
+       `v` argument.  Let's rewrite the `email` attribute of person to
+       be a imperative s
+      ''')
+
+      with listing('Writing an imperative setter'):
+        class person(orm.entity):
+          # The person's name.
+          name = str
+
+          # The person's email address.
+          @orm.attr(str)
+          def email(self, v):
+            # Set underlying value to lowercased version of the email
+            # address being set.
+            attr(v.lower())
+
+        per = person()
+
+        # Assign with some upper case characters
+        per.email = 'JesseHogan@example.com'
+
+        # Returns all lowercase
+        eq('jessehogan@example.com', per.email)
+
+      print('''
+        The signature of the `email` `@property` now contains a `v`
+        parameter making it an imperative setter. The `v` will contain
+        the value assigned to the attribute. 
+
+        The logic in the `@property` changes a little too. We use the
+        value that is assigned to `email` (`v`) and lowercase it. Then
+        we pass this value to `attr()` thus setting the underlying value
+        to a lowercase version of the email address. Since this is a
+        setter, we don't return anything.  Notice that the assertions
+        work the same. The email address is lowercased on assignment,
+        but to the user of the `person` class, this distinction is
+        inconsequential.
+
+        The declarative constraints placed on ORM types through the
+        declarative notiation can be made on imperative attributes. For
+        example, instead of:
+
+          class person(orm.entity):
+              email = str, 3, 255
+
+        we could write:
+
+            class person(orm.entity):
+                @orm.attr(str, 3, 255)
+                def email(self):
+                    return attr()
+      ''')
+
+    with section('Inheritance'):
+      print('''
+        A important feature of object-oriented design is the use of
+        inheritance to create robust object models. The ORM extends
+        Python's inheritance model by allowing us to create subclasses
+        of our entity classes, called **subentities**, which can
+        seemlessly be persisted.
+
+        Let's create a small object model to demonstrate the basic use
+        of inheritance for entity classes.
+      ''')
+
+      with listing('A basic object model that uses inheritance'):
+        class products(orm.entities):
+          pass
+
+        class product(orm.entity):
+          name = str
+
+        class goods(products):
+          pass
+
+        class good(product):
+          code = str
+
+        class services(products):
+          pass
+
+        class service(product):
+          level = str
+
+      print('''
+        Here we have three ORM entities: `products`, `goods` and
+        `services`. Goods and services are types of products therefore
+        the `goods` and `services` classes inherit from `product`. 
+
+        According to the model, `goods` have a `code` associated with
+        them (perhaps for customer service representatives to use as a
+        reference).  A `service ` has a ``level` attribute to describe
+        its level (consider subscribing to a SaSS service and being
+        offered the *level* of "Basic", "Premium", or "Professional").
+
+        In this model, we've inherited one level deep, however, it is
+        possible to create a subentity classes of the `good` and
+        `product` entities, and subentities of those subentities, as so
+        on *ad infinitum*.
+
+        Now that we've established the object model, let's see how to
+        use it to create and persist products, goods and services:
+      ''')
+
+      with listing('Using inherited objects'):
+        # Create a good
+        g = good(
+          name = 'System76 Lemur Pro Laptop',
+          code = 'lemp11'
+        )
+
+        eq('System76 Lemur Pro Laptop', g.name)
+        eq('lemp11', g.code)
+
+        # Save the good
+        g.save()
+
+        g1 = g.orm.reloaded()
+
+        eq('System76 Lemur Pro Laptop', g1.name)
+        eq('lemp11', g1.code)
+
+      print('''
+        Here we are simply creating a 'good', saving and reloading it.
+
+        Notice that we able to use the `name` attribute just as we use
+        the `code` attribute even though `name` was defined in the
+        `product` base class. This is pretty much what we would expect
+        from normal inheritance (although we woudn't necessarily expect
+        to be able to set the `name` attributes through the
+        constructor). 
+
+        We save the `good` and reload it. Note that the `save()`
+        operation ensures both the `name` and `code` are saved without
+        any explicit reference to the `product` base class. The ORM
+        ensure that peristence and attribute access work seemlessly when
+        using inheritance. 
+
+        It's important to understand that, even though we didn't
+        explicitly reference the `product` class in this example, a
+        `product` and a `good` were created in the system. Both entities
+        have the same `id`. We can use the `good` object (`g`) to get
+        access to its corresponding base entity (sometimes called the
+        **superentitity**)
+      ''')
+
+      with listing('Subclasses and their base base')
+        # Create a good
+        g = good(
+          name = 'L-Shaped UPLIFT Standing Desk',
+          code = 'TOP912-80x30-BLK'
+        )
+
+        # Get the good's base object
+        prod = g.orm.super
+
+        # g is a `good`, though it's base entity is of type `product`
+        type(g, good)
+        type(product, prod)
+
+        # Note the `product` base entity has the same id as its
+        # corresponding subclass `good`
+        eq(g.id, prod.id)
+
+        # The product has the same value for `name` as the good
+        eq(g.name, prod.name)
+
+        # However, the product doesn't know about the the
+        # good's `code` attribute.
+        expect(AttributeError, lambda: prod.code)
+
+        # Save the good
+        g.save()
+
+        # Note that we can reload the good as a good, or good as a
+        # product.
+        g1 = good(g.id)
+
+        prod1 = product(g.id)
+
+        # Both objects will having mathing id and name attributes as
+        # they did before they were saved.
+        eq(g.id,    g1.id)
+        eq(g.id,    prod1.id)
+        eq(g.name,  g1.name)
+        eq(g.name,  prod1.name)
+
+        # However, as before, the reloaded product will not know about
+        # the good's code attribute
+        expect(AttributeError, lambda: prod1.code)
+
+      print('''
+        Here we see the use of the `super` property being used to get
+        the superentity of `good`:
+            
+            prod = g.orm.super
+
+        The `super` attribute is not intended for every day use, though
+        it is useful to demonstrate the relationship that entity objects
+        have with their base entities. `super` is lazy-loaded; when
+        `good` was reloaded, it wasn't pulled from the database until it
+        was called for.
+
+        The important thing to note here is that the ORM is maintaining
+        two distinct but related entity: the `good` and the `product`.
+        This is clear from the code sample above. 
+      ''')
+
+      with section('Behind the scenes: inheritance and presistence'):
+        print('''
+          In the database, a `product` table and a `good` table are used
+          to store the `product` entity along with its corresponding
+          `good` entity. Below are approximations of the two tables in
+          the database:
+
+            /* The product table */
+            CREATE TABLE product (
+              `id` binary(16) NOT NULL,
+              `name` varchar(255),
+              PRIMARY KEY (`id`),
+            )
+
+            /* The good table */
+            CREATE TABLE good (
+              `id` binary(16) NOT NULL,
+              `code` varchar(255),
+              PRIMARY KEY (`id`),
+            )
+
+          Note that only the `product` table has the `name` field. Even
+          though the `good` *entity* has a `name` attribute, the value
+          for it is stored in the `product` table. This is because
+          `name` is inherited from the `product` entity. Adding an
+          additional `name` field in the `good` table would lead to
+          duplicate data.
+
+          Also note that the `code` field is defined on the `good`
+          table.  This should make sense because `code` is an attribute
+          of the `good` entity. We wouldn't expect the `product` to know
+          about this attribute so we don't find it in the `product`
+          table.
+
+          When we saved `g`, a record was inserted into the `product`
+          table to store the `product` entity and another record was
+          inserted into the `good` table for the `good` entity. Since
+          both entity's share the same id, the ORM is able to associate
+          the two making inherited persistence seemless.
+      ''')
+
+      with section('Further uses of subentities'):
+        print('''
+            Though we only showed creating, saving and reloading new
+            subentity objects, it is, of course, also possible to update,
+            and delete them. Updating subentity's works just like
+            updating regular entities &mdash; with the inheritence
+            aspects being taken care of by the ORM.. To delete a
+            subentity is to delete its superentities as well as any
+            subentities it has. All these persistence operations are
+            done in an atomic transaction.
+
+            Furthermore, subentities can have constituents. Those
+            constiuents can be entities or even subentities themselves.
+            Working with subentity constituents is the same as working
+            with regular entities. 
+
+            Since inheritance is a cornerstone of robust object models,
+            a lot of work has been put into the ORM to ensure that
+            subentities and their constituents can be persisted as
+            seemlessly as possible.
+        ''')
+
+      with section('Querying subentities'):
+        print('''
+            Querying subentities works the same as querying regular
+            entities &mdash; with the inheritance aspect being taken
+            care of by the ORM. Consider the following:
+        ''')
+
+        with listing('Querying subentities'):
+          # Create two `service` entities
+          simple = service(
+              name="Simple Edition", level='simple'
+          )
+
+          pro = service(
+              name="Professional Edition", level='professional'
+          )
+
+          # Save simple along with pro
+          simple.save(pro)
+
+          # Query for the `simple` entity
+          srvs = services(
+              'name = %s AND level = %s', 'Simple Edition', 'simple'
+          )
+
+          # Assert that we loaded the `simple` entity from the
+          # database.
+          one(srvs)
+          eq(simple.id, srvs.only.id)
+
+          # Query both of the services (since their names both end in
+          # "Edition".
+          srvs = services(
+              "name LIKE '%Edition'"
+          )
+
+          # Assert both were loaded
+          two(srvs)
+          self.true(simple.id in srvs.pluck('id'))
+          self.true(pro.id    in srvs.pluck('id'))
+
+        print('''
+          Here we are creating and saving two `service` subentities.
+          We are able create them with their `name` attributes because
+          it superclass, because the `name` attribute is inherited
+          from its superclass `product`. This is what we did with the
+          `good` subentity above.
+
+          Once the entities have been saved, we use the SQL-like
+          expression to query them from the database. Notice that we
+          are able to use the `name` attribute as well as the `level`
+          attribute in the query expressions. The ORM ensures that
+          inherited attributes are queryable. Thus, we don't need to
+          do anything special to query inherited attributes of a
+          subentity.
+        ''')
+
+      with section('Indexes'):
+        print('''
+          Indexes can be placed on columns in MySQL to speed up
+          searches for values in those columns. Through the ORM's
+          declarative syntax, we can easily register our desire that a
+          given attribute shoud be indexed in the database.
+
+          For example, let's say that users frequently search the
+          for `dogs` by `name`. We could alter the `dog` class to add
+          an index on the `name` attribute like so:
+        ''')
+
+        with listing('Using indexes'):
+          class dog(orm.entity):
+            name = str, orm.index
+            dob = date
+
+        print('''
+          Above, we have added a reference to the `orm.index` class in the
+          `name` declaration The ORM will take notice of this and create
+          an index for the `name` field in the database. When the ORM
+          creates the table, the `CREATE TABLE` statement will contain an
+          instruction to create the index:
+
+            CREATE TABLE `main_dogs`(
+              `id` binary(16) primary key,
+              `proprietor__partyid` binary(16),
+              `owner__userid` binary(16),
+              `createdat` datetime(6),
+              `updatedat` datetime(6),
+              `name` varchar(255),
+              INDEX proprietor__partyid_ix (proprietor__partyid),
+              INDEX owner__userid_ix (owner__userid),
+              INDEX name_ix (name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+          Notice the `name_ix` index is create with the line:
+
+            INDEX name_ix (name)
+          
+          You will also notice that the foreign keys,
+          `proprietor__partyid` and `owner__userid`, are indexed as well.
+          This is default behaviour provided by the ORM to improved
+          performance on these often-searched fields.
+        ''')
+
+        with section('Composite indexes', id='3abd9436'):
+          print('''
+            Composite indexes are indexes that span multiple columns.
+            These type of indexes can improve the performance of queries
+            which tend to filter on a collection of columns.
+
+            We can cause the ORM to create composite indexes for 2 or
+            more attributes. For example, consider the following
+            `person` entity:
+          ''')
+
+          with listing('Declaring composite indexes'):
+            class person(orm.entity):
+                firstname = str, orm.index('fullname', 0)
+                lastname = str, orm.index('fullname', 1)
+
+          print('''
+            This class declares a `firstname` and a `lastname`
+            attribute. These attributes can be indexed together with the
+            composite index we have called "fullname". The second
+            parameter to `orm.index` the ordinal. We are declaring that
+            we want the `firstname` column to come first in the
+            composite index, then `lastname` should come second. This
+            entity generates the `CREATE TABLE` belowe:
+
+              CREATE TABLE `t_persons`(
+                  `id` binary(16) primary key,
+                  `proprietor__partyid` binary(16),
+                  `owner__userid` binary(16),
+                  `createdat` datetime(6),
+                  `updatedat` datetime(6),
+                  `firstname` varchar(255),
+                  `lastname` varchar(255),
+                  INDEX proprietor__partyid_ix (proprietor__partyid),
+                  INDEX owner__userid_ix (owner__userid),
+                  INDEX fullname_ix (firstname, lastname)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            The relevent line is:
+
+              INDEX fullname_ix (firstname, lastname)
+
+            The name the database uses for the index is the name we
+            specified for the index ("fullname") concatenated with an "_ix"
+            suffix. Following that, we see the two attribute names in
+            the order we specified using the ordinal argument.
+          ''')
+
+        with section('Full text indexes'):
+          print('''
+            MySQL full-text indexes can also be created and used by
+            entities.  These indexes allow for searches on columns where
+            the search criteria do not perfectly match the records.
+
+            Creating a full-text index is similar to creating a
+            regular index:
+          ''')
+
+          with listing('Declaring full-text indexes'):
+            class person(orm.entity):
+                firstname = str
+                lastname = str
+                bio = str, orm.fulltext
+
+          print('''
+            When the table is created for this entity, it will contain a
+            full-text index on the `bio` column.
+
+            We can use the `MATCH() AGAINST()` syntax to query the
+            full-text index:
+          ''')
+
+          with listing('Query the full-text indexes'):
+            pers = persons(
+              'MATCH(bio) AGAINST (%s)', 'python programmer'
+            )
+
+          print('''
+            A query like this could be used to help us find `persons`
+            who mention that they are Python programmers (or maybe just
+            programmers) in their bio's.
+          ''')
+
+        with section('Full-text indexes on multiple columns'):
+          print('''
+            As in the above section on [composite indexes](#3abd9436),
+            we can create full-text indexes on multiple columns. The
+            syntax is basically the same a that of composite indexes.
+          ''')
+
+          with listing(
+            'Declaring full-text indexes on multiple columns'
+          ):
+            class person(orm.entity):
+                firstname = str, orm.fulltext('name', 0)
+                lastname = str, orm.fulltext('name', 1)
+
+          print('''
+            Above, we are declaring a full-text index on `firstname` and
+            `lastname` called "name". `firstname` will come first in the
+            index (ordinal 0) and `lastname` will come second (ordinal
+            1).
+
+            The create table will look like:
+
+              CREATE TABLE `persons`(
+                  `id` binary(16) primary key,
+                  `proprietor__partyid` binary(16),
+                  `owner__userid` binary(16),
+                  `createdat` datetime(6),
+                  `updatedat` datetime(6),
+                  `firstname` varchar(255),
+                  `lastname` varchar(255),
+                  INDEX proprietor__partyid_ix (proprietor__partyid),
+                  INDEX owner__userid_ix (owner__userid),
+                  FULLTEXT name_ftix (firstname, lastname)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            As you can see, a full-text index is being created in the
+            database called `name_ftix` with `firstname` coming first and
+            `lastname` coming second.
+          ''')
 
 
-    with section('Testing ORM entities'):
-      ...
+    with section('Join queries')
+      print('''
+        The queries we have created so far have filtered on only one
+        entity. For example, to retrieve all customers in the state of
+        Alaska (AK), we could write the following:
+
+          custs = customers(state = %s, 'AK')
+
+        This is simple enough. However, what if we wanted to get all the
+        customers in Alaska who made orders for over $100. This would
+        involve querying not only the `customers` table but also the
+        its child table `orders`. For a query like that we need to use
+        the join operators.
+      ''')
+
+      with section('Using join queries'):
+        custs = customers('state=%s', 'AK') & orders('amount > %s', 100)
+
+        print('''
+          In the above query, we use the `&` operator on the two
+          `entities` collections to join their two predicates. If an
+          attribute is called on `custs`, a `SELECT` statement similar
+          to the one below will be used to retrieve data for `custs`.
+
+            SELECT *
+            FROM customers AS cust
+            INNER JOIN orders AS ord
+                ON cust.id = ord.customerid
+            WHERE cust.state = 'AK' AND ord.amount > 100
+
+          This query will be used to populate the `customer` elements of
+          `custs`, as well as the `order` elements returned by
+          `cust.orders`. Thus, regardless of what is in the database, we
+          can make the following assertions regarding `custs` and its
+          `orders` attribute.
+        ''')
+
+        with listing('Asserting the data loaded from the join'):
+          for cust in custs:
+            # Each customer will be in the state of Alaska
+            eq('AK', cust.state)
+
+            # Each of these customers will have an order where the
+            # amount is greater than $100. Also, only those orders will
+            # be in `customer`s' `orders` collection.
+            for ord in cust.orders:
+              gt(100, ord.amount)
+
+        print('''
+          Note that each `cust` and `ord` object will be fully hydrated
+          with data. The only catch is that the only `order` objects
+          returned from `cust.orders` will be those whose amounts are
+          greater that $100. You could reload each `cust` object if it
+          was imported to get all the customer's orders:
+
+            for cust in custs:
+              cust = cust.orm.reloaded()
+              ...
+
+          This would force a full load of `cust.orders` when it is next
+          invoked.
+        ''')
+
+        with section('Alternative syntax for joins'):
+          print('''
+            In the above query, we used the the `&` operator to join two
+            `entities` classes. However, there are alternative ways to
+            create joins which use slightly different operators and
+            methods. 
+          ''')
+
+          with listing('Alternative syntax for joins'):
+            # This is the original query from above
+            custs1 = customers('state=%s', 'AK') & orders('amount > %s', 100)
+
+            # Alternative one using the `join` method instead of the &
+            # operator.
+						custs2 = customers('state = %s', 'AK').join(
+								orders('amount > %s', 100)
+						)
+            
+            # Alternative using the &= operator
+            custs3 = customers('state = %s', 'AK')
+            custs3 &= orders('amount > %s', 100)
+
+            eq(custs1.orm.select, custs2.orm.select)
+            eq(custs2.orm.select, custs3.orm.select)
+
+          print('''
+            Above, we have 3 join queries, each created using a slightly
+            different syntax. At the bottom of the listing, we assert
+            that all 3 produce the same `SELECT` statement. Given that,
+            we know that each will load the same data.
+
+            The framework provides these alternatives so the developer
+            is able to choose the one that is most capable of
+            producing the cleanest code. Though the above examples only
+            join two entities, other join queries may involve
+            multiple entities and will therefore become unwieldy. Thus
+            having the option to write join queries as cleanly as
+            possible is important for readability.
+
+            In the above listing it could be argued that the first
+            querty (`cust1`) is the best because it occupies one line
+            It also fewer characters because it uses the `&` operator
+            instead of the `join` method. However, if it were found
+            within nested code, we may need to break the line to conform
+            to the style guide lines on line length. In that case, the
+            `join` method, used in `custs2`, may be the better option.
+            The `&=` operator, which appends joins to an existing query,
+            can use used as a way to break the creation of the query
+            into multiple lines as well.
+
+            In the above examples, we've joined *instances* of the
+            `entities` classes to one another. However, it is also
+            possible to join references to the `entities` *class* to
+            another `entities` class or instance. For example, let's say
+            we want to modify the above query to return all orders of
+            customers that have orders greater than $100. In that case,
+            we could use a reference to the `customers` class instead of
+            an instance of it. Let's look at some ways to do this:
+          ''')
+
+          with listing('Joining to instances and to class references'):
+            # Using the & operator
+            custs1 = customers() & orders('amount > %s', 100)
+            custs2 = customers & orders('amount > %s', 100)
+
+            # Using the `join` method
+						custs3 = customers().join(orders('amount > %s', 100))
+						custs4 = customers.join(orders('amount > %s', 100))
+            
+            # Using the &= operator
+            custs5 = customers()
+            custs5 &= orders('amount > %s', 100)
+
+            custs6 = customers
+            custs6 &= orders('amount > %s', 100)
+
+            # Assert type
+            type(customers, custs1)
+            type(customers, custs2)
+            type(customers, custs3)
+            type(customers, custs4)
+            type(customers, custs5)
+            type(customers, custs6)
+
+            # Assert that all queries produce the same SELECT
+            eq(custs1.orm.select, custs2.orm.select)
+            eq(custs2.orm.select, custs3.orm.select)
+            eq(custs3.orm.select, custs4.orm.select)
+            eq(custs4.orm.select, custs5.orm.select)
+            eq(custs5.orm.select, custs6.orm.select)
+
+          print('''
+            All six queries produce the same `SELECT` statement. We can
+            see that, when no predicate needs to be supplied to the
+            `customers`' constructor, we can either use an instance of
+            `customers` or a reference to the class itself regardless of
+            the join operator/method we are using. Using a class
+            reference is preferable here because it allows us to omit
+            the parenthesis thus reducing line length slightly while
+            giving the reader's eyes less code to parse.
+
+            Let's now move on to a slightly more complicated join where
+            we join 3 entities together. Let's say we want to load all
+            customer's that have made an order which contains a line item
+            with a quantity greater than 99.
+          ''')
+
+          with listing('Join 3 entities together'):
+            custs = customers & (orders & lineitems('quantity > %s', 99))
+
+            for cust in custs:
+              for ord in cust.orders:
+                for itm in ord.lineitems:
+                  gt(99, itm.quantity)
+
+          print('''
+            Here we join `customers`, `orders` and `lineitems` together.
+            Later we assert that all the line items loaded will have
+            quantities greater that 99. This code will be able to assert
+            itself no matter what is in the database. Note that the
+            `cust`, `ord`, and `itm` objects themselves will be fully
+            hydrated so you are able to access each of their attributes.
+
+            Note that additional parentheses in the query. They are
+            necessary to specify the correct precedence. For example, if
+            we write:
+
+              customers & orders & lineitems('quantity > %s', 99)
+
+            the precedence would default to:
+
+              (customers & orders) & lineitems('quantity > %s', 99)
+
+            The expression `(customers & orders)` evaluates to a
+            `customers` object with an `orders` object joined to it.
+            That customers object is then joined to `lineitems`. Since
+            `lineitems` is not a constiuents of `customers`, we get an
+            error. To correct this issue, we must add the parentheses:
+
+              custs = customers & (orders & lineitems('quantity > %s', 99))
+
+            Here the expression:
+
+              (orders & lineitems('quantity > %s', 99))
+
+            evaluates to an `orders` object with a `lineitems` object
+            joined to it. So far so good. This `orders` object is then
+            joined to the `customers` class (which results in a
+            `customers` object).
+
+            An alternative way to write this is
+
+              custs = customers()
+              ords = orders & lineitems('quantity > %s', 99)
+              custs &= ords
+
+            Using this syntax, we are able to see line-by-line what is
+            going on. This syntax may be useful if the query becomes
+            more complex or unwieldy.
+
+            By the way, if you are debugging issues with joins, you can
+            interrogate the `joins` collection of the `orm` class. For
+            example, in the above code, we can see that `custs` is
+            joined to `ords` by this line.
+
+              assert custs.orm.joins.only.entities is ords
+
+            Additionally, we can see that `ords` is joint to the
+            lineitems object by doing this:
+
+              assert type(ords.orm.joins.only.entities) is lineitems
+
+            The `orm.joins` collection is used by the ORM to store the
+            joins that are made during `entities` construction. They
+            expose the actual `join` objects. They are can be examined
+            for debugging purpose, but are inteded for use by the ORM's
+            internal logic. So, as with most members beyond the `orm`
+            object, it would be unwise to mutate them.
+          ''')
+
+    with section('Eager loading')
+      print('''
+        As we've discussed, constituents are lazy-loaded by default.
+        This is typically prefered because an entity can have a number
+        of different constituents, and it's not clear to the ORM, during
+        initialization, which if any we want to load, so the ORM will
+        only load them when they are requested. 
+
+        However, it may be the case that you will want to specify that
+        certain constituents are loaded when the composites are loaded,
+        for example, to improve performance.  This can be accomplished
+        using the `eager` class.
+
+        For example, to write code that loads a customers collection and
+        their orders in one trip to the database, we could do the
+        following:
+      ''')
+        
+      with section('Use eager loading'):
+        # Load all Arizona customers and their orders from the database
+        custs = customers(state = 'AZ', orm.eager('orders'))
+
+        for cust in custs:
+          # This line loads nothing from the database because the orders
+          # have already been loaded above.
+          ords = cust.orders
+
+      print('''
+        During construction of the `customers` class, we pass an `eager`
+        object to indicate that we want the `orders` constituent eagerly
+        loaded.  This causes the customer data, along with the orders
+        data, to be loaded from the database in one trip.
+
+        The name of the constituent that we pass to the `eager`
+        constructor can be nested. For example, we could re-write the
+        above code to load the customers, orders and lineitems in one
+        trip by passing 'orders.lineitems' to the `eager` constructor.
+        The nesting can be as deep as necessary.
+      ''')
+
+      with section('Use eager loading with n-level depth'):
+        # Load all Arizona customers, their orders, and the lineitems of
+        # each order.
+        custs = customers(state = 'AZ', orm.eager('orders.lineitems'))
+
+        for cust in custs:
+          # All the database access will have been done at this point.
+          # The call to `cust.orders` and `ord.lineitems` will not
+          # require access to the database.
+          ords = cust.orders
+
+          for ord in ords:
+            itms = ord.lineitems
+
+      print('''
+        <aside>
+          Note that with these examples, the actual call to the database
+          happens when we start the interation of `custs`. 
+
+            for cust in custs:
+
+          As you know, collections are loaded the first time an
+          attribute of a collection object is called. When we iterate
+          over the `custs` object using the `for` keyword, we are
+          implicitly calling its `__iter__` method. Obviously, this
+          method is an attribute therefore the data gets loaded. It's a
+          good thing too because, without the data for `custs` being
+          lodaded, there would be nothing to iterate over.
+        </aside>
+
+        Another consideration for eager loading is when we want to
+        eagerly load multiple constituents at the same level. For
+        example, say we want to not only eager load the `customers`'
+        `orders` but also the `customers`' email addresses. We have
+        only to pass a second argument of 'emails' to `eager`'s
+        constructor:
+      ''')
+
+      with section('Eager load multiple constiuents'):
+        # Load all Arizona customers, their orders, and their email
+        # addresses
+        custs = customers(state = 'AZ', orm.eager('orders', 'emails'))
+
+        for cust in custs:
+          # All the database access will have been done at this point.
+          # The call to `cust.orders` and `cust.emails` will not
+          # require access to the database.
+          ords = cust.orders
+          emails = cust.emails
+
+      print('''
+        As the comments explain, all database access will be completed
+        when iteration starts. Calls to `cust.orders` and `cust.emails`
+        will not require database access.
+
+        <aside>
+          You may be wondering if you can eagerly load constituents of
+          an entity object. For example, what if, instead of loading a
+          collection of `customers` from the database, we already had
+          the id for a customer, and we wanted to load it, along with
+          all its orders in one go. The syntax would look something like
+          the following:
+
+            # NOTE The following code will not work!
+
+            # The customer and its orders are loaded from the database
+            # at this line
+            cust = customer(custid, orm.eager('orders'))
+            
+            # This line should not result in any data being loaded
+            # from the database
+            ords = cust.orders
+
+          Unfortunately, the above will not work. This functionality
+          simply hasn't been implemented at the time of this writing.
+          There is currently a TODO (07141cbd) to address this
+          defefiency. We can work around it, however, by simply doing
+          the following:
+
+            # Load the customer collection filtering on id
+            custs = customers(id = custid, orm.eager('orders'))
+
+            # Get the single customer that would result from the query
+            cust = custs.only
+
+            # This line should not result in any data being loaded from
+            # the database
+            ords = cust.orders
+
+        </aside>
+      ''')
 
     with section('ORM events'):
       ...
-
-    with section('Inheritance'):
-      ...
-
-    with section('Retrieving data'):
-
-      with section('Joins')
-        ...
-
-      with section('Eager loading')
-        ...
 
     with section('Streaming'):
       ...
@@ -4405,8 +6895,17 @@ with book('Hacking Carapacian Core'):
     with section('Validation', id='012b0632'):
       ...
 
+    with section('Sorting'):
+      # Go over the nested sorting capabilities of
+      # composite-constiuents:
+      #
+      #    custs.sort('orders.createdat')
+      ...
+
+
   with chapter('The General Entity Model') as sec:
-    ...
+    with section('Using aprori.model()') as sec:
+      ...
 
   with chapter("Authoring DOM objects", id='22ee9373') as sec:
     ...

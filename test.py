@@ -40,6 +40,8 @@ import codecs
 import dateutil
 import uuid
 import db
+
+# TODO use an alias here
 import decimal; dec=decimal.Decimal
 import ecommerce
 import effort
@@ -333,8 +335,8 @@ class presentation(orm.entity):
     description  =  str
     locations    =  locations
     components   =  components
-    title        =  str,        orm.fulltext('title_desc',0)
-    description1 =  str,        orm.fulltext('title_desc',1)
+    title        =  str, orm.fulltext('title_desc', 0)
+    description1 =  str, orm.fulltext('title_desc', 1)
     author       =  str,
 
     @staticmethod
@@ -363,22 +365,22 @@ class concert(presentation):
     record = orm.fieldmapping(str)
 
     # tinyint
-    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
+    ticketprice  =  int, -128, 127
 
     # mediumint
-    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
+    attendees    =  int, -8_388_608, 8_388_607
 
     # tinyint unsigned
-    duration     =  orm.fieldmapping(int,  min=0,         max=255)
+    duration     =  int, 0, 255
 
     # mediumint unsigned
-    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
+    capacity     =  int, 0,  16_777_215
 
     # int unsigned
-    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
+    externalid   =  int, 0, 4_294_967_295
 
     # bigint unsigned
-    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+    externalid1  =  int, 0, (2**64)-1
 
 class exhibition(presentation):
     @staticmethod
@@ -448,9 +450,9 @@ class artifact(orm.entity):
         fact.comments = uuid4().hex
         return fact
 
-    title        =  str,  orm.fulltext('title_desc',0)
-    description  =  str,  orm.fulltext('title_desc',1)
-    weight       =  int,  -2**63, 2**63-1
+    title        =  str, orm.fulltext('title_desc', 0)
+    description  =  str, orm.fulltext('title_desc', 1)
+    weight       =  int, -2**63, 2**63-1
     abstract     =  bool
     price        =  dec
     components   =  components
@@ -520,8 +522,8 @@ class artist(orm.entity):
         phone = attr()
         if phone is None:
             return None
-        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
 
+        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
         if type(phone) is str and not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
 
@@ -2288,7 +2290,7 @@ class orm_(tester.tester):
         iss = issue.getvalid()
         self.true(iss.isvalid)
 
-        # Break imperitive rules
+        # Break imperative rules
         iss.assignee = 'brokenATexample.com'
         self.broken(iss, 'assignee', 'valid')
         self.false(iss.isvalid)
@@ -2306,7 +2308,7 @@ class orm_(tester.tester):
         bg = bug.getvalid()
         self.true(bg.isvalid)
 
-        # Break imperitive rules from the superentity
+        # Break imperative rules from the superentity
         bg.assignee = 'brokenATexample.com'
 
         with self.brokentest(bg) as t:
@@ -2334,7 +2336,7 @@ class orm_(tester.tester):
             t(bg.orm.super, 'name', 'fits')
             t(bg.orm.super, 'assignee', 'valid')
 
-        # Break imperitive rule on subentity
+        # Break imperative rule on subentity
         bg.points = 4  # Must be Fibonacci
 
         with self.brokentest(bg) as t:
@@ -2550,7 +2552,7 @@ class orm_(tester.tester):
         self.zero(isss.brokenrules)
 
         # Add a new issue with the same name. Duplicate issue names have
-        # been forbidden by an imperitive broken rule at
+        # been forbidden by an imperative broken rule at
         # issues.brokenrules
         isss += issue.getvalid()
         isss.last.name = iss.name
@@ -2958,18 +2960,18 @@ class orm_(tester.tester):
         # UPDATE Jan 21, 2020
         # This was found when `chrons` was printed:
         '''
-		DB: RECONNECT
-		INSERT INTO test_singers (`id`, `createdat`, `updatedat`, `register`, `voice`) VALUES (_binary %s, %s, %s, %s, %s);
-		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 842050), datetime(2020, 6, 7, 19, 52, 58, 842050), 'laryngealization', '248f3e4d0c6946d48ef800deb7297585')
+DB: RECONNECT
+INSERT INTO test_singers (`id`, `createdat`, `updatedat`, `register`, `voice`) VALUES (_binary %s, %s, %s, %s, %s);
+(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 842050), datetime(2020, 6, 7, 19, 52, 58, 842050), 'laryngealization', '248f3e4d0c6946d48ef800deb7297585')
 
-		INSERT INTO test_concerts (`id`, `singerid`, `createdat`, `record`, `ticketprice`, `attendees`, `duration`, `capacity`, `externalid`, `externalid1`, `updatedat`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 844279), '3bdd2a7831c44c25b55a611124ea6e01', 0, 0, 0, 0, 0, 0, datetime(2020, 6, 7, 19, 52, 58, 844279))
+INSERT INTO test_concerts (`id`, `singerid`, `createdat`, `record`, `ticketprice`, `attendees`, `duration`, `capacity`, `externalid`, `externalid1`, `updatedat`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 844279), '3bdd2a7831c44c25b55a611124ea6e01', 0, 0, 0, 0, 0, 0, datetime(2020, 6, 7, 19, 52, 58, 844279))
 
-		INSERT INTO test_presentations (`id`, `artistid`, `createdat`, `name`, `updatedat`, `date`, `description`, `description1`, `title`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s);
-		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 846927), 'bb73eb4983b549a89c7b320f3f8fc582', datetime(2020, 6, 7, 19, 52, 58, 846927), None, '2ef05799e9c04cecbefce257046d0a3e', '5b5bf3f46db64226a081a5e9cdfd6da8', '649e519fbe964c27897ce7e7d69a1c53')
+INSERT INTO test_presentations (`id`, `artistid`, `createdat`, `name`, `updatedat`, `date`, `description`, `description1`, `title`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s);
+(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 846927), 'bb73eb4983b549a89c7b320f3f8fc582', datetime(2020, 6, 7, 19, 52, 58, 846927), None, '2ef05799e9c04cecbefce257046d0a3e', '5b5bf3f46db64226a081a5e9cdfd6da8', '649e519fbe964c27897ce7e7d69a1c53')
 
-		INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, `lastname`, `dob1`, `bio2`, `bio`, `email_1`, `bio1`, `lifeform`, `firstname`, `password`, `email`, `style`, `phone2`, `ssn`, `dob2`, `dob`, `title`, `phone`) VALUES (_binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s);
-		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 850580), datetime(2020, 6, 7, 19, 52, 58, 850580), 0, 0, 'Yourofsky', None, '2', None, '', '11', '04e601539d1b4ff197f092b435a13f5b', 'Gary', b'B{\te\x9e\xe2\x84\xfaH\x88\x17}\x0cY6\xf9\xbb\xe1:\t\xe2NP\xeb\x1aP\x12\xfc\xe5\xe2\xef0', 'username@domain.tld', 'classicism', '', '11111111111', None, None, '', 1111111)
+INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, `lastname`, `dob1`, `bio2`, `bio`, `email_1`, `bio1`, `lifeform`, `firstname`, `password`, `email`, `style`, `phone2`, `ssn`, `dob2`, `dob`, `title`, `phone`) VALUES (_binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s);
+(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 850580), datetime(2020, 6, 7, 19, 52, 58, 850580), 0, 0, 'Yourofsky', None, '2', None, '', '11', '04e601539d1b4ff197f092b435a13f5b', 'Gary', b'B{\te\x9e\xe2\x84\xfaH\x88\x17}\x0cY6\xf9\xbb\xe1:\t\xe2NP\xeb\x1aP\x12\xfc\xe5\xe2\xef0', 'username@domain.tld', 'classicism', '', '11111111111', None, None, '', 1111111)
         '''
         # So it seems that this is caused by an occasional reconnect. We
         # should probably filter DB Reconnects out somehow.
@@ -3099,7 +3101,7 @@ class orm_(tester.tester):
 
     def it_receives_AttributeError_from_imperitive_attributes(self):
         # An issue was discovered in the former entities.__getattr__.
-        # When an imperitive attribute raised an AttributeError, the
+        # When an imperative attribute raised an AttributeError, the
         # __getttr__ was invoked (this is the reason it gets invoke in
         # the first place) and returned the map.value of the attribute.
         # The effect was that the explict attribute never had a chance
@@ -3107,13 +3109,13 @@ class orm_(tester.tester):
         #
         # To correct this, the __getattr__ was converted to a
         # __getattribute__, and some adjustments were made
-        # (map.isexplicit was added). Now, an imperitive attribute can
+        # (map.isexplicit was added). Now, an imperative attribute can
         # raise an AttributeError and it bubble up correctly (as
         # confirmed by this test). The problem isn't likely to
         # resurface. However, this test was written just as a way to
         # ensure the issue never comes up again. The `issue` entity
         # class was created for this test because adding the
-        # `raiseAttributeError` imperitive attribute to other classes
+        # `raiseAttributeError` imperative attribute to other classes
         # cause an AttributeError to be raise when the brokenrules
         # logic was invoked, which broke a lot of tests.
         #
@@ -3449,7 +3451,7 @@ class orm_(tester.tester):
         # Note that the it_removes_reflexive_associations test will also
         # need to be updated when this bug has been corrected.
         #
-        # UPDATE:32d39bee When removing the pseudocollection orm code,
+        # UPDATE:32d39bee When removing the pseudocollection ORM code,
         # the deletes started to correctly not cascade. The test now
         # only seems to remove the association object and not the
         # constituent (artifact) or its constituents (compontents). I'm
@@ -3745,7 +3747,7 @@ class orm_(tester.tester):
             for fact in art.get_artifacts(orm.stream):
                 ...
 
-        However, this has not been implemented.
+        However, this has not been implemented (see 8210b80c)
         '''
 
         fns = (
@@ -5771,13 +5773,13 @@ class orm_(tester.tester):
         # It was noticed that reflexive associations have an issue when
         # an additional entity reference is added. The party.role_role's
         # ``priority`` entity reference cause an issues since the orm
-        # logic assumed it was part of the reflexive association. THis
+        # logic assumed it was part of the reflexive association. This
         # was fixed in 40a1451b3c5b265b743424cfc23e6f2485c4bddb. The
         # following test ensures that there is no problem with having an
         # entity reference (programmer_issuerole.programmer_issuerole)
         # alongside the associated reference in programmer_issue
-        # (programmer and issue). No issues had to be fixed after the test
-        # was written. This seems to mean that an association can
+        # (programmer and issue). No issues had to be fixed after the
+        # test was written. This seems to mean that an association can
         # associated two or more entities.
             
         iss = issue.getvalid()
@@ -6259,7 +6261,7 @@ class orm_(tester.tester):
         # "Earth".
         self.eq('Earth', aa.planet)
 
-        # Test the imperitive attribute timespan. It removes spaces from the
+        # Test the imperative attribute timespan. It removes spaces from the
         # value and replaces them with dashes.
         art.artist_artifacts.first.timespan = '1/10/2018 2/10/2018'
         self.eq('1/10/2018-2/10/2018', aa.timespan)
@@ -6324,6 +6326,7 @@ class orm_(tester.tester):
             self.type(bytes, comp.digest)
             self.true(saveok(comp, 'digest'))
 
+        # TODO We may want to update this to use artist.getvalid 
         # Test bytes attribute as a binary (min != max)
         art = artist()
         art.firstname = uuid4().hex
@@ -6853,7 +6856,7 @@ class orm_(tester.tester):
             signed  =  const['signed']
 
             if 'double' in type:
-                pytype =  float
+                pytype = float
             elif 'decimal' in type:
                 pytype = dec
             elif 'int' in type:
@@ -6899,8 +6902,8 @@ class orm_(tester.tester):
             setattr(obj, attr, str(v))
             self.eq(pytype(v), getattr(obj, attr))
 
-            # Test given a float/decimal as a str. This also ensures that floats and
-            # Decimals round to their scales.
+            # Test given a float/decimal as a str. This also ensures
+            # that floats and Decimals round to their scales.
             if pytype is not int:
                 v = round(uniform(float(min), float(max)), map.scale)
                 setattr(obj, attr, str(v))
@@ -7054,7 +7057,8 @@ class orm_(tester.tester):
         self.true('2010-1-15'  in  fact1.lifespan)
         self.false(max in fact1.lifespan)
 
-        # If beginlife and endlife are None, then no date is too early or late
+        # If beginlife and endlife are None, then no date is too early
+        # or late
         fact1.endlife = None
         self.true(min in fact1.lifespan)
         self.true('2010-1-15' in fact1.lifespan)
@@ -7069,7 +7073,7 @@ class orm_(tester.tester):
         self.true(max in  fact1.lifespan)
 
     def it_calls_timespan_attr_on_association(self):
-        # NOTE artist_artifact hase a timespan str already. Here we are
+        # NOTE artist_artifact has a timespan str already. Here we are
         # testing the `span` property which is an orm.timespan and its
         # corresponding `begin` and `end' maps.
         maps = artist_artifacts.orm.mappings
@@ -7080,7 +7084,7 @@ class orm_(tester.tester):
         self.true(maps['end'].isdatetime)
 
         # Set up an instance of artist_artifact with a `begin` and an
-        # `end that correspond to the `span`.:w
+        # `end` that correspond to the `span`.
         art = artist.getvalid()
         fact = artifact.getvalid()
 
@@ -7204,7 +7208,7 @@ class orm_(tester.tester):
         """ Test "named" timespans. Normally a timespan will default to
         a begin and end datetime attribute. "Named" timespans have
         prefix and suffix parameters that surround the "begin" and
-        "end". In this instance artist_artifact has a timespan called
+        "end". In this instance, artist_artifact has a timespan called
         `active` with a prefix of `active`. The datetime values can be
         access like this
 
@@ -7464,7 +7468,8 @@ class orm_(tester.tester):
         # Test invalid date times
         art = art.getvalid()
         
-        # Python can do a 1 CE, but MySQL can't so this should break validation.
+        # Python can do a 1 CE, but MySQL can't so this should break
+        # validation.
         art.dob = datetime(1, 1, 1)
         self.one(art.brokenrules)
         self.broken(art, 'dob', 'fits')
@@ -8299,7 +8304,7 @@ class orm_(tester.tester):
                 with self._chrontest() as t:
                     t.run(f)
 
-    def it_loads_and_saves_subentitys_constituents(self):
+    def it_loads_and_saves_subentity_objects_constituents(self):
         chrons = self.chronicles
 
         # Ensure that a new composite has a constituent object with zero
@@ -10679,11 +10684,15 @@ class orm_(tester.tester):
 
         arts = artists()
         for i in range(8):
+            ''' Create artist '''
             art = artist.getvalid()
             art.weight = i
 
+            ''' Create association '''
             aa = artist_artifact.getvalid()
             art.artist_artifacts += aa
+
+            ''' Create artifact '''
             aa.artifact = artifact.getvalid()
             aa.artifact.weight = i + 10
 
@@ -10704,8 +10713,8 @@ class orm_(tester.tester):
             # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
 
             arts1 = artists('weight %s BETWEEN 0 AND 1' % op, ()).join(
-                        artifacts('weight %s BETWEEN 10 AND 11' %op, ())
-                    )
+                artifacts('weight %s BETWEEN 10 AND 11' %op, ())
+            )
 
             if op == 'NOT':
                 self.six(arts1)
@@ -10730,14 +10739,13 @@ class orm_(tester.tester):
         artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
         factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
         arts1 = artists(artwhere, ()).join(
-                    artifacts(factwhere, ())
-                )
+            artifacts(factwhere, ())
+        )
 
         self.four(arts1)
 
         for art1 in arts1:
             self.true(art1.weight in (0, 1, 3, 4))
-
 
             self.one(art1.artist_artifacts)
 
@@ -11307,8 +11315,8 @@ class orm_(tester.tester):
             comps2.last.id
         )
 
-        # Reload using the explicit loading, join method and update the record
-        # added above. Ensure that the new data presists.
+        # Reload using the explicit loading, join method and update the
+        # record added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
         arts3.orm.collect()
         art3 = arts3[art2.id]
@@ -11342,16 +11350,16 @@ class orm_(tester.tester):
             elif type  == 'inplace':
                 joiner &= joinee
 
-            # Incorrect implementation of & and &= can nullify `joiner`, even
-            # though the actual join was successful, so ensure `joiner` is
-            # notnone
+            # Incorrect implementation of & and &= can nullify `joiner`,
+            # even though the actual join was successful, so ensure
+            # `joiner` is notnone
             self.notnone(joiner)
 
         arts = self._create_join_test_data()
 
         jointypes = 'innerjoin', 'join', 'standard', 'inplace', 'class'
 
-        # Inner join where only artist has a where clause
+        # Innerjoin where only artist has a where clause
         for t in jointypes:
             arts1 = artists(firstname = 'fn-0')
 
@@ -11458,16 +11466,19 @@ class orm_(tester.tester):
 
             self.zero(self.chronicles)
 
-        # Inner join query: Artist has a conjoined predicate
-        # i.e, (x=1 and y=1)
-        # firstname=firstname will match the last artist while lifeform=organic
-        # will match the first artist.
+        # Inner join query: Artist has a conjoined predicate:
+        # 
+        #     (x=1 and y=1)
+        #
+        # `firstname=firstname` will match the last artist while
+        # `lifeform=organic` will match the first artist.
         for t in jointypes:
             if t == 'class':
                 continue
 
-            arts1    =  artists('firstname = %s or '
-                                'lastname = %s' , ('fn-0', 'ln-2'))
+            arts1 = artists(
+                'firstname = %s or lastname = %s', ('fn-0', 'ln-2')
+            )
 
             if t == 'class':
                 join(arts1, presentations, 'innerjoin')
@@ -11495,8 +11506,9 @@ class orm_(tester.tester):
             # Test that the correct graph was loaded
             for art1 in arts1:
                 self.eq(fff, art1.orm.persistencestate)
-                self.true(art1.firstname == 'fn-0' or
-                          art1.lastname  == 'ln-2')
+                self.true(
+                    art1.firstname == 'fn-0' or art1.lastname  == 'ln-2'
+                )
 
                 arts.first.presentations.sort('name')
                 press1 = art1.presentations.sorted('name')
@@ -11519,13 +11531,19 @@ class orm_(tester.tester):
             self.zero(self.chronicles)
 
         for t in jointypes:
-            arts1 = artists('firstname = %s and lastname = %s', 
-                            ('fn-0', 'ln-1'))
-            locs  = locations('address = %s or description = %s', 
-                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+            arts1 = artists(
+                'firstname = %s and lastname = %s', ('fn-0', 'ln-1')
+            )
 
-            artlocs  =  locations('address = %s or description = %s', 
-                                 ('art-loc-addr-0', 'art-loc-desc-2'))
+            locs = locations(
+                'address = %s or description = %s', 
+                ('pres-loc-addr-0', 'pres-loc-desc-2')
+            )
+
+            artlocs = locations(
+                'address = %s or description = %s', 
+                ('art-loc-addr-0', 'art-loc-desc-2')
+            )
 
             if t == 'class':
                 join(arts1, presentations, 'innerjoin')
@@ -11539,7 +11557,6 @@ class orm_(tester.tester):
                 join(press,  locs,     t)
 
             # Test join counts
-
             self.four(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
@@ -11556,21 +11573,26 @@ class orm_(tester.tester):
             self.two(locs)
             for loc in locs:
                 self.eq(fff, loc.orm.persistencestate)
-                self.true(loc.address     == 'art-loc-addr-0' or 
-                          loc.description == 'art-loc-desc-2')
+                self.true(
+                    loc.address     == 'art-loc-addr-0' or 
+                    loc.description == 'art-loc-desc-2'
+                )
 
             # Test arts1.first.presentations' locations
             press = arts1.first.presentations
 
-            # All four presentations were match by the location predicate
+            # All four presentations were matched by the location
+            # predicate
             self.four(press) 
             for pres in press:
                 self.eq(fff, pres.orm.persistencestate)
                 self.two(pres.locations)
                 for loc in pres.locations:
                     self.eq(fff, loc.orm.persistencestate)
-                    self.true(loc.address     == 'pres-loc-addr-0' or 
-                              loc.description == 'pres-loc-desc-2')
+                    self.true(
+                        loc.address     == 'pres-loc-addr-0' or 
+                        loc.description == 'pres-loc-desc-2'
+                    )
 
             self.zero(self.chronicles)
 
@@ -11580,8 +11602,10 @@ class orm_(tester.tester):
             # where predicate has unusual recursion logic that is sensitive to
             # top-level joins not having `where` objects so we need to make
             # sure this doesn't get broken.
-            locs  = locations('address = %s or description = %s', 
-                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+            locs = locations(
+                'address = %s or description = %s', 
+                ('pres-loc-addr-0', 'pres-loc-desc-2')
+            )
 
             if t == 'class':
                 arts1 = artists.join(presentations)

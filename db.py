@@ -499,6 +499,9 @@ class executor(entitiesmod.entity):
         """
         self._execute = exec
         self.max = max
+        # The before and after event of a database reconnection.
+        # Reconection happen when a pooled connection timesout and no
+        # longer holdes a connection to the database.
         self.onbeforereconnect  =  entitiesmod.event()
         self.onafterreconnect   =  entitiesmod.event()
     
