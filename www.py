@@ -781,7 +781,7 @@ class request:
         """
         ws = self.site
 
-        # XXX Comment
+        # Get the path with the language code removed
         path = self.getpath()
 
         try:
@@ -1150,7 +1150,17 @@ class request:
             return path
 
     def getpath(self, lang=False):
-        """ XXX """
+        """ Get the path. By default get the path with the language code
+        removed.
+
+        Usually, if you want the path, you would just call the
+        `request.path` @property. However, that property returns the
+        path with the language code. `getpath` is useful for when you
+        want the language code removed.
+
+        :param: lang bool: If True, preserve the language code in the
+        path. If False, remove the language code before returning.
+        """
         path = self.path
         if lang:
             return path

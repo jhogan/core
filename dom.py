@@ -1528,10 +1528,15 @@ class element(entities.entity):
 
     @text.setter
     def text(self, v):
-        """ XXX """
+        """ Set the text of this `element`.
+
+        :param: v object: Normally, v will be a str since we are setting
+        a text attribute. Regardless, any object can be used to set this
+        value. The str() function will be used to convert the object
+        into a string.
+        """
         self.elements.clear()
 
-        # XXX Comment
         v = str(v)
 
         self += text(v)

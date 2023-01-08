@@ -544,19 +544,34 @@ class site(asset.asset):
 
     @classmethod
     def _strip(cls, path):
+        """ A classmethod to taka a path, and remove the language code
+        in the path. For example given:
+
+            /en/my/page
+
+        return:
+
+            /my/page
+
+        The language code will only be remove if it is in the site's
+        list of accepted languages. See site.languages for more.
         """
-        XXX
-        """
+
+        # Break path into list
         segs = [x for x in path.split('/') if x]
 
         if len(segs):
+            # Get the first element to see if it's a language code
             seg = segs[0]
+
+            # If it is an accepted language code...
             if seg in cls.languages:
+                # Reconstitute the path, without the language code, and
+                # return it.
                 return '/'.join(segs[1:])
         else:
             return None
         
-
     @property
     def charset(self):
         """ Specifies the default character set of the web site.
