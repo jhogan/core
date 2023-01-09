@@ -1513,6 +1513,11 @@ class page(dom.html):
         return None
 
     @property
+    def isspa(self):
+        """ XXX """ 
+        return isinstance(self, spa)
+
+    @property
     def resources(self):
         """ Return the collection of `file.resource` objects the page
         will use.
