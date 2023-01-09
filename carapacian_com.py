@@ -339,13 +339,30 @@ class tickets(pom.page):
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
 
 class ticketsspa(pom.spa):
+    ''' Inner classes (pages) '''
     class new(pom.page):
         def main(self):
             self.main += dom.p('Create a ticket')
     
+    class people(pom.page):
+        ''' Inner classes (pages) '''
+        class new(pom.page):
+            def main(self):
+                self.main += dom.p('Create a person')
+
+        ''' Class members '''
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.pages += ticketsspa.people.new()
+        
+        def main(self):
+            self.main += dom.p('People')
+    
+    ''' Class members '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pages += ticketsspa.new()
+        self.pages += ticketsspa.people()
 
     def main(self):
         self.main += dom.p('Carapacian Tickets SPA')
@@ -361,7 +378,7 @@ class ticketsspa(pom.spa):
 
         # People
         mnu.items += pom.menu.item('People',  'people')
-        mnu.items.last.items += pom.menu.item('Add',  'add')
+        mnu.items.last.items += pom.menu.item('New',  'people/new')
 
     class backlog(dom.main):
         pass
