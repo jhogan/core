@@ -898,6 +898,11 @@ class request:
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
+                if pg.isspa:
+                    main = pg['html>body>main'].only
+                    path = f'/{self.language}{pg.path}'
+                    main.attributes += 'spa-data-path', path
+
                 # Get the main SPA application page for the page.
                 if spa := pg.spa:
                     
@@ -915,6 +920,11 @@ class request:
                     # `pg` so it's contents will be returned by the
                     # following code.
                     pg = spa
+
+                    main = pg['html>body>main'].only
+                    path = f'/{self.language}{pg.path}'
+
+                    main.attributes += 'spa-data-path', path
 
                 if not self.ishead:
                     # If we are processing an event
