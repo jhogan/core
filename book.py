@@ -4364,7 +4364,7 @@ with book('Hacking Carapacian Core'):
       with section('Sorting', id='9141f618'):
         ...
 
-    with section('Debugging ORM entities'):
+    with section('Debugging ORM entities', id='59485436'):
       print('''
         When it isn't clear why the ORM is behaving in a certain way, it
         is often useful to look under the hood and see what SQL is being
@@ -6879,7 +6879,22 @@ with book('Hacking Carapacian Core'):
       ''')
 
     with section('ORM events'):
-      ...
+      print('''
+        The ORM's `entity` and `entities` classes expose a number of
+        event which you can easily write code to tap into. Most ORM
+        events are not something that would be useful for the
+        implementation of everyday business logic. However, they can be
+        useful for certain types of tests and for getting lower level
+        details of ORM operations in order to diagnose problems.
+
+        For example the ORM lets you tap into the moment right before an
+        entity is saved to the database and right after. This can give
+        you details about the SQL that is being sent. It can even allow
+        you to manipulate the behaviour of the persistence operation.
+        (Note that using the `db.chronicler.snapshot` context manager is
+        an easy way to view the SQL that is being sent to the database.
+        See [Debugging ORM entities](#59485436) for more).
+      ''')
 
     with section('Streaming'):
       ...
@@ -6918,6 +6933,7 @@ with book('Hacking Carapacian Core'):
       ...
 
   with chapter("Logging") as sec:
+    
     ..
 
   with chapter("Third-party integration") as sec:
