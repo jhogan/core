@@ -798,8 +798,6 @@ function ajax(e){
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
 
-            main = document.querySelector('main')
-
             // If success...
             if (this.status < 400){
 
