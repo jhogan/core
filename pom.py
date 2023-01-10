@@ -750,11 +750,16 @@ function ajax(e){
     }
 
     // Get all alements that are fragments for the src.
-    frag = src.getAttribute('data-' + trigger + '-fragments')
-    els = document.querySelectorAll(frag)
+    var frag = src.getAttribute('data-' + trigger + '-fragments')
+    var els = document.querySelectorAll(frag)
 
     // Get the name of the event handler of the trigger
-    hnd = src.getAttribute('data-' + trigger + '-handler')
+    var hnd = src.getAttribute('data-' + trigger + '-handler')
+
+    var html = null
+    var pg
+
+    var main = document.getElementsByTagName('main')[0]
 
     if (isnav){
         html = null
@@ -770,7 +775,7 @@ function ajax(e){
     }
 
     // Create the dictionary to send to the server
-    d = {
+    var d = {
         'hnd':      hnd,
         'src':      src.outerHTML,
         'trigger':  trigger,
@@ -778,7 +783,7 @@ function ajax(e){
     }
 
     // Use XMLHttpRequest to send the XHR request 
-    xhr = new XMLHttpRequest()
+    var xhr = new XMLHttpRequest()
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
 
@@ -788,9 +793,9 @@ function ajax(e){
             if (this.status < 400){
 
                 // Parse the HTML response
-                parser = new DOMParser()
+                var parser = new DOMParser()
 
-                els = parser.parseFromString(
+                var els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
 
@@ -800,8 +805,8 @@ function ajax(e){
                 els = els.querySelectorAll('html>body>*')
 
                 if(inspa){
-                    new_ = els[0]
-                    url = new_.getAttribute('data-path')
+                    let new_ = els[0]
+                    let url = new_.getAttribute('data-path')
 
                     main.parentNode.replaceChild(new_, main)
                     window.history.pushState(
@@ -813,13 +818,13 @@ function ajax(e){
                     // client-side counterpart
                     for(el of els){
                         // Use the fragment's id to find and replace
-                        old = document.querySelector('#' + el.id)
+                        let old = document.querySelector('#' + el.id)
                         old.parentNode.replaceChild(el, old)
                     }
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
-                els = document.querySelectorAll('.exception')
+                let els = document.querySelectorAll('.exception')
                 els.forEach(e => e.remove())
 
                 // Insert the response HTML making it the first element
@@ -850,7 +855,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     // have to update Triggers if the event you want to
     // support doesn't exist
     for (trig of trigs){
-        els = document.querySelectorAll(
+        var els = document.querySelectorAll(
             '[data-' + trig + '-handler]'
         )
 
@@ -867,20 +872,20 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
     window.addEventListener('popstate', (e) => {
         // Parse the HTML response
-        parser = new DOMParser()
+        var parser = new DOMParser()
 
-        new_ = parser.parseFromString(
+        var new_ = parser.parseFromString(
             e.state, "text/html"
         )
 
         new_ = new_.querySelector('html>body>main')
 
-        old = document.querySelector('main')
+        var old = document.querySelector('main')
 
         old.parentNode.replaceChild(new_, old)
     });
 
-    main = document.querySelector('main')
+    var main = document.querySelector('main')
     window.history.pushState(
         main.outerHTML, null, window.location.pathname
     )
