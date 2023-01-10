@@ -3905,7 +3905,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onbeforesave(self):
-        """ Returns the event that is triggered before an entity is
+        """ Returns the event that is triggered before this entity is
         saved.
         """
         if not hasattr(self, '_onbeforesave'):

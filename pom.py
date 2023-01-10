@@ -343,7 +343,7 @@ class site(asset.asset):
 
         Note that this returns a ``directory`` from the file module so
         it behaves like a file-sytem directory and an ORM entity. It is
-        a constituent of the ``site`` class so calling the site`s save()
+        a constituent of the ``site`` class so calling the sites save()
         method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
@@ -884,8 +884,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     window.history.pushState(
         main.outerHTML, null, window.location.pathname
     )
-    }
-);
+});
 '''
         #// Return the JavaScript
         return r
