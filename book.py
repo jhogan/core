@@ -6881,20 +6881,68 @@ with book('Hacking Carapacian Core'):
     with section('ORM events'):
       print('''
         The ORM's `entity` and `entities` classes expose a number of
-        event which you can easily write code to tap into. Most ORM
-        events are not something that would be useful for the
-        implementation of everyday business logic. However, they can be
-        useful for certain types of tests and for getting lower level
-        details of ORM operations in order to diagnose problems.
+        events which you can easily subscribe to. Most ORM events are
+        not something that would be useful for the implementation of
+        everyday business logic. However, they can be useful for certain
+        types of tests and for getting lower level details of ORM
+        operations in order to diagnose problems.
 
-        For example the ORM lets you tap into the moment right before an
-        entity is saved to the database and right after. This can give
-        you details about the SQL that is being sent. It can even allow
-        you to manipulate the behaviour of the persistence operation.
-        (Note that using the `db.chronicler.snapshot` context manager is
-        an easy way to view the SQL that is being sent to the database.
-        See [Debugging ORM entities](#59485436) for more).
+        For example, the ORM lets you tap into the moment right before
+        an entity is saved to the database and immediately after. This
+        can give you details about the SQL that is being issued to the
+        database.  Thiscan even allow you to manipulate the behaviour of
+        the persistence operation.  (Note that using the
+        `db.chronicler.snapshot` context manager is an easy way to view
+        the SQL that is being sent to the database.  See [Debugging ORM
+        entities](#59485436) for more).
+
+        Let's write some code to listen on on this event handler to give
+        you an idea of how you can use ORM event's. Following this
+        example, this section will provide details for each of the
+        events currently provided. 
       ''')
+
+      with listing(
+        'Handling entity.onbeforesave and entity.onaftersave'
+      ):
+
+        def cust_onbeforesave(src, eargs)
+          # eargs.sql contains the SQL that will be issued to the
+          # database
+          self.type(str, eargs.sql)
+
+          # Here we manipulate the event by setting the `cancel`
+          # attribute to False
+          eargs.cancel = True
+
+        def cust_onaftersave(src, eargs):
+          # We will never get here because we canceled the save above
+          fail()
+
+        cust = customer(firstname='Ed', lastname='Winters')
+
+        # Subscribet to the two events
+        cust.onbeforesave += cust_onbeforesave
+        cust.onaftersave += cust_onaftersave
+
+        true(cust.isnew)
+
+        # This will silently fail
+        cust.save()
+
+        # cust is still new because it was never saved
+        true(cust.isnew)
+
+        # Let's try saving again. We will unsubscribe from
+        # cust_onbeforesave so the save isn't canceled
+        cust.onbeforesave -= cust_onbeforesave
+
+        # Save again
+        cust.save()
+
+        # isnew is false indicating the customer was indeed saved to the
+        # database.
+        false(cust.isnew)
 
     with section('Streaming'):
       ...
