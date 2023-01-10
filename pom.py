@@ -724,16 +724,16 @@ function ajax(e){
     /* Process the event for the given control.  */
 
     // The event trigger (e.g., "blur", "click", etc.)
-    trigger = e.type
+    var trigger = e.type
 
     // The control that the event happened to
-    src = e.target
+    var src = e.target
 
     // Is the element a navigation link
-    isnav = is_nav_link(src)
+    var isnav = is_nav_link(src)
 
     // Assume we are in SPA mode if the the element is a navigation link
-    inspa = isnav
+    var inspa = isnav
 
     if (isnav){
         // Prevent the browser from trying to load the HREF at the
