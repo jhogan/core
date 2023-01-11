@@ -6885,19 +6885,20 @@ with book('Hacking Carapacian Core'):
         not something that would be useful for the implementation of
         everyday business logic. However, they can be useful for certain
         types of tests and for getting lower level details of ORM
-        operations in order to diagnose problems.
+        operations in order to diagnose problems. They can also be used
+        for more esotic use cases involving the business objects.
 
         For example, the ORM lets you tap into the moment right before
         an entity is saved to the database and immediately after. This
         can give you details about the SQL that is being issued to the
-        database.  Thiscan even allow you to manipulate the behaviour of
+        database.  This can even allow you to manipulate the behaviour of
         the persistence operation.  (Note that using the
         `db.chronicler.snapshot` context manager is an easy way to view
         the SQL that is being sent to the database.  See [Debugging ORM
         entities](#59485436) for more).
 
-        Let's write some code to listen on on this event handler to give
-        you an idea of how you can use ORM event's. Following this
+        Let's write some code to listen in on these event handler to
+        give you an idea of how you can use ORM event's. Following this
         example, this section will provide details for each of the
         events currently provided. 
       ''')
@@ -6919,15 +6920,18 @@ with book('Hacking Carapacian Core'):
           # We will never get here because we canceled the save above
           fail()
 
+        # Create a new customer
         cust = customer(firstname='Ed', lastname='Winters')
+
+        # Assert the customer is new
+        true(cust.isnew)
 
         # Subscribet to the two events
         cust.onbeforesave += cust_onbeforesave
         cust.onaftersave += cust_onaftersave
 
-        true(cust.isnew)
-
-        # This will silently fail
+        # This will will do nothing becase we `cancel` the save in
+        # cust_onbeforesave
         cust.save()
 
         # cust is still new because it was never saved
@@ -6943,6 +6947,34 @@ with book('Hacking Carapacian Core'):
         # isnew is false indicating the customer was indeed saved to the
         # database.
         false(cust.isnew)
+
+      print('''
+        There are two main categories of ORM events: the events for
+        `entities` collection classes, and the events for `entity`
+        classes. We will start with the `entities` class then move to
+        `entity` events.
+      ''')
+
+      with section('Events for `entities` collection classes'):
+        with section('`onbeforereconnect` and `onafterreconnect`'):
+          print('''
+            These events are triggered before and after a database
+            reconnection occured.
+
+            Database connection used by the ORM are pooled in memory.
+            This feature exists to make it faster for the ORM to access
+            the database for persistence operations. However, those
+            pooled connection can get stale and the ORM will
+            ensure that the connection are reestablished when needed.
+            The onbeforereconnect is triggered immediately before this
+            reconnection, and the onafterreconnect event is, of course,
+            triggered immediately after.
+
+            Handlers will receive an `eargs` of `operationeventargs`,
+            giving them access to the entity that caused the
+            reconnection (`eargs.entity`). This `eargs`' `sql` and
+            `args` attributes will return None.
+          '''
 
     with section('Streaming'):
       ...
