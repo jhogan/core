@@ -1352,6 +1352,19 @@ class menu(dom.nav):
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
+    @classmethod
+    def make(cls, name, pgs, itm=None):
+        """ XXX """
+        itms = menu.items()
+        B()
+        for pg in pgs:
+            itm = menu.item(o=pg)
+            itms = cls.make(pg.pages, itm)
+            if itms.ispopulated:
+                itm.items += itms
+
+        return itms
+
     @property
     def ismain(self):
         return self.name == 'main'
