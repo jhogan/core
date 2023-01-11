@@ -141,6 +141,17 @@ class tickets(tester.tester):
         self.eq(dt.date, today)
         self.eq(dt1.date, today)
 
+class ticketsspa(tester.tester):
+    def it_call_name(self):
+        pg = carapacian_com.tickets()
+        self.eq('tickets', pg.name)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.get('/en/ticketsspa', ws)
+        self.status(200, res)
 
 if __name__ == '__main__':
     tester.cli().run()

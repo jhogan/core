@@ -357,19 +357,33 @@ class ticketsspa(pom.spa):
         
         def main(self):
             self.main += dom.p('People')
+
+    class backlog(pom.page):
+        pass
+
+    class search(pom.page):
+        pass
     
     ''' Class members '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Main
+        self.pages += ticketsspa.backlog()
         self.pages += ticketsspa.new()
+        self.pages += ticketsspa.search()
         self.pages += ticketsspa.people()
+
+        # People
+        self.pages.last.pages += ticketsspa.people()
 
     def main(self):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        mnu = pom.menu(name='spa')
-        self.header.menus += mnu
+        self.header.menus += pom.menu.make('spa', self.pages)
+        return
+
 
         # Main
         mnu.items  +=  pom.menu.item('Backlog',  'backlog')
@@ -380,8 +394,6 @@ class ticketsspa(pom.spa):
         mnu.items += pom.menu.item('People',  'people')
         mnu.items.last.items += pom.menu.item('New',  'people/new')
 
-    class backlog(dom.main):
-        pass
 
 # The Css for the site. See site.styles
 Css = '''
