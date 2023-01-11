@@ -349,6 +349,8 @@ class operationeventargs(entitiesmod.eventargs):
         # TODO Instead of a preposition argument, we SHOULD use events
         # with the names prefixed with "before" and "after". This is the
         # convention after all.
+        # UPDATE This is now largely the case, thus the preposition
+        # could probably be removed.
         self.entity  =  e
         self.op      =  op
         self.sql     =  sql
