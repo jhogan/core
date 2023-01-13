@@ -375,24 +375,14 @@ class ticketsspa(pom.spa):
         self.pages += ticketsspa.people()
 
         # People
-        self.pages.last.pages += ticketsspa.people()
+        self.pages.last.pages += ticketsspa.people.new()
 
     def main(self):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        self.header.menus += pom.menu.make('spa', self.pages)
-        return
-
-
-        # Main
-        mnu.items  +=  pom.menu.item('Backlog',  'backlog')
-        mnu.items  +=  pom.menu.item('New',      'new')
-        mnu.items  +=  pom.menu.item('Search',   'search')
-
-        # People
-        mnu.items += pom.menu.item('People',  'people')
-        mnu.items.last.items += pom.menu.item('New',  'people/new')
+        self.header.menus += pom.menu.make(self.pages, 'spa')
+        print(self.header.menus.last)
 
 
 # The Css for the site. See site.styles
