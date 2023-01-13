@@ -1944,6 +1944,19 @@ class selectors(tester.tester):
             self._lis = dom.html(ListHtml)
         return self._lis
 
+    def it_returns_same_element(self):
+        # Ensure CSS selection returns the name element, i.e., not a
+        # clone
+        html = self._shakespear
+        div = html['div#test'].only
+        div1 = html['div#test'].only
+
+        # Make sure we have the correct type
+        self.type(dom.div, div)
+        self.type(dom.div, div1)
+
+        self.is_(div, div1)
+
     def it_selects_lang(self):
         html = dom.html('''
         <html lang="en">
