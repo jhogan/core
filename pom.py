@@ -1353,17 +1353,28 @@ class menu(dom.nav):
         self.items = menu.items()
 
     @classmethod
-    def make(cls, name, pgs, itm=None):
+    def make(cls, pgs, name=None, itm=None):
         """ XXX """
-        itms = menu.items()
-        B()
+        isrecursing = not bool(name)
+
+        if isrecursing:
+            itms = itm.items
+        else:
+            mnu = menu(name)
+            itms = mnu.items
+
         for pg in pgs:
             itm = menu.item(o=pg)
-            itms = cls.make(pg.pages, itm)
-            if itms.ispopulated:
-                itm.items += itms
+            itms += itm
 
-        return itms
+            pgs = pg.pages
+            if pgs.ispopulated:
+                itms = cls.make(pgs, itm=itm)
+
+        if isrecursing:
+            return itms
+        else:
+            return mnu
 
     @property
     def ismain(self):
