@@ -1339,7 +1339,17 @@ class menu(dom.nav):
 
     @classmethod
     def make(cls, pgs, name=None, itm=None):
-        """ XXX """
+        """ Make and return a `menu` object based on the `pages`
+        collection (pgs) given. This is a recursive method so the `menu`
+        will be as deeply nested as the `pgs` are.
+
+        :param: pgs pages: A collection of pages.
+
+        :param: name str: The name of the menu.
+
+        :param: itm menu.item: Used internally. The menu item object
+        that is currently being processed.
+        """
         isrecursing = not bool(name)
 
         if isrecursing:
@@ -1536,7 +1546,9 @@ class page(dom.html):
 
     @property
     def isspa(self):
-        """ XXX """ 
+        """ Returns True if this `page` object is a SPA page, False
+        otherwise.
+        """
         return isinstance(self, spa)
 
     @property
