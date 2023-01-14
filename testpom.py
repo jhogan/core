@@ -135,7 +135,23 @@ class foonet(pom.site):
         r.body = b64decode(Favicon)
         return r
 
-class pom_menu_item(tester.tester):
+class menus(tester.tester):
+    def it_calls_html(self):
+        mnus = pom.menus()
+
+        mnu = pom.menu(name='admin')
+        mnu1 = pom.menu(name='sub')
+
+        mnus += mnu, mnu1
+
+        html = (
+            '<section><nav aria-label="Admin"><ul></ul></nav>'
+            '<nav aria-label="Sub"><ul></ul></nav></section>'
+        )
+
+        self.eq(html, mnus.html)
+
+class menu_item(tester.tester):
     def it_calls__init__(self):
         itm = pom.menu.item('A text item')
         expect = self.dedent('''
@@ -149,25 +165,13 @@ class pom_menu_item(tester.tester):
         expect = '<li>A text item</li>'
         self.eq(expect, itm.html)
 
-class _404(pom.page):
-    def main(self, ex: www.NotFoundError):
-        self.title = 'Page Not Found'
-        self.main += dom.h1('Page Not Found')
-        self.main += dom.h2('Foobar apologizes', class_="apology")
 
-        self.main += dom.p(
-            'Could not find <span class="resource">' +
-            str(ex.resource) +
-            '</span>'
-        )
-
-    @property
-    def name(self):
-        return type(self).__name__.replace('_', '')
-
-class pom_menu_items(tester.tester):
+class menu_items(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
+        mods = (
+            'party', 'asset', 'apriori', '__main__', 
+            'testpom', 'pom', 'file'
+        )
         super().__init__(mods=mods, *args, **kwargs)
 
         propr = foonet.Proprietor
@@ -291,6 +295,22 @@ class pom_menu_items(tester.tester):
             '<li>B/A</li><li>B/B</li></ul></li></ul>'
         )
         self.eq(expect, itms.html)
+
+class _404(pom.page):
+    def main(self, ex: www.NotFoundError):
+        self.title = 'Page Not Found'
+        self.main += dom.h1('Page Not Found')
+        self.main += dom.h2('Foobar apologizes', class_="apology")
+
+        self.main += dom.p(
+            'Could not find <span class="resource">' +
+            str(ex.resource) +
+            '</span>'
+        )
+
+    @property
+    def name(self):
+        return type(self).__name__.replace('_', '')
 
 class site(tester.tester):
     def __init__(self, *args, **kwargs):
