@@ -1077,17 +1077,6 @@ class menus(dom.section):
         else:
             return super().__getitem__(ix)
 
-    @property
-    def elements(self):
-        """ Return the menu's child elements.
-        """
-        els = super().elements
-        els.clear()
-
-        for mnu in self:
-            els += mnu
-
-        return els
 
 class menu(dom.nav):
     # TODO:c0336221 Currently, there are issues altering attributes en
