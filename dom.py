@@ -1503,6 +1503,11 @@ class element(entities.entity):
         els += self
         return els[ix]
 
+    def __iter__(self):
+        """ XXX """
+        B()
+        yield from self.elements
+
     @property
     def text(self):
         """ Get the combined text contents of each element recursively.
