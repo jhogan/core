@@ -1036,15 +1036,9 @@ class logo(dom.section):
     def elements(self, v):
         dom.element.elements.fset(self, v)
 
-class menus(entities.entities, dom.section):
+class menus(dom.section):
     """ Represents a collection of ``menu`` objects
     """
-
-    def __init__(self, *args, **kwargs):
-        """ Create the menus collection.
-        """
-        entities.entities.__init__(self, *args, **kwargs)
-        dom.section.__init__(self)
 
     def clone(self):
         """ Create and return a ``menus`` collection based on this one.
