@@ -1144,6 +1144,43 @@ class elements(entities.entities):
 
         # TODO: Return entities object to indicate what was unshifted
         super().unshift(e=obj)
+
+    def __contains__(self, e):
+        """ Returns True if e is in this `elements` collection, False
+        otherwise. 
+
+            assert e not in es
+
+            es += e
+
+            assert e in es
+
+        Typically, e will be of type `element` (a subclass of `entity`).
+        However, other types can be used.
+
+        :param e entity|str|int|iterable: The entity being sought.
+            if entity:
+                Simply return True if the entity is in self.
+
+            if iterable:
+                Iterate over each entity. If all entity are in self,
+                return True, False otherwise.
+
+            if int:
+                Use e as an index value. If the index is found, return
+                True.
+
+            if str:
+                Detremine if an entity in self with an `id` or `name`
+                attribute equals e. If so, return True, False otherwise.
+        """
+        # element objects are iterable, so handle here. The super()
+        # (entities.entities) handles iterables differently.
+        if isinstance(e, element):
+            # TODO:28b5a63a Shouldn't this be `any` instead of `all`.
+            return bool(len(self) and all(e is x for x in self))
+
+        return super().__contains__(e)
         
 class element(entities.entity):
     """ An abstract class from which all HTML5 elements inherit.
@@ -1502,10 +1539,51 @@ class element(entities.entity):
         els += self
         return els[ix]
 
+    def pop(self):
+        """ Remove the `element` from the top of the collection and
+        return it.
+        """
+        # TODO Support the `ix` argument (see entities.entities.pop).
+        return self.elements.pop()
+
     def __iter__(self):
-        """ XXX """
-        B()
+        """ Return the iterator from the `elements` attribute of this
+        `element` object. This allow the `element` to be iterable:
+
+            ul = dom.ul()
+            li = dom.li()
+
+            ul += li
+
+            for li1 in ul:
+                assert li is li1
+                break
+            else:
+                assert False
+                
+        """
         yield from self.elements
+
+    def enumerate(self):
+        """ Returns the enumerator from this `element` object's
+        `elements` attribute. This allows us to do the following:
+
+            ul = dom.ul()
+            li = dom.li()
+            li1 = dom.li()
+
+            ul += li0
+            ul += li1
+
+            for i, li in ul.enumerate():
+                if i == 0:
+                    assert li is li0
+                eleif i == 1:
+                    assert li is li1
+                else:
+                    assert False
+        """
+        yield from self.elements.enumerate()
 
     @property
     def text(self):
