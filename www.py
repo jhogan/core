@@ -929,7 +929,6 @@ class request:
                 if not self.isevent:
                     for mnu in pg.header.menus:
                         for a in mnu['a']:
-                            B()
                             mnu['a']
                             a.href = (
                                 f"/{self.language}/{a.href.strip('/')}"

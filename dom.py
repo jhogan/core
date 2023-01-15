@@ -1113,7 +1113,6 @@ class elements(entities.entities):
                 Append each element in the sequence.
 
         """
-
         # Convert object to text node if it is a str
         obj = self._text2element(obj)
 
@@ -8117,7 +8116,7 @@ class selectors(entities.entities):
         return r
 
     def __repr__(self):
-        """ A string representation of the selectors object. 
+        """ A string representation of this selectors object. 
         """
         return ', '.join(str(x) for x in self)
 
