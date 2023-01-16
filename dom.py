@@ -1177,8 +1177,7 @@ class elements(entities.entities):
         # element objects are iterable, so handle here. The super()
         # (entities.entities) handles iterables differently.
         if isinstance(e, element):
-            # TODO:28b5a63a Shouldn't this be `any` instead of `all`.
-            return bool(len(self) and all(e is x for x in self))
+            return bool(len(self) and any(e is x for x in self))
 
         return super().__contains__(e)
         
