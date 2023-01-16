@@ -927,12 +927,15 @@ class request:
                     main.attributes += 'spa-data-path', path
 
                 if not self.isevent:
-                    for mnu in pg.header.menus:
-                        for a in mnu['a']:
-                            mnu['a']
-                            a.href = (
-                                f"/{self.language}/{a.href.strip('/')}"
-                            )
+                    mnus = pg.header.menus
+                    lang = self.language
+                    B()
+                    for a in mnus['a']:
+                        href  =  a.href
+                        sep   =  os.path.sep
+                        a.href = os.path.join(
+                            sep, lang, href.lstrip(sep)
+                        )
 
                 if not self.ishead:
                     # If we are processing an event
