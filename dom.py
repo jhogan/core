@@ -921,7 +921,7 @@ class elements(entities.entities):
         return rms
 
     def __getitem__(self, sel):
-        ''' Get elements by an ordinal index or by a CSS3 selector.
+        """ Get elements by an ordinal index or by a CSS3 selector.
         Given `els` is an ``elements`` collection::
             
             # Get the first element of the collection of elememnts
@@ -941,7 +941,7 @@ class elements(entities.entities):
             els = els[sels]
 
         :param: sel int|slice|str|selectors: The indexer value.
-        '''
+        """
 
         if isinstance(sel, int) or isinstance(sel, slice):
             return super().__getitem__(sel)
@@ -1218,6 +1218,31 @@ class element(entities.entity):
         assert tr.attributes['abbr'] == 'tla'
 
         :abbr: el
+
+    Collection interface
+    --------------------
+    `element` objects have certain behaviors that cause them to act like
+    collections. For example, the following will work:
+
+        ul = dom.ul()
+        li0 = dom.li()
+        li1 = dom.li()
+
+        for i, li in enumerate(ul):
+            if i == 0:
+                assert li is li0
+            elif i == 1:
+                assert li is li1
+            else:
+                assert False
+
+        assert li0 is ul[0]
+        assert li1 is ul[1]
+        assert li1 is ul.last
+
+    It would probably be a good idea to not add too many collection-like
+    properties to `element` because they are often subclassed and there
+    may arise naming conflicts.
     """
     # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
@@ -1534,7 +1559,33 @@ class element(entities.entity):
                 )
         
     def __getitem__(self, ix):
-        # Pass CSS selector to elements collection
+        """ Get elements by a CSS3 selector.
+
+        Example
+        -------
+            ul = dom.ul()
+            li1 = dom.li(name='listitem1')
+            li2 = dom.li(name='listitem2')
+
+
+            sels = 'li[name="listitem1"]'
+
+            # Alternativly:
+            #sels = dom.selectors(sels)
+
+            els = ul[sels]
+
+            assert els.count == 1
+            assert els.first is li1
+
+        :param: sel str|selectors: The selector.
+        """
+
+        # TODO: Support int and slices so ordinal indexes can be used.
+        # See dom.elements.__getitem__.
+
+        # Create an elements collection and add self to it. This way we
+        # can reuse dom.elements.__getitem__.
         els = elements()
         els += self
         return els[ix]
@@ -7477,6 +7528,21 @@ class selectors(entities.entities):
     # 'cssselect' project (https://github.com/scrapy/cssselect).
     # Some modifications have been made to the code to better fit the
     # framework's standards. See LICENCE_cssselect.
+
+    # TODO The __repr__ for this class and its subsidiaries (such as
+    # selectors.elements) don't include the type name in their results.
+    # We would expect:
+    #
+    #     sels = selectors('p')
+    #     assert repr(sels.first) == 'selector(p)'
+    # 
+    # Instead we get
+    #
+    #     assert repr(self.first) == 'p'
+    # 
+    # This makes debugging suboptimal. It may be a somewhat difficult
+    # problem to fix since some of the logic may depend on the return
+    # value of __repr__. 
 
     ''' Inner classes '''
 

@@ -1077,7 +1077,6 @@ class menus(dom.section):
         else:
             return super().__getitem__(ix)
 
-
 class menu(dom.nav):
     # TODO:c0336221 Currently, there are issues altering attributes en
     # masse with menu and its subsidiaries:
@@ -1326,7 +1325,8 @@ class menu(dom.nav):
             els += dom.hr()
             return els
 
-    ''' Class members '''
+    ''' Class members of `menu` '''
+
     def __init__(self, name, *args, **kwargs):
         """ Create a new menu.
 
@@ -1387,15 +1387,20 @@ class menu(dom.nav):
     def elements(self):
         """ Returns the child elements of this menu.
         """
+        B()
         els = super().elements
         els.clear()
 
         els += self.items.elements
+        B()
         return els
 
     def __repr__(self):
         """ A string representation of this menu.
         """
+        # XXX Let's remove this repr. repr(self) should read better
+        # without it.
+        
         itms = '\n'.join(repr(x) for x in self.items)
         itms = textwrap.indent(itms, ' ' * 2)
         return itms
