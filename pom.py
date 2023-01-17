@@ -1101,24 +1101,19 @@ class menu(dom.nav):
     #     del main_menus.id # Currently dosen't work
 
     ''' Inner classes '''
-    class items(dom.lis):
+    class items(dom.ul):
         """ A collection of ``item`` objects (<li>) which contain the
         menu items.
         """
-        def __init__(self, *args, **kwargs):
-            """ Create the menu item.
-            """
-            super().__init__(*args, **kwargs)
-
-            self._els = dom.elements()
-
-            # Start the menu off with an unordered list
-            self._ul = dom.ul()
-            self._els += self._ul
-
         def clone(self):
             """ Create and return an ``items`` based on self.
             """
+
+            # After refactor to inherit from dom.ul, clone currently
+            # won't work.
+            raise NotImplementedError(
+                'clone is currently not supported'
+            )
             itms = type(self)()
 
             # Preserve ID's
@@ -1137,45 +1132,6 @@ class menu(dom.nav):
             """
             self += menu.separator()
 
-        @property
-        def elements(self):
-            """ Return the elements under the first element of this
-            collection.
-            """
-            ul = self._els.first
-            ul.elements.clear()
-            for itm in self:
-                self._ul += itm.clone()
-
-            return self._els
-
-        @property
-        def html(self):
-            """ Return an HTML representation of this element formatted
-            for a computer (no unnecssary whitespace).
-            """
-            return ''.join(x.html for x in self.elements)
-
-        @property
-        def pretty(self):
-            """ Return an HTML representation of this element formatted
-            for human consumption.
-            """
-            return '\n'.join(x.pretty for x in self.elements)
-
-        def __str__(self):
-            """ A string representation of the collection.
-            """
-            # The default is to call entities.entities.__str__, but we
-            # want to call dom.ul.__str__ since it contains logic for
-            # specifically formatting prettified HTML.
-            return dom.ul.__str__(self)
-
-        def __repr__(self):
-            """ A string representation of the collection.
-            """
-            return dom.ul.__repr__(self)
-
     class item(dom.li):
         """ Represents an item in a menu such as a hyperlink or a
         ``seperator``.
@@ -1192,25 +1148,47 @@ class menu(dom.nav):
             """
             super().__init__(*args, **kwargs)
 
-            self.href = href
-            self._text = self.page = None
+            self.href   =  href
+            self.page   =  None
+
             if isinstance(o, str):
-                self._text = o
                 if href:
-                    self.body = dom.a(self.text, href=self.href)
+                    self += dom.a(o, href=self.href)
                 else:
-                    self.body = dom.text(self.text)
+                    self += dom.text(o)
+
             elif isinstance(o, page):
                 self.page = o
-                self.body = dom.a(self.page.Name, href=self.page.path)
+                self += dom.a(self.page.Name, href=self.page.path)
+
             else:
                 raise TypeError('Item requires text or page object')
 
-            self.items = menu.items()
+            self._items = None
+
+        @property
+        def items(self):
+            """ XXX """
+            if not self._items:
+                self._items = menu.items()
+                self += self._items
+
+            return self._items
+
+        @items.setter
+        def items(self, v):
+            """ XXX """
+            self._items = v
 
         def clone(self):
             """ Create and return a new menu item based on this one.
             """
+            # After refactor to inherit from dom.ul, clone currently
+            # won't work.
+            raise NotImplementedError(
+                'clone is currently not supported'
+            )
+
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
@@ -1236,29 +1214,6 @@ class menu(dom.nav):
             """
             self.items.seperate()
 
-        @property
-        def text(self):
-            """ Return the text of the item.
-            """
-            if self._text:
-                return self._text
-            return self.page.name
-
-        @property
-        def elements(self):
-            """ Returns the child elements of this colletion.
-            """
-            els = super().elements
-            els.clear()
-            pg = self.page
-            if self.body:
-                els += self.body
-
-            if self.items.count:
-                els += self.items.elements
-
-            return els
-
         def __repr__(self):
             """ Returns a string represention of the menu item.
             """
@@ -1266,7 +1221,19 @@ class menu(dom.nav):
             if pg:
                 return '%s (%s)' % (pg.name, pg.path)
             else:
-                return self.text
+                if a := self.a:
+                    return f"{cls}('{a.text}', href='{a.href}')"
+                else:
+                    return f"{cls}('{self.text}')"
+
+        @property
+        def a(self):
+            """ XXX """
+            as_ = self['a']
+            if as_.issingular:
+                return as_.only
+
+            return None
 
     class separator(item):
         """ An entry in a collection of menu item that seperates one set
@@ -1336,6 +1303,7 @@ class menu(dom.nav):
         self.name = name
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
+        self += self.items
 
     @classmethod
     def make(cls, pgs, name=None, itm=None):
@@ -1382,28 +1350,6 @@ class menu(dom.nav):
         mnu.items = self.items.clone()
         mnu.attributes = self.attributes.clone()
         return mnu
-
-    @property
-    def elements(self):
-        """ Returns the child elements of this menu.
-        """
-        B()
-        els = super().elements
-        els.clear()
-
-        els += self.items.elements
-        B()
-        return els
-
-    def __repr__(self):
-        """ A string representation of this menu.
-        """
-        # XXX Let's remove this repr. repr(self) should read better
-        # without it.
-        
-        itms = '\n'.join(repr(x) for x in self.items)
-        itms = textwrap.indent(itms, ' ' * 2)
-        return itms
 
 class pages(entities.entities):
     """ A collection of ``page`` objects.
@@ -2217,6 +2163,7 @@ class header(dom.header):
         mnu = menu('main')
 
         for itm in getitems(ws.pages):
+            itm._parent = None
             mnu.items += itm
 
         return mnu
