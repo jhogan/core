@@ -1217,9 +1217,11 @@ class menu(dom.nav):
         def __repr__(self):
             """ Returns a string represention of the menu item.
             """
+            cls = type(self).__qualname__.replace('pom.', '')
+
             pg = self.page
             if pg:
-                return '%s (%s)' % (pg.name, pg.path)
+                return f"{cls}('{pg.name}', page='{pg.path}')"
             else:
                 if a := self.a:
                     return f"{cls}('{a.text}', href='{a.href}')"
