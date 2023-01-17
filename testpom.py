@@ -151,20 +151,111 @@ class menus(tester.tester):
 
         self.eq(html, mnus.html)
 
-class menu_item(tester.tester):
-    def it_calls__init__(self):
-        itm = pom.menu.item('A text item')
+    def it_is_a_subtype_of_section(self):
+        mnus = pom.menus()
+        self.isinstance(mnus, dom.section)
+
+class menu(tester.tester):
+    def it_calls_name(self):
+        mnu = pom.menu(name='admin')
+        self.eq('admin', mnu.name)
+
+    def it_calls_html(self):
+        mnu = pom.menu(name='admin')
+
+        # XXX Explain empty <ul>
+        html = '<nav aria-label="Admin"><ul></ul></nav>'
+        self.eq(html, mnu.html)
+
+        ''' With items '''
+        mnu.items += pom.menu.item('File')
+        mnu.items += pom.menu.item('Edit')
+
+        html = (
+            '<nav aria-label="Admin"><ul>'
+            '<li>File</li><li>Edit</li></ul></nav>'
+        )
+        self.eq(html, mnu.html)
+
+        ''' With nested items '''
+        file = mnu.items.elements.first
+
+        file.items += pom.menu.item('Open')
+        file.items += pom.menu.item('Save')
+
+        html = (
+            '<nav aria-label="Admin"><ul>'
+            '<li>File<ul>'
+            '<li>Open</li>'
+            '<li>Save</li></ul></li>'
+            '<li>Edit</li>'
+            '</ul></nav>'
+        )
+        self.eq(html, mnu.html)
+
+    def it_calls__repr__(self):
+        mnu = pom.menu(name='admin')
+        self.eq('menu(aria-label="Admin")', repr(mnu))
+
+    def it_calls__str__(self):
+        mnu = pom.menu(name='admin')
+
         expect = self.dedent('''
-        <li>
-          A text item
-        </li>
+        <nav aria-label="Admin">
+          <ul>
+          </ul>
+        </nav>
         ''')
-        self.eq(expect, itm.pretty)
-        self.eq(expect, str(itm))
+        self.eq(expect, str(mnu))
 
-        expect = '<li>A text item</li>'
-        self.eq(expect, itm.html)
+        ''' With items '''
+        mnu.items += pom.menu.item('File')
+        mnu.items += pom.menu.item('Edit')
 
+        expect = self.dedent('''
+        <nav aria-label="Admin">
+          <ul>
+            <li>
+              File
+            </li>
+            <li>
+              Edit
+            </li>
+          </ul>
+        </nav>
+        ''')
+        self.eq(expect, str(mnu))
+
+        ''' With nested items '''
+        file = mnu.items.elements.first
+
+        file.items += pom.menu.item('Open')
+        file.items += pom.menu.item('Save')
+
+        expect = self.dedent('''
+        <nav aria-label="Admin">
+          <ul>
+            <li>
+              File
+              <ul>
+                <li>
+                  Open
+                </li>
+                <li>
+                  Save
+                </li>
+              </ul>
+            </li>
+            <li>
+              Edit
+            </li>
+          </ul>
+        </nav>
+        ''')
+        self.eq(expect, str(mnu))
+
+    def it_is_a_subtype_of_nav(self):
+        self.isinstance(pom.menu('name'), dom.nav)
 
 class menu_items(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -182,6 +273,10 @@ class menu_items(tester.tester):
 
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
+
+    def it_isinstance_of_ul(self):
+        itms = pom.menu.items()
+        self.isinstance(itms, dom.ul)
 
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
@@ -236,28 +331,13 @@ class menu_items(tester.tester):
         itms += pom.menu.item('A')
         itms += pom.menu.item('B')
 
-        itms.first.items += pom.menu.item('A/A')
-        itms.first.items += pom.menu.item('A/B')
+        els = itms.elements
+        els.first.items += pom.menu.item('A/A')
+        els.first.items += pom.menu.item('A/B')
 
-        itms.second.items += pom.menu.item('B/A')
-        itms.second.items += pom.menu.item('B/B')
+        els.second.items += pom.menu.item('B/A')
+        els.second.items += pom.menu.item('B/B')
 
-        ids = (
-            itms._ul.id,
-            itms.first.id,
-            itms.first.items._ul.id,
-            itms.first.items.first.id,
-            itms.first.items.second.id,
-            itms.second.id,
-            itms.second.items._ul.id,
-            itms.second.items.first.id,
-            itms.second.items.second.id,
-        )
-        ids = tuple(
-            [itms._ul.id] + \
-            [x.id for x in itms.all if type(x) is not dom.text]
-        )
-        
         expect = self.dedent('''
         <ul>
           <li>
@@ -294,6 +374,84 @@ class menu_items(tester.tester):
             '<li>B/A</li><li>B/B</li></ul></li></ul>'
         )
         self.eq(expect, itms.html)
+
+class menu_item(tester.tester):
+    def it_calls__init__(self):
+        itm = pom.menu.item('A text item')
+        expect = self.dedent('''
+        <li>
+          A text item
+        </li>
+        ''')
+        self.eq(expect, itm.pretty)
+        self.eq(expect, str(itm))
+
+        expect = '<li>A text item</li>'
+        self.eq(expect, itm.html)
+
+    def it_calls_html(self):
+        ''' Add a text item '''
+        li = pom.menu.item('A menu item')
+        html = '<li>A menu item</li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          A menu item
+        </li>
+        ''')
+
+        self.eq(html, li.pretty)
+
+        ''' Add an anchor item '''
+        li = pom.menu.item(o='A menu item', href='https://example.com')
+        html = '<li><a href="https://example.com">A menu item</a></li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          <a href="https://example.com">
+            A menu item
+          </a>
+        </li>
+        ''')
+
+        self.eq(html, li.pretty)
+
+        ''' Add an page item '''
+        ws = foonet()
+        pg = ws.pages.first
+
+        li = pom.menu.item(o=pg)
+        html = '<li><a href="/error">Error</a></li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          <a href="/error">
+            Error
+          </a>
+        </li>
+        ''')
+        self.eq(html, li.pretty)
+
+    def it_calls_repr(self):
+        ''' Add a text item '''
+        li = pom.menu.item('A menu item')
+        expect = "menu.item('A menu item')"
+        self.eq(expect, repr(li))
+
+        ''' Add an anchor item '''
+        li = pom.menu.item(o='A menu item', href='https://example.com')
+        expect = "menu.item('A menu item', href='https://example.com')"
+        self.eq(expect, repr(li))
+
+        ''' Add an page item '''
+        ws = foonet()
+        pg = ws.pages.first
+        li = pom.menu.item(o=pg)
+        expect = "menu.item('error', page='/error')"
+        self.eq(expect, repr(li))
 
 class _404(pom.page):
     def main(self, ex: www.NotFoundError):
