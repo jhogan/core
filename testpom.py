@@ -163,7 +163,8 @@ class menu(tester.tester):
     def it_calls_html(self):
         mnu = pom.menu(name='admin')
 
-        # XXX Explain empty <ul>
+        # See the NOTE:23db3900 to understand by we have an empty <ul>
+        # here.
         html = '<nav aria-label="Admin"><ul></ul></nav>'
         self.eq(html, mnu.html)
 

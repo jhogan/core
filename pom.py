@@ -1168,16 +1168,40 @@ class menu(dom.nav):
 
         @property
         def items(self):
-            """ XXX """
+            """ Return this `menu.item`'s collection of `menu.items`. It's
+            this property that allows menus to be of an infinite depth.
+            """
             if not self._items:
                 self._items = menu.items()
+
+                # Append the items collection to self. In DOM terms, we
+                # are append a <ul> to an <li>:
+                #
+                #   <nav>
+                #     <ul>
+                #       <li>
+                #         File
+                #         <ul> <!-- this -->
+                #           <li>
+                #             Open
+                #           </li>
+                #         </ul>
+                #      </li>
+                #    </ul>
+                #  </nav>
+                #
                 self += self._items
 
             return self._items
 
         @items.setter
         def items(self, v):
-            """ XXX """
+            """ Set's the items value.
+
+            This is necessary for appends to work right.
+
+            :param: v menu.item: The item to set.
+            """
             self._items = v
 
         def clone(self):
@@ -1230,7 +1254,18 @@ class menu(dom.nav):
 
         @property
         def a(self):
-            """ XXX """
+            """ Return the anchor (dom.a) of this menu item. If no
+            anchor exists yet, None is returned.
+
+              <nav>
+                <ul>
+                  <li>
+                    <a href="/open">Open</a>  <!-- This -->
+                  </li>
+                </ul>
+              </nav>
+
+            """
             as_ = self['a']
             if as_.issingular:
                 return as_.only
@@ -1306,7 +1341,18 @@ class menu(dom.nav):
         self.name = name
         self.aria_label = self.name.capitalize()
 
-        # XXX
+        # NOTE:23db3900 Create the items collection here. This has the
+        # unfortunate side affect of causing empty menus to be rendered
+        # with an empty <ul>:
+        #
+        #   <nav>
+        #     <ul></ul>
+        #   </nav>
+        # 
+        # We could solve this problem by lazing loading the items using
+        # a getter @property. However, the name of that method would be
+        # pom.menu.items, and this has already been taken (see the
+        # `items` class above).
         self.items = menu.items()
         self += self.items
 
