@@ -1244,7 +1244,7 @@ class menu(dom.nav):
             [O]pen
             [S]ave
             Save [A]s
-            --------
+            ---------
             [Q]uit
 
         In the above text version of a menu, the line of dashes
@@ -1257,6 +1257,7 @@ class menu(dom.nav):
         is a <br>.
         """
 
+        # XXX I think we can remove this
         def __init__(self, *args, **kwargs):
             """ Create the seperator object.
             """
@@ -1304,6 +1305,8 @@ class menu(dom.nav):
         super().__init__(*args, **kwargs)
         self.name = name
         self.aria_label = self.name.capitalize()
+
+        # XXX
         self.items = menu.items()
         self += self.items
 

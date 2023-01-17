@@ -229,7 +229,6 @@ class menu_items(tester.tester):
         <ul><li>A text item</li><li>Another text item</li></ul>
         ''')
 
-
         self.eq(expect, itms.html)
 
     def it_calls_append_on_nested_items(self):
