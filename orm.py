@@ -3933,6 +3933,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def onafterload(self):
+        """ Triggered after the `entity` object has been loaded.
+        """
         if not hasattr(self, '_onafterload'):
             self._onafterload = entitiesmod.event()
             self._onafterload += self._self_onafterload
@@ -10338,7 +10340,7 @@ class orm:
             # results.
             exec.execute()
 
-            # Raise self's onafterload event
+            # Trigger self's onafterload event
             eargs = db.operationeventargs(
                 self.instance, 'retrieve', sql, args, 'after'
             )
