@@ -1053,11 +1053,9 @@ class menus(dom.section):
     def __repr__(self):
         """ A string representation of this ``menus`` collection.
         """
-        r = str()
-        for mnu in self:
-            r += '[%s]\n' % mnu.name
-            r += repr(mnu) + '\n'
-        return r
+        cls = type(self).__name__
+        args = ', '.join(repr(x) for x in self)
+        return f'{cls}({args})'
 
     def __getitem__(self, ix):
         """ Implement an indexer so the menus can be accessed by name::
