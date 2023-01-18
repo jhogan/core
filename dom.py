@@ -1577,6 +1577,11 @@ class element(entities.entity):
         """ XXX """
         return self.elements.antepenultimate
 
+
+    def pluck(self, *ss):
+        """ XXX """
+        return self.elements.pluck(*ss)
+
     def __getitem__(self, ix):
         """ Get elements by a CSS3 selector.
 
