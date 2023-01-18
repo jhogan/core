@@ -1559,27 +1559,50 @@ class element(entities.entity):
         
     @property
     def first(self):
-        """ XXX """
+        """ Returns the first child element under this `element` object.
+        If the collection is empty, None is returned.
+        """
         return self.elements.first
 
     @property
     def second(self):
-        """ XXX """
+        """ Returns the second child element under this `element` object.
+        If the collection has fewer than 2 elements underneath, None is
+        returned.
+        """
         return self.elements.second
 
     @property
     def third(self):
-        """ XXX """
+        """ Returns the second child element under this `element` object.
+        If the collection has fewer than 3 elements underneath, None is
+        returned.
+        """
         return self.elements.third
 
     @property
     def antepenultimate(self):
-        """ XXX """
+        """ Returns the third-to-the-last child element under this
+        `element` object.  If the collection has fewer than 3 elements
+        underneath, None is returned.
+        """
         return self.elements.antepenultimate
 
-
     def pluck(self, *ss):
-        """ XXX """
+        """ Returns a list of child elements under this `element` for the given
+        field names. 
+
+            ul = dom.ul()
+            ul += dom.li(id='1')
+            ul += dom.li(id='1')
+
+            assert [1, 2] == ul.pluck('id')
+
+        pluck() has an extensive feature set. The above just scratches
+        the surface. This method is a simple wrapper for
+        entities.entity.pluck. See the docstring there for more
+        information.
+        """
         return self.elements.pluck(*ss)
 
     def __getitem__(self, ix):
