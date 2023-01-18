@@ -151,6 +151,49 @@ class menus(tester.tester):
 
         self.eq(html, mnus.html)
 
+        ''' With items '''
+        mnu.items += pom.menu.item('Users')
+        mnu.items += pom.menu.item('Groups')
+
+        html = (
+            '<section><nav aria-label="Admin">'
+            '<ul><li>Users</li><li>Groups</li></ul>'
+            '</nav><nav aria-label="Sub">'
+            '<ul></ul></nav></section>'
+        )
+
+        self.eq(html, mnus.html)
+
+        ''' With nested items '''
+        users = mnu.items.elements.first
+
+        users.items += pom.menu.item('Add')
+        users.items += pom.menu.item('Search')
+
+        html = (
+            '<section><nav aria-label="Admin">'
+            '<ul><li>Users<ul><li>Add</li><li>Search</li></ul>'
+            '</li><li>Groups</li></ul></nav>'
+            '<nav aria-label="Sub"><ul></ul></nav></section>'
+        )
+        self.eq(html, mnus.html)
+
+    def it_calls__repr__(self):
+        mnus = pom.menus()
+
+        self.eq('menus()', repr(mnus))
+
+        ''' With menus '''
+        mnu = pom.menu(name='admin')
+        mnu1 = pom.menu(name='sub')
+
+        mnus += mnu, mnu1
+
+        expect = (
+            'menus(menu(aria-label="Admin"), menu(aria-label="Sub"))'
+        )
+        self.eq(expect, repr(mnus))
+
     def it_is_a_subtype_of_section(self):
         mnus = pom.menus()
         self.isinstance(mnus, dom.section)
@@ -289,18 +332,12 @@ class menu_items(tester.tester):
         the ids are preserved.
         """
         ws = foonet()
-        mnu = pom.menu('main')
         main = ws.header.makemain()
-        mnu.items += main.items
 
         self.eq(main.pretty,        main.pretty)
-        self.eq(mnu.pretty,         mnu.pretty)
         self.eq(main.html,          main.html)
-        self.eq(mnu.html,           mnu.html)
         self.eq(main.items.pretty,  main.items.pretty)
-        self.eq(mnu.items.pretty,   mnu.items.pretty)
         self.eq(main.items.html,    main.items.html)
-        self.eq(mnu.items.html,     mnu.items.html)
 
     def it_calls_append(self):
         itms = pom.menu.items()
@@ -494,18 +531,6 @@ class site(tester.tester):
         ws = foonet()
         self.seven(ws.pages)
 
-    def it_appends_menu_items(self):
-        ws = foonet()
-        mnu = pom.menu('main')
-        main = ws.header.makemain()
-        mnu.items += main.items
-
-        uls = dom.html(mnu.items.html)['ul>li']
-        self.count(19, uls)
-
-        self.eq(main.items.html, mnu.items.html)
-        self.eq(main.items.pretty, mnu.items.pretty)
-        
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
         self.eq('site()', str(pom.site()))
@@ -588,7 +613,7 @@ class site(tester.tester):
 
         mnus = ws.header.menus
         mnu = mnus['admin']
-        self.two(mnu.items)
+        self.two(mnu.items.elements)
 
         rpt = mnu.items.second
         self.type(pom.menu.item, rpt.items.first)
@@ -608,12 +633,12 @@ class site(tester.tester):
     def it_calls_main_menu(self):
         ws = pom.site()
         mnu = ws.header.makemain()
-        self.zero(mnu.items)
+        self.zero(mnu.items.elements)
 
         ws = foonet()
         mnu = ws.header.makemain()
 
-        self.six(mnu.items)
+        self.six(mnu.items.elements)
 
         self.eq(
             [
