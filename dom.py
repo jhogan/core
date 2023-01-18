@@ -1557,6 +1557,26 @@ class element(entities.entity):
                     f'parent {rent}'
                 )
         
+    @property
+    def first(self):
+        """ XXX """
+        return self.elements.first
+
+    @property
+    def second(self):
+        """ XXX """
+        return self.elements.second
+
+    @property
+    def third(self):
+        """ XXX """
+        return self.elements.third
+
+    @property
+    def antepenultimate(self):
+        """ XXX """
+        return self.elements.antepenultimate
+
     def __getitem__(self, ix):
         """ Get elements by a CSS3 selector.
 
