@@ -6881,12 +6881,12 @@ with book('Hacking Carapacian Core'):
     with section('ORM events'):
       print('''
         The ORM's `entity` and `entities` classes expose a number of
-        events which you can easily subscribe to. Most ORM events are
-        not something that would be useful for the implementation of
-        everyday business logic. However, they can be useful for certain
-        types of tests and for getting lower level details of ORM
-        operations in order to diagnose problems. They can also be used
-        for more esotic use cases involving the business objects.
+        events which you can easily subscribe to. Most ORM events would
+        not be useful for the implementation of everyday business logic.
+        However, they *can* be useful for certain types of tests and for
+        getting lower level details of ORM operations in order to
+        diagnose problems. They can also be used for more esotic use
+        cases involving business objects.
 
         For example, the ORM lets you tap into the moment right before
         an entity is saved to the database and immediately after. This
@@ -6897,14 +6897,14 @@ with book('Hacking Carapacian Core'):
         the SQL that is being sent to the database.  See [Debugging ORM
         entities](#59485436) for more).
 
-        Let's write some code to listen in on these event handler to
-        give you an idea of how you can use ORM event's. Following this
-        example, this section will provide details for each of the
-        events currently provided. 
+        Let's write some code to listen in on these events to give you
+        an idea of how you can use them. Following this example, we wil
+        provide details for each of the events currently provided. 
       ''')
 
       with listing(
-        'Handling entity.onbeforesave and entity.onaftersave'
+        'Handling entity.onbeforesave and entity.onaftersave',
+        id='0accce2e'
       ):
 
         def cust_onbeforesave(src, eargs)
@@ -6930,7 +6930,7 @@ with book('Hacking Carapacian Core'):
         cust.onbeforesave += cust_onbeforesave
         cust.onaftersave += cust_onaftersave
 
-        # This will will do nothing becase we `cancel` the save in
+        # This will do nothing becase we `cancel` the save in
         # cust_onbeforesave
         cust.save()
 
@@ -6962,19 +6962,42 @@ with book('Hacking Carapacian Core'):
             reconnection occured.
 
             Database connection used by the ORM are pooled in memory.
-            This feature exists to make it faster for the ORM to access
-            the database for persistence operations. However, those
-            pooled connection can get stale and the ORM will
-            ensure that the connection are reestablished when needed.
-            The onbeforereconnect is triggered immediately before this
-            reconnection, and the onafterreconnect event is, of course,
-            triggered immediately after.
+            This makes it faster for the ORM to access the database for
+            persistence operations. However, those pooled connection can
+            get stale so the ORM will ensure that the connection are
+            reestablished when needed.  The `onbeforereconnect` event is
+            triggered immediately before this reconnection, and the
+            `onafterreconnect` event is, of course, triggered
+            immediately after.
 
             Handlers will receive an `eargs` of `operationeventargs`,
             giving them access to the entity that caused the
             reconnection (`eargs.entity`). This `eargs`' `sql` and
             `args` attributes will return None.
           '''
+
+        with section('`onafterload`'):
+          print('''
+            After an elements collection loads and populates itself with
+            database from the database, as a result a query, this event
+            will be triggered. The ORM itself listens for this event to
+            populate the `db.chronicler` with data from each load.
+
+            Note that, `onbeforeload` has not been implemented at the
+            time of this writing.
+          ''')
+
+      with section('Events for `entity` classes'):
+        with section('`onbeforesave` and `onaftersave`'):
+          print('''
+            The `onbeforesave` event is triggered immediately before SQL
+            is sent to the database to insert or update data in the
+            database. Likewise, the `onaftersave` event is
+            triggered immediately after the SQL is sent. As you saw in
+            the above [listing)[#0accce2e], an event handler can listen
+            to the onbeforesave and use the `eargs.cancel` property to
+            cancel the save.
+          ''')
 
     with section('Streaming'):
       ...
