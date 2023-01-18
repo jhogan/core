@@ -2189,6 +2189,7 @@ class header(dom.header):
 
     @staticmethod
     def _getmenu(ws):
+        # XXX Dead code?
         """ Create and return a menu based on the site's pages.
         """
         def getitems(pgs):
