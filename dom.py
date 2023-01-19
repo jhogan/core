@@ -1574,11 +1574,27 @@ class element(entities.entity):
 
     @property
     def third(self):
-        """ Returns the second child element under this `element` object.
+        """ Returns the third child element under this `element` object.
         If the collection has fewer than 3 elements underneath, None is
         returned.
         """
         return self.elements.third
+
+    @property
+    def fourth(self):
+        """ Returns the fourth child element under this `element` object.
+        If the collection has fewer than 4 elements underneath, None is
+        returned.
+        """
+        return self.elements.fourth
+
+    @property
+    def seventh(self):
+        """ Returns the seventh child element under this `element` object.
+        If the collection has fewer than 7 elements underneath, None is
+        returned.
+        """
+        return self.elements.seventh
 
     @property
     def antepenultimate(self):
