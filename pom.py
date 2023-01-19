@@ -1153,6 +1153,21 @@ class menu(dom.nav):
             self._items = None
 
         @property
+        def text(self):
+            """ Return the text of the item.
+            """
+
+            for el in self:
+                if isinstance(el, dom.text):
+                    return el.value
+
+            if a := self.a:
+                return a.text
+
+            if pg := self.page:
+                return self.page.name
+
+        @property
         def page(self):
             return self._page
 
