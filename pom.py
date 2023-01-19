@@ -1382,16 +1382,18 @@ class menu(dom.nav):
             itms = mnu.items
 
         for pg in pgs:
+            # Don't add error pages to the menu
+            if pg.name == 'error':
+                continue
+
             itm = menu.item(o=pg)
             itms += itm
 
             pgs = pg.pages
             if pgs.ispopulated:
-                itms = cls.make(pgs, itm=itm)
+                cls.make(pgs, itm=itm)
 
-        if isrecursing:
-            return itms
-        else:
+        if not isrecursing:
             return mnu
 
     @property
