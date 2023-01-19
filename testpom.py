@@ -695,7 +695,7 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.six(mnu.items)
+        self.six(mnu.items.elements)
 
         # Blogs item
         itm = mnu.items.fourth
@@ -723,9 +723,11 @@ class site(tester.tester):
 
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
-        self.seven(mnu.items)
+
+        self.seven(mnu.items.elements)
 
         sels = dom.selectors('li')
+
         self.true('My Profile' in (x.text for x in mnu[sels]))
         self.true('My Profile' in (x.text for x in ws.header.menu[sels]))
 
