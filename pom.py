@@ -1107,18 +1107,7 @@ class menu(dom.nav):
             """ Create and return an ``items`` based on self.
             """
 
-            # After refactor to inherit from dom.ul, clone currently
-            # won't work.
-            raise NotImplementedError(
-                'clone is currently not supported'
-            )
             itms = type(self)()
-
-            # Preserve ID's
-            # TODO Should all attributes of the ul be preserved?
-            # Probably.
-            if self._ul.id is not None:
-                itms._ul.id = self._ul.id
 
             for itm in self:
                 itms += itm.clone()
@@ -1205,28 +1194,13 @@ class menu(dom.nav):
         def clone(self):
             """ Create and return a new menu item based on this one.
             """
-            # After refactor to inherit from dom.ul, clone currently
-            # won't work.
-            raise NotImplementedError(
-                'clone is currently not supported'
-            )
 
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
 
-            if self.body.id is not None:
-                itm.body.id = self.body.id
-
             itm.items += self.items.clone()
-
-            # Preserve ID's
-            # TODO Should all attributes of the ul be preserved?
-            # Probably.
-
-            if self.items._ul.id is not None:
-                itm.items._ul.id = self.items._ul.id
 
             itm.attributes = self.attributes.clone()
             return itm
