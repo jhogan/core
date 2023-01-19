@@ -1136,7 +1136,7 @@ class menu(dom.nav):
             super().__init__(*args, **kwargs)
 
             self.href   =  href
-            self.page   =  None
+            self._page   =  None
 
             if isinstance(o, str):
                 if href:
@@ -1146,12 +1146,29 @@ class menu(dom.nav):
 
             elif isinstance(o, page):
                 self.page = o
-                self += dom.a(self.page.Name, href=self.page.path)
 
             else:
                 raise TypeError('Item requires text or page object')
 
             self._items = None
+
+        @property
+        def page(self):
+            return self._page
+
+        @page.setter
+        def page(self, v):
+            self._page = v
+            a = None
+            for el in self:
+                if isinstance(el, dom.a):
+                    a = el
+
+            if a:
+                self.elements.remove(a)
+
+            self += dom.a(v.Name, href=v.path)
+            
 
         @property
         def items(self):
