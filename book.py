@@ -6979,9 +6979,16 @@ with book('Hacking Carapacian Core'):
         with section('`onafterload`'):
           print('''
             After an elements collection loads and populates itself with
-            database from the database, as a result a query, this event
-            will be triggered. The ORM itself listens for this event to
+            data from the database (as a result a query) this event will
+            be triggered. The ORM itself listens for this event to
             populate the `db.chronicler` with data from each load.
+
+            Like the `on*reconnect` events, the `onafterload` event uses
+            the `db.operationeventargs` class for its `eargs`. This
+            gives you access to the `op` (operation) property (which
+            will always return `retrieve`), the SQL used to load the
+            collection (via the `sql` property), and its `args` property
+            will return the list of values used to parameterize the SQL.
 
             Note that, `onbeforeload` has not been implemented at the
             time of this writing.
@@ -6991,12 +6998,20 @@ with book('Hacking Carapacian Core'):
         with section('`onbeforesave` and `onaftersave`'):
           print('''
             The `onbeforesave` event is triggered immediately before SQL
-            is sent to the database to insert or update data in the
-            database. Likewise, the `onaftersave` event is
-            triggered immediately after the SQL is sent. As you saw in
-            the above [listing)[#0accce2e], an event handler can listen
-            to the onbeforesave and use the `eargs.cancel` property to
-            cancel the save.
+            is sent to the database to insert, update or delete rows.
+            Likewise, the `onaftersave` event is triggered immediately
+            after the SQL is sent. As you saw in the above
+            [listing)[#0accce2e], an event handler can listen to the
+            onbeforesave and use the `eargs.cancel` property to cancel
+            the save.
+
+            These events also use the `db.operationeventargs` class as
+            their `eargs`. You can use its `op` property to see which
+            CRUD operation was performed ('create', 'update' and
+            'delete'). You can also use its `sql` property to see what
+            SQL was sent to "save" the entity. The `args` property will
+            return the list of values that were used to parameterize the
+            SQL statement.
           ''')
 
     with section('Streaming'):
