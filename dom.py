@@ -1621,6 +1621,10 @@ class element(entities.entity):
         """
         return self.elements.pluck(*ss)
 
+    @property
+    def count(self):
+        return self.elements.count
+
     def __getitem__(self, ix):
         """ Get elements by a CSS3 selector.
 
