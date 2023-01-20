@@ -6956,7 +6956,9 @@ with book('Hacking Carapacian Core'):
       ''')
 
       with section('Events for `entities` collection classes'):
-        with section('`onbeforereconnect` and `onafterreconnect`'):
+        with section(
+          '`onbeforereconnect` and `onafterreconnect`', id='321c3bfe'
+        ):
           print('''
             These events are triggered before and after a database
             reconnection occured.
@@ -6976,17 +6978,17 @@ with book('Hacking Carapacian Core'):
             `args` attributes will return None.
           '''
 
-        with section('`onafterload`'):
+        with section('`onafterload`', id='758d7aba'):
           print('''
-            After an elements collection loads and populates itself with
-            data from the database (as a result a query) this event will
-            be triggered. The ORM itself listens for this event to
+            After an entities collection loads and populates itself with
+            data from the database (as a result of a query) this event
+            will be triggered. The ORM itself listens for this event to
             populate the `db.chronicler` with data from each load.
 
             Like the `on*reconnect` events, the `onafterload` event uses
             the `db.operationeventargs` class for its `eargs`. This
             gives you access to the `op` (operation) property (which
-            will always return `retrieve`), the SQL used to load the
+            will always return 'retrieve'), the SQL used to load the
             collection (via the `sql` property), and its `args` property
             will return the list of values used to parameterize the SQL.
 
@@ -6998,20 +7000,39 @@ with book('Hacking Carapacian Core'):
         with section('`onbeforesave` and `onaftersave`'):
           print('''
             The `onbeforesave` event is triggered immediately before SQL
-            is sent to the database to insert, update or delete rows.
+            is sent to the database to insert, update or delete a row.
             Likewise, the `onaftersave` event is triggered immediately
             after the SQL is sent. As you saw in the above
             [listing)[#0accce2e], an event handler can listen to the
             onbeforesave and use the `eargs.cancel` property to cancel
             the save.
 
-            These events also use the `db.operationeventargs` class as
-            their `eargs`. You can use its `op` property to see which
-            CRUD operation was performed ('create', 'update' and
+            This `eargs` argument is of type `db.operationeventargs`.
+            You can use its `op` property to see which
+            CRUD operation was performed (e.g., 'create', 'update' and
             'delete'). You can also use its `sql` property to see what
             SQL was sent to "save" the entity. The `args` property will
             return the list of values that were used to parameterize the
             SQL statement.
+          ''')
+
+        with section('`onafterload`'):
+          print('''
+            This event will be triggered after an entity has been loaded
+            with data from the database. This event is very similar
+            to the events of the same name used by entities collections.
+            The [that section][#758d7aba] for more details.
+
+            Note that, `onbeforeload` has not been implemented at the
+            time of this writing.
+          ''')
+
+        with section('`onbeforereconnect` and `onafterreconnect`'):
+          print('''
+            These events are triggered before and after a database
+            reconnection occured. These events are very similar to the
+            events of the same name used by entities collections. The
+            [that section][#321c3bfe] for more details.
           ''')
 
     with section('Streaming'):
