@@ -1623,6 +1623,9 @@ class element(entities.entity):
 
     @property
     def count(self):
+        """ Return the number of child elements directly underneath this
+        `element`.
+        """
         return self.elements.count
 
     def __getitem__(self, ix):
