@@ -610,7 +610,7 @@ class site(tester.tester):
         ws = foonet()
 
         mnus = ws.header.menus
-        mnu = mnus['admin']
+        mnu = mnus['[aria-label=Admin]'].only
         self.two(mnu.items.elements)
 
         rpt = mnu.items.second
@@ -2883,7 +2883,7 @@ class page(tester.tester):
         tab.navigate('/en/spa', ws)
 
         # Click on the Blog menu item twice
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
@@ -2894,7 +2894,7 @@ class page(tester.tester):
         self.eq('/blogs', attrs['data-path'].value)
 
         # Click on the Subpage menu item twice
-        sel = 'header>section>nav a[href|="/spa/subpage"]'
+        sel = 'header>section>nav a[href|="/en/spa/subpage"]'
 
         a_subpage = tab[sel].only
 
@@ -2919,13 +2919,13 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
-        sel = 'header>section>nav a[href|="/spa/subpage"]'
+        sel = 'header>section>nav a[href|="/en/spa/subpage"]'
         a_subpage = tab[sel].only
 
         a_subpage.click()
@@ -2963,7 +2963,7 @@ class page(tester.tester):
         # Assert there is one menu item for /spa/subpage. This would
         # only exist if we were getting the spa page; the subpage would
         # not have it.
-        self.one(tab['header>section>nav a[href|="/spa/subpage"]'])
+        self.one(tab['header>section>nav a[href|="/en/spa/subpage"]'])
 
         ps = tab['main p']
 
@@ -2983,7 +2983,7 @@ class page(tester.tester):
 
         self.eq('foonet | Spa', tab.html['title'].only.text)
 
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         tab.inspa = False
         a_blog.click()
