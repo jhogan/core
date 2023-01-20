@@ -594,8 +594,7 @@ class tester(entities.entity):
 
                 if isnav := is_nav_link(src):
                     html = None
-                    pg = '/' + src.root.lang 
-                    pg += src.attributes['href'].value
+                    pg = src.attributes['href'].value
                 else:
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
