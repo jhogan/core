@@ -929,7 +929,6 @@ class request:
                 if not self.isevent:
                     mnus = pg.header.menus
                     lang = self.language
-                    B()
                     for a in mnus['a']:
                         href  =  a.href
                         sep   =  os.path.sep

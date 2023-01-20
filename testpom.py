@@ -96,8 +96,6 @@ class foonet(pom.site):
         self.sidebars += sb
         sb += mnus
 
-        ''' Footer  '''
-
     @classproperty
     def languages(cls):
         ''' A list of accepted languages by this site.
