@@ -1057,24 +1057,6 @@ class menus(dom.section):
         args = ', '.join(repr(x) for x in self)
         return f'{cls}({args})'
 
-    def __getitem__(self, ix):
-        """ Implement an indexer so the menus can be accessed by name::
-
-            # Get the desert menu
-            mnu = mymenus['desert']
-        """
-
-        # XXX I think this should be removed and default to
-        # element.__getitem__, which doesn't exist yet. That method
-        # should be written and expose the indexer on the element's
-        # `elements` attribute.
-        if isinstance(ix, str):
-            for mnu in self:
-                if mnu.name == ix:
-                    return mnu
-        else:
-            return super().__getitem__(ix)
-
 class menu(dom.nav):
     # TODO:c0336221 Currently, there are issues altering attributes en
     # masse with menu and its subsidiaries:
