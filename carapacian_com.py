@@ -367,7 +367,8 @@ class ticketsspa(pom.spa):
         def main(self):
             self.main += dom.p('Search')
     
-    ''' Class members '''
+    ''' Class members of `site` '''
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -385,8 +386,6 @@ class ticketsspa(pom.spa):
 
         ''' SPA Menu '''
         self.header.menus += pom.menu.make(self.pages, 'spa')
-        print(self.header.menus.last)
-
 
 # The Css for the site. See site.styles
 Css = '''

@@ -684,6 +684,7 @@ class site(asset.asset):
         #// syntax highlighting for JavaScript. In Vim, you can use:
         #//
         #//     set syn=javascript
+        #//
 
         r = '''
 function is_nav_link(e){
@@ -1166,10 +1167,9 @@ class menu(dom.nav):
 
             self += dom.a(v.Name, href=v.path)
             
-
         @property
         def items(self):
-            """ Return this `menu.item`'s collection of `menu.items`. It's
+            """ Return this `menu.items` collection of `menu.item`. It's
             this property that allows menus to be of an infinite depth.
             """
             if not self._items:
