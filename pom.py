@@ -765,18 +765,7 @@ function ajax(e){
 
     // If the user clicked a nav link
     if (isnav){
-        href = src.getAttribute('href')
-
-        // The value of <main>'s spa-data-path attribute if it exists.
-        // This is the SPA root path.
-
-        // XXX Add this logic to element_event
-        spadatapath = main.getAttribute('spa-data-path')
-
-        // If there is an spadatapath then use it as the root path for
-        // the XHR request. Otherwise, use whatever .pathname is.
-        pg = spadatapath || window.location.pathname
-        pg +=  '/' + href
+        pg = src.getAttribute('href')
     }else{
         // Concatenate the fragment's HTML
         html = ''
