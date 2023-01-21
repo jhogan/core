@@ -89,9 +89,10 @@ class site(pom.site):
         hdr.menu = pom.menu(name='main')
 
         itms = hdr.menu.items
-        itms += pom.menu.item('Services')
-        itms += pom.menu.item('Products')
-        itms += pom.menu.item('Services')
+        itms += pom.menu.item('Services', '/services')
+        itms += pom.menu.item('Products', '/products')
+        itms += pom.menu.item('Tickets', '/tickets')
+        itms += pom.menu.item('Tickets Spa', '/ticketsspa')
 
         return hdr
 
