@@ -360,10 +360,12 @@ class ticketsspa(pom.spa):
             self.main += dom.p('People')
 
     class backlog(pom.page):
-        pass
+        def main(self):
+            self.main += dom.p('Backlog')
 
     class search(pom.page):
-        pass
+        def main(self):
+            self.main += dom.p('Search')
     
     ''' Class members '''
     def __init__(self, *args, **kwargs):
