@@ -7020,8 +7020,8 @@ with book('Hacking Carapacian Core'):
           print('''
             This event will be triggered after an entity has been loaded
             with data from the database. This event is very similar
-            to the events of the same name used by entities collections.
-            The [that section][#758d7aba] for more details.
+            to the event of the same name used by entities collections.
+            See [that section][#758d7aba] for more details.
 
             Note that, `onbeforeload` has not been implemented at the
             time of this writing.
@@ -7030,9 +7030,9 @@ with book('Hacking Carapacian Core'):
         with section('`onbeforereconnect` and `onafterreconnect`'):
           print('''
             These events are triggered before and after a database
-            reconnection occured. These events are very similar to the
-            events of the same name used by entities collections. The
-            [that section][#321c3bfe] for more details.
+            reconnection occured. They are very similar to the events of
+            the same name used by entities collections. See [that
+            section][#321c3bfe] for more details.
           ''')
 
     with section('Streaming'):

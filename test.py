@@ -3747,9 +3747,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             for fact in art.get_artifacts(orm.stream):
                 ...
 
-        However, this has not been implemented (see 8210b80c)
+        However, this has not been implemented (see 8210b80c).
         '''
-
         fns = (
             lambda:  artists(orm.stream).join(locations()),
             lambda:  artists()            &  locations(orm.stream),
@@ -3761,7 +3760,6 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             lambda:  artists()            &  artifacts(orm.stream),
 
             lambda:  artists() & artist_artifacts() & artifacts(orm.stream)
-
         )
 
         for fn in fns:
@@ -3886,6 +3884,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             # NOTE that UUID indexing on streams has not been
             # implemented yet.
+
             # TODO Test indexing by UUID, i.e.,
             # arts[id]
 
@@ -4095,15 +4094,15 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                     self.eq(arts[i].id, art1.id)
 
     def it_raises_when_sort_is_called_while_streaming(self):
-        """ When a streaming entities collection is loaded (it's in or
-        was in the process of streaming, we shouldn't be allowed to call
-        sort() or sorted().
+        """ When a streaming entities collection is loaded (it's in, or
+        was in the process of streaming), we shouldn't be allowed to
+        call sort() or sorted().
 
         TODO Implement this (the tests are commented out). After a
         cursory inspection, this will take a little work to get right
         because there doesn't seem to be a flag set to indicate that an
         entities collection is in the process of streaming. The
-        arts.orm.isloaded doesn't get set to true either (not sure if it
+        arts.orm.isloaded doesn't get set to True either (not sure if it
         should anyway). The arts.orm.isstreaming flag indicates that the
         entities collection is in streaming mode, not activily
         streaming. I think the arts.orm.isloaded flag would be best
@@ -4111,9 +4110,9 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         avoid confusion (even though its the chunked entities
         collections that are actually loaded).
         
-        It would be nice to have this fixed since the above
-        test (it_calls_sort_and_sorted_on_streamed_entities) suffered
-        from this bug (it has been corrected).
+        It would be nice to have this fixed since the above test
+        (it_calls_sort_and_sorted_on_streamed_entities) suffered from
+        this bug (it has been corrected).
         """
 
         arts = artists(orm.stream)
