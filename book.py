@@ -7036,7 +7036,54 @@ with book('Hacking Carapacian Core'):
           ''')
 
     with section('Streaming'):
-      ...
+      print('''
+        When writing OLTP application, we typically work with only a few
+        records from the database at a time. However, other types of
+        applications, such as reporting, data analysis and data
+        exporting, we want to work with a large number of records at a
+        time. However, we also want to be careful not to load to much
+        data in memory so as not to overwhelm the system. This is where
+        streaming comes in.
+
+        Using the `orm.stream` class, we are able to configure
+        queries to only load a specific number of entities from the
+        database at a time when we perform queries.
+      '''
+
+      with listing('Using `orm.stream` to load all Texan customers'):
+        for cust in customers(orm.stream, state='TX'):
+          ...
+
+      print('''
+        Using streaming is as simple as passing a reference to
+        `orm.stream` to the collection's constructor. It doesn't
+        matter where the `orm.stream` class is passed in, as long as it
+        is before any keyword arguments.
+
+        In the above example, we are simply interating over the
+        `customers` whose state is "TX". At the time of this writing,
+        the default **chunksize** is 100 (see orm.stream.__init__). This
+        means that only 100 customer records will be pulled from the
+        database at any given time. This is good news for memory
+        consumption since otherwise we would be loading all the
+        customers from Texas which, in many database, could be a very
+        large number. 
+
+        If the default `chunksize` does not suit your needs, you can
+        change it by instantiating an `orm.stream` object and passing
+        that in instead. For example, if we wanted the `chunksize` to be
+        20,000, we would do the following.
+      ''')
+
+      with listing('Setting the chunksize'):
+        for cust in customers(orm.stream(chunksize=20_000), state='TX'):
+          ...
+
+      print('''
+        We can also sort the 
+        
+        
+      ''')
 
     with section('Security', id='ea38ee04'):
 
