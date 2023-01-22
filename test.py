@@ -5097,7 +5097,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             for pres in art.presentations:
                 self.is_(art, pres.artist)
 
-    def it_loads_specialized_constituents(self):
+    def it_loads_subentity_constituents(self):
         """ Ensure that when loading constituents, the most specialized
         entity objects are made available.
         """
@@ -5128,7 +5128,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(pres.id, pres1.id)
             self.type(type(pres), pres1)
 
-    def it_loads_specialized_entity_objects(self):
+    def it_loads_subentity_objects(self):
         press = presentations()
         press += presentation.getvalid()
         press += concert.getvalid()
@@ -5181,7 +5181,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(pres.id, pres1.id)
             self.type(type(pres), pres1)
 
-    def it_streams_specialized_entity_objects(self):
+    def it_streams_subentity_objects(self):
         press = presentations()
         press += presentation.getvalid()
         press += concert.getvalid()
@@ -5207,7 +5207,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(pres.id, pres1.id)
             self.type(type(pres), pres1)
 
-    def it_loads_specialized_composite(self):
+    def it_loads_subentit_composite(self):
         ''' artist.presentations '''
         art = artist.getvalid()
 

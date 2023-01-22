@@ -661,6 +661,8 @@ class stream(entitiesmod.entity):
         :param: int chunksize: The number of records to load (or chunk)
         at a time.
         """
+
+        # TODO We should change `chunksize` to just `size`. 
         self.cursor = self.cursor(self)
         self.chunksize = chunksize
         self.orderby = ''
