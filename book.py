@@ -7056,9 +7056,9 @@ with book('Hacking Carapacian Core'):
 
       print('''
         Using streaming is as simple as passing a reference to
-        `orm.stream` to the collection's constructor. It doesn't
-        matter where the `orm.stream` class is passed in, as long as it
-        is before any keyword arguments.
+        `orm.stream` to the collection's constructor. It doesn't matter
+        where the `orm.stream` class is passed in, as long as it is
+        before any keyword arguments.
 
         In the above example, we are simply interating over the
         `customers` whose state is "TX". At the time of this writing,
@@ -7072,7 +7072,7 @@ with book('Hacking Carapacian Core'):
         If the default `chunksize` does not suit your needs, you can
         change it by instantiating an `orm.stream` object and passing
         that in instead. For example, if we wanted the `chunksize` to be
-        20,000, we would do the following.
+        20,000, we would do the following:
       ''')
 
       with listing('Setting the chunksize'):
@@ -7080,10 +7080,62 @@ with book('Hacking Carapacian Core'):
           ...
 
       print('''
-        We can also sort the 
-        
-        
+        Iterating is one way to read the contents of a stream. However
+        using the indexer works as well.
       ''')
+
+        with listing('Using the indexor with a streaming collection'):
+          custs = customers(orm.stream, state='TX')
+
+          # Get the first, second and last element from the streamed
+          # collection
+          firstcust   =  custs[0]
+          secondcust  =  custs[1]
+          lastcust    =  custs[-1]
+
+      print('''
+        As you can see above, we were even able to get the last customen
+        by using an index of -1. Note that this is the last customer of
+        the stream; not just whatever chunk the stream happens to be on.
+        The ORM works hard to allow you to forget you are using a
+        streaming collection.
+
+        Indexing using slices work as well:
+      ''')
+
+        with listing('Indexing using slices on streaming collection'):
+          custs = customers(orm.stream, state='TX')
+
+          # Get the first and second element from the streamed collection
+          first, second   =  custs[0:1]
+
+          # Get the penultimate and last element
+          pen, last = custs[custs.count - 2:]
+
+          # We can make the above simpler by using custs[-2:]
+          pen, last = custs[-2:]
+
+      print('''
+        The familiar ordinal properties work as well:
+      ''')
+
+        with listing('Using ordinal properties on streaming collection'):
+          custs = customers(orm.stream, state='TX')
+
+          # Get first then second
+          first        =  custs.first
+          second       =  custs.second
+
+          # Get penultimate then last
+          penultimate  =  cust.penultimate
+          last         =  cust.last
+      print('''
+        Again, it's important to note that the `penultimate` and the
+        `last` are the actual last elements of the stream, not just
+        whatever chunk the stream is currently on. The ORM will work to
+        load whetever data is needed from the database to correctly
+        satisfy whatever index or ordinal is being requested.
+      '''
 
     with section('Security', id='ea38ee04'):
 
