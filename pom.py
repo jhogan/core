@@ -733,13 +733,17 @@ function ajax(e){
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
-    // Assume we are in SPA mode if the the element is a navigation link
-    var inspa = isnav
+    // XXX Update tester.py to test changes to inspa
 
+    // If the element being clicked is a nav link
     if (isnav){
-        // Prevent the browser from trying to load the HREF at the
-        // navigation link. We will do that here.
-        e.preventDefault()
+        // If we are in SPA mode
+
+        if (inspa){
+            // Prevent the browser from trying to load the HREF at the
+            // navigation link. We will do that here.
+            e.preventDefault()
+        }
     }
 
     // If we have an <input> with a type of "text"...
@@ -889,6 +893,9 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         main.outerHTML, null, window.location.pathname
     )
 });
+
+// We default to non-SPA.
+inspa = false
 '''
         #// Return the JavaScript
         return r
