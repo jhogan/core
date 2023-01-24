@@ -7094,32 +7094,35 @@ with book('Hacking Carapacian Core'):
           lastcust    =  custs[-1]
 
       print('''
-        As you can see above, we were even able to get the last customen
-        by using an index of -1. Note that this is the last customer of
-        the stream; not just whatever chunk the stream happens to be on.
-        The ORM works hard to allow you to forget you are using a
-        streaming collection.
+        In addition to getting the first and second entity objects from
+        th estream, we were also able to get the last by using an index
+        of -1. Note that this is the last customer of the stream, not
+        the last of whatever chunk the stream happens to be on.  The ORM
+        will load whatever data it needs from the database to return
+        what is being asked of it.
 
         Indexing using slices work as well:
       ''')
 
-        with listing('Indexing using slices on streaming collection'):
-          custs = customers(orm.stream, state='TX')
+      with listing('Indexing using slices on streaming collection'):
+        custs = customers(orm.stream, state='TX')
 
-          # Get the first and second element from the streamed collection
-          first, second   =  custs[0:1]
+        # Get the first and second element from the streamed collection
+        first, second   =  custs[0:1]
 
-          # Get the penultimate and last element
-          pen, last = custs[custs.count - 2:]
+        # Get the penultimate and last element
+        pen, last = custs[custs.count - 2:]
 
-          # We can make the above simpler by using custs[-2:]
-          pen, last = custs[-2:]
+        # We can make the above simpler by using custs[-2:]
+        pen, last = custs[-2:]
 
       print('''
-        The familiar ordinal properties work as well:
+        The ordinal properties work as well:
       ''')
 
-        with listing('Using ordinal properties on streaming collection'):
+        with listing(
+          'Using ordinal properties on streaming collection'
+        ):
           custs = customers(orm.stream, state='TX')
 
           # Get first then second
@@ -7129,13 +7132,59 @@ with book('Hacking Carapacian Core'):
           # Get penultimate then last
           penultimate  =  cust.penultimate
           last         =  cust.last
+
       print('''
         Again, it's important to note that the `penultimate` and the
         `last` are the actual last elements of the stream, not just
         whatever chunk the stream is currently on. The ORM will work to
         load whetever data is needed from the database to correctly
         satisfy whatever index or ordinal is being requested.
-      '''
+
+        Aggregate attributes work on streamed collections as well. For
+        example, to get the number of objects that are in the steam, we
+        can call its count method.
+      ''')
+
+      with listing(
+        'Using aggregate attributes on streaming collection'
+      ):
+        custs = customers(orm.stream, state='TX')
+
+        # The count attribute will return however many entity objects
+        # are in the stream. It will be of type int and always be
+        # greater than or equal to 0.
+        type(int, custs.count)
+        ge(0, custs.count)
+
+      print('''
+        To sort a streaming collection, you need to call the `sort()` or
+        `sorted()` method before accessing the contents of the stream.
+        This is usually done immediatly after construction:
+      ''')
+
+      with listing('Sorting streamed collections'):
+        custs = customers(orm.stream, state='TX')
+
+        # Sort the custs insitu by firstname
+        custs.sort('firstname')
+
+        # Iterate starting with the customers whose firstnames would
+        # come first lexicographically
+        for cust in custs:
+          ...
+
+        # Reinstantiate
+        custs = customers(orm.stream, state='TX')
+
+        # Get a new customers stream where sorting is done one the
+        # firstname
+        custs1 = custs.sorted('firstname')
+
+        # Iterate starting with the customers whose firstnames would
+        # come first lexicographically
+        for cust in custs1:
+          ...
+
 
     with section('Security', id='ea38ee04'):
 
