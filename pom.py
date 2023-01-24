@@ -856,7 +856,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         r += '''
     // For each currently supported trigger (you may
     // have to update Triggers if the event you want to
-    // support doesn't exist
+    // support doesn't exist)
     for (trig of trigs){
         var els = document.querySelectorAll(
             '[data-' + trig + '-handler]'
@@ -2404,7 +2404,7 @@ class message(dom.article):
             details = dom.details(class_='traceback')
             self += details
 
-            details += dom.summary('Traceback')
+            details += dom.summary('Stacktrace')
             details += traceback(ex)
         else:
             p.text = msg
