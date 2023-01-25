@@ -44,7 +44,6 @@ import html
 import json
 import logs
 import orm
-import os
 import party
 import pdb
 import pom
@@ -254,7 +253,6 @@ class application:
                     if isinstance(ex, HttpError):
                         # Call the sites error page for the given
                         # status 
-                        lang = req.language
                         path = f'/error/{ex.status}'
                         pg = req.site(path)
 

@@ -3038,6 +3038,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # resulting in a MySQL error.
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
+
+            # TODO This seems odd to me. Would we not want a clone
+            # version of self. Shouldn't the following be true:
+            #
+            #     es = entities(orm.stream)
+            #     assert es is not es.orm.sorted()
+            #
             return self
         else:
             reverse = False if reverse is None else reverse
