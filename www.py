@@ -261,6 +261,11 @@ class application:
                             # Clear and invoke the page
                             pg.clear()
                             pg(ex=ex)
+                            # XXX Make argument req.language. Currently
+                            # it returns None because we don't use the
+                            # /files/ prefix to distinguish between
+                            # files and pages.
+                            pg._lingualize('en')
 
                         # Else if no page was provided by the site
                         else:
@@ -925,14 +930,7 @@ class request:
                     main.attributes += 'spa-data-path', path
 
                 if not self.isevent:
-                    mnus = pg.header.menus
-                    lang = self.language
-                    for a in mnus['a']:
-                        href  =  a.href
-                        sep   =  os.path.sep
-                        a.href = os.path.join(
-                            sep, lang, href.lstrip(sep)
-                        )
+                    pg._lingualize(self.language)
 
                 if not self.ishead:
                     # If we are processing an event

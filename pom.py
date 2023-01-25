@@ -1541,6 +1541,17 @@ class page(dom.html):
 
         self.clear()
 
+    def _lingualize(self, lang):
+        """ XXX """
+        # XXX Make idempotent
+        mnus = self.header.menus
+        for a in mnus['a']:
+            href  =  a.href
+            sep   =  os.path.sep
+            a.href = os.path.join(
+                sep, lang, href.lstrip(sep)
+            )
+
     @property
     def spa(self):
         """ If this `page` object is a subpage of a SPA, return its SPA

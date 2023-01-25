@@ -1812,6 +1812,16 @@ class page(tester.tester):
         finally:
             orm.forget(derpnet)
 
+    def it_gets_lingualized_links_on_error(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+        res = tab.navigate('/en/i-dont-exist', ws)
+        self.eq(404, res.status)
+
+        for a in tab['header a']:
+            self.startswith('/en/', a.href)
+
     def it_raises_im_a_302(self):
         ws = foonet()
 
