@@ -7141,7 +7141,7 @@ with book('Hacking Carapacian Core'):
         satisfy whatever index or ordinal is being requested.
 
         Aggregate attributes work on streamed collections as well. For
-        example, to get the number of objects that are in the steam, we
+        example, to get the number of objects that are in the stream, we
         can call its count method.
       ''')
 
@@ -7176,7 +7176,7 @@ with book('Hacking Carapacian Core'):
         # Reinstantiate
         custs = customers(orm.stream, state='TX')
 
-        # Get a new customers stream where sorting is done one the
+        # Get a new customers stream where sorting is done on the
         # firstname
         custs1 = custs.sorted('firstname')
 
@@ -7185,6 +7185,36 @@ with book('Hacking Carapacian Core'):
         for cust in custs1:
           ...
 
+      print('''
+        Like non-streaming collections, we can sort in descending
+        order by pasing in to `sort` or `sorted` the value of `True` for
+        the `reverse` parameter.
+
+          custs = customers(orm.stream, state='TX')
+          custs.sort('firstname', reverse=True)
+
+        It's also worth noting that, as with non-streaming entities,
+        sorting defaults to the `id` field if a sort `key` is not
+        provided. That is to say, the following two statements are
+        equivalent:
+
+          # Sort by id
+          custs.sort()
+          
+          # Also sort by id
+          custs.sort('id')
+        
+        Sorting streams is an important reason for defering the
+        execution of the query. When we call the `sort()` or `sorted()`
+        method, we are configuring the query (which will determine the
+        `ORDER BY` clause used by the SQL). Deferred execution allows us
+        to maintain the sorting interface used by all `entities`
+        collection which enhances API consistency and memorabilty.
+        However, it's important to keep in mind that sorting in streamed
+        entities is done at the database level (via the `ORDER BY`
+        clause) and not in memory &mdash; as is the case for most other
+        entities collections.
+      ''')
 
     with section('Security', id='ea38ee04'):
 
