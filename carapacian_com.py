@@ -350,6 +350,35 @@ class ticketsspa(pom.spa):
         class new(pom.page):
             def main(self):
                 self.main += dom.p('Create a person')
+                self.main += dom.html('''
+                <table>
+                  <thead>
+                    <tr>
+                      <th>firstname</th>
+                      <th>lastname</th>
+                      <th>username</th>
+                      <th>email address</th>
+                      <th>dob</th>
+                      <th>active</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>William</td>
+                      <td>Shakespeare</td>
+                      <td>Shakespeare</td>
+                      <td>
+                        <a href="person?id=abc123">
+                          william@shakespeare.com
+                        </a>
+                      </td>
+                      <td>April 23, 1564</td>
+                      <td>no</td>
+                    </tr>
+                  </tbody>
+                </table>
+                ''')
+
 
         ''' Class members '''
         def __init__(self, *args, **kwargs):
@@ -357,7 +386,66 @@ class ticketsspa(pom.spa):
             self.pages += ticketsspa.people.new()
         
         def main(self):
-            self.main += dom.p('People')
+            self.main += dom.html('''
+            <table>
+              <thead>
+                <tr>
+                  <th>firstname</th>
+                  <th>lastname</th>
+                  <th>username</th>
+                  <th>email address</th>
+                  <th>dob</th>
+                  <th>active</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>William</td>
+                  <td>Shakespeare</td>
+                  <td>Shakespeare</td>
+                  <td>
+                    <a href="person?id=abc123">
+                      william@shakespeare.com
+                    </a>
+                  </td>
+                  <td>April 23, 1564</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Jane</td>
+                  <td>Austen</td>
+                  <td>JaneAusten</td>
+                  <td>jane@austen.com</td>
+                  <td>December 16, 1775</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Charles</td>
+                  <td>Dickens</td>
+                  <td>CDickens</td>
+                  <td>charles@dickens.com</td>
+                  <td>February 7, 1812</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Mark</td>
+                  <td>Twain</td>
+                  <td>MarkTwain</td>
+                  <td>mark@twain.com</td>
+                  <td>November 30, 1835</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>F. Scott</td>
+                  <td>Fitzgerald</td>
+                  <td>FScottF</td>
+                  <td>f.scott@fitzgerald.com</td>
+                  <td>September 24, 1896</td>
+                  <td>no</td>
+                </tr>
+              </tbody>
+            </table>
+            ''')
 
     class backlog(pom.page):
         def main(self):
