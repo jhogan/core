@@ -734,16 +734,34 @@ function ajax(e){
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
+    // XXX Analogize
+    var nav = src.closest('nav');
+
     // XXX Update tester.py to test changes to inspa
 
     // If the element being clicked is a nav link
     if (isnav){
         // If we are in SPA mode
-
         if (inspa){
+            // XXX Analogize
+            // Is the link being from the Spa menu
+            var isspanav = nav.getAttribute('aria-label') == 'Spa';
+
+            // XXX Analogize
+            if (!isspanav){
+                // If we are in SPO mode but not in the Spa menu, allow
+                // for traditional navigation.
+                return;
+            }
+
             // Prevent the browser from trying to load the HREF at the
             // navigation link. We will do that here.
             e.preventDefault()
+        }else{
+            // If the user clicked a nav link, but we aren't in SPA
+            // mode, allow the browser to navigate to the link in the
+            // traditional (non AJAX) way.
+            return;
         }
     }
 
@@ -893,10 +911,16 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     window.history.pushState(
         main.outerHTML, null, window.location.pathname
     )
+
+    // XXX Add this to the testers.py analog
+    // We default to non-SPA.
+    if (main.hasAttribute('spa-data-path')){
+        inspa = true
+    }else{
+        inspa = false
+    }
 });
 
-// We default to non-SPA.
-inspa = false
 '''
         #// Return the JavaScript
         return r
