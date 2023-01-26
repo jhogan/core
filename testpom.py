@@ -3085,8 +3085,7 @@ class spa(pom.spa):
         self.main += dom.p('Welcome to the SPA')
 
         ''' SPA Menu '''
-        mnu = pom.menu(name='spa')
-        self.header.menus += mnu
+        self.header.menus += pom.menu.make(self.pages, 'spa')
 
 class google(pom.page):
     def main(self, **kwargs):
