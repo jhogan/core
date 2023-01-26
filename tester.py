@@ -724,6 +724,8 @@ class tester(entities.entity):
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.element_event)
+                    ev.append(obj=self.default_event)
+
 
             @property
             def referer(self):
