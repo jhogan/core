@@ -9835,6 +9835,8 @@ class eventargs(entities.eventargs):
         manipulate.
         """
 
+        self._preventDefault = False
+
         # Get the dom.html class reference so we can use it to parse
         # HTML.
         domhtml = sys.modules['dom'].html
@@ -9877,6 +9879,9 @@ class eventargs(entities.eventargs):
 
         # The name of the method that triggered the event
         self.trigger  =  trigger
+
+    def preventDefault(self):
+        self._preventDefault = True
 
     def __repr__(self):
         r = type(self).__name__
