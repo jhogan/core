@@ -513,6 +513,12 @@ class tester(entities.entity):
                 #
                 self.inspa     =  False
 
+            def default_event(self, src, eargs):
+                """
+                """
+                if eargs.preventDefault:
+                    return
+
             def element_event(self, src, eargs):
                 """ This event handler catches all events that happen to
                 elements in the _tab's DOM (.html), examins the elements
