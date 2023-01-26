@@ -1895,6 +1895,20 @@ class element(entities.entity):
 
         return self._parent
 
+    def closest(self, sels):
+        """ XXX
+        """
+        # Write test
+
+        rent = self
+        while rent:
+            if rent[sels].ispopulated:
+                return rent
+            rent = rent.parent
+
+        return None
+        
+
     @property
     def grandparent(self):
         """ The parent of the parent. If no grandparent element exist,
