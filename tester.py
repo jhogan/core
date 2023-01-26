@@ -599,9 +599,29 @@ class tester(entities.entity):
 
                 ''' Method logic '''
 
-                if isnav := is_nav_link(src):
-                    html = None
+                isnav = is_nav_link(src)
+                nav = src.closest('nav')
+
+                if isnav:
                     pg = src.attributes['href'].value
+                    if self.inspa:
+                        attr = nav.attributes['aria-label']
+                        isspanav = attr.value == 'Spa'
+
+                        B()
+                        if not isspanav:
+                            return
+
+                        eargs.preventDefault()
+                    else:
+                        # If the user clicked a nav link, but we aren't
+                        # in SPA mode, allow the browser to navigate to
+                        # the link in the traditional (non AJAX) way.
+                        if not self.inspa and isnav:
+                            self.navigate(pg=pg, ws=self.site)
+                            return
+
+                    html = None
                 else:
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
@@ -615,14 +635,6 @@ class tester(entities.entity):
                     'src':      src.html,
                     'trigger':  eargs.trigger,
                 }
-
-                # If the "user" "clicked" on a link that was intended to
-                # navigate the tab to a different URL, and the tab isn't
-                # in SPA mode (i.e., `not self.inspa`), then we should
-                # do a traditional page navigation to the new page.
-                if not self.inspa and isnav:
-                    self.navigate(pg=pg, ws=self.site)
-                    return
 
                 # Make the XHR request to the page (pg) (or for the page
                 # if we are refreshing a subpage for an SPA) and site
