@@ -2213,6 +2213,11 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def hasattr(self, attr):
+        """ XXX """
+        # TODO Write tests
+        return attr in self.attributes
+
     def __contains__(self, el):
         return el in self.elements
 
