@@ -482,6 +482,7 @@ class tester(entities.entity):
             :abbr: tab
             """
             def __init__(self, tabs):
+                """ XXX """
                 super().__init__(tabs)
                 self._referer  =  None
                 self._html     =  None

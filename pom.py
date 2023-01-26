@@ -734,7 +734,6 @@ function ajax(e){
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
-    // XXX Analogize
     var nav = src.closest('nav');
 
     // XXX Update tester.py to test changes to inspa
@@ -749,7 +748,7 @@ function ajax(e){
 
             // XXX Analogize
             if (!isspanav){
-                // If we are in SPO mode but not in the Spa menu, allow
+                // If we are in SPA mode but not in the Spa menu, allow
                 // for traditional navigation.
                 return;
             }
@@ -912,7 +911,6 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         main.outerHTML, null, window.location.pathname
     )
 
-    // XXX Add this to the testers.py analog
     // We default to non-SPA.
     if (main.hasAttribute('spa-data-path')){
         inspa = true
