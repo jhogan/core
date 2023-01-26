@@ -726,6 +726,8 @@ class tester(entities.entity):
                     ev.append(obj=self.element_event)
                     ev.append(obj=self.default_event)
 
+                main = v['main'].only
+                self.inspa = main.hasattr('spa-data-path')
 
             @property
             def referer(self):

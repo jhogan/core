@@ -2916,6 +2916,22 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa/subpage', attrs['data-path'].value)
 
+    def it_puts_tab_inspa_mode(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        tab.inspa = True
+
+        # SPA pages should be put inspa mode
+        B()
+        tab.navigate('/en/spa', ws)
+        self.true(tab.inspa)
+
+        # Traditional pages should not be put inspa mode
+        tab.navigate('/', ws)
+        self.false(tab.inspa)
+
     def it_patches_spa_subpage_on_menu_click(self):
         ws = foonet()
 
@@ -2982,6 +2998,22 @@ class page(tester.tester):
         # Make sure the one paragraph in <main> identities itself as the
         # subpage. 
         self.eq('I am the subpage', ps.only.text)
+
+    def it_navigates_traditionally_from_nonspa_menu(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        # GET the subpage
+        res = tab.navigate('/en/spa', ws)
+
+        self.ok(res)
+
+        a = tab['header nav[aria-label=Admin a]'].first
+        B()
+        a.click()
+        print(tab)
+
 
     def it_navigates_to_pages_when_spa_is_disabled(self):
         ws = foonet()
