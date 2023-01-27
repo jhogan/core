@@ -515,6 +515,7 @@ class tester(entities.entity):
 
                 self._onbeforeunload = None
                 self._onafterload = None
+                self.url = None
 
             def default_event(self, src, eargs):
                 """
