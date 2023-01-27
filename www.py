@@ -2646,6 +2646,10 @@ class browser(entities.entity):
             self.expires  =  expires;  self.http_only  =  http_only
             self.same_site = same_site
 
+    class loadeventargs(entities.eventargs):
+        def __init__(self, url):
+            self.url = url
+
     def __init__(self):
         """ Create an instance of a browser.
         """

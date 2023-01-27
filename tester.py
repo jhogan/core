@@ -513,6 +513,9 @@ class tester(entities.entity):
                 #
                 self.inspa     =  False
 
+                self._onbeforeunload = None
+                self._onafterload = None
+
             def default_event(self, src, eargs):
                 """
                 """
@@ -770,6 +773,29 @@ class tester(entities.entity):
                 """
                 return self.html[sel]
 
+            # XXX Move these to www.browser._tab
+            @property
+            def onbeforeunload(self):
+                """ XXX """
+                if not self._onbeforeunload:
+                    self._onbeforeunload = entities.event()
+                return self._onbeforeunload
+
+            @onbeforeunload.setter
+            def onbeforeunload(self, v):
+                self._onbeforeunload = v
+
+            @property
+            def onafterload(self):
+                """ XXX """
+                if not self._onafterload:
+                    self._onafterload = entities.event()
+                return self._onafterload
+
+            @onafterload.setter
+            def onafterload(self, v):
+                self._onafterload = v
+
             def __str__(self):
                 r = str(self.html)
 
@@ -787,8 +813,19 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
+
+                eargs = www.browser.loadeventargs(url=self.url)
+                self.onbeforeunload(self, eargs)
+
                 res = self.get(pg, ws)
                 self.html = res.html
+
+                self.url = ecommerce.url(
+                    address = f'http://{ws.host}/{pg.lstrip("/")}'
+                )
+
+                eargs = www.browser.loadeventargs(url=self.url)
+                self.onafterload(self, eargs)
                 return res
 
             def get(self, pg, ws, hdrs=None):
