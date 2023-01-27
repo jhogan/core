@@ -519,6 +519,10 @@ class tester(entities.entity):
                 if eargs.cancel:
                     return
 
+                if isinstance(eargs.src, dom.a):
+                    pg = src.attributes['href'].value
+                    self.navigate(pg=pg, ws=self.site)
+
             def element_event(self, src, eargs):
                 """ This event handler catches all events that happen to
                 elements in the _tab's DOM (.html), examins the elements
