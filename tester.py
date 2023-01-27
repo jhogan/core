@@ -608,7 +608,6 @@ class tester(entities.entity):
                         attr = nav.attributes['aria-label']
                         isspanav = attr.value == 'Spa'
 
-                        B()
                         if not isspanav:
                             return
 

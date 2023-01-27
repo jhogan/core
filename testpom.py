@@ -3047,6 +3047,9 @@ class statistics(pom.page):
     def __init__(self):
         super().__init__()
 
+    def main(self):
+        pass
+
 class reports(pom.page):
     def __init__(self):
         super().__init__()

@@ -1383,6 +1383,9 @@ class element(entities.entity):
     def click(self):
         """ Triggers the `click` event for this element.
         """
+        # TODO I think we can remove the `return` keyword from these
+        # lines. The return value is always None because it is calling
+        # the event (entities.event.__call__)
         return self._trigger('click')()
 
     @property
