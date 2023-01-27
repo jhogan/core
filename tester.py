@@ -516,7 +516,7 @@ class tester(entities.entity):
             def default_event(self, src, eargs):
                 """
                 """
-                if eargs.preventDefault:
+                if eargs.cancel:
                     return
 
             def element_event(self, src, eargs):

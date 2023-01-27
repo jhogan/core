@@ -9838,7 +9838,7 @@ class eventargs(entities.eventargs):
         manipulate.
         """
 
-        self._preventDefault = False
+        self.cancel = False
 
         # Get the dom.html class reference so we can use it to parse
         # HTML.
@@ -9884,7 +9884,7 @@ class eventargs(entities.eventargs):
         self.trigger  =  trigger
 
     def preventDefault(self):
-        self._preventDefault = True
+        self.cancel = True
 
     def __repr__(self):
         r = type(self).__name__
