@@ -3000,6 +3000,15 @@ class page(tester.tester):
         self.eq('I am the subpage', ps.only.text)
 
     def it_navigates_traditionally_from_nonspa_menu(self):
+        before = after = None
+        def tab_onbeforeunload(src, eargs):
+            nonlocal before
+            before = eargs
+
+        def tab_onafterload(src, eargs):
+            nonlocal after
+            after = eargs
+
         ws = foonet()
 
         tab = self.browser().tab()
@@ -3010,10 +3019,18 @@ class page(tester.tester):
         self.ok(res)
 
         a = tab['header nav[aria-label=Admin a]'].first
-        B()
-        a.click()
-        print(tab)
 
+        tab.onbeforeunload += tab_onbeforeunload 
+        tab.onafterload += tab_onafterload 
+
+        r = a.click()
+
+        main = tab['main'].only
+
+        path = main.attributes['data-path'].value
+        self.eq('/admin/users/statistics', path)
+        self.eq('/en/spa', before.url.path)
+        self.eq('/en/admin/users/statistics', after.url.path)
 
     def it_navigates_to_pages_when_spa_is_disabled(self):
         ws = foonet()
