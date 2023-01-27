@@ -1899,9 +1899,13 @@ class element(entities.entity):
         return self._parent
 
     def closest(self, sels):
-        """ XXX
+        """ Asends the DOM tree and returns the first element that
+        matches the `sels` CSS selectors.
+
+        :param: sels str|dom.selectors: The CSS selector used in
+        selection of the ancester.
         """
-        # Write test
+        # TODO Write test
 
         rent = self
         while rent:
@@ -1910,7 +1914,6 @@ class element(entities.entity):
             rent = rent.parent
 
         return None
-        
 
     @property
     def grandparent(self):
