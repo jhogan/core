@@ -736,17 +736,13 @@ function ajax(e){
 
     var nav = src.closest('nav');
 
-    // XXX Update tester.py to test changes to inspa
-
     // If the element being clicked is a nav link
     if (isnav){
         // If we are in SPA mode
         if (inspa){
-            // XXX Analogize
-            // Is the link being from the Spa menu
+            // Is the link from the Spa menu
             var isspanav = nav.getAttribute('aria-label') == 'Spa';
 
-            // XXX Analogize
             if (!isspanav){
                 // If we are in SPA mode but not in the Spa menu, allow
                 // for traditional navigation.
@@ -1541,7 +1537,6 @@ class page(dom.html):
 
     def _lingualize(self, lang):
         """ XXX """
-        # XXX Make idempotent
         mnus = self.header.menus
         for a in mnus['a']:
             href  =  a.href

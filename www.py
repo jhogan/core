@@ -261,10 +261,11 @@ class application:
                             # Clear and invoke the page
                             pg.clear()
                             pg(ex=ex)
-                            # XXX Make argument req.language. Currently
-                            # it returns None because we don't use the
-                            # /files/ prefix to distinguish between
-                            # files and pages.
+
+                            # FIXME:bea5347d Make argument req.language.
+                            # Currently it returns None because we don't
+                            # use the /files/ prefix to distinguish
+                            # between files and pages.
                             pg._lingualize('en')
 
                         # Else if no page was provided by the site

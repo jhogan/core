@@ -1208,7 +1208,6 @@ class page(tester.tester):
         wsmnu = ws.sidebars['left']['nav'].first
         pgmnu = pg.sidebars['left']['nav'].first
 
-
         # Make sure the site's menu was not changed
         self.eq(wsmnu.items.count + 1, pgmnu.items.count)
 
@@ -2924,7 +2923,6 @@ class page(tester.tester):
         tab.inspa = True
 
         # SPA pages should be put inspa mode
-        B()
         tab.navigate('/en/spa', ws)
         self.true(tab.inspa)
 
