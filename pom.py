@@ -1539,6 +1539,11 @@ class page(dom.html):
         """ XXX """
         mnus = self.header.menus
         for a in mnus['a']:
+
+            # If the anchor has already been lingualized
+            if a.href.startswith(f'/{lang}/'):
+                continue
+
             href  =  a.href
             sep   =  os.path.sep
             a.href = os.path.join(
