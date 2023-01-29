@@ -1195,7 +1195,10 @@ class page(tester.tester):
 
                 sb = self.sidebars['left']
                 mnu = sb['nav'].first
-                mnu.items += pom.menu.item('About stats')
+                itm = pom.menu.item('About stats')
+                print(mnu)
+                mnu.items += itm
+                print(mnu)
 
         ws = foonet()
 
