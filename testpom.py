@@ -471,6 +471,14 @@ class menu_item(tester.tester):
         ''')
         self.eq(html, li.pretty)
 
+    def it_calls_clone(self):
+        ''' Add a text item '''
+        li = pom.menu.item('A menu item')
+        li1 = li.clone()
+
+        self.eq(li.html, li1.html)
+        self.eq(li.pretty, li1.pretty)
+
     def it_calls_repr(self):
         ''' Add a text item '''
         li = pom.menu.item('A menu item')
