@@ -1154,7 +1154,6 @@ class menu(dom.nav):
         def text(self):
             """ Return the text of the item.
             """
-
             for el in self:
                 if isinstance(el, dom.text):
                     return el.value
@@ -1350,7 +1349,7 @@ class menu(dom.nav):
         #     <ul></ul>
         #   </nav>
         # 
-        # We could solve this problem by lazing loading the items using
+        # We could solve this problem by lazy-loading the items using
         # a getter @property. However, the name of that method would be
         # pom.menu.items, and this has already been taken (see the
         # `items` class above).
