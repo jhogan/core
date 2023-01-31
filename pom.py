@@ -1400,7 +1400,7 @@ class menu(dom.nav):
         """ Create and return a new menu based on this menu.
         """
         mnu = type(self)(self.name)
-        mnu += self.items.clone()
+        mnu.items = self.items.clone()
         mnu.attributes = self.attributes.clone()
         return mnu
 
