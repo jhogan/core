@@ -1228,7 +1228,7 @@ class menu(dom.nav):
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
 
-            itm.items += self.items.clone()
+            itm.items = self.items.clone()
 
             itm.attributes = self.attributes.clone()
             return itm
