@@ -2973,9 +2973,8 @@ class page(tester.tester):
         The SPA page itself may have menu items in its <head>, for
         example, which the subpage alone would not be aware of and could
         not produce. Thus the SPA page needs to be returned with the
-        subpage embedded in ins <main> tag.
+        subpage embedded in its <main> tag.
         """
-
         ws = foonet()
 
         tab = self.browser().tab()
@@ -3097,11 +3096,12 @@ class home(pom.page):
         return 'index'
 
 class spa(pom.spa):
-    ''' Subpages '''
+    ''' Inner classes of spa '''
     class subpage(pom.page):
         def main(self):
             self.main += dom.p('I am the subpage')
 
+    ''' Members of spa '''
     def __init__(self):
         super().__init__()
         self.pages += spa.subpage('subpage')
