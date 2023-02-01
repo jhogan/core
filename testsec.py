@@ -1533,7 +1533,6 @@ class proprietor(tester.tester):
             for sys in eng.systems:
                 self.startswith(f'{com.name} system', sys.name)
 
-
     def it_searches_subentities(self):
         engineers.orm.truncate()
         hackers.orm.truncate()

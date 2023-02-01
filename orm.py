@@ -237,7 +237,7 @@ TODOs:
     provide support for this kind of thing. 
 
     Though this doesn't seem to be a problem for most GEM classes at the
-    moment, any ORM entity's will have an 'owner' and 'proprietor'
+    moment, any ORM entity will have an 'owner' and 'proprietor'
     property that, on assignment, will have to manually work around this
     limitation. Forgetting to do so can cause mysterious bugs.
 

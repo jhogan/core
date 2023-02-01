@@ -7221,8 +7221,16 @@ with book('Hacking Carapacian Core'):
       with section('Authorization', id='54014644'):
         ...
 
+
       with section('Authentication'):
-        ...
+        """
+          * Proprietor an multitencancy
+          *     Proprietor is shared by supers
+          * Public proprietor
+          * orm.security class
+          * creatability, retrievability, updatability, deletability
+        """
+
 
     with section('Validation', id='012b0632'):
       ...

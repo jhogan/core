@@ -14560,7 +14560,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
     def it_persists_publicly_owned_entity(self):
-        """ Make sure that entity's whose proprietor is
+        """ Make sure that entity object's whose proprietor is
         `party.parties.public` are persisted correctly. Public entities
         should be readable by any proprietor but only writable by the
         `party.parties.public` proprietor.
@@ -14643,7 +14643,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         ''' Modification tests '''
         art1.firstname = uuid4().hex
 
-        # A regular proprietor shouldn't, be default, be able create or
+        # A regular proprietor shouldn't, by default, be able create or
         # modify a public entity; only read.
         self.expect(orm.ProprietorError, art1.save)
 
@@ -14791,7 +14791,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
     def it_persists_publicly_owned_constituents(self):
         """ Make sure that the constituent collections owned by entity
         objects are persisted correctly when at least some of their
-        entity objects are owned by the paryt.parties.public proprietor.
+        entity objects are owned by the party.parties.public proprietor.
         Public entities should be readable by any proprietor but only
         writable by the public proprietor.
         """
