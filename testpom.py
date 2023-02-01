@@ -2912,7 +2912,12 @@ class page(tester.tester):
         self.eq('/blogs', attrs['data-path'].value)
 
         # Click on the Subpage menu item twice
-        sel = 'header>section>nav a[href|="/en/spa/subpage"]'
+
+        # Go back to /en/spa. The above click() would have have caused a
+        # traditional page navigation to /en/blogs
+        tab.navigate('/en/spa', ws)
+
+        sel = 'nav[aria-label=Spa] a[href|="/en/spa/subpage"]'
 
         a_subpage = tab[sel].only
 
@@ -2958,7 +2963,10 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
-        sel = 'header>section>nav a[href|="/en/spa/subpage"]'
+        # Go back to /en/spa. The above click() would have have caused a
+        # traditional page navigation to /en/blogs
+        tab.navigate('/en/spa', ws)
+        sel = 'nav[aria-label=Spa] a[href|="/en/spa/subpage"]'
         a_subpage = tab[sel].only
 
         a_subpage.click()
@@ -2992,10 +3000,10 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa/subpage', attrs['data-path'].value)
 
-        # Assert there is one menu item for /spa/subpage. This would
-        # only exist if we were getting the spa page; the subpage would
-        # not have it.
-        self.one(tab['header>section>nav a[href|="/en/spa/subpage"]'])
+        # Assert there is one menu item for /spa/subpage (in the Spa
+        # menu). This would only exist if we were getting the spa page;
+        # the subpage would not have it.
+        self.one(tab['nav[aria-label=Spa] a[href|="/en/spa/subpage"]'])
 
         ps = tab['main p']
 
@@ -3024,19 +3032,20 @@ class page(tester.tester):
 
         self.ok(res)
 
-        a = tab['header nav[aria-label=Admin a]'].first
+        a = tab['header nav[aria-label=Main a]'].first
 
         tab.onbeforeunload += tab_onbeforeunload 
         tab.onafterload += tab_onafterload 
+        print(tab)
 
         r = a.click()
 
         main = tab['main'].only
 
         path = main.attributes['data-path'].value
-        self.eq('/admin/users/statistics', path)
+        self.eq('/index', path)
         self.eq('/en/spa', before.url.path)
-        self.eq('/en/admin/users/statistics', after.url.path)
+        self.eq('/en/index', after.url.path)
 
     def it_navigates_to_pages_when_spa_is_disabled(self):
         ws = foonet()
