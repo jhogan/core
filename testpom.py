@@ -134,6 +134,10 @@ class foonet(pom.site):
         return r
 
 class menus(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party', 
+        super().__init__(mods=mods, *args, **kwargs)
+
     def it_calls_html(self):
         mnus = pom.menus()
 
