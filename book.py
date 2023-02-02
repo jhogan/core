@@ -7257,8 +7257,9 @@ with book('Hacking Carapacian Core'):
 
       with section('Authentication'):
         """
-          * Proprietor an multitencancy
+          * Proprietor an multitenancy
           *     Proprietor is shared by supers
+          *     Using the orm.proprietor context manager
           * Public proprietor
           * orm.security class
           * creatability, retrievability, updatability, deletability

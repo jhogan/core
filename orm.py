@@ -4265,7 +4265,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 e = v.orm.entity
                 while True:
                     for map in self_orm_mappings.foreignkeymappings:
-
                         # A flag to determine whether or not we set this
                         # map's `value` property.
                         set = False
@@ -4283,8 +4282,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # matching, but here we want to allow
                             # subentities.
                             set = True
+
                         elif map.isowner and attr == 'owner':
                             set = True
+
                         elif attr not in ('owner', 'proprietor'):
                             # If the value's (v) entity is the maps
                             # entity, this is the  map we are looking
@@ -5353,7 +5354,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # seeing if the attr is in one of the entitymapping's
             # entity's base classes.
             for map1 in self_orm.mappings.entitymappings:
-
                 if map1.isowner or map1.isproprietor:
                     continue
 
@@ -5900,7 +5900,7 @@ class mappings(entitiesmod.entities):
         """ Sort the mapping collection such that it is in a typical,
         predictable order for a collection of table columns. For
         example, the "id" column is typically the first in a list of
-        table colums followed by foreign keys. For example::
+        table colums followed by foreign keys:
 
             id                         # Primary Key
             createdat                  # Builtins
