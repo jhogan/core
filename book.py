@@ -7217,6 +7217,39 @@ with book('Hacking Carapacian Core'):
       ''')
 
     with section('Security', id='ea38ee04'):
+      
+      with section('Multitenancy and the `proprietor` attribute'):
+        print('''
+          Each entity stored as a record in the database is owned by a
+          **proprietor**. A proprietor is a party (such as a company or
+          a person) who has legal ownership of the data in the given
+          entity.
+
+          The ORM only allows proprietors access to the entities they
+          own, i.e., **multitenancy** is supproted at the ORM level. 
+
+          When a program or script begins to use the ORM, it is
+          responsible for identifying who the proprietor is and
+          informing the ORM. The following is an example of setting a
+          proprietor.
+        ''')
+
+        with listing('Setting the proprietor');
+          # Create a party that will be the current proprietor
+          bynd = party.company(name='Beyond Meat')
+
+          # Get the instance of the `orm.security` singleton
+          sec = orm.security()
+
+          # Tell the ORM who the current proprietor is
+          sec.proprietor = bynd
+
+        print('''
+          Above, we create a company called `bynd`. We get the
+          `orm.security` singleton instance, and we set its `proprietor`
+          attribute to `bynd`. Now the ORM knows who the proprietor is.
+        ''')
+
 
       with section('Authorization', id='54014644'):
         ...
