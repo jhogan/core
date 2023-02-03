@@ -1104,7 +1104,6 @@ class menu(dom.nav):
         def clone(self):
             """ Create and return an ``items`` based on self.
             """
-
             itms = type(self)()
 
             for itm in self:

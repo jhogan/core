@@ -1471,10 +1471,15 @@ class element(entities.entity):
     ''' end of triggers and handlers '''
 
     def remove(self, el=None):
-        """ Removes ``el`` from this ``element``'s child elements.
+        """ Removes ``el`` from this `element`'s child elements. If `el`
+        is not given, self will be removed from its parent. 
 
-        :param: el element: The element that we want to remove. If not
-        given, the element itself (i.e, self) is removed from the DOM.
+        When `el` is given, we are defering to self.entities.remove
+        which has a rich feature set. See the docstring at
+        `entities.entities.remove` for full details.
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed.
         """
         if el:
             # Remove el from self's child elements.
@@ -2391,7 +2396,7 @@ class element(entities.entity):
     @property
     def last(self):
         return self.elements.last
-        
+
     def __str__(self):
         return self.pretty
 

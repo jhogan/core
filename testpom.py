@@ -3032,7 +3032,6 @@ class page(tester.tester):
 
         tab.onbeforeunload += tab_onbeforeunload 
         tab.onafterload += tab_onafterload 
-        print(tab)
 
         r = a.click()
 
