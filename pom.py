@@ -1353,7 +1353,23 @@ class menu(dom.nav):
         # pom.menu.items, and this has already been taken (see the
         # `items` class above).
         self.items = menu.items()
-        self += self.items
+
+    def __setattr__(self, attr, v):
+        """ XXX """
+        if attr == 'items':
+            try:
+                itms = self.__dict__['items']
+            except KeyError:
+                pass
+            else:
+                self.remove(lambda x: x is itms)
+
+            self.__dict__['items'] = v
+
+            self += self.items
+        else:
+            object.__setattr__(self, attr, v)
+        
 
     @classmethod
     def make(cls, pgs, name=None, itm=None):
