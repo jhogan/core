@@ -205,6 +205,17 @@ class menu(tester.tester):
         mnu = pom.menu(name='admin')
         self.eq('admin', mnu.name)
 
+    def it_calls_clone(self):
+        mnu = pom.menu(name='admin')
+
+        itms = mnu.items 
+        itms += pom.menu.item('File')
+        itms += pom.menu.item('Edit')
+
+        mnu1 = mnu.clone()
+        self.eq(mnu.html, mnu1.html)
+        self.eq(mnu.pretty, mnu1.pretty)
+
     def it_calls_html(self):
         mnu = pom.menu(name='admin')
 
