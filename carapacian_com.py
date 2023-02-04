@@ -89,9 +89,10 @@ class site(pom.site):
         hdr.menu = pom.menu(name='main')
 
         itms = hdr.menu.items
-        itms += pom.menu.item('Services')
-        itms += pom.menu.item('Products')
-        itms += pom.menu.item('Services')
+        itms += pom.menu.item('Services', '/services')
+        itms += pom.menu.item('Products', '/products')
+        itms += pom.menu.item('Tickets', '/tickets')
+        itms += pom.menu.item('Tickets Spa', '/ticketsspa')
 
         return hdr
 
@@ -339,32 +340,140 @@ class tickets(pom.page):
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
 
 class ticketsspa(pom.spa):
+    ''' Inner classes (pages) '''
     class new(pom.page):
         def main(self):
             self.main += dom.p('Create a ticket')
     
+    class people(pom.page):
+        ''' Inner classes (pages) '''
+        class new(pom.page):
+            def main(self):
+                self.main += dom.p('Create a person')
+                self.main += dom.html('''
+                <table>
+                  <thead>
+                    <tr>
+                      <th>firstname</th>
+                      <th>lastname</th>
+                      <th>username</th>
+                      <th>email address</th>
+                      <th>dob</th>
+                      <th>active</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>William</td>
+                      <td>Shakespeare</td>
+                      <td>Shakespeare</td>
+                      <td>
+                        <a href="person?id=abc123">
+                          william@shakespeare.com
+                        </a>
+                      </td>
+                      <td>April 23, 1564</td>
+                      <td>no</td>
+                    </tr>
+                  </tbody>
+                </table>
+                ''')
+
+
+        ''' Class members '''
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.pages += ticketsspa.people.new()
+        
+        def main(self):
+            self.main += dom.html('''
+            <table>
+              <thead>
+                <tr>
+                  <th>firstname</th>
+                  <th>lastname</th>
+                  <th>username</th>
+                  <th>email address</th>
+                  <th>dob</th>
+                  <th>active</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>William</td>
+                  <td>Shakespeare</td>
+                  <td>Shakespeare</td>
+                  <td>
+                    <a href="person?id=abc123">
+                      william@shakespeare.com
+                    </a>
+                  </td>
+                  <td>April 23, 1564</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Jane</td>
+                  <td>Austen</td>
+                  <td>JaneAusten</td>
+                  <td>jane@austen.com</td>
+                  <td>December 16, 1775</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Charles</td>
+                  <td>Dickens</td>
+                  <td>CDickens</td>
+                  <td>charles@dickens.com</td>
+                  <td>February 7, 1812</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>Mark</td>
+                  <td>Twain</td>
+                  <td>MarkTwain</td>
+                  <td>mark@twain.com</td>
+                  <td>November 30, 1835</td>
+                  <td>no</td>
+                </tr>
+                <tr>
+                  <td>F. Scott</td>
+                  <td>Fitzgerald</td>
+                  <td>FScottF</td>
+                  <td>f.scott@fitzgerald.com</td>
+                  <td>September 24, 1896</td>
+                  <td>no</td>
+                </tr>
+              </tbody>
+            </table>
+            ''')
+
+    class backlog(pom.page):
+        def main(self):
+            self.main += dom.p('Backlog')
+
+    class search(pom.page):
+        def main(self):
+            self.main += dom.p('Search')
+    
+    ''' Class members of `site` '''
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Main
+        self.pages += ticketsspa.backlog()
         self.pages += ticketsspa.new()
+        self.pages += ticketsspa.search()
+        self.pages += ticketsspa.people()
+
+        # People
+        self.pages.last.pages += ticketsspa.people.new()
 
     def main(self):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        mnu = pom.menu(name='spa')
-        self.header.menus += mnu
-
-        # Main
-        mnu.items  +=  pom.menu.item('Backlog',  'backlog')
-        mnu.items  +=  pom.menu.item('New',      'new')
-        mnu.items  +=  pom.menu.item('Search',   'search')
-
-        # People
-        mnu.items += pom.menu.item('People',  'people')
-        mnu.items.last.items += pom.menu.item('Add',  'add')
-
-    class backlog(dom.main):
-        pass
+        self.header.menus += pom.menu.make(self.pages, 'spa')
 
 # The Css for the site. See site.styles
 Css = '''

@@ -482,6 +482,8 @@ class tester(entities.entity):
             :abbr: tab
             """
             def __init__(self, tabs):
+                """ Create a new test browser tab.
+                """
                 super().__init__(tabs)
                 self._referer  =  None
                 self._html     =  None
@@ -512,12 +514,53 @@ class tester(entities.entity):
                 #
                 self.inspa     =  False
 
+                self._onbeforeunload = None
+                self._onafterload = None
+                self.url = None
+
+            def default_event(self, src, eargs):
+                """ This is the default event handler for all supported
+                browser events.
+
+                For example, when a user "click" a hyperlink, this
+                method will be called.
+
+                Note that currently, only some events are handled,
+                namely hyperclick clicks. Also note that events that
+                would be handled by a JavaScript event handler would
+                first go to the `element_event` handler first and then
+                be routed to their Python event handler. 
+
+                :param: src dom.element: The DOM element that triggered
+                the event.
+
+                :param: src dom.eventargs: The `dom.eventargs` which
+                contain the arguments for this event.
+                """
+
+                # If element_event called eargs.preventDefault,
+                # eargs.cancel will be True.
+                if eargs.cancel:
+                    return
+
+                # If a user clicked a hyperlink (dom.a) navigate the tab
+                # to the the new URL.
+                if isinstance(eargs.src, dom.a):
+                    pg = src.attributes['href'].value
+                    self.navigate(pg=pg, ws=self.site)
+
             def element_event(self, src, eargs):
                 """ This event handler catches all events that happen to
                 elements in the _tab's DOM (.html), examins the elements
                 and uses information found within the elements to
                 properly route execution to the "server-side" event
                 handler that is intended to capture the event.
+
+                :param: src dom.element: The DOM element that triggered
+                the event.
+
+                :param: src dom.eventargs: The `dom.eventargs` which
+                contain the arguments for this event.
                 """
 
                 ''' Inner functions '''
@@ -592,10 +635,28 @@ class tester(entities.entity):
 
                 ''' Method logic '''
 
-                if isnav := is_nav_link(src):
+                isnav = is_nav_link(src)
+                nav = src.closest('nav')
+
+                if isnav:
+                    pg = src.attributes['href'].value
+                    if self.inspa:
+                        attr = nav.attributes['aria-label']
+                        isspanav = attr.value == 'Spa'
+
+                        if not isspanav:
+                            return
+
+                        eargs.preventDefault()
+                    else:
+                        # If the user clicked a nav link, but we aren't
+                        # in SPA mode, allow the browser to navigate to
+                        # the link in the traditional (non AJAX) way.
+                        if not self.inspa and isnav:
+                            self.navigate(pg=pg, ws=self.site)
+                            return
+
                     html = None
-                    pg = '/' + src.root.lang 
-                    pg += src.attributes['href'].value
                 else:
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
@@ -609,14 +670,6 @@ class tester(entities.entity):
                     'src':      src.html,
                     'trigger':  eargs.trigger,
                 }
-
-                # If the "user" "clicked" on a link that was intended to
-                # navigate the tab to a different URL, and the tab isn't
-                # in SPA mode (i.e., `not self.inspa`), then we should
-                # do a traditional page navigation to the new page.
-                if not self.inspa and isnav:
-                    self.navigate(pg=pg, ws=self.site)
-                    return
 
                 # Make the XHR request to the page (pg) (or for the page
                 # if we are refreshing a subpage for an SPA) and site
@@ -706,6 +759,10 @@ class tester(entities.entity):
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.element_event)
+                    ev.append(obj=self.default_event)
+
+                main = v['main'].only
+                self.inspa = main.hasattr('spa-data-path')
 
             @property
             def referer(self):
@@ -748,7 +805,7 @@ class tester(entities.entity):
             def __str__(self):
                 r = str(self.html)
 
-                # TODO Add URL to return when url is available
+                # TODO Add URL to return
                 # r += str(self.url)
                 return r
 
@@ -762,8 +819,19 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
+
+                eargs = www.browser.loadeventargs(url=self.url)
+                self.onbeforeunload(self, eargs)
+
                 res = self.get(pg, ws)
                 self.html = res.html
+
+                self.url = ecommerce.url(
+                    address = f'http://{ws.host}/{pg.lstrip("/")}'
+                )
+
+                eargs = www.browser.loadeventargs(url=self.url)
+                self.onafterload(self, eargs)
                 return res
 
             def get(self, pg, ws, hdrs=None):

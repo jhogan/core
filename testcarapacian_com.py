@@ -80,6 +80,17 @@ class home(tester.tester):
 
         self.eq(f'{ws.title} | Index', res['html>head>title'].text)
 
+    def it_renders_menu(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/', ws)
+        print(tab)
+        self.status(200, res)
+
+        mnus = tab['header>section>nav[aria-label=Main]']
+        self.one(mnus)
+
     def it_has_correct_title(self):
         Title = 'Carapacian Sustainable Software | Index'
 
@@ -141,6 +152,17 @@ class tickets(tester.tester):
         self.eq(dt.date, today)
         self.eq(dt1.date, today)
 
+class ticketsspa(tester.tester):
+    def it_call_name(self):
+        pg = carapacian_com.tickets()
+        self.eq('tickets', pg.name)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.get('/en/ticketsspa', ws)
+        self.status(200, res)
 
 if __name__ == '__main__':
     tester.cli().run()

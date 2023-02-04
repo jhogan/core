@@ -921,7 +921,7 @@ class elements(entities.entities):
         return rms
 
     def __getitem__(self, sel):
-        ''' Get elements by an ordinal index or by a CSS3 selector.
+        """ Get elements by an ordinal index or by a CSS3 selector.
         Given `els` is an ``elements`` collection::
             
             # Get the first element of the collection of elememnts
@@ -941,7 +941,7 @@ class elements(entities.entities):
             els = els[sels]
 
         :param: sel int|slice|str|selectors: The indexer value.
-        '''
+        """
 
         if isinstance(sel, int) or isinstance(sel, slice):
             return super().__getitem__(sel)
@@ -1113,7 +1113,6 @@ class elements(entities.entities):
                 Append each element in the sequence.
 
         """
-
         # Convert object to text node if it is a str
         obj = self._text2element(obj)
 
@@ -1145,6 +1144,42 @@ class elements(entities.entities):
 
         # TODO: Return entities object to indicate what was unshifted
         super().unshift(e=obj)
+
+    def __contains__(self, e):
+        """ Returns True if e is in this `elements` collection, False
+        otherwise. 
+
+            assert e not in es
+
+            es += e
+
+            assert e in es
+
+        Typically, e will be of type `element` (a subclass of `entity`).
+        However, other types can be used.
+
+        :param e entity|str|int|iterable: The entity being sought.
+            if entity:
+                Simply return True if the entity is in self.
+
+            if iterable:
+                Iterate over each entity. If all entity are in self,
+                return True, False otherwise.
+
+            if int:
+                Use e as an index value. If the index is found, return
+                True.
+
+            if str:
+                Detremine if an entity in self with an `id` or `name`
+                attribute equals e. If so, return True, False otherwise.
+        """
+        # element objects are iterable, so handle here. The super()
+        # (entities.entities) handles iterables differently.
+        if isinstance(e, element):
+            return bool(len(self) and any(e is x for x in self))
+
+        return super().__contains__(e)
         
 class element(entities.entity):
     """ An abstract class from which all HTML5 elements inherit.
@@ -1182,6 +1217,31 @@ class element(entities.entity):
         assert tr.attributes['abbr'] == 'tla'
 
         :abbr: el
+
+    Collection interface
+    --------------------
+    `element` objects have certain behaviors that cause them to act like
+    collections. For example, the following will work:
+
+        ul = dom.ul()
+        li0 = dom.li()
+        li1 = dom.li()
+
+        for i, li in enumerate(ul):
+            if i == 0:
+                assert li is li0
+            elif i == 1:
+                assert li is li1
+            else:
+                assert False
+
+        assert li0 is ul[0]
+        assert li1 is ul[1]
+        assert li1 is ul.last
+
+    It would probably be a good idea to not add too many collection-like
+    properties to `element` because they are often subclassed and there
+    may arise naming conflicts.
     """
     # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
@@ -1323,6 +1383,9 @@ class element(entities.entity):
     def click(self):
         """ Triggers the `click` event for this element.
         """
+        # TODO I think we can remove the `return` keyword from these
+        # lines. The return value is always None because it is calling
+        # the event (entities.event.__call__)
         return self._trigger('click')()
 
     @property
@@ -1408,10 +1471,15 @@ class element(entities.entity):
     ''' end of triggers and handlers '''
 
     def remove(self, el=None):
-        """ Removes ``el`` from this ``element``'s child elements.
+        """ Removes ``el`` from this `element`'s child elements. If `el`
+        is not given, self will be removed from its parent. 
 
-        :param: el element: The element that we want to remove. If not
-        given, the element itself (i.e, self) is removed from the DOM.
+        When `el` is given, we are defering to self.entities.remove
+        which has a rich feature set. See the docstring at
+        `entities.entities.remove` for full details.
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed.
         """
         if el:
             # Remove el from self's child elements.
@@ -1497,11 +1565,154 @@ class element(entities.entity):
                     f'parent {rent}'
                 )
         
+    @property
+    def first(self):
+        """ Returns the first child element under this `element` object.
+        If the collection is empty, None is returned.
+        """
+        return self.elements.first
+
+    @property
+    def second(self):
+        """ Returns the second child element under this `element` object.
+        If the collection has fewer than 2 elements underneath, None is
+        returned.
+        """
+        return self.elements.second
+
+    @property
+    def third(self):
+        """ Returns the third child element under this `element` object.
+        If the collection has fewer than 3 elements underneath, None is
+        returned.
+        """
+        return self.elements.third
+
+    @property
+    def fourth(self):
+        """ Returns the fourth child element under this `element` object.
+        If the collection has fewer than 4 elements underneath, None is
+        returned.
+        """
+        return self.elements.fourth
+
+    @property
+    def seventh(self):
+        """ Returns the seventh child element under this `element` object.
+        If the collection has fewer than 7 elements underneath, None is
+        returned.
+        """
+        return self.elements.seventh
+
+    @property
+    def antepenultimate(self):
+        """ Returns the third-to-the-last child element under this
+        `element` object.  If the collection has fewer than 3 elements
+        underneath, None is returned.
+        """
+        return self.elements.antepenultimate
+
+    def pluck(self, *ss):
+        """ Returns a list of child elements under this `element` for the given
+        field names. 
+
+            ul = dom.ul()
+            ul += dom.li(id='1')
+            ul += dom.li(id='1')
+
+            assert [1, 2] == ul.pluck('id')
+
+        pluck() has an extensive feature set. The above just scratches
+        the surface. This method is a simple wrapper for
+        entities.entity.pluck. See the docstring there for more
+        information.
+        """
+        return self.elements.pluck(*ss)
+
+    @property
+    def count(self):
+        """ Return the number of child elements directly underneath this
+        `element`.
+        """
+        return self.elements.count
+
     def __getitem__(self, ix):
-        # Pass CSS selector to elements collection
+        """ Get elements by a CSS3 selector.
+
+        Example
+        -------
+            ul = dom.ul()
+            li1 = dom.li(name='listitem1')
+            li2 = dom.li(name='listitem2')
+
+
+            sels = 'li[name="listitem1"]'
+
+            # Alternativly:
+            #sels = dom.selectors(sels)
+
+            els = ul[sels]
+
+            assert els.count == 1
+            assert els.first is li1
+
+        :param: sel str|selectors: The selector.
+        """
+
+        # TODO: Support int and slices so ordinal indexes can be used.
+        # See dom.elements.__getitem__.
+
+        # Create an elements collection and add self to it. This way we
+        # can reuse dom.elements.__getitem__.
         els = elements()
         els += self
         return els[ix]
+
+    def pop(self):
+        """ Remove the `element` from the top of the collection and
+        return it.
+        """
+        # TODO Support the `ix` argument (see entities.entities.pop).
+        return self.elements.pop()
+
+    def __iter__(self):
+        """ Return the iterator from the `elements` attribute of this
+        `element` object. This allow the `element` to be iterable:
+
+            ul = dom.ul()
+            li = dom.li()
+
+            ul += li
+
+            for li1 in ul:
+                assert li is li1
+                break
+            else:
+                assert False
+                
+        """
+        yield from self.elements
+
+    def enumerate(self):
+        """ Returns the enumerator from this `element` object's
+        `elements` attribute. This allows us to do the following:
+
+            ul = dom.ul()
+            li = dom.li()
+            li1 = dom.li()
+
+            ul += li0
+            ul += li1
+
+            for i, li in ul.enumerate():
+                if i == 0:
+                    assert li is li0
+                eleif i == 1:
+                    assert li is li1
+                else:
+                    assert False
+        """
+        yield from self.elements.enumerate()
 
     @property
     def text(self):
@@ -1691,6 +1902,23 @@ class element(entities.entity):
             self._parent = None
 
         return self._parent
+
+    def closest(self, sels):
+        """ Asends the DOM tree and returns the first element that
+        matches the `sels` CSS selectors.
+
+        :param: sels str|dom.selectors: The CSS selector used in
+        selection of the ancester.
+        """
+        # TODO Write test
+
+        rent = self
+        while rent:
+            if rent[sels].ispopulated:
+                return rent
+            rent = rent.parent
+
+        return None
 
     @property
     def grandparent(self):
@@ -1996,6 +2224,23 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def hasattr(self, attr):
+        """ Returns True if this `element` has the attribute `attr` in
+        its collection of attributes, False otherwise.
+
+            html = dom.html('<p id="1234"></p>')
+            p = html['p'].only
+
+            assert p.hasattr('id') is True
+
+            assert p.hasattr('lang') is False
+
+        This method is imitative of the standard (W3C/WHATWG) DOM's
+        `Element.hasAttribute()` method.
+        """
+        # TODO Write tests
+        return attr in self.attributes
+
     def __contains__(self, el):
         return el in self.elements
 
@@ -2163,7 +2408,7 @@ class element(entities.entity):
     @property
     def last(self):
         return self.elements.last
-        
+
     def __str__(self):
         return self.pretty
 
@@ -7396,6 +7641,21 @@ class selectors(entities.entities):
     # Some modifications have been made to the code to better fit the
     # framework's standards. See LICENCE_cssselect.
 
+    # TODO The __repr__ for this class and its subsidiaries (such as
+    # selectors.elements) don't include the type name in their results.
+    # We would expect:
+    #
+    #     sels = selectors('p')
+    #     assert repr(sels.first) == 'selector(p)'
+    # 
+    # Instead we get
+    #
+    #     assert repr(self.first) == 'p'
+    # 
+    # This makes debugging suboptimal. It may be a somewhat difficult
+    # problem to fix since some of the logic may depend on the return
+    # value of __repr__. 
+
     ''' Inner classes '''
 
     class token(tuple):
@@ -8112,7 +8372,7 @@ class selectors(entities.entities):
         return r
 
     def __repr__(self):
-        """ A string representation of the selectors object. 
+        """ A string representation of this selectors object. 
         """
         return ', '.join(str(x) for x in self)
 
@@ -9598,6 +9858,8 @@ class eventargs(entities.eventargs):
         manipulate.
         """
 
+        self.cancel = False
+
         # Get the dom.html class reference so we can use it to parse
         # HTML.
         domhtml = sys.modules['dom'].html
@@ -9640,6 +9902,9 @@ class eventargs(entities.eventargs):
 
         # The name of the method that triggered the event
         self.trigger  =  trigger
+
+    def preventDefault(self):
+        self.cancel = True
 
     def __repr__(self):
         r = type(self).__name__

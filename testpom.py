@@ -96,8 +96,6 @@ class foonet(pom.site):
         self.sidebars += sb
         sb += mnus
 
-        ''' Footer  '''
-
     @classproperty
     def languages(cls):
         ''' A list of accepted languages by this site.
@@ -135,39 +133,182 @@ class foonet(pom.site):
         r.body = b64decode(Favicon)
         return r
 
-class pom_menu_item(tester.tester):
-    def it_calls__init__(self):
-        itm = pom.menu.item('A text item')
-        expect = self.dedent('''
-        <li>
-          A text item
-        </li>
-        ''')
-        self.eq(expect, itm.pretty)
-        self.eq(expect, str(itm))
+class menus(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'party', 
+        super().__init__(mods=mods, *args, **kwargs)
 
-        expect = '<li>A text item</li>'
-        self.eq(expect, itm.html)
+    def it_calls_html(self):
+        mnus = pom.menus()
 
-class _404(pom.page):
-    def main(self, ex: www.NotFoundError):
-        self.title = 'Page Not Found'
-        self.main += dom.h1('Page Not Found')
-        self.main += dom.h2('Foobar apologizes', class_="apology")
+        mnu = pom.menu(name='admin')
+        mnu1 = pom.menu(name='sub')
 
-        self.main += dom.p(
-            'Could not find <span class="resource">' +
-            str(ex.resource) +
-            '</span>'
+        mnus += mnu, mnu1
+
+        html = (
+            '<section><nav aria-label="Admin"><ul></ul></nav>'
+            '<nav aria-label="Sub"><ul></ul></nav></section>'
         )
 
-    @property
-    def name(self):
-        return type(self).__name__.replace('_', '')
+        self.eq(html, mnus.html)
 
-class pom_menu_items(tester.tester):
+        ''' With items '''
+        mnu.items += pom.menu.item('Users')
+        mnu.items += pom.menu.item('Groups')
+
+        html = (
+            '<section><nav aria-label="Admin">'
+            '<ul><li>Users</li><li>Groups</li></ul>'
+            '</nav><nav aria-label="Sub">'
+            '<ul></ul></nav></section>'
+        )
+
+        self.eq(html, mnus.html)
+
+        ''' With nested items '''
+        users = mnu.items.elements.first
+
+        users.items += pom.menu.item('Add')
+        users.items += pom.menu.item('Search')
+
+        html = (
+            '<section><nav aria-label="Admin">'
+            '<ul><li>Users<ul><li>Add</li><li>Search</li></ul>'
+            '</li><li>Groups</li></ul></nav>'
+            '<nav aria-label="Sub"><ul></ul></nav></section>'
+        )
+        self.eq(html, mnus.html)
+
+    def it_calls__repr__(self):
+        mnus = pom.menus()
+
+        self.eq('menus()', repr(mnus))
+
+        ''' With menus '''
+        mnu = pom.menu(name='admin')
+        mnu1 = pom.menu(name='sub')
+
+        mnus += mnu, mnu1
+
+        expect = (
+            'menus(menu(aria-label="Admin"), menu(aria-label="Sub"))'
+        )
+        self.eq(expect, repr(mnus))
+
+    def it_is_a_subtype_of_section(self):
+        mnus = pom.menus()
+        self.isinstance(mnus, dom.section)
+
+class menu(tester.tester):
+    def it_calls_name(self):
+        mnu = pom.menu(name='admin')
+        self.eq('admin', mnu.name)
+
+    def it_calls_html(self):
+        mnu = pom.menu(name='admin')
+
+        # See the NOTE:23db3900 to understand by we have an empty <ul>
+        # here.
+        html = '<nav aria-label="Admin"><ul></ul></nav>'
+        self.eq(html, mnu.html)
+
+        ''' With items '''
+        mnu.items += pom.menu.item('File')
+        mnu.items += pom.menu.item('Edit')
+
+        html = (
+            '<nav aria-label="Admin"><ul>'
+            '<li>File</li><li>Edit</li></ul></nav>'
+        )
+        self.eq(html, mnu.html)
+
+        ''' With nested items '''
+        file = mnu.items.elements.first
+
+        file.items += pom.menu.item('Open')
+        file.items += pom.menu.item('Save')
+
+        html = (
+            '<nav aria-label="Admin"><ul>'
+            '<li>File<ul>'
+            '<li>Open</li>'
+            '<li>Save</li></ul></li>'
+            '<li>Edit</li>'
+            '</ul></nav>'
+        )
+        self.eq(html, mnu.html)
+
+    def it_calls__repr__(self):
+        mnu = pom.menu(name='admin')
+        self.eq('menu(aria-label="Admin")', repr(mnu))
+
+    def it_calls__str__(self):
+        mnu = pom.menu(name='admin')
+
+        expect = self.dedent('''
+        <nav aria-label="Admin">
+          <ul>
+          </ul>
+        </nav>
+        ''')
+        self.eq(expect, str(mnu))
+
+        ''' With items '''
+        mnu.items += pom.menu.item('File')
+        mnu.items += pom.menu.item('Edit')
+
+        expect = self.dedent('''
+        <nav aria-label="Admin">
+          <ul>
+            <li>
+              File
+            </li>
+            <li>
+              Edit
+            </li>
+          </ul>
+        </nav>
+        ''')
+        self.eq(expect, str(mnu))
+
+        ''' With nested items '''
+        file = mnu.items.elements.first
+
+        file.items += pom.menu.item('Open')
+        file.items += pom.menu.item('Save')
+
+        expect = self.dedent('''
+        <nav aria-label="Admin">
+          <ul>
+            <li>
+              File
+              <ul>
+                <li>
+                  Open
+                </li>
+                <li>
+                  Save
+                </li>
+              </ul>
+            </li>
+            <li>
+              Edit
+            </li>
+          </ul>
+        </nav>
+        ''')
+        self.eq(expect, str(mnu))
+
+    def it_is_a_subtype_of_nav(self):
+        self.isinstance(pom.menu('name'), dom.nav)
+
+class menu_items(tester.tester):
     def __init__(self, *args, **kwargs):
-        mods = 'party', 'asset', 'apriori', '__main__', 'testpom', 'pom', 'file'
+        mods = (
+            'party', 'asset', 'apriori', '__main__', 
+            'testpom', 'pom', 'file'
+        )
         super().__init__(mods=mods, *args, **kwargs)
 
         propr = foonet.Proprietor
@@ -179,6 +320,10 @@ class pom_menu_items(tester.tester):
         # Unconditionally recreate foonet's tables and supers
         foonet.orm.recreate(ascend=True)
 
+    def it_isinstance_of_ul(self):
+        itms = pom.menu.items()
+        self.isinstance(itms, dom.ul)
+
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
         mnu.items.pretty, etc. were returning the same HTML but with
@@ -189,18 +334,12 @@ class pom_menu_items(tester.tester):
         the ids are preserved.
         """
         ws = foonet()
-        mnu = pom.menu('main')
         main = ws.header.makemain()
-        mnu.items += main.items
 
         self.eq(main.pretty,        main.pretty)
-        self.eq(mnu.pretty,         mnu.pretty)
         self.eq(main.html,          main.html)
-        self.eq(mnu.html,           mnu.html)
         self.eq(main.items.pretty,  main.items.pretty)
-        self.eq(mnu.items.pretty,   mnu.items.pretty)
         self.eq(main.items.html,    main.items.html)
-        self.eq(mnu.items.html,     mnu.items.html)
 
     def it_calls_append(self):
         itms = pom.menu.items()
@@ -225,7 +364,6 @@ class pom_menu_items(tester.tester):
         <ul><li>A text item</li><li>Another text item</li></ul>
         ''')
 
-
         self.eq(expect, itms.html)
 
     def it_calls_append_on_nested_items(self):
@@ -233,28 +371,13 @@ class pom_menu_items(tester.tester):
         itms += pom.menu.item('A')
         itms += pom.menu.item('B')
 
-        itms.first.items += pom.menu.item('A/A')
-        itms.first.items += pom.menu.item('A/B')
+        els = itms.elements
+        els.first.items += pom.menu.item('A/A')
+        els.first.items += pom.menu.item('A/B')
 
-        itms.second.items += pom.menu.item('B/A')
-        itms.second.items += pom.menu.item('B/B')
+        els.second.items += pom.menu.item('B/A')
+        els.second.items += pom.menu.item('B/B')
 
-        ids = (
-            itms._ul.id,
-            itms.first.id,
-            itms.first.items._ul.id,
-            itms.first.items.first.id,
-            itms.first.items.second.id,
-            itms.second.id,
-            itms.second.items._ul.id,
-            itms.second.items.first.id,
-            itms.second.items.second.id,
-        )
-        ids = tuple(
-            [itms._ul.id] + \
-            [x.id for x in itms.all if type(x) is not dom.text]
-        )
-        
         expect = self.dedent('''
         <ul>
           <li>
@@ -292,6 +415,100 @@ class pom_menu_items(tester.tester):
         )
         self.eq(expect, itms.html)
 
+class menu_item(tester.tester):
+    def it_calls__init__(self):
+        itm = pom.menu.item('A text item')
+        expect = self.dedent('''
+        <li>
+          A text item
+        </li>
+        ''')
+        self.eq(expect, itm.pretty)
+        self.eq(expect, str(itm))
+
+        expect = '<li>A text item</li>'
+        self.eq(expect, itm.html)
+
+    def it_calls_html(self):
+        ''' Add a text item '''
+        li = pom.menu.item('A menu item')
+        html = '<li>A menu item</li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          A menu item
+        </li>
+        ''')
+
+        self.eq(html, li.pretty)
+
+        ''' Add an anchor item '''
+        li = pom.menu.item(o='A menu item', href='https://example.com')
+        html = '<li><a href="https://example.com">A menu item</a></li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          <a href="https://example.com">
+            A menu item
+          </a>
+        </li>
+        ''')
+
+        self.eq(html, li.pretty)
+
+        ''' Add an page item '''
+        ws = foonet()
+        pg = ws.pages.first
+
+        li = pom.menu.item(o=pg)
+        html = '<li><a href="/error">Error</a></li>'
+        self.eq(html, li.html)
+
+        html = self.dedent('''
+        <li>
+          <a href="/error">
+            Error
+          </a>
+        </li>
+        ''')
+        self.eq(html, li.pretty)
+
+    def it_calls_repr(self):
+        ''' Add a text item '''
+        li = pom.menu.item('A menu item')
+        expect = "menu.item('A menu item')"
+        self.eq(expect, repr(li))
+
+        ''' Add an anchor item '''
+        li = pom.menu.item(o='A menu item', href='https://example.com')
+        expect = "menu.item('A menu item', href='https://example.com')"
+        self.eq(expect, repr(li))
+
+        ''' Add an page item '''
+        ws = foonet()
+        pg = ws.pages.first
+        li = pom.menu.item(o=pg)
+        expect = "menu.item('error', page='/error')"
+        self.eq(expect, repr(li))
+
+class _404(pom.page):
+    def main(self, ex: www.NotFoundError):
+        self.title = 'Page Not Found'
+        self.main += dom.h1('Page Not Found')
+        self.main += dom.h2('Foobar apologizes', class_="apology")
+
+        self.main += dom.p(
+            'Could not find <span class="resource">' +
+            str(ex.resource) +
+            '</span>'
+        )
+
+    @property
+    def name(self):
+        return type(self).__name__.replace('_', '')
+
 class site(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'party', 'apriori', 'file', 'asset'
@@ -316,18 +533,6 @@ class site(tester.tester):
         ws = foonet()
         self.seven(ws.pages)
 
-    def it_appends_menu_items(self):
-        ws = foonet()
-        mnu = pom.menu('main')
-        main = ws.header.makemain()
-        mnu.items += main.items
-
-        uls = dom.html(mnu.items.html)['ul>li']
-        self.count(19, uls)
-
-        self.eq(main.items.html, mnu.items.html)
-        self.eq(main.items.pretty, mnu.items.pretty)
-        
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
         self.eq('site()', str(pom.site()))
@@ -409,8 +614,8 @@ class site(tester.tester):
         ws = foonet()
 
         mnus = ws.header.menus
-        mnu = mnus['admin']
-        self.two(mnu.items)
+        mnu = mnus['[aria-label=Admin]'].only
+        self.two(mnu.items.elements)
 
         rpt = mnu.items.second
         self.type(pom.menu.item, rpt.items.first)
@@ -430,12 +635,12 @@ class site(tester.tester):
     def it_calls_main_menu(self):
         ws = pom.site()
         mnu = ws.header.makemain()
-        self.zero(mnu.items)
+        self.zero(mnu.items.elements)
 
         ws = foonet()
         mnu = ws.header.makemain()
 
-        self.six(mnu.items)
+        self.six(mnu.items.elements)
 
         self.eq(
             [
@@ -492,7 +697,7 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.six(mnu.items)
+        self.six(mnu.items.elements)
 
         # Blogs item
         itm = mnu.items.fourth
@@ -520,9 +725,11 @@ class site(tester.tester):
 
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
-        self.seven(mnu.items)
+
+        self.seven(mnu.items.elements)
 
         sels = dom.selectors('li')
+
         self.true('My Profile' in (x.text for x in mnu[sels]))
         self.true('My Profile' in (x.text for x in ws.header.menu[sels]))
 
@@ -992,7 +1199,8 @@ class page(tester.tester):
 
                 sb = self.sidebars['left']
                 mnu = sb['nav'].first
-                mnu.items += pom.menu.item('About stats')
+                itm = pom.menu.item('About stats')
+                mnu.items += itm
 
         ws = foonet()
 
@@ -1004,7 +1212,6 @@ class page(tester.tester):
 
         wsmnu = ws.sidebars['left']['nav'].first
         pgmnu = pg.sidebars['left']['nav'].first
-
 
         # Make sure the site's menu was not changed
         self.eq(wsmnu.items.count + 1, pgmnu.items.count)
@@ -1608,6 +1815,16 @@ class page(tester.tester):
                 self.one(res['main[data-path="/error/404"]'])
         finally:
             orm.forget(derpnet)
+
+    def it_gets_lingualized_links_on_error(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+        res = tab.navigate('/en/i-dont-exist', ws)
+        self.eq(404, res.status)
+
+        for a in tab['header a']:
+            self.startswith('/en/', a.href)
 
     def it_raises_im_a_302(self):
         ws = foonet()
@@ -2680,7 +2897,7 @@ class page(tester.tester):
         tab.navigate('/en/spa', ws)
 
         # Click on the Blog menu item twice
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
@@ -2691,7 +2908,12 @@ class page(tester.tester):
         self.eq('/blogs', attrs['data-path'].value)
 
         # Click on the Subpage menu item twice
-        sel = 'header>section>nav a[href|="/spa/subpage"]'
+
+        # Go back to /en/spa. The above click() would have have caused a
+        # traditional page navigation to /en/blogs
+        tab.navigate('/en/spa', ws)
+
+        sel = 'nav[aria-label=Spa] a[href|="/en/spa/subpage"]'
 
         a_subpage = tab[sel].only
 
@@ -2702,6 +2924,21 @@ class page(tester.tester):
         a_subpage.click()
         attrs = tab.html['main'].only.attributes
         self.eq('/spa/subpage', attrs['data-path'].value)
+
+    def it_puts_tab_inspa_mode(self):
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        tab.inspa = True
+
+        # SPA pages should be put inspa mode
+        tab.navigate('/en/spa', ws)
+        self.true(tab.inspa)
+
+        # Traditional pages should not be put inspa mode
+        tab.navigate('/', ws)
+        self.false(tab.inspa)
 
     def it_patches_spa_subpage_on_menu_click(self):
         ws = foonet()
@@ -2716,13 +2953,16 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa', attrs['data-path'].value)
 
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         a_blog.click()
         attrs = tab.html['main'].only.attributes
         self.eq('/blogs', attrs['data-path'].value)
 
-        sel = 'header>section>nav a[href|="/spa/subpage"]'
+        # Go back to /en/spa. The above click() would have have caused a
+        # traditional page navigation to /en/blogs
+        tab.navigate('/en/spa', ws)
+        sel = 'nav[aria-label=Spa] a[href|="/en/spa/subpage"]'
         a_subpage = tab[sel].only
 
         a_subpage.click()
@@ -2737,9 +2977,8 @@ class page(tester.tester):
         The SPA page itself may have menu items in its <head>, for
         example, which the subpage alone would not be aware of and could
         not produce. Thus the SPA page needs to be returned with the
-        subpage embedded in ins <main> tag.
+        subpage embedded in its <main> tag.
         """
-
         ws = foonet()
 
         tab = self.browser().tab()
@@ -2757,10 +2996,10 @@ class page(tester.tester):
         attrs = tab.html['main'].only.attributes
         self.eq('/spa/subpage', attrs['data-path'].value)
 
-        # Assert there is one menu item for /spa/subpage. This would
-        # only exist if we were getting the spa page; the subpage would
-        # not have it.
-        self.one(tab['header>section>nav a[href|="/spa/subpage"]'])
+        # Assert there is one menu item for /spa/subpage (in the Spa
+        # menu). This would only exist if we were getting the spa page;
+        # the subpage would not have it.
+        self.one(tab['nav[aria-label=Spa] a[href|="/en/spa/subpage"]'])
 
         ps = tab['main p']
 
@@ -2769,6 +3008,39 @@ class page(tester.tester):
         # Make sure the one paragraph in <main> identities itself as the
         # subpage. 
         self.eq('I am the subpage', ps.only.text)
+
+    def it_navigates_traditionally_from_nonspa_menu(self):
+        before = after = None
+        def tab_onbeforeunload(src, eargs):
+            nonlocal before
+            before = eargs
+
+        def tab_onafterload(src, eargs):
+            nonlocal after
+            after = eargs
+
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        # GET the subpage
+        res = tab.navigate('/en/spa', ws)
+
+        self.ok(res)
+
+        a = tab['header nav[aria-label=Main a]'].first
+
+        tab.onbeforeunload += tab_onbeforeunload 
+        tab.onafterload += tab_onafterload 
+
+        r = a.click()
+
+        main = tab['main'].only
+
+        path = main.attributes['data-path'].value
+        self.eq('/index', path)
+        self.eq('/en/spa', before.url.path)
+        self.eq('/en/index', after.url.path)
 
     def it_navigates_to_pages_when_spa_is_disabled(self):
         ws = foonet()
@@ -2780,7 +3052,7 @@ class page(tester.tester):
 
         self.eq('foonet | Spa', tab.html['title'].only.text)
 
-        a_blog = tab['header>section>nav a[href|="/blogs"]'].only
+        a_blog = tab['header>section>nav a[href|="/en/blogs"]'].only
 
         tab.inspa = False
         a_blog.click()
@@ -2801,6 +3073,9 @@ class users(pom.page):
 class statistics(pom.page):
     def __init__(self):
         super().__init__()
+
+    def main(self):
+        pass
 
 class reports(pom.page):
     def __init__(self):
@@ -2825,11 +3100,12 @@ class home(pom.page):
         return 'index'
 
 class spa(pom.spa):
-    ''' Subpages '''
+    ''' Inner classes of spa '''
     class subpage(pom.page):
         def main(self):
             self.main += dom.p('I am the subpage')
 
+    ''' Members of spa '''
     def __init__(self):
         super().__init__()
         self.pages += spa.subpage('subpage')
@@ -2840,8 +3116,7 @@ class spa(pom.spa):
         self.main += dom.p('Welcome to the SPA')
 
         ''' SPA Menu '''
-        mnu = pom.menu(name='spa')
-        self.header.menus += mnu
+        self.header.menus += pom.menu.make(self.pages, 'spa')
 
 class google(pom.page):
     def main(self, **kwargs):

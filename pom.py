@@ -23,6 +23,7 @@ import file
 import inspect
 import itertools
 import orm
+import os
 import primative
 import textwrap
 import pycountry
@@ -343,7 +344,7 @@ class site(asset.asset):
 
         Note that this returns a ``directory`` from the file module so
         it behaves like a file-sytem directory and an ORM entity. It is
-        a constituent of the ``site`` class so calling the site`s save()
+        a constituent of the ``site`` class so calling the sites save()
         method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
@@ -684,6 +685,7 @@ class site(asset.asset):
         #// syntax highlighting for JavaScript. In Vim, you can use:
         #//
         #//     set syn=javascript
+        #//
 
         r = '''
 function is_nav_link(e){
@@ -724,21 +726,38 @@ function ajax(e){
     /* Process the event for the given control.  */
 
     // The event trigger (e.g., "blur", "click", etc.)
-    trigger = e.type
+    var trigger = e.type
 
     // The control that the event happened to
-    src = e.target
+    var src = e.target
 
     // Is the element a navigation link
-    isnav = is_nav_link(src)
+    var isnav = is_nav_link(src)
 
-    // Assume we are in SPA mode if the the element is a navigation link
-    inspa = isnav
+    var nav = src.closest('nav');
 
+    // If the element being clicked is a nav link
     if (isnav){
-        // Prevent the browser from trying to load the HREF at the
-        // navigation link. We will do that here.
-        e.preventDefault()
+        // If we are in SPA mode
+        if (inspa){
+            // Is the link from the Spa menu
+            var isspanav = nav.getAttribute('aria-label') == 'Spa';
+
+            if (!isspanav){
+                // If we are in SPA mode but not in the Spa menu, allow
+                // for traditional navigation.
+                return;
+            }
+
+            // Prevent the browser from trying to load the HREF at the
+            // navigation link. We will do that here.
+            e.preventDefault()
+        }else{
+            // If the user clicked a nav link, but we aren't in SPA
+            // mode, allow the browser to navigate to the link in the
+            // traditional (non AJAX) way.
+            return;
+        }
     }
 
     // If we have an <input> with a type of "text"...
@@ -750,16 +769,21 @@ function ajax(e){
     }
 
     // Get all alements that are fragments for the src.
-    frag = src.getAttribute('data-' + trigger + '-fragments')
-    els = document.querySelectorAll(frag)
+    var frag = src.getAttribute('data-' + trigger + '-fragments')
+    var els = document.querySelectorAll(frag)
 
     // Get the name of the event handler of the trigger
-    hnd = src.getAttribute('data-' + trigger + '-handler')
+    var hnd = src.getAttribute('data-' + trigger + '-handler')
 
+    var html = null
+    var pg
+
+    // Get the page's <root>
+    var main = document.getElementsByTagName('main')[0]
+
+    // If the user clicked a nav link
     if (isnav){
-        html = null
-        href = src.getAttribute('href')
-        pg = window.location.pathname + '/' + href 
+        pg = src.getAttribute('href')
     }else{
         // Concatenate the fragment's HTML
         html = ''
@@ -770,7 +794,7 @@ function ajax(e){
     }
 
     // Create the dictionary to send to the server
-    d = {
+    var d = {
         'hnd':      hnd,
         'src':      src.outerHTML,
         'trigger':  trigger,
@@ -778,19 +802,17 @@ function ajax(e){
     }
 
     // Use XMLHttpRequest to send the XHR request 
-    xhr = new XMLHttpRequest()
+    var xhr = new XMLHttpRequest()
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
-
-            main = document.querySelector('main')
 
             // If success...
             if (this.status < 400){
 
                 // Parse the HTML response
-                parser = new DOMParser()
+                var parser = new DOMParser()
 
-                els = parser.parseFromString(
+                var els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
 
@@ -800,8 +822,8 @@ function ajax(e){
                 els = els.querySelectorAll('html>body>*')
 
                 if(inspa){
-                    new_ = els[0]
-                    url = new_.getAttribute('data-path')
+                    let new_ = els[0]
+                    let url = new_.getAttribute('data-path')
 
                     main.parentNode.replaceChild(new_, main)
                     window.history.pushState(
@@ -813,13 +835,13 @@ function ajax(e){
                     // client-side counterpart
                     for(el of els){
                         // Use the fragment's id to find and replace
-                        old = document.querySelector('#' + el.id)
+                        let old = document.querySelector('#' + el.id)
                         old.parentNode.replaceChild(el, old)
                     }
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
-                els = document.querySelectorAll('.exception')
+                let els = document.querySelectorAll('.exception')
                 els.forEach(e => e.remove())
 
                 // Insert the response HTML making it the first element
@@ -848,9 +870,9 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         r += '''
     // For each currently supported trigger (you may
     // have to update Triggers if the event you want to
-    // support doesn't exist
+    // support doesn't exist)
     for (trig of trigs){
-        els = document.querySelectorAll(
+        var els = document.querySelectorAll(
             '[data-' + trig + '-handler]'
         )
 
@@ -867,25 +889,32 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
     window.addEventListener('popstate', (e) => {
         // Parse the HTML response
-        parser = new DOMParser()
+        var parser = new DOMParser()
 
-        new_ = parser.parseFromString(
+        var new_ = parser.parseFromString(
             e.state, "text/html"
         )
 
         new_ = new_.querySelector('html>body>main')
 
-        old = document.querySelector('main')
+        var old = document.querySelector('main')
 
         old.parentNode.replaceChild(new_, old)
     });
 
-    main = document.querySelector('main')
+    var main = document.querySelector('main')
     window.history.pushState(
         main.outerHTML, null, window.location.pathname
     )
+
+    // We default to non-SPA.
+    if (main.hasAttribute('spa-data-path')){
+        inspa = true
+    }else{
+        inspa = false
     }
-);
+});
+
 '''
         #// Return the JavaScript
         return r
@@ -1023,15 +1052,9 @@ class logo(dom.section):
     def elements(self, v):
         dom.element.elements.fset(self, v)
 
-class menus(entities.entities, dom.section):
+class menus(dom.section):
     """ Represents a collection of ``menu`` objects
     """
-
-    def __init__(self, *args, **kwargs):
-        """ Create the menus collection.
-        """
-        entities.entities.__init__(self, *args, **kwargs)
-        dom.section.__init__(self)
 
     def clone(self):
         """ Create and return a ``menus`` collection based on this one.
@@ -1046,39 +1069,9 @@ class menus(entities.entities, dom.section):
     def __repr__(self):
         """ A string representation of this ``menus`` collection.
         """
-        r = str()
-        for mnu in self:
-            r += '[%s]\n' % mnu.name
-            r += repr(mnu) + '\n'
-        return r
-
-    def __getitem__(self, ix):
-        """ Implement an indexer so the menus can be accessed by name::
-
-            # Get the desert menu
-            mnu = mymenus['desert']
-        """
-
-        # TODO I'm pretty sure this is how entities.__getitem__ works
-        # already.
-        if isinstance(ix, str):
-            for mnu in self:
-                if mnu.name == ix:
-                    return mnu
-        else:
-            return super().__getitem__(ix)
-
-    @property
-    def elements(self):
-        """ Return the menu's child elements.
-        """
-        els = super().elements
-        els.clear()
-
-        for mnu in self:
-            els += mnu
-
-        return els
+        cls = type(self).__name__
+        args = ', '.join(repr(x) for x in self)
+        return f'{cls}({args})'
 
 class menu(dom.nav):
     # TODO:c0336221 Currently, there are issues altering attributes en
@@ -1104,31 +1097,14 @@ class menu(dom.nav):
     #     del main_menus.id # Currently dosen't work
 
     ''' Inner classes '''
-    class items(dom.lis):
+    class items(dom.ul):
         """ A collection of ``item`` objects (<li>) which contain the
         menu items.
         """
-        def __init__(self, *args, **kwargs):
-            """ Create the menu item.
-            """
-            super().__init__(*args, **kwargs)
-
-            self._els = dom.elements()
-
-            # Start the menu off with an unordered list
-            self._ul = dom.ul()
-            self._els += self._ul
-
         def clone(self):
             """ Create and return an ``items`` based on self.
             """
             itms = type(self)()
-
-            # Preserve ID's
-            # TODO Should all attributes of the ul be preserved?
-            # Probably.
-            if self._ul.id is not None:
-                itms._ul.id = self._ul.id
 
             for itm in self:
                 itms += itm.clone()
@@ -1139,45 +1115,6 @@ class menu(dom.nav):
             """ Add a seperator to the list of menu items.
             """
             self += menu.separator()
-
-        @property
-        def elements(self):
-            """ Return the elements under the first element of this
-            collection.
-            """
-            ul = self._els.first
-            ul.elements.clear()
-            for itm in self:
-                self._ul += itm.clone()
-
-            return self._els
-
-        @property
-        def html(self):
-            """ Return an HTML representation of this element formatted
-            for a computer (no unnecssary whitespace).
-            """
-            return ''.join(x.html for x in self.elements)
-
-        @property
-        def pretty(self):
-            """ Return an HTML representation of this element formatted
-            for human consumption.
-            """
-            return '\n'.join(x.pretty for x in self.elements)
-
-        def __str__(self):
-            """ A string representation of the collection.
-            """
-            # The default is to call entities.entities.__str__, but we
-            # want to call dom.ul.__str__ since it contains logic for
-            # specifically formatting prettified HTML.
-            return dom.ul.__str__(self)
-
-        def __repr__(self):
-            """ A string representation of the collection.
-            """
-            return dom.ul.__repr__(self)
 
     class item(dom.li):
         """ Represents an item in a menu such as a hyperlink or a
@@ -1195,41 +1132,102 @@ class menu(dom.nav):
             """
             super().__init__(*args, **kwargs)
 
-            self.href = href
-            self._text = self.page = None
+            self.href   =  href
+            self._page   =  None
+
             if isinstance(o, str):
-                self._text = o
                 if href:
-                    self.body = dom.a(self.text, href=self.href)
+                    self += dom.a(o, href=self.href)
                 else:
-                    self.body = dom.text(self.text)
+                    self += dom.text(o)
+
             elif isinstance(o, page):
                 self.page = o
-                self.body = dom.a(self.page.Name, href=self.page.path)
+
             else:
                 raise TypeError('Item requires text or page object')
 
-            self.items = menu.items()
+            self._items = None
+
+        @property
+        def text(self):
+            """ Return the text of the item.
+            """
+            for el in self:
+                if isinstance(el, dom.text):
+                    return el.value
+
+            if a := self.a:
+                return a.text
+
+            if pg := self.page:
+                return self.page.name
+
+        @property
+        def page(self):
+            return self._page
+
+        @page.setter
+        def page(self, v):
+            self._page = v
+            a = None
+            for el in self:
+                if isinstance(el, dom.a):
+                    a = el
+
+            if a:
+                self.elements.remove(a)
+
+            self += dom.a(v.Name, href=v.path)
+            
+        @property
+        def items(self):
+            """ Return this `menu.items` collection of `menu.item`. It's
+            this property that allows menus to be of an infinite depth.
+            """
+            if not self._items:
+                self._items = menu.items()
+
+                # Append the items collection to self. In DOM terms, we
+                # are append a <ul> to an <li>:
+                #
+                #   <nav>
+                #     <ul>
+                #       <li>
+                #         File
+                #         <ul> <!-- this -->
+                #           <li>
+                #             Open
+                #           </li>
+                #         </ul>
+                #      </li>
+                #    </ul>
+                #  </nav>
+                #
+                self += self._items
+
+            return self._items
+
+        @items.setter
+        def items(self, v):
+            """ Set's the items value.
+
+            This is necessary for appends to work right.
+
+            :param: v menu.item: The item to set.
+            """
+            self._items = v
 
         def clone(self):
             """ Create and return a new menu item based on this one.
             """
+
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
 
-            if self.body.id is not None:
-                itm.body.id = self.body.id
-
-            itm.items += self.items.clone()
-
-            # Preserve ID's
-            # TODO Should all attributes of the ul be preserved?
-            # Probably.
-
-            if self.items._ul.id is not None:
-                itm.items._ul.id = self.items._ul.id
+            itm.items = self.items.clone()
 
             itm.attributes = self.attributes.clone()
             return itm
@@ -1239,37 +1237,39 @@ class menu(dom.nav):
             """
             self.items.seperate()
 
-        @property
-        def text(self):
-            """ Return the text of the item.
-            """
-            if self._text:
-                return self._text
-            return self.page.name
-
-        @property
-        def elements(self):
-            """ Returns the child elements of this colletion.
-            """
-            els = super().elements
-            els.clear()
-            pg = self.page
-            if self.body:
-                els += self.body
-
-            if self.items.count:
-                els += self.items.elements
-
-            return els
-
         def __repr__(self):
             """ Returns a string represention of the menu item.
             """
+            cls = type(self).__qualname__.replace('pom.', '')
+
             pg = self.page
             if pg:
-                return '%s (%s)' % (pg.name, pg.path)
+                return f"{cls}('{pg.name}', page='{pg.path}')"
             else:
-                return self.text
+                if a := self.a:
+                    return f"{cls}('{a.text}', href='{a.href}')"
+                else:
+                    return f"{cls}('{self.text}')"
+
+        @property
+        def a(self):
+            """ Return the anchor (dom.a) of this menu item. If no
+            anchor exists yet, None is returned.
+
+              <nav>
+                <ul>
+                  <li>
+                    <a href="/open">Open</a>  <!-- This -->
+                  </li>
+                </ul>
+              </nav>
+
+            """
+            as_ = self['a']
+            if as_.issingular:
+                return as_.only
+
+            return None
 
     class separator(item):
         """ An entry in a collection of menu item that seperates one set
@@ -1278,7 +1278,7 @@ class menu(dom.nav):
             [O]pen
             [S]ave
             Save [A]s
-            --------
+            ---------
             [Q]uit
 
         In the above text version of a menu, the line of dashes
@@ -1328,7 +1328,8 @@ class menu(dom.nav):
             els += dom.hr()
             return els
 
-    ''' Class members '''
+    ''' Class members of `menu` '''
+
     def __init__(self, name, *args, **kwargs):
         """ Create a new menu.
 
@@ -1337,7 +1338,86 @@ class menu(dom.nav):
         super().__init__(*args, **kwargs)
         self.name = name
         self.aria_label = self.name.capitalize()
+
+        # NOTE:23db3900 Create the items collection here. This has the
+        # unfortunate side affect of causing empty menus to be rendered
+        # with an empty <ul>:
+        #
+        #   <nav>
+        #     <ul></ul>
+        #   </nav>
+        # 
+        # We could solve this problem by lazy-loading the items using
+        # a getter @property. However, the name of that method would be
+        # pom.menu.items, and this has already been taken (see the
+        # `items` class above).
         self.items = menu.items()
+
+    def __setattr__(self, attr, v):
+        """ Called when a value is assigned to an attribute on this
+        `menu`.
+
+        Special handling is needed in the case of setting the `items`
+        attribute. The setting of other attributes are handled here but
+        are routed to code that handles them in a normal way.
+        """
+
+        if attr == 'items':
+            try:
+                # Test if an `items` object (a subclass of dom.ul) is
+                # already in this `menu`'s collection of child
+                # elements:
+                itms = self.__dict__['items']
+            except KeyError:
+                # Not found so do nothing
+                pass
+            else:
+                # Remove the item for the child elements collection.
+                self.remove(itms)
+
+            self.__dict__['items'] = v
+
+            self += self.items
+        else:
+            # Handle the assignment normally if attr is not 'items'
+            object.__setattr__(self, attr, v)
+        
+
+    @classmethod
+    def make(cls, pgs, name=None, itm=None):
+        """ Make and return a `menu` object based on the `pages`
+        collection (pgs) given. This is a recursive method so the `menu`
+        will be as deeply nested as the `pgs` are.
+
+        :param: pgs pages: A collection of pages.
+
+        :param: name str: The name of the menu.
+
+        :param: itm menu.item: Used internally. The menu item object
+        that is currently being processed.
+        """
+        isrecursing = not bool(name)
+
+        if isrecursing:
+            itms = itm.items
+        else:
+            mnu = menu(name)
+            itms = mnu.items
+
+        for pg in pgs:
+            # Don't add error pages to the menu
+            if pg.name == 'error':
+                continue
+
+            itm = menu.item(o=pg)
+            itms += itm
+
+            pgs = pg.pages
+            if pgs.ispopulated:
+                cls.make(pgs, itm=itm)
+
+        if not isrecursing:
+            return mnu
 
     @property
     def ismain(self):
@@ -1350,23 +1430,6 @@ class menu(dom.nav):
         mnu.items = self.items.clone()
         mnu.attributes = self.attributes.clone()
         return mnu
-
-    @property
-    def elements(self):
-        """ Returns the child elements of this menu.
-        """
-        els = super().elements
-        els.clear()
-
-        els += self.items.elements
-        return els
-
-    def __repr__(self):
-        """ A string representation of this menu.
-        """
-        itms = '\n'.join(repr(x) for x in self.items)
-        itms = textwrap.indent(itms, ' ' * 2)
-        return itms
 
 class pages(entities.entities):
     """ A collection of ``page`` objects.
@@ -1498,6 +1561,36 @@ class page(dom.html):
 
         self.clear()
 
+    def _lingualize(self, lang):
+        """ Iterate over the each anchor tag in this `page` and ensure
+        that `lang` is prepended to each anchor's HREF.
+
+            # Assuming `lang` is 'en'
+            assert lang == 'en'
+
+            # Before lingualization
+            <a href="/some/path">link</a>
+
+            # After lingualization
+            <a href="/en/some/path">link</a>
+
+        Note that this method is idempotent, i.e., calling it multiple
+        times has the same effect on the `page` object as calling it
+        once.
+        """
+        mnus = self.header.menus
+        for a in mnus['a']:
+
+            # If the anchor has already been lingualized
+            if a.href.startswith(f'/{lang}/'):
+                continue
+
+            href  =  a.href
+            sep   =  os.path.sep
+            a.href = os.path.join(
+                sep, lang, href.lstrip(sep)
+            )
+
     @property
     def spa(self):
         """ If this `page` object is a subpage of a SPA, return its SPA
@@ -1511,6 +1604,13 @@ class page(dom.html):
             pg = pg.page
 
         return None
+
+    @property
+    def isspa(self):
+        """ Returns True if this `page` object is a SPA page, False
+        otherwise.
+        """
+        return isinstance(self, spa)
 
     @property
     def resources(self):
@@ -2144,38 +2244,9 @@ class header(dom.header):
         if self.menu:
             raise ValueError('Main menu already exists')
 
-        self.menu = self._getmenu(self.site)
+        self.menu = menu.make(self.site.pages, name='main')
 
         return self.menu
-
-    @staticmethod
-    def _getmenu(ws):
-        """ Create and return a menu based on the site's pages.
-        """
-        def getitems(pgs):
-            """ Recursively build and return a menu based on the site's
-            pages.
-            """
-            r = menu.items()
-            for pg in pgs:
-
-                # Don't add error pages to the menu
-                if pg.name == 'error':
-                    continue
-
-                item = menu.item(o=pg)
-                r += item
-
-                item.items += getitems(pg.pages)
-
-            return r
-
-        mnu = menu('main')
-
-        for itm in getitems(ws.pages):
-            mnu.items += itm
-
-        return mnu
 
 # TODO We need a footers collection complement
 class footer(dom.footer):
@@ -2377,7 +2448,7 @@ class message(dom.article):
             details = dom.details(class_='traceback')
             self += details
 
-            details += dom.summary('Traceback')
+            details += dom.summary('Stacktrace')
             details += traceback(ex)
         else:
             p.text = msg

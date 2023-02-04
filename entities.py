@@ -870,7 +870,7 @@ class entities:
         return type(self)(initial=sorted(self._ls, key=key1, reverse=reverse))
 
     def enumerate(self):
-        """ Returns an enumeration object similar to the way the PYthon
+        """ Returns an enumeration object similar to the way the Python
         builtin ``enumerate()`` does::
 
             # Print each entity in es preceded by a zero-based index
@@ -1309,10 +1309,13 @@ class entities:
                 Detremine if an entity in self with an `id` or `name`
                 attribute equals e. If so, return True, False otherwise.
         """
+
+        # TODO Use isinstance() instead of type()
         if type(e) in (int, str):
             e = self(e)
 
         elif hasattr(e, '__iter__'):
+            # TODO:28b5a63a Shouldn't this be `any` instead of `all`.
             return len(e) and all(x in self for x in e)
 
         if self.index:
@@ -1816,7 +1819,7 @@ class entities:
         # TODO Write tests for this property's logic
         if not self.issingular:
             raise ValueError(
-                'The `only` property demands exactly one element but '
+                'The `only` property demands one element but '
                 f'{self.count} were found'
             )
         return self.first

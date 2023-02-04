@@ -44,7 +44,6 @@ import html
 import json
 import logs
 import orm
-import os
 import party
 import pdb
 import pom
@@ -254,7 +253,6 @@ class application:
                     if isinstance(ex, HttpError):
                         # Call the sites error page for the given
                         # status 
-                        lang = req.language
                         path = f'/error/{ex.status}'
                         pg = req.site(path)
 
@@ -263,6 +261,12 @@ class application:
                             # Clear and invoke the page
                             pg.clear()
                             pg(ex=ex)
+
+                            # FIXME:bea5347d Make argument req.language.
+                            # Currently it returns None because we don't
+                            # use the /files/ prefix to distinguish
+                            # between files and pages.
+                            pg._lingualize('en')
 
                         # Else if no page was provided by the site
                         else:
@@ -898,6 +902,11 @@ class request:
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
+                if pg.isspa:
+                    main = pg['html>body>main'].only
+                    path = f'/{self.language}{pg.path}'
+                    main.attributes += 'spa-data-path', path
+
                 # Get the main SPA application page for the page.
                 if spa := pg.spa:
                     
@@ -915,6 +924,14 @@ class request:
                     # `pg` so it's contents will be returned by the
                     # following code.
                     pg = spa
+
+                    main = pg['html>body>main'].only
+                    path = f'/{self.language}{pg.path}'
+
+                    main.attributes += 'spa-data-path', path
+
+                if not self.isevent:
+                    pg._lingualize(self.language)
 
                 if not self.ishead:
                     # If we are processing an event
@@ -2543,6 +2560,34 @@ class browser(entities.entity):
             """
             self.tabs = tabs
 
+        @property
+        def onbeforeunload(self):
+            """ Return the tab event that is triggered immediatly
+            before the tab is "unloaded" when it navigates to a new
+            URL.
+            """
+            if not self._onbeforeunload:
+                self._onbeforeunload = entities.event()
+            return self._onbeforeunload
+
+        @onbeforeunload.setter
+        def onbeforeunload(self, v):
+            self._onbeforeunload = v
+
+        @property
+        def onafterload(self):
+            """ Return the tab event that is triggered immediatly
+            after the tab navigates to a new URL and the DOM is
+            loaded.
+            """
+            if not self._onafterload:
+                self._onafterload = entities.event()
+            return self._onafterload
+
+        @onafterload.setter
+        def onafterload(self, v):
+            self._onafterload = v
+
         def request(self, req):
             """ Makes an HTTP request. Returns a www.response object
             containing data the HTTP server returned.
@@ -2629,6 +2674,10 @@ class browser(entities.entity):
             self.domain   =  domain;   self.path       =  path
             self.expires  =  expires;  self.http_only  =  http_only
             self.same_site = same_site
+
+    class loadeventargs(entities.eventargs):
+        def __init__(self, url):
+            self.url = url
 
     def __init__(self):
         """ Create an instance of a browser.
