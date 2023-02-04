@@ -2560,6 +2560,34 @@ class browser(entities.entity):
             """
             self.tabs = tabs
 
+        @property
+        def onbeforeunload(self):
+            """ Return the tab event that is triggered immediatly
+            before the tab is "unloaded" when it navigates to a new
+            URL.
+            """
+            if not self._onbeforeunload:
+                self._onbeforeunload = entities.event()
+            return self._onbeforeunload
+
+        @onbeforeunload.setter
+        def onbeforeunload(self, v):
+            self._onbeforeunload = v
+
+        @property
+        def onafterload(self):
+            """ Return the tab event that is triggered immediatly
+            after the tab navigates to a new URL and the DOM is
+            loaded.
+            """
+            if not self._onafterload:
+                self._onafterload = entities.event()
+            return self._onafterload
+
+        @onafterload.setter
+        def onafterload(self, v):
+            self._onafterload = v
+
         def request(self, req):
             """ Makes an HTTP request. Returns a www.response object
             containing data the HTTP server returned.
