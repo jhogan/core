@@ -1373,7 +1373,7 @@ class menu(dom.nav):
                 pass
             else:
                 # Remove the item for the child elements collection.
-                self.remove(lambda x: x is itms)
+                self.remove(itms)
 
             self.__dict__['items'] = v
 
