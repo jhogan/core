@@ -2220,37 +2220,6 @@ class header(dom.header):
 
         return self.menu
 
-    @staticmethod
-    def _getmenu(ws):
-        # XXX Dead code?
-        """ Create and return a menu based on the site's pages.
-        """
-        def getitems(pgs):
-            """ Recursively build and return a menu based on the site's
-            pages.
-            """
-            r = menu.items()
-            for pg in pgs:
-
-                # Don't add error pages to the menu
-                if pg.name == 'error':
-                    continue
-
-                item = menu.item(o=pg)
-                r += item
-
-                item.items += getitems(pg.pages)
-
-            return r
-
-        mnu = menu('main')
-
-        for itm in getitems(ws.pages):
-            itm._parent = None
-            mnu.items += itm
-
-        return mnu
-
 # TODO We need a footers collection complement
 class footer(dom.footer):
     """ Represents a page's footer.
