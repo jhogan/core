@@ -2225,7 +2225,19 @@ class element(entities.entity):
         self._attributes = v
 
     def hasattr(self, attr):
-        """ XXX """
+        """ Returns True if this `element` has the attribute `attr` in
+        its collection of attributes, False otherwise.
+
+            html = dom.html('<p id="1234"></p>')
+            p = html['p'].only
+
+            assert p.hasattr('id') is True
+
+            assert p.hasattr('lang') is False
+
+        This method is imitative of the standard (W3C/WHATWG) DOM's
+        `Element.hasAttribute()` method.
+        """
         # TODO Write tests
         return attr in self.attributes
 

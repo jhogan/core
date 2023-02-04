@@ -1354,19 +1354,32 @@ class menu(dom.nav):
         self.items = menu.items()
 
     def __setattr__(self, attr, v):
-        """ XXX """
+        """ Called when a value is assigned to an attribute on this
+        `menu`.
+
+        Special handling is needed in the case of setting the `items`
+        attribute. The setting of other attributes are handled here but
+        are routed to code that handles them in a normal way.
+        """
+
         if attr == 'items':
             try:
+                # Test if an `items` object (a subclass of dom.ul) is
+                # already in this `menu`'s collection of child
+                # elements:
                 itms = self.__dict__['items']
             except KeyError:
+                # Not found so do nothing
                 pass
             else:
+                # Remove the item for the child elements collection.
                 self.remove(lambda x: x is itms)
 
             self.__dict__['items'] = v
 
             self += self.items
         else:
+            # Handle the assignment normally if attr is not 'items'
             object.__setattr__(self, attr, v)
         
 
@@ -1549,7 +1562,22 @@ class page(dom.html):
         self.clear()
 
     def _lingualize(self, lang):
-        """ XXX """
+        """ Iterate over the each anchor tag in this `page` and ensure
+        that `lang` is prepended to each anchor's HREF.
+
+            # Assuming `lang` is 'en'
+            assert lang == 'en'
+
+            # Before lingualization
+            <a href="/some/path">link</a>
+
+            # After lingualization
+            <a href="/en/some/path">link</a>
+
+        Note that this method is idempotent, i.e., calling it multiple
+        times has the same effect on the `page` object as calling it
+        once.
+        """
         mnus = self.header.menus
         for a in mnus['a']:
 
