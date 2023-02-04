@@ -1291,7 +1291,6 @@ class menu(dom.nav):
         is a <br>.
         """
 
-        # XXX I think we can remove this
         def __init__(self, *args, **kwargs):
             """ Create the seperator object.
             """
