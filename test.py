@@ -4541,7 +4541,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 # This happened today:
                 # HAPPENED Jun 2, 2020
                 # HAPPENED Aug 24, 2022
-                print('This bug has happened befor')
+                print('This bug has happened before')
                 B()
             t.retrieved(rprs1)
 

@@ -85,7 +85,6 @@ class home(tester.tester):
         tab = self.browser().tab()
 
         res = tab.navigate('/', ws)
-        print(tab)
         self.status(200, res)
 
         mnus = tab['header>section>nav[aria-label=Main]']
