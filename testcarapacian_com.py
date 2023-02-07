@@ -164,5 +164,13 @@ class ticketsspa(tester.tester):
         res = tab.get('/en/ticketsspa', ws)
         self.status(200, res)
 
+class ticketsspa_new(tester.tester):
+    def it_call__init__(self):
+        pg = carapacian_com.ticketsspa.new()
+        pg()
+
+        print(pg)
+
+
 if __name__ == '__main__':
     tester.cli().run()

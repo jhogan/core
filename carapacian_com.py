@@ -345,6 +345,10 @@ class ticketsspa(pom.spa):
     class new(pom.page):
         def main(self):
             self.main += dom.p('Create a ticket')
+
+            req = effort.requirement()
+
+            self.main += req.html
     
     class people(pom.page):
         ''' Inner classes (pages) '''
