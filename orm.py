@@ -5566,6 +5566,64 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Append the entity to that entities collection
             es += e
 
+    @property
+    def html(self):
+        """ XXX """
+        import pom, dom
+        frm = dom.form()
+
+        rent = builtins.type(self)
+
+        names = list()
+
+        while rent:
+            for map in rent.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                name = map.name
+                label = name.capitalize()
+
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                if name == 'createdat':
+                    continue
+
+                if name == 'updatedat':
+                    continue
+
+
+                if name == 'id':
+                    type = 'hidden'
+                    label = None
+
+                elif map.isstr:
+                    if map.definition == 'longtext':
+                        type = 'textarea'
+                    else:
+                        type = 'text'
+                        
+                elif map.isdate:
+                    type = 'date'
+
+                elif map.isdatetime:
+                    type = 'datetime-local'
+
+                else:
+                    continue
+
+                inp = pom.input( name = name, type = type, label = label)
+
+
+                frm += inp
+
+            rent = rent.orm.super
+
+        return frm
+
     def __repr__(self):
         """ Create a string representation of the entity.
         """
