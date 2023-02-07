@@ -153,6 +153,7 @@ class tickets(tester.tester):
 
 class ticketsspa(tester.tester):
     def it_call_name(self):
+        # XXX Shouldn't this me carapacian_com.ticketsspa
         pg = carapacian_com.tickets()
         self.eq('tickets', pg.name)
 

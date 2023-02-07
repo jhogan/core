@@ -103,7 +103,9 @@ class requirement(apriori.requirement):
       service
 
     Note that this entity was originally called WORK REQUIREMENT in "The
-    Data Model Resource Book".
+    Data Model Resource Book". The REQUIREMENT entity from the book is
+    located in apriori.py since it is involed in other things like order
+    entry (see order.py).
     """
 
     # TODO There is an exclusive arc across the ``deliverable``,
@@ -112,7 +114,7 @@ class requirement(apriori.requirement):
     # three. There should be a validation rule that prevents this.
 
     # An optional reference to an asset. When the ``requirementtype`` is
-    # "maintenence" or "repair" for example, then there is a definite
+    # "maintenance" or "repair" for example, then there is a definite
     # need to know what piece of equipment needs to be worked on.
     asset = shipment.asset
 
@@ -123,7 +125,6 @@ class requirement(apriori.requirement):
     # NOTE An implicit ``deliverable`` attribute is made available as a
     # result of the one-to-many relationship that ``deliverable`` has to
     # ``requirement``.
-
     roles = roles
 
 class requirementtype(order.requirementtype):

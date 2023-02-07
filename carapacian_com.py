@@ -12,6 +12,7 @@ from func import enumerate, getattr
 from uuid import uuid4, UUID
 import dom
 import ecommerce
+import effort
 import file
 import party
 import pom

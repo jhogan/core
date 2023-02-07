@@ -2307,7 +2307,7 @@ class input(dom.div):
         els = super().elements
 
         if self.label:
-            # TODO Add the 'for' attribute to <label>
+            # XXX Add the 'for' attribute to <label>
             els += dom.label(self.label)
 
         if type == 'textarea':

@@ -108,7 +108,6 @@ class requirement(orm.entity):
     # Explains why there is a need for the requirements
     reason = text
 
-
 class type(orm.entity):
     """  An abstract entity to describe the type of another class. This
     class is used when a entity needs a many-to-one class that

@@ -7651,6 +7651,7 @@ class fieldmapping(mapping):
                 return 'longtext'
 
         elif self.isint:
+            # XXX Fix line width
             if self.min < 0:
                 if    self.min  >=  -128         and  self.max  <=  127:
                     return 'tinyint'
