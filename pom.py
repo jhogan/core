@@ -2319,7 +2319,7 @@ class input(dom.div):
                 if opt[0] in selected:
                     inp.last.selected = True
         else:
-            inp = dom.input(name=self.name)
+            inp = dom.input(name=self.name, type=type)
 
         els += inp
 
