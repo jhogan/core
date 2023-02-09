@@ -5567,7 +5567,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             es += e
 
     @property
-    def html(self):
+    def form(self):
         """ XXX """
         # XXX Write tests
         import pom, dom
