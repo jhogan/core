@@ -343,6 +343,30 @@ class tickets(pom.page):
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
     class new(pom.page):
+        def btnsubmit_onsubmit(self, src, eargs):
+            # XXX Test updating dates to None (null) values
+            inps = eargs.html['input, textarea, hidden']
+            
+            req = effort.requirement()
+
+            for inp in inps:
+                if isinstance(inp, dom.input):
+                    if inp.type == 'submit':
+                        continue
+
+                if isinstance(inp, dom.textarea):
+                    v = inp.text
+                elif isinstance(inp, dom.input):
+                    v = inp.value
+
+                if v:
+                    if inp.name == 'id':
+                        v = UUID(v)
+
+                    setattr(req, inp.name, v)
+
+            req.save()
+            
         def main(self):
             self.main += dom.p('Create a ticket')
 
