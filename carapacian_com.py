@@ -372,7 +372,14 @@ class ticketsspa(pom.spa):
 
             req = effort.requirement()
 
-            self.main += req.html
+            frm = req.form
+
+            self.main += frm
+
+
+            btnsubmit = frm['input[type=submit]'].only
+
+            btnsubmit.onclick += self.btnsubmit_onsubmit, frm
     
     class people(pom.page):
         ''' Inner classes (pages) '''
