@@ -127,6 +127,23 @@ class requirement(apriori.requirement):
     # ``requirement``.
     roles = roles
 
+    ''' Accessability '''
+    @property
+    def creatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # XXX Implement
+        # XXX Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # XXX Implement
+        # XXX Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
 class requirementtype(order.requirementtype):
     """ Defines the possible categories for the requirements.
 
