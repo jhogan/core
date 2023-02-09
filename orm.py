@@ -5631,28 +5631,37 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __repr__(self):
         """ Create a string representation of the entity.
         """
-        if self.id is undef:
-            id = '<undef>'
-        else:
-            id = self.id
+        names = list()
+        kvps = list()
+        cls = type(self)
+        rent = cls
+        kvps.append(f'id={self.id}')
+        while rent:
+            for map in rent.orm.mappings.fieldmappings:
+                name = map.name
+                if name in names:
+                    continue
 
-        try:
-            name = self.name
-        except builtins.AttributeError:
-            name = ''
-        except Exception as ex:
-            name = f', name=<ERROR {ex}>'
-        else:
-            if name:
-                name = f", name='{self.name}'"
+                names.append(name)
 
-        r = (
-            f'{type(self).__module__}.'
-            f'{type(self).__name__}('
-                f'id={id}'
-                f'{name}'
-            ')'
-        )
+                v = getattr(self, name)
+
+                if v is not None:
+                    if map.isstr or map.isdatetime or map.isdate:
+                        v = f"'{v}'"
+
+                kvps.append(f'{name}={v}')
+
+            rent = rent.orm.super
+
+        mod = cls.__module__
+        name = cls.__name__
+        r = f'{mod}.{name}(\n  '
+
+        r += ',\n  '.join(kvps)
+            
+        r += '\n)'
+
         return r
 
     def __str__(self):
