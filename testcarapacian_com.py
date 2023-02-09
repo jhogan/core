@@ -12,6 +12,8 @@ from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import carapacian_com
+import db
+import effort
 import orm
 import party
 import pom

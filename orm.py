@@ -5569,6 +5569,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     @property
     def html(self):
         """ XXX """
+        # XXX Write tests
         import pom, dom
         frm = dom.form()
 
@@ -5594,7 +5595,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 if name == 'updatedat':
                     continue
-
 
                 if name == 'id':
                     type = 'hidden'
@@ -7995,7 +7995,6 @@ class primarykeyfieldmapping(fieldmapping):
     def __init__(self):
         """ Instatiate.
         """
-
         # Ensure the type is `types.pk` (primary key).
         super().__init__(type=types.pk)
 

@@ -7,11 +7,14 @@ field          fld
 fulltext:      ft
 handler:       hnd
 index:         ix
+input:         inp
 introducer:    intro
 join:          j
 key:           k
 language:      lang
 list:          ls
+mapping:       map
+mappings:      maps
 message:       msg
 object:        obj
 operation:     op
