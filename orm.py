@@ -5615,7 +5615,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 else:
                     continue
 
-                inp = pom.input( name = name, type = type, label = label)
+                inp = pom.input(name=name, type=type, label=label)
 
 
                 frm += inp
