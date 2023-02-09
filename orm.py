@@ -5617,10 +5617,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 inp = pom.input(name=name, type=type, label=label)
 
+                if name == 'id':
+                    inp.input.value = self.id.hex
 
                 frm += inp
 
             rent = rent.orm.super
+
+        frm += dom.input(type='submit')
 
         return frm
 
