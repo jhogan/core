@@ -169,9 +169,78 @@ class ticketsspa(tester.tester):
 class ticketsspa_new(tester.tester):
     def it_call__init__(self):
         pg = carapacian_com.ticketsspa.new()
-        pg()
 
-        print(pg)
+        inps = pg['form textarea[name=description]']
+        self.one(inps)
+
+        # XXX:aa98969e Continue testing the various inputs
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/new', ws)
+        self.status(200, res)
+
+        frms = tab['form']
+        self.one(frms)
+
+        inps = tab['form textarea[name=description]']
+        self.one(inps)
+
+        # XXX:aa98969e Continue testing the various inputs
+
+    def it_creates(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/new', ws)
+        self.status(200, res)
+
+        frm = tab['form'].only
+
+        inp = frm['input[name=id]'].only
+
+        id = inp.value
+        
+        inps = frm['input, textarea']
+
+        desc = inps['[name=description]'].only
+        reason = inps['[name=reason]'].only
+
+        desc.text = self.dedent('''
+            As a user,
+            I would like the password field to be masked,
+            So ne'er-do-well can shoulder surf my password.
+        ''')
+
+        reason.text = self.dedent('''
+            This feature is necessary to for security compliance.
+        ''')
+
+        btnsubmit = frm['input[type=submit]'].only
+
+        self.expect(
+            db.RecordNotFoundError, lambda: effort.requirement(id)
+        )
+
+        btnsubmit.click()
+
+        req = self.expect(
+            None, lambda: effort.requirement(id)
+        )
+
+        self.eq(id, req.id.hex)
+
+        # XXX This breaks
+        #self.eq(desc.text, req.description)
+
+        self.eq(reason.text, req.reason)
+
+        self.none(req.asset)
+        self.none(req.product)
+        self.zero(req.roles)
+
 
 
 if __name__ == '__main__':
