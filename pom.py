@@ -2329,6 +2329,11 @@ class input(dom.div):
         if self.help:
             els += dom.small(self.help)
 
+    @property
+    def input(self):
+        """ XXX """
+        return self['input'].only
+
 class error(page):
     """ A page intended to show an error message. 
 
