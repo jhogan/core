@@ -902,6 +902,12 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         el.addEventListener('click', ajax)
 
     window.addEventListener('popstate', (e) => {
+        // If there is no state to pop (perhaps because nothing has been
+        // pushed yet), just force the browser back.
+        if (e.state === null){
+            history.back()
+        }
+
         // Parse the HTML response
         var parser = new DOMParser()
 
