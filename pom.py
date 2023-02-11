@@ -831,6 +831,8 @@ function ajax(e){
                     let new_ = els[0]
                     let url = new_.getAttribute('data-path')
 
+                    // Make sure event handler are hooked up to new
+                    // <main> HTML.
                     add_listeners(new_);
                     main.parentNode.replaceChild(new_, main)
                     window.history.pushState(
@@ -909,6 +911,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
         new_ = new_.querySelector('html>body>main')
 
+        // Make sure event handler are hooked up again
         add_listeners(new_);
 
         var old = document.querySelector('main')
@@ -930,6 +933,8 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 });
 
 function add_listeners(nd){
+    /* XXX
+    */
     for (trig of TRIGGERS){
         var els = nd.querySelectorAll(
             '[data-' + trig + '-handler]'
