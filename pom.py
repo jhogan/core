@@ -831,6 +831,7 @@ function ajax(e){
                     let new_ = els[0]
                     let url = new_.getAttribute('data-path')
 
+                    add_listeners(new_);
                     main.parentNode.replaceChild(new_, main)
                     window.history.pushState(
                         new_.outerHTML, null, pg
@@ -908,6 +909,8 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
         new_ = new_.querySelector('html>body>main')
 
+        add_listeners(new_);
+
         var old = document.querySelector('main')
 
         old.parentNode.replaceChild(new_, old)
@@ -925,6 +928,17 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         inspa = false
     }
 });
+
+function add_listeners(nd){
+    for (trig of TRIGGERS){
+        var els = nd.querySelectorAll(
+            '[data-' + trig + '-handler]'
+        )
+
+        for(el of els)
+            el.addEventListener(trig, ajax)
+    }
+}
 
 '''
         #// Return the JavaScript
