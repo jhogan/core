@@ -2503,3 +2503,8 @@ class _404(page):
         """
         return type(self).__name__.replace('_', '')
 
+class card(dom.article):
+    """ XXX
+    """
+
+
