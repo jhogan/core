@@ -749,9 +749,6 @@ function ajax(e){
                 return;
             }
 
-            // Prevent the browser from trying to load the HREF at the
-            // navigation link. We will do that here.
-            e.preventDefault()
         }else{
             // If the user clicked a nav link, but we aren't in SPA
             // mode, allow the browser to navigate to the link in the
@@ -759,6 +756,9 @@ function ajax(e){
             return;
         }
     }
+
+    // At this point, preventDefault() because it's all AJAX from here. 
+    e.preventDefault()
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
