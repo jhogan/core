@@ -824,7 +824,10 @@ function ajax(e){
                 // current HTML fragments.
                 els = els.querySelectorAll('html>body>*')
 
-                if(inspa){
+                // XXX Update commentary to describe what's going on is
+                // going on here
+
+                if(els[0].tagName == 'MAIN'){
                     let new_ = els[0]
                     let url = new_.getAttribute('data-path')
 
