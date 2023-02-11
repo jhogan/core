@@ -226,6 +226,7 @@ class ticketsspa_new(tester.tester):
 
         btnsubmit.click()
 
+
         req = self.expect(
             None, lambda: effort.requirement(id)
         )
@@ -240,8 +241,6 @@ class ticketsspa_new(tester.tester):
         self.none(req.asset)
         self.none(req.product)
         self.zero(req.roles)
-
-
 
 if __name__ == '__main__':
     tester.cli().run()

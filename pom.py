@@ -812,6 +812,9 @@ function ajax(e){
                 // Parse the HTML response
                 var parser = new DOMParser()
 
+                // XXX It's possible that we get nothing back (i.e.,
+                // xhr.responseText will be empty. In that case, don'
+                // parse or replace.
                 var els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
@@ -841,6 +844,11 @@ function ajax(e){
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
+                // XXX Remove this regardless of this.status: If we have
+                // a subsequent successful return, we will want to make
+                // sure the page no longer display the prior error
+                // message. Ensure this logic is in
+                // tester.browser._tab.element_event
                 let els = document.querySelectorAll('.exception')
                 els.forEach(e => e.remove())
 

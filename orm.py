@@ -5566,6 +5566,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Append the entity to that entities collection
             es += e
 
+    # XXX Move to the `orm` class
     @property
     def form(self):
         """ XXX """
