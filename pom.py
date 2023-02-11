@@ -873,19 +873,19 @@ function ajax(e){
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.send(JSON.stringify(d))
 }
+'''
+        r += f'const TRIGGERS = {list(dom.element.Triggers)}'
 
+        r += '''
 // Once content has been loaded (DOMContentLoaded), we can add listeners
 // to the controls.
 document.addEventListener("DOMContentLoaded", function(ev) {
-'''
-
-        r += f'    trigs = {list(dom.element.Triggers)}'
-
-        r += '''
     // For each currently supported trigger (you may
     // have to update Triggers if the event you want to
     // support doesn't exist)
-    for (trig of trigs){
+
+    // # XXX Use add_listeners()
+    for (trig of TRIGGERS){
         var els = document.querySelectorAll(
             '[data-' + trig + '-handler]'
         )
