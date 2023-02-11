@@ -11903,6 +11903,55 @@ class orm:
                         self._constituents += constituent(e)
         return self._constituents
 
+    ''' HTML representations '''
+    @property
+    def card(self):
+        """ XXX """
+        # XXX Write tests
+        import dom, pom
+        card = pom.card()
+
+        inst = self.instance
+        rent = builtins.type(inst)
+
+        names = list()
+
+        while rent:
+            for map in rent.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                name = map.name
+                label = name.capitalize()
+
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                if name == 'createdat':
+                    continue
+
+                if name == 'updatedat':
+                    continue
+
+                div = dom.div()
+                card += div
+
+                lbl = dom.label(name)
+                div += lbl
+
+                if name == 'id':
+                    lbl.hidden = True
+
+                v = getattr(inst, name)
+
+                lbl += dom.span(v)
+
+            rent = rent.orm.super
+
+        return card
+
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
 
