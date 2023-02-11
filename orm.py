@@ -5625,7 +5625,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             rent = rent.orm.super
 
-        frm += dom.input(type='submit')
+        frm += dom.button('Submit', type='submit')
 
         return frm
 
