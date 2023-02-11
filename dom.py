@@ -3205,6 +3205,20 @@ class button(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
+    def click(self):
+        """ XXX
+        """
+        # XXX Add tests
+        if self.type == 'submit':
+            # TODO We could also use the button.form (<button
+            # form="frm-123>) attribute to find the form for the button
+            # if the "closest" is not found.
+            frm = self.closest('form')
+            if frm:
+                frm.submit()
+                
+        self._trigger('click')()
+
 class navs(elements):
     """ A class used to contain a collection of ``nav`` elements.
     """
