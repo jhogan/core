@@ -218,7 +218,7 @@ class ticketsspa_new(tester.tester):
             This feature is necessary to for security compliance.
         ''')
 
-        btnsubmit = frm['input[type=submit]'].only
+        btnsubmit = frm['button[type=submit]'].only
 
         self.expect(
             db.RecordNotFoundError, lambda: effort.requirement(id)
