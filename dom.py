@@ -1364,7 +1364,7 @@ class element(entities.entity):
     # A tuple of supported trigger methods. These correspond to DOM
     # methods, such as element.focus(), which trigger a corresponding
     # event (onfocus).
-    Triggers = 'click', 'focus', 'blur', 'input',
+    Triggers = 'click', 'focus', 'blur', 'input', 'submit'
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
     # keydown/onkeydown), Make sure you add the trigger to the
@@ -2894,6 +2894,22 @@ class form(element):
     @autocomplete.setter
     def autocomplete(self, v):
         self.attributes['autocomplete'].value = v
+
+    ''' Events '''
+    @property
+    def onsubmit(self):
+        """ Returns the `onsubmit` event for this form.
+        """
+        return self._on('submit')
+
+    @onsubmit.setter
+    def onsubmit(self, v):
+        setattr(self, '_onsubmit', v)
+
+    def submit(self):
+        """ Triggers the `submit` event for this form.
+        """
+        return self._trigger('submit')()
 
 class links(elements):
     """ A class used to contain a collection of ``link`` elements.
