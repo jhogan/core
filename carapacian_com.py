@@ -344,17 +344,28 @@ class tickets(pom.page):
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
     class new(pom.page):
-        def btnsubmit_onsubmit(self, src, eargs):
+        def frm_onsubmit(self, src, eargs):
             # XXX Test updating dates to None (null) values
-            inps = eargs.html['input, textarea, hidden']
-            
-            req = effort.requirement()
+            frm = eargs.html.only
+            inps = frm['input, textarea, hidden']
+
+            req = None
+            id = inps['[name=id]'].only.value
+            if id:
+                try:
+                    id = UUID(id)
+                except:
+                    raise
+                else:
+                    try:
+                        req = effort.requirement(id)
+                    except db.RecordNotFoundError:
+                        pass
+
+            if not req:
+                req = effort.requirement()
 
             for inp in inps:
-                if isinstance(inp, dom.input):
-                    if inp.type == 'submit':
-                        continue
-
                 if isinstance(inp, dom.textarea):
                     v = inp.text
                 elif isinstance(inp, dom.input):
@@ -366,7 +377,14 @@ class ticketsspa(pom.spa):
 
                     setattr(req, inp.name, v)
 
-            req.save()
+            try:
+                req.save()
+            except:
+                raise
+            else:
+                card = req.orm.card
+                card.id = frm.id 
+                eargs.html = card
             
         def main(self):
             self.main += dom.p('Create a ticket')
@@ -377,10 +395,7 @@ class ticketsspa(pom.spa):
 
             self.main += frm
 
-
-            btnsubmit = frm['input[type=submit]'].only
-
-            btnsubmit.onclick += self.btnsubmit_onsubmit, frm
+            frm.onsubmit += self.frm_onsubmit, frm
     
     class people(pom.page):
         ''' Inner classes (pages) '''
