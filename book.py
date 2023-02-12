@@ -7225,8 +7225,10 @@ with book('Hacking Carapacian Core'):
           a person) who has legal ownership of the data in the given
           entity.
 
-          The ORM only allows proprietors access to the entities they
-          own, i.e., **multitenancy** is supproted at the ORM level. 
+          Records owned by different proprietors can exist in the same
+          database. The ORM ensures that a proprietor can never access
+          records owned by another proprietor. This feature is known as
+          **multitenancy**.
 
           When a program or script begins to use the ORM, it is
           responsible for identifying who the proprietor is and
@@ -7248,8 +7250,66 @@ with book('Hacking Carapacian Core'):
           Above, we create a company called `bynd`. We get the
           `orm.security` singleton instance, and we set its `proprietor`
           attribute to `bynd`. Now the ORM knows who the proprietor is.
+
+          Any entity after this point will have its proprietor attribute
+          automatically assigned to `bynd`:
         ''')
 
+        with listing('Aserting entity proprietorship'):
+          # Create a new product
+          gd = product.good(name='Beyond Burger')
+
+          # The new product entity is the property of bynd
+          self.is_(bynd, gd.proprietor) 
+
+          # Save the product to the database
+          gd.save()
+
+          # Assert there are no issues reloading this product
+          self.expect(None, gd.orm.reloaded)
+
+        print('''
+          Above we see that we can save and reload the product without
+          issue. Let's see what happens if we change the proprietor:
+        ''')
+
+        with listing('Change the proprietor and attempt to query'):
+          # Create the otly company
+          otly = party.company(name='Oatly Group AB')
+
+          # Make otly the proprietor
+          sec.proprietor = otly
+
+          # Assert that the ORM can't reload the Beyond Burger product
+          self.expect(db.RecordNotFoundError, gd.orm.reloaded)
+
+          # Assert that the ORM can't load by id
+          self.expect(db.RecordNotFoundError, product.good(gd.id)
+
+          # Assert that the ORM can't query
+          gds = products.goods(id, gd.id)
+          self.zero(gds)
+
+          # Assert that Otly can't make updates to the Beyond Meat's
+          # record
+          gd.comment = 'This is now Otly proporty'
+          self.expect(orm.ProprietorError, gd.save)
+
+          # Assert that Otly can't create records and pass them off as
+          # Beyond Meat's records
+          gd = product.good('Impossible Burger')
+          gd.propritor = bynd
+          self.expect(orm.ProprietorError, gd.save)
+
+        print('''
+          As you can see, now that we have changed the propritor to
+          Oatly, the ORM behaves as if it is completely unaware of the
+          existance of Beyond Meat's records. Additionally, the ORM
+          ensures that records can't be update or created by Otly
+          then assigned ownership to another Beyond Meat. These measures
+          are obviously important since we wouldn't want Beyond Meat to
+          be able to access Otly's data and vice versa.
+        ''')
 
       with section('Authorization', id='54014644'):
         ...
