@@ -5576,6 +5576,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         rent = builtins.type(self)
 
+        # Assign the data-entity attribute of the <form>, e.g.:
+        # 
+        #     <form data-entity="product.service">
+        #
+        e = rent
+        e = f'{e.__module__}.{e.__name__}'
+        frm.attributes['data-entity'] = e
+
         names = list()
 
         while rent:
@@ -5597,6 +5605,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if name == 'updatedat':
                     continue
 
+                step = None
+
                 if name == 'id':
                     type = 'hidden'
                     label = None
@@ -5613,10 +5623,32 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 elif map.isdatetime:
                     type = 'datetime-local'
 
+                # TODO We should probably have a map.isnumeric here
+                elif map.isdecimal:
+                    type = 'number'
+                    
+                    # A `step` of "any" allows decimal values to be
+                    # entered
+                    step = 'any'
+
                 else:
                     continue
 
                 inp = pom.input(name=name, type=type, label=label)
+
+                inp.attributes['data-entity-attribute'] = map.name
+
+                dominp = inp.input
+
+                if map.isstr:
+                    dominp.minlength = map.min
+                    dominp.maxlength = map.max
+                elif map.isdecimal:
+                    dominp.min = map.min
+                    dominp.max = map.max
+
+                if step:
+                    dominp.step = step
 
                 if name == 'id':
                     inp.input.value = self.id.hex
