@@ -939,11 +939,11 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     }
 });
 
-function add_listeners(nd){
+function add_listeners(el){
     /* XXX
     */
     for (trig of TRIGGERS){
-        var els = nd.querySelectorAll(
+        var els = el.querySelectorAll(
             '[data-' + trig + '-handler]'
         )
 
