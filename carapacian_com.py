@@ -368,14 +368,17 @@ class ticketsspa(pom.spa):
             for inp in inps:
                 if isinstance(inp, dom.textarea):
                     v = inp.text
+
                 elif isinstance(inp, dom.input):
                     v = inp.value
 
-                if v:
-                    if inp.name == 'id':
-                        v = UUID(v)
+                if v == '':
+                    v = None
 
-                    setattr(req, inp.name, v)
+                if inp.name == 'id':
+                    v = UUID(v)
+
+                setattr(req, inp.name, v)
 
             try:
                 req.save()
