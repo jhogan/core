@@ -788,6 +788,7 @@ function ajax(e){
         // Concatenate the fragment's HTML
         html = ''
         for(el of els)
+            wake(el)
             html += el.outerHTML
 
         pg = window.location.href
@@ -948,6 +949,29 @@ function add_listeners(nd){
 
         for(el of els)
             el.addEventListener(trig, ajax)
+    }
+}
+
+function wake(el){
+    /* XXX
+    */
+
+    if (el.tagName != 'FORM'){
+        return;
+    }
+
+    els = el.querySelectorAll('[name]')
+
+    for (el of els){
+        if (el.tagName == 'TEXTAREA'){
+            nd = document.createTextNode(el.value)
+            el.appendChild(nd)
+        }
+        if (el.tagName == 'INPUT'){
+            el.setAttribute('value', el.value)
+        }
+        // TODO Add support for other input elements like checkboxes,
+        // dropdown lists, etc.
     }
 }
 
