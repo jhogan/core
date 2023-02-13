@@ -825,21 +825,33 @@ function ajax(e){
                 // current HTML fragments.
                 els = els.querySelectorAll('html>body>*')
 
-                // XXX Update commentary to describe what's going on is
-                // going on here
-
+                // If a <main> tag was returned, we are doing a SPA page
+                // load.
                 if(els[0].tagName == 'MAIN'){
+                    // Get the new <main> element
                     let new_ = els[0]
+
+                    // XXX It looks like we can remove this
                     let url = new_.getAttribute('data-path')
 
                     // Make sure event handler are hooked up to new
                     // <main> HTML.
                     add_listeners(new_);
+
+                    // Replace the current <main> element with the new_
+                    // one received from the AJAX call.
                     main.parentNode.replaceChild(new_, main)
+
+                    // Push the HTML of the new <main> object on to the
+                    // history stack so users can get to it by clicking
+                    // the browser's back button.
                     window.history.pushState(
                         new_.outerHTML, null, pg
                     )
-                }else{ // Not inspa
+                // If the element is not a <main>, we are doing a
+                // regular AJAX call, i.e., we are no loading a new
+                // <main> as a SPA page.
+                }else{
 
                     // Iterate over each element and replace their
                     // client-side counterpart
@@ -940,7 +952,9 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 });
 
 function add_listeners(el){
-    /* XXX
+    /* Takes an element `el` and examins it for any
+     * data-{trigger}-handler attributes. Uses this information to
+     * attach el to event the `ajax` event handler.
     */
     for (trig of TRIGGERS){
         var els = el.querySelectorAll(
@@ -953,13 +967,22 @@ function add_listeners(el){
 }
 
 function wake(el){
-    /* XXX
+    /* Make the element (typically a <form>) fully aware of the values
+     * that the user has put in its form fields.
+     * 
+     * Wake solves sort of an odd problem. When user's enter data into
+     * form fields, that data is not immediatly accessable in the HTML
+     * returned by `el.outerHTML`. This function gets the data, and then
+     * assigns the data to the <form>'s elements. Once complete, the
+     * outerHTML will contain the values that the user has put into the
+     * form fields.
     */
 
     if (el.tagName != 'FORM'){
         return;
     }
 
+    // Get all elements of the <form> with a `name` attribute
     els = el.querySelectorAll('[name]')
 
     for (el of els){
@@ -2391,7 +2414,14 @@ class input(dom.div):
 
     @property
     def input(self):
-        """ XXX """
+        """ Return the underlying dom.input/dom.textarea element for
+        this `input` object.
+
+        This may be a little confusing since this object is called
+        pom.input. `pom.input` is actmualy a <div>. It will contain
+        either one <input> or one <textarea> as a child object. That
+        child object is returned by this property.
+        """
         return self['input, textarea'].only
 
 class error(page):
@@ -2553,7 +2583,11 @@ class _404(page):
         return type(self).__name__.replace('_', '')
 
 class card(dom.article):
-    """ XXX
+    """ A `card` is an <article> that contains the data for an entity,
+    typically an `orm.entity`. 
+
+    Refer to the `orm.card` @property to see how a `card` is created to
+    represent an ORM entity.
     """
 
 
