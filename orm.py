@@ -11946,11 +11946,18 @@ class orm:
         inst = self.instance
         rent = builtins.type(inst)
 
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+        card.attributes['data-entity'] = e
+
         names = list()
 
         while rent:
             for map in rent.orm.mappings:
                 if not isinstance(map, fieldmapping):
+                    continue
+
+                if isinstance(map, foreignkeyfieldmapping):
                     continue
 
                 name = map.name
@@ -11968,16 +11975,15 @@ class orm:
                     continue
 
                 div = dom.div()
+                div.attributes['data-entity-attribute'] = name
                 card += div
 
-                lbl = dom.label(name)
+                lbl = dom.label(name.capitalize())
                 div += lbl
-
-                if name == 'id':
-                    lbl.hidden = True
 
                 v = getattr(inst, name)
 
+                span = dom.span(v)
                 lbl += dom.span(v)
 
             rent = rent.orm.super
