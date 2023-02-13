@@ -2392,7 +2392,7 @@ class input(dom.div):
     @property
     def input(self):
         """ XXX """
-        return self['input'].only
+        return self['input, textarea'].only
 
 class error(page):
     """ A page intended to show an error message. 
