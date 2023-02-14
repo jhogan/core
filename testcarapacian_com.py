@@ -248,5 +248,43 @@ class ticketsspa_new(tester.tester):
         self.none(req.product)
         self.zero(req.roles)
 
+    def it_creates_and_updates_qs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/new', ws)
+        self.status(200, res)
+
+        frm = tab['form'].only
+
+        inp = frm['input[name=id]'].only
+
+        inps = frm['input, textarea']
+
+        desc = inps['[name=description]'].only
+        reason = inps['[name=reason]'].only
+
+        desc.text = self.dedent('''
+            As a user,
+            I would like the password field to be masked,
+            So ne'er-do-well can shoulder surf my password.
+        ''')
+
+        btnsubmit = frm['button[type=submit]'].only
+
+        res = btnsubmit.click()
+        return
+
+
+        qs = tab.url.qs
+
+        self.one(qs)
+
+        inp = frm['input[name=id]'].only
+        id = inp.value
+
+        self.eq(id, tab.url.qs['id'])
+
+
 if __name__ == '__main__':
     tester.cli().run()
