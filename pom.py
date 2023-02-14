@@ -858,6 +858,20 @@ function ajax(e){
                         // Use the fragment's id to find and replace
                         let old = document.querySelector('#' + el.id)
                         old.parentNode.replaceChild(el, old)
+
+                        // XXX explain
+                        if (el.tagName == 'ARTICLE'){
+                            if (el.classList.contains('card')){
+                                var id = el.getAttribute(
+                                    'data-entity-id'
+                                )
+                                window.history.replaceState(
+                                    '',
+                                    '',
+                                    'id=' + id
+                                )
+                            }
+                        }
                     }
                 }
             }else{ // If there was an error...

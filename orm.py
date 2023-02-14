@@ -11949,6 +11949,7 @@ class orm:
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
         card.attributes['data-entity'] = e
+        card.attributes['data-entity-id'] = inst.id.hex
 
         names = list()
 
