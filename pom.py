@@ -2602,5 +2602,8 @@ class card(dom.article):
     Refer to the `orm.card` @property to see how a `card` is created to
     represent an ORM entity.
     """
+    def __init__(self, *args, **kwargs):
+        self.classes += 'card'
+        super().__init__(*args, **kwargs)
 
 
