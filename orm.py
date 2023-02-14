@@ -5569,11 +5569,19 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     # XXX Move to the `orm` class
     @property
     def form(self):
-        """ XXX """
+        """ Return a <form> object for this `entity`. 
+
+        The <form> object can be sent to a browser to accept input by a
+        user to create or update the values of this `entity`.
+        """
         # XXX Write tests
         import pom, dom
+
+        # Create the <form> that we wil build and return
         frm = dom.form()
 
+        # Get a referece to self's class. We will use it to ascend the
+        # inheritence hierarchy.
         rent = builtins.type(self)
 
         # Assign the data-entity attribute of the <form>, e.g.:
@@ -5584,32 +5592,41 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         e = f'{e.__module__}.{e.__name__}'
         frm.attributes['data-entity'] = e
 
+        # Create a list to store map names we've encountered. This
+        # prevent access the same attribute twice.
         names = list()
 
+        # The ascendancy loop
         while rent:
+
+            # For each map ...
             for map in rent.orm.mappings:
                 if not isinstance(map, fieldmapping):
                     continue
 
                 name = map.name
-                label = name.capitalize()
+                lbl = name.capitalize()
 
+                # Don't revisit the same name
                 if name in names:
                     continue
 
                 names.append(name)
 
+                # Skip fields the user should not be responsible for
                 if name == 'createdat':
                     continue
 
                 if name == 'updatedat':
                     continue
 
+                # The `step` attribute of the <input> element
                 step = None
 
+                # Hide the id field
                 if name == 'id':
                     type = 'hidden'
-                    label = None
+                    lbl = None
 
                 elif map.isstr:
                     if map.definition == 'longtext':
@@ -5634,12 +5651,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 else:
                     continue
 
-                inp = pom.input(name=name, type=type, label=label)
+                # Create a pom.input object to store the <label> with the
+                # <input> field.
+                inp = pom.input(name=name, type=type, label=lbl)
 
                 inp.attributes['data-entity-attribute'] = map.name
 
+                # Get the underlying <input> object
                 dominp = inp.input
 
+                # Set some browser validation attributes
                 if map.isstr:
                     dominp.minlength = map.min
                     dominp.maxlength = map.max
@@ -5650,6 +5671,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if step:
                     dominp.step = step
 
+                # Hexify the primary key
                 if name == 'id':
                     inp.input.value = self.id.hex
 
@@ -5657,6 +5679,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             rent = rent.orm.super
 
+        # Add a <button type="submit">
         frm += dom.button('Submit', type='submit')
 
         return frm
@@ -7755,30 +7778,29 @@ class fieldmapping(mapping):
                 return 'longtext'
 
         elif self.isint:
-            # XXX Fix line width
             if self.min < 0:
-                if    self.min  >=  -128         and  self.max  <=  127:
+                if self.min >= -128 and self.max <= 127:
                     return 'tinyint'
-                elif  self.min  >=  -32768       and  self.max  <=  32767:
+                elif self.min >= -32768 and self.max <= 32767:
                     return 'smallint'
-                elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                elif self.min >= -8388608 and self.max <= 8388607:
                     return 'mediumint'
-                elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                elif self.min >= -2147483648 and self.max <= 2147483647:
                     return 'int'
-                elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                elif self.min >= -2**63 and self.max <= 2**63-1:
                     return 'bigint'
                 else:
                     raise ValueError()
             else:
-                if self.max  <=  255:
+                if self.max <= 255:
                     return 'tinyint unsigned'
-                elif self.max  <=  65535:
+                elif self.max <= 65535:
                     return 'smallint unsigned'
-                elif self.max  <=  16777215:
+                elif self.max <= 16777215:
                     return 'mediumint unsigned'
-                elif self.max  <=  4294967295:
+                elif self.max <= 4294967295:
                     return 'int unsigned'
-                elif self.max  <=  (2 ** 64) - 1:
+                elif self.max <= (2 ** 64) - 1:
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
@@ -11938,22 +11960,57 @@ class orm:
     ''' HTML representations '''
     @property
     def card(self):
-        """ XXX """
+        """ Returns a read-only HTML representation of the entity. 
+
+        cards are <article>s that show the entity's attribute names
+        along with their values. Other metadata is included to make it
+        easy to address the various elements (by CSS and JavaScript):
+
+            <article class="card" 
+                data-entity="effort.requirement" 
+                data-entity-id="68d5ddd32748445ca363798b33b90188"
+            >
+                <div data-entity-attribute="id">
+                    <label>
+                        Id
+                        <span>68d5ddd3-2748-445c-a363-798b33b90188</span>
+                    </label>
+                </div>
+                <div data-entity-attribute="description">
+                    <label>
+                        Description
+                        <span>
+                            The description
+                        </span>
+                    </label>
+                </div>
+            </article>
+
+        `card` is the read-only counterpart to the orm.form attribute.
+        """
         # XXX Write tests
         import dom, pom
+
+        # Create the `card` object that we will build and return
         card = pom.card()
 
         inst = self.instance
         rent = builtins.type(inst)
 
+        # Set some attributes that store meta data
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
         card.attributes['data-entity'] = e
         card.attributes['data-entity-id'] = inst.id.hex
 
+        # Create a `names` list so we don't use the same attribute name
+        # twice.
         names = list()
 
+        # The inheritance ascension loop
         while rent:
+            
+            # Iterate over the mappings
             for map in rent.orm.mappings:
                 if not isinstance(map, fieldmapping):
                     continue
@@ -11964,29 +12021,33 @@ class orm:
                 name = map.name
                 label = name.capitalize()
 
+                # Prevent redundant use of a name
                 if name in names:
                     continue
 
                 names.append(name)
 
+                # Skip systemic attributes 
                 if name == 'createdat':
                     continue
 
                 if name == 'updatedat':
                     continue
 
+                # Create a <div> for each mapping
                 div = dom.div()
                 div.attributes['data-entity-attribute'] = name
                 card += div
 
+                # Add a <label> to the <div>
                 lbl = dom.label(name.capitalize())
                 div += lbl
 
+                # Create a <span> to hold the mapping's value
                 v = getattr(inst, name)
-
-                span = dom.span(v)
                 lbl += dom.span(v)
 
+            # Ascend
             rent = rent.orm.super
 
         return card

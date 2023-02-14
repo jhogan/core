@@ -3206,7 +3206,11 @@ class button(element):
         self.attributes['formmethod'].value = v
 
     def click(self):
-        """ XXX
+        """ Triggers the click event for a button.
+
+        For <button>s that have a `type` of "submit", this event
+        searches for the <button>'s <form> and triggers the <form>'s
+        `submit` event.
         """
         # XXX Add tests
         if self.type == 'submit':
