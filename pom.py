@@ -814,7 +814,7 @@ function ajax(e){
                 var parser = new DOMParser()
 
                 // XXX It's possible that we get nothing back (i.e.,
-                // xhr.responseText will be empty. In that case, don'
+                // xhr.responseText will be empty). In that case, don't
                 // parse or replace.
                 var els = parser.parseFromString(
                     xhr.responseText, "text/html"
@@ -852,7 +852,6 @@ function ajax(e){
                 // regular AJAX call, i.e., we are no loading a new
                 // <main> as a SPA page.
                 }else{
-
                     // Iterate over each element and replace their
                     // client-side counterpart
                     for(el of els){
@@ -1997,7 +1996,7 @@ class page(dom.html):
 
     def clear(self):
         """ Used to initialize the page's <main> element and set it's
-        data-path attribute to the path of the page. Also is used to
+        ata-path attribute to the path of the page. Also is used to
         clear any state data that may continue to exist between calls to
         the same page.
         """

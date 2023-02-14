@@ -386,6 +386,10 @@ class ticketsspa(pom.spa):
                 raise
             else:
                 card = req.orm.card
+
+                # Set the card's id attribute to that of the <form> so
+                # the JavaScript in the client can replace the <form>
+                # with the card.
                 card.id = frm.id 
                 eargs.html = card
             

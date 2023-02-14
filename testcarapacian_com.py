@@ -224,8 +224,14 @@ class ticketsspa_new(tester.tester):
             db.RecordNotFoundError, lambda: effort.requirement(id)
         )
 
+        # XXX We need to find a way to get the results of a button
+        # click. We need to be able to do stuff like this:
+        #
+        #     res = btnsubmit.click()
+        #     self.ok(res)
+        #     
+       
         btnsubmit.click()
-
 
         req = self.expect(
             None, lambda: effort.requirement(id)
