@@ -7265,7 +7265,8 @@ with book('Hacking Carapacian Core'):
           # Save the product to the database
           gd.save()
 
-          # Assert there are no issues reloading this product
+          # Assert there are no issues reloading this product as the
+          # proprietor `bynd`
           self.expect(None, gd.orm.reloaded)
 
         print('''
@@ -7306,13 +7307,75 @@ with book('Hacking Carapacian Core'):
           Oatly, the ORM behaves as if it is completely unaware of the
           existance of Beyond Meat's records. Additionally, the ORM
           ensures that records can't be update or created by Otly
-          then assigned ownership to another Beyond Meat. These measures
-          are obviously important since we wouldn't want Beyond Meat to
-          be able to access Otly's data and vice versa.
+          then assigned ownership to Beyond Meat. These measures are
+          obviously important since we wouldn't want Beyond Meat to be
+          able to access Otly's data and vice versa.
+
+          It's possbile to change the proprietor temporarily. This will
+          unlikely be needed for most use cases but it is important to
+          know how to do for some types of tests and for lower-level
+          code. We can use the `orm.proprietor` context manager to
+          perform a temporary switch.
+          
+          Let's create a product as Oatly and perform a tests that
+          ensures another company, such as Beyond Meat, can't access or
+          data:
+        ''')
+
+        with listing('Temporarily swtiching proprietor'):
+          # Make otly the proprietor
+          sec.proprietor = otly
+
+          # Create a product as Otly
+          gd = product.good('Barista Edition')
+          gd.save()
+
+          # Reload product as bynd
+          with orm.proprietor(bynd):
+            # We expect the reload to fail
+            self.expect(db.RecordNotFoundError, gd.orm.reloaded)
+
+          # Out of the context manager, we are otly again, so we expect
+          # the reloda to succeed.
+          self.expect(None, gd.orm.reloaded)
+
+        print('''
+          As you can see, the `orm.proprietor` context manager
+          temporarily makes the proprietor `bynd`, meaning we can't
+          access any of `otly`'s entities. 
+
+          This example may seem a little remedial because we are just
+          demonstrating tenent entity isolation again. However, it's
+          import to use the context manager for situations like this. In
+          cases where there is an exception, execution of the code may
+          resume in some exception handler up the call stack as the
+          proprietor that we switched to. The context manager will
+          ensure that if there is an exception, the proprietor is
+          switched back after the context manager is exited, thus
+          ensuring proper access is maintained after the exception.
+        ''')
+
+        print('''
+          The ORM ensures that a tenant's data is completly isolated
+          from other tenants. This makes it possbile to use the same
+          physical database to store the records of multiple tentants.
+          This is an important feature for any SaaS product. Imagine
+          logging into you Gmail account and seeing other people's. What
+          if other company's could see your Jira tickets. This would
+          obviously be untenable (as it were). 
+
+          You could create seperate physical databases for each client
+          of your SaaS product to solve the same problem. However, this
+          can produce needless overhead. For each new database, you need
+          to setup and maintain the database. In many situations, it may
+          be preferable to only have one database that can host multiple
+          tenants.
         ''')
 
       with section('Authorization', id='54014644'):
-        ...
+        """
+          * Anonymous owner
+        """
 
 
       with section('Authentication'):
