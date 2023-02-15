@@ -561,6 +561,23 @@ class url(orm.entity):
         return urllib.parse.urlparse(self.address).path
 
     @property
+    def query(self):
+        """ XXX
+        """
+        # XXX Test
+        import urllib.parse
+        return urllib.parse.urlparse(self.address).query
+
+    @property
+    def qs(self):
+        """ XXX
+        """
+        # XXX Test
+        import urllib.parse
+        return urllib.parse.parse_qs(self.query)
+
+
+    @property
     def creatability(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
