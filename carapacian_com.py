@@ -393,7 +393,28 @@ class ticketsspa(pom.spa):
                 # with the card.
                 card.id = frm.id 
                 eargs.html = card
-            
+
+                # XXX:fc4077ea 
+                url = www.application.current.request.url
+                url = str(url)
+
+                # TODO We need to come up with a way to make
+                # ecommerce.urls mutatable. Since they are ensured, this
+                # isn't really possible. We want to be able to do
+                # something like thin
+                #
+                #     url.qs['id'] = req.id.hex
+                #
+
+                url += f'?id={req.id.hex}'
+
+
+                
+                instrs = pom.instructions()
+                instrs += pom.set('url', url)
+
+                card += instrs
+
         def main(self):
             self.main += dom.p('Create a ticket')
 

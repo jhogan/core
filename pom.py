@@ -856,22 +856,9 @@ function ajax(e){
                     // client-side counterpart
                     for(el of els){
                         // Use the fragment's id to find and replace
+                        exec(el)
                         let old = document.querySelector('#' + el.id)
                         old.parentNode.replaceChild(el, old)
-
-                        // XXX explain
-                        if (el.tagName == 'ARTICLE'){
-                            if (el.classList.contains('card')){
-                                var id = el.getAttribute(
-                                    'data-entity-id'
-                                )
-                                window.history.replaceState(
-                                    '',
-                                    '',
-                                    'id=' + id
-                                )
-                            }
-                        }
                     }
                 }
             }else{ // If there was an error...
@@ -1008,6 +995,28 @@ function wake(el){
         }
         // TODO Add support for other input elements like checkboxes,
         // dropdown lists, etc.
+    }
+}
+
+function exec(el){
+    /* XXX
+    */
+    var instrss = el.querySelectorAll('.instructions')
+
+    for (var instrs of instrss){
+        instrs = instrs.querySelectorAll('.instruction')
+
+        for (var instr of instrs){
+            if (instr.classList.contains('set')){
+                if (instr.getAttribute('name') == 'url'){
+                    var main = document.querySelector('main')
+                    var content = instr.getAttribute('content')
+                    window.history.pushState(
+                        main.outerHTML, null, content
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -2605,5 +2614,31 @@ class card(dom.article):
     def __init__(self, *args, **kwargs):
         self.classes += 'card'
         super().__init__(*args, **kwargs)
+
+class instructions(dom.article):
+    """ XXX
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.classes += 'instructions'
+
+class instruction(dom.meta):
+    """ XXX
+    """
+    def __init__(self, *args, **kwargs):
+        self.classes += 'instruction'
+
+class set(instruction):
+    def __init__(self, lhs, rhs, *args, **kwargs):
+        self.lhs = lhs
+        self.rhs = rhs
+
+        self.name = lhs
+        self.content = rhs
+
+        self.classes += 'set'
+
+        super().__init__(*args, **kwargs)
+    
 
 
