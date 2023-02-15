@@ -344,7 +344,7 @@ class application:
 # WSGI request class at the same time. We may want to add a new subclass
 # of request call `wsgirequest` that would encapsulate the WSGI logic so
 # we can get it out of the regular `request` class.
-class request:
+class request(entities.entity):
     """ Represents an HTTP request.
 
     The class is designed represent any HTTP request. However, there a
@@ -1480,7 +1480,7 @@ class request:
                 'Method "%s" is never allowed' % self.method
             )
 
-class response():
+class response(entities.entity):
     Messages = {
         200: 'OK',
 		201: 'Created',
