@@ -983,11 +983,11 @@ function wake(el){
     }
 
     // Get all elements of the <form> with a `name` attribute
-    els = el.querySelectorAll('[name]')
+    var els = el.querySelectorAll('[name]')
 
-    for (el of els){
+    for (var el of els){
         if (el.tagName == 'TEXTAREA'){
-            nd = document.createTextNode(el.value)
+            var nd = document.createTextNode(el.value)
             el.appendChild(nd)
         }
         if (el.tagName == 'INPUT'){
