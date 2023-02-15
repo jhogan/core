@@ -460,6 +460,19 @@ class tester(entities.entity):
             self.tester = t
 
         ''' Inner classes '''
+        class messages(entities.entities):
+            """ XXX
+            """
+
+        class message(entities.entity):
+            """ XXX
+            """
+            def __init__(self, res=None, req=None, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+                self.request = None
+                self.response = None
+
         class _tabs(www.browser._tabs):
             """ A collection of test browser tabs.
 
@@ -517,6 +530,8 @@ class tester(entities.entity):
                 self._onbeforeunload = None
                 self._onafterload = None
                 self.url = None
+
+                self.messages = tester._browser.messages()
 
             def default_event(self, src, eargs):
                 """ This is the default event handler for all supported
@@ -1096,6 +1111,9 @@ class tester(entities.entity):
 
                 # Create request. Associate with app.
                 req = www.request(app)
+
+                msg = tester._browser.message(req=req)
+                self.messages += msg
 
                 app.breakonexception = \
                     self.browser.tester.testers.breakonexception
