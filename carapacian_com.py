@@ -17,6 +17,7 @@ import effort
 import file
 import party
 import pom
+import www
 
 class sites(pom.sites):
     pass

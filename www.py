@@ -1317,7 +1317,7 @@ class request:
             
             https://foo.net:8000/en/my/page
         """
-        # TODO Ensure this always returns a ecommerce.url
+        # XXX:fc4077ea Ensure this always returns a ecommerce.url
         if self._url:
             return self._url
 
