@@ -531,6 +531,7 @@ class tester(entities.entity):
                 self._onafterload = None
                 self.url = None
 
+                # XXX Explain 
                 self.messages = tester._browser.messages()
 
             def default_event(self, src, eargs):
@@ -1113,6 +1114,8 @@ class tester(entities.entity):
                 req = www.request(app)
 
                 msg = tester._browser.message(req=req)
+
+                # XXX Test
                 self.messages += msg
 
                 app.breakonexception = \
