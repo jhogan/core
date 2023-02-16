@@ -272,10 +272,11 @@ class ticketsspa_new(tester.tester):
 
         btnsubmit = frm['button[type=submit]'].only
 
-        res = btnsubmit.click()
-        return
+        with tab.capture() as msgs:
+            btnsubmit.click()
+            self.ok(msgs.last.response)
 
-
+        B()
         qs = tab.url.qs
 
         self.one(qs)
