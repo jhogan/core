@@ -344,7 +344,7 @@ class tickets(pom.page):
 
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
-    class new(pom.page):
+    class ticket(pom.page):
         def frm_onsubmit(self, src, eargs):
             # XXX Test updating dates to None (null) values
             frm = eargs.html.only
@@ -543,7 +543,7 @@ class ticketsspa(pom.spa):
 
         # Main
         self.pages += ticketsspa.backlog()
-        self.pages += ticketsspa.new()
+        self.pages += ticketsspa.ticket()
         self.pages += ticketsspa.search()
         self.pages += ticketsspa.people()
 
