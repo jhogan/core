@@ -467,11 +467,11 @@ class tester(entities.entity):
         class message(entities.entity):
             """ XXX
             """
-            def __init__(self, res=None, req=None, *args, **kwargs):
+            def __init__(self, req=None, res=None, *args, **kwargs):
                 super().__init__(*args, **kwargs)
 
-                self.request = None
-                self.response = None
+                self.request = req
+                self.response = res
 
         class _tabs(www.browser._tabs):
             """ A collection of test browser tabs.
@@ -1123,6 +1123,8 @@ class tester(entities.entity):
 
                 res = www.response(req) 
 
+                msg.response = res
+
                 # Just get the status code from st (which contains the
                 # entire phrase, i.e., '200 OK'). In the future, we may
                 # have a res.message setter that can parse this out, but
@@ -1161,6 +1163,24 @@ class tester(entities.entity):
                 self.site = ws
                 return res
 
+            @contextmanager
+            def capture(self):
+                """ XXX
+                """
+                msgs = tester._browser.messages()
+
+                def messages_onadd(src, eargs):
+                    nonlocal msgs
+                    e = eargs.entity
+                    msgs += e
+                    
+                try:
+                    self.messages.onadd += messages_onadd
+                    yield msgs
+                finally:
+                    self.messages.onadd -= messages_onadd
+
+                    
         ''' Class members of browser'''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
