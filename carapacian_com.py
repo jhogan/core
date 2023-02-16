@@ -408,23 +408,23 @@ class ticketsspa(pom.spa):
 
                 url += f'?id={req.id.hex}'
 
-
-                
                 instrs = pom.instructions()
                 instrs += pom.set('url', url)
 
                 card += instrs
 
-        def main(self):
-            self.main += dom.p('Create a ticket')
+        def main(self, id=None):
+            req = effort.requirement(id)
 
-            req = effort.requirement()
+            if req.orm.isnew:
+                el = req.form
+                el << dom.p('Create a ticket')
+                el.onsubmit += self.frm_onsubmit, el
+            else:
+                el = req.orm.card
 
-            frm = req.form
+            self.main += el
 
-            self.main += frm
-
-            frm.onsubmit += self.frm_onsubmit, frm
     
     class people(pom.page):
         ''' Inner classes (pages) '''
