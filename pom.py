@@ -940,7 +940,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
     var main = document.querySelector('main')
     window.history.pushState(
-        main.outerHTML, null, window.location.pathname
+        main.outerHTML, null, window.location.href
     )
 
     // We default to non-SPA.
