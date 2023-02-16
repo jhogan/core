@@ -554,7 +554,13 @@ class ticketsspa(pom.spa):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        self.header.menus += pom.menu.make(self.pages, 'spa')
+        mnu = pom.menu('Spa')
+        self.header.menus += mnu
+        mnu.items  +=  pom.menu.item('New',   'ticketsspa/ticket')
+        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlog')
+        mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
+        mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
+
 
 # The Css for the site. See site.styles
 Css = '''
