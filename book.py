@@ -7293,7 +7293,7 @@ with book('Hacking Carapacian Core'):
 
           # Assert that Otly can't make updates to the Beyond Meat's
           # record
-          gd.comment = 'This is now Otly proporty'
+          gd.comment = 'This is now Oatly property'
           self.expect(orm.ProprietorError, gd.save)
 
           # Assert that Otly can't create records and pass them off as
@@ -7307,18 +7307,18 @@ with book('Hacking Carapacian Core'):
           Oatly, the ORM behaves as if it is completely unaware of the
           existance of Beyond Meat's records. Additionally, the ORM
           ensures that records can't be update or created by Otly
-          then assigned ownership to Beyond Meat. These measures are
+          and then assigned ownership to Beyond Meat. These measures are
           obviously important since we wouldn't want Beyond Meat to be
           able to access Otly's data and vice versa.
 
           It's possbile to change the proprietor temporarily. This will
-          unlikely be needed for most use cases but it is important to
-          know how to do for some types of tests and for lower-level
-          code. We can use the `orm.proprietor` context manager to
-          perform a temporary switch.
+          unlikely be needed for most use cases, but it is important to
+          know how to do this for some types of tests and for
+          lower-level code. We can use the `orm.proprietor` context
+          manager to perform a temporary switch.
           
-          Let's create a product as Oatly and perform a tests that
-          ensures another company, such as Beyond Meat, can't access or
+          Let's create a product as Oatly and perform a test that
+          ensures another company, such as Beyond Meat, can't access the
           data:
         ''')
 
@@ -7353,16 +7353,14 @@ with book('Hacking Carapacian Core'):
           ensure that if there is an exception, the proprietor is
           switched back after the context manager is exited, thus
           ensuring proper access is maintained after the exception.
-        ''')
 
-        print('''
-          The ORM ensures that a tenant's data is completly isolated
-          from other tenants. This makes it possbile to use the same
-          physical database to store the records of multiple tentants.
-          This is an important feature for any SaaS product. Imagine
-          logging into you Gmail account and seeing other people's. What
-          if other company's could see your Jira tickets. This would
-          obviously be untenable (as it were). 
+          In summary, the ORM ensures that a tenant's data is completly
+          isolated from other tenants. This makes it possible to use the
+          same physical database to store the records of multiple
+          tentants.  This is an important feature for any SaaS product.
+          Imagine logging into you Gmail account and seeing other
+          people's emails. What if other company's could see your Jira
+          tickets.  This would obviously be untenable (as it were). 
 
           You could create seperate physical databases for each client
           of your SaaS product to solve the same problem. However, this
@@ -7380,9 +7378,6 @@ with book('Hacking Carapacian Core'):
 
       with section('Authentication'):
         """
-          * Proprietor an multitenancy
-          *     Proprietor is shared by supers
-          *     Using the orm.proprietor context manager
           * Public proprietor
           * orm.security class
           * creatability, retrievability, updatability, deletability
