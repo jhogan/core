@@ -252,7 +252,7 @@ class ticketsspa_new(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/new', ws)
+        res = tab.navigate('/en/ticketsspa/ticket', ws)
         self.status(200, res)
 
         frm = tab['form'].only
