@@ -273,6 +273,8 @@ class ticketsspa_new(tester.tester):
         btnsubmit = frm['button[type=submit]'].only
 
         with tab.capture() as msgs:
+            # XXX Find all tests that trigger an event and test that
+            # their response is self.ok()
             btnsubmit.click()
             self.ok(msgs.last.response)
 
