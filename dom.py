@@ -1566,6 +1566,9 @@ class element(entities.entity):
                     f'parent {rent}'
                 )
         
+    def __setitem__(self, ix, v):
+        self.elements[ix] = v
+
     @property
     def first(self):
         """ Returns the first child element under this `element` object.
