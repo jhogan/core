@@ -10586,7 +10586,7 @@ class orm:
                             # proprietor attribute when/if needed.
                             #
                             # Normally, a proprietor will only have
-                            # access its own records (by definition),
+                            # access to its own records (by definition),
                             # but in the case of public records
                             # (party.parties.public), we need to make
                             # sure that the current proprietor is not
