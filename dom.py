@@ -1048,6 +1048,7 @@ class elements(entities.entities):
     def _setparent(self, v):
         if self.parent:
             raise MoveError('Parent already set')
+
         self._parent = v
 
     def _text2element(self, txt):
@@ -2008,6 +2009,7 @@ class element(entities.entity):
     def _setparent(self, v):
         if v and self.parent and self.parent is not v:
             raise MoveError('Parent already set')
+
         self._parent = v
 
     def getsiblings(self, accompany=False):

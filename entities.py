@@ -1662,9 +1662,12 @@ class entities:
 
             assert es1.first is es.first
             assert es1.second is es.second
+
+        XXX Comment parameters
         """
+
         e = self[key]
-        self._ls[key]=item
+        self._ls[key] = item
 
         # If key is a slice. then what was removed and what was added
         # could have been an iterable. Therefore, we need to convert
@@ -1676,6 +1679,7 @@ class entities:
         for e, item in zip(es, items):
             if item is e:
                 continue
+
             self.onremove(self, entityremoveeventargs(e))
 
         # TODO: Don't raise onadd unless `item is in es`. See the
