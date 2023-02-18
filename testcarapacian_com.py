@@ -272,21 +272,15 @@ class ticketsspa_new(tester.tester):
 
         btnsubmit = frm['button[type=submit]'].only
 
-        with tab.capture() as msgs:
-            # XXX Find all tests that trigger an event and test that
-            # their response is self.ok()
-            btnsubmit.click()
-            self.ok(msgs.last.response)
+        res = self.click(btnsubmit, tab)
+        self.ok(res)
 
-        B()
-        qs = tab.url.qs
+        art = res.html.first
+        id = art.attributes['data-entity-id'].value
 
-        self.one(qs)
+        self.eq(f'id={id}', tab.url.query)
 
-        inp = frm['input[name=id]'].only
-        id = inp.value
-
-        self.eq(id, tab.url.qs['id'])
+        self.eq(id, tab.url.qs['id'][0])
 
 
 if __name__ == '__main__':
