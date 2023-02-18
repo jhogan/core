@@ -2343,7 +2343,7 @@ class header(dom.header):
     def menu(self, v):
         for i, mnu in self.menus.enumerate():
             if mnu.ismain:
-                self.menus[i] = mnu
+                self.menus[i] = v
                 break
         else:
             v.name = 'main'
