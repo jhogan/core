@@ -787,9 +787,10 @@ function ajax(e){
     }else{
         // Concatenate the fragment's HTML
         html = ''
-        for(el of els)
+        for(el of els){
             wake(el)
             html += el.outerHTML
+        }
 
         pg = window.location.href
     }
