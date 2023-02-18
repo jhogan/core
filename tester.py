@@ -649,6 +649,22 @@ class tester(entities.entity):
                     # Put `that` where `this` was
                     rent.elements.insert(ix, that)
 
+                def exec(el):
+                    """ XXX
+                    """
+                    instrss = el['.instructions']
+
+                    for instrs in instrss:
+                        instrs = instrs['.instruction']
+
+                        for instr in instrs:
+                            attr = instr.attributes['name']
+                            if attr.value == 'url':
+                                attr = instr.attributes['content']
+                                url = ecommerce.url(address=attr.value)
+                                self.url = url
+
+
                 ''' Method logic '''
 
                 isnav = is_nav_link(src)
@@ -719,6 +735,8 @@ class tester(entities.entity):
                     # subject of the event from the tab's DOM (.html)
                     ids = list('#' + x.id for x in eargs.html)
                     for i, id in enumerate(ids):
+                        el = res.html[i]
+                        exec(el)
                         replace(id, res.html[i])
 
             # TODO The ability for a tab to maintain its own internal
