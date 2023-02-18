@@ -1639,7 +1639,7 @@ class entities:
 
         return r
 
-    # TODO Rename 'item' to 'v'
+    # XXX Rename 'item' to 'v'
     # TODO __setitem__ should be similar to __getitem__ in that it
     # should be able to except a key of type that uses the `id`
     # attribute then the `name` attribute of `entity` objects.
@@ -1663,17 +1663,38 @@ class entities:
             assert es1.first is es.first
             assert es1.second is es.second
 
-        XXX Comment parameters
+        :param: key int|slice: The index used to set the item.
+
+        :param: item entitiy: The entity or subclass thereof that is
+        being set.
+
+        :param: collectivize callable: A method used to ensure the
+        current item at the index, as well as the new item(s), are
+        iterables.
         """
 
+        # Get the current item(s) at the index location
         e = self[key]
+
+        # Set the new item to the index location
         self._ls[key] = item
 
+        # If we were not given a collectivize function
         if not collectivize:
+            
+            # Define the collectivize function
             def collectivize(e):
+                """ Convert e into a list if it is not already an
+                iterable.
+
+                :param: e entity: The entity or entities to convert.
+                """
+
+                # If is iterable just return
                 if hasattr(e, '__iter__'):
                     return e
 
+                # If not iterable, return inside a list
                 return [e]
 
         # If key is a slice. then what was removed and what was added
@@ -1683,12 +1704,14 @@ class entities:
         items = collectivize(item)
         es = collectivize(e)
             
+        # Raise onremove for any item replace by the new item
         for e, item in zip(es, items):
             if item is e:
                 continue
 
             self.onremove(self, entityremoveeventargs(e))
 
+        # Raise onadd for any item added by the assignment
         for item in items:
             # XXX This causes problems with
 			#     it_raises_onremove_and_onadd_when_calling__setitem__

@@ -957,13 +957,28 @@ class elements(entities.entities):
         return sels.match(self)
 
     def __setitem__(self, key, item):
-        """ XXX
+        """ Set a direct child element of this `elements` collection by
+        an index:
+
+            div = dom.html('<div><p>Replace Me</p></div>')
+            div.elements[0] = dom.p('The replacement')
+
+        :param: key int|slice: The index to use.
+
+        :param: item dom.element: The element to set at the index.
         """
 
+        # XXX Rename 'item' to 'v'
         # XXX Test that the onadd and onremove events yield what was
         # actually added and removed
         # XXX Test for slices
         def collectivize(e):
+            """ If `e` is a collection or sequence, return e, otherwise,
+            put `e` in a list and return the list.
+
+            :param: e dom.element|dom.elements The element(s) to
+            collectivize.
+            """
             if isinstance(e, element):
                 return [e]
             elif isinstance(e, elements):
@@ -973,6 +988,11 @@ class elements(entities.entities):
             else:
                 return [e]
 
+        # Call super()'s __setitem__ to perform the actual setting. We
+        # give it our own collectivize method because dom.element
+        # objects (which is what we will most likely be setting) are
+        # iterable. However, super().__setitem__ needs to view
+        # dom.element as regurlar objects; not collections or sequences.
         super().__setitem__(key, item, collectivize=collectivize)
 
     @property
@@ -2249,8 +2269,13 @@ class element(entities.entity):
         self._attributes = v
 
     def getattr(self, attr):
-        """ XXX
+        """ Returns the value of the attribute `attr` for this
+        `element`.
+
+        This is a convenience methed since using the regurlar
+        `attributes` collection tends to be too verbose.
         """
+        # XXX Test
         return self.attributes[attr].value
 
     def hasattr(self, attr):
