@@ -956,6 +956,25 @@ class elements(entities.entities):
 
         return sels.match(self)
 
+    def __setitem__(self, key, item):
+        """ XXX
+        """
+
+        # XXX Test that the onadd and onremove events yield what was
+        # actually added and removed
+        # XXX Test for slices
+        def collectivize(e):
+            if isinstance(e, element):
+                return [e]
+            elif isinstance(e, elements):
+                return e
+            elif hasattr(e, '__iter__'):
+                return e
+            else:
+                return [e]
+
+        super().__setitem__(key, item, collectivize=collectivize)
+
     @property
     def children(self):
         """ Returns a new ``elements`` collection containing all

@@ -1643,7 +1643,7 @@ class entities:
     # TODO __setitem__ should be similar to __getitem__ in that it
     # should be able to except a key of type that uses the `id`
     # attribute then the `name` attribute of `entity` objects.
-    def __setitem__(self, key, item):
+    def __setitem__(self, key, item, collectivize=None):
         """ Implements an indexer that can be assigned an element.
 
             es[0] = e
@@ -1669,12 +1669,19 @@ class entities:
         e = self[key]
         self._ls[key] = item
 
+        if not collectivize:
+            def collectivize(e):
+                if hasattr(e, '__iter__'):
+                    return e
+
+                return [e]
+
         # If key is a slice. then what was removed and what was added
         # could have been an iterable. Therefore, we need to convert
         # them to iterables then raise the onadd and onremove events for
         # each entity that had been removed and added.
-        items  =  item  if  hasattr(item,  '__iter__')  else  [item]
-        es     =  e     if  hasattr(e,     '__iter__')  else  [e]
+        items = collectivize(item)
+        es = collectivize(e)
             
         for e, item in zip(es, items):
             if item is e:
