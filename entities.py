@@ -1410,7 +1410,7 @@ class entities:
 
     def __add__(self, es):
         """ Implements the + operator. This operator combines two
-        colections together and returns a new collection with the
+        collections together and returns a new collection with the
         elements from the first two::
 
             # e is in es; e1 is in es1
@@ -1682,8 +1682,6 @@ class entities:
 
             self.onremove(self, entityremoveeventargs(e))
 
-        # TODO: Don't raise onadd unless `item is in es`. See the
-        # onremove logic below.
         for item in items:
             self.onadd(self, entityaddeventargs(item))
 

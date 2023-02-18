@@ -815,7 +815,10 @@ function ajax(e){
 
                 // XXX It's possible that we get nothing back (i.e.,
                 // xhr.responseText will be empty). In that case, don't
-                // parse or replace.
+                // parse or replace. Note that the "No fragment" button
+                // at https://c13fa8ce.carapacian.com/en/tickets
+                // produces a JavaScript error message when this
+                // happens.
                 var els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
@@ -1543,7 +1546,7 @@ class pages(entities.entities):
         """ Create a new pages collection.
 
         :param: rent page|site: The parent page or site of this page
-        colection.
+        collections.
         """
         super().__init__(*args, **kwargs)
         self.parent = rent

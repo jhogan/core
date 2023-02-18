@@ -424,7 +424,6 @@ class ticketsspa(pom.spa):
                 el = req.orm.card
 
             self.main += el
-
     
     class people(pom.page):
         ''' Inner classes (pages) '''

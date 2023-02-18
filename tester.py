@@ -702,6 +702,8 @@ class tester(entities.entity):
                     mod += res.html.only
                     return
 
+                # XXX The eventsjs was change to test if the first
+                # element's tagName was 'MAIN'
                 if isnav:
                     # Replace the <main> element with the response
                     # (res.html)

@@ -780,7 +780,7 @@ with book('Hacking Carapacian Core'):
             five(dgs)
 
           print('''
-            `fido` is now the second element in the colection. This
+            `fido` is now the second element in the collection. This
             brings the collection's count to 5.
 
             For added clarity, we could have used the method
@@ -1073,7 +1073,7 @@ with book('Hacking Carapacian Core'):
 
           print('''
             Note that what we get back is another `dogs` collection. The
-            colection looks at its own data types and builds a new
+            collection looks at its own data types and builds a new
             collection of that type for the return values.  However,
             the `dog` elements in both collections reference the same
             `dog` objects, which is why the `is_()` assertion works.
@@ -4635,7 +4635,7 @@ with book('Hacking Carapacian Core'):
           # Get a reference to the customer's orders collection
           ords = cust.orders
 
-          # Remove the first order from the colection causing it to be
+          # Remove the first order from the collection causing it to be
           # marked for deletion (i.e., DELETE). Assign the removed order
           # to `rmord`.
           rmord = ords.pop()
@@ -5339,7 +5339,7 @@ with book('Hacking Carapacian Core'):
           many-to-many relationships between entity classes. I.e., it's
           not enough, in other words, to associate a collection of
           persons with a movie. We need to go the other way around and
-          association a colection of movies with an individual person
+          association a collection of movies with an individual person
           since a person can act in (as well as write and direct) zero
           or more movies.  The next listing will demonstrate this by
           record Terry Gilliam's roles in two other movies: *Monty

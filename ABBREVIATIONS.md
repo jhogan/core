@@ -28,6 +28,7 @@ result:        res
 return-value:  r
 segment:       seg
 switch-user:   su
+trigger:       trig
 tuple:         tup
 website:       ws
 where:         wh
