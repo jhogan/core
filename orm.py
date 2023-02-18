@@ -5566,124 +5566,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Append the entity to that entities collection
             es += e
 
-    # XXX Move to the `orm` class
-    @property
-    def form(self):
-        """ Return a <form> object for this `entity`. 
-
-        The <form> object can be sent to a browser to accept input by a
-        user to create or update the values of this `entity`.
-        """
-        # XXX Write tests
-        import pom, dom
-
-        # Create the <form> that we wil build and return
-        frm = dom.form()
-
-        # Get a referece to self's class. We will use it to ascend the
-        # inheritence hierarchy.
-        rent = builtins.type(self)
-
-        # Assign the data-entity attribute of the <form>, e.g.:
-        # 
-        #     <form data-entity="product.service">
-        #
-        e = rent
-        e = f'{e.__module__}.{e.__name__}'
-        frm.attributes['data-entity'] = e
-
-        # Create a list to store map names we've encountered. This
-        # prevent access the same attribute twice.
-        names = list()
-
-        # The ascendancy loop
-        while rent:
-
-            # For each map ...
-            for map in rent.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
-
-                name = map.name
-                lbl = name.capitalize()
-
-                # Don't revisit the same name
-                if name in names:
-                    continue
-
-                names.append(name)
-
-                # Skip fields the user should not be responsible for
-                if name == 'createdat':
-                    continue
-
-                if name == 'updatedat':
-                    continue
-
-                # The `step` attribute of the <input> element
-                step = None
-
-                # Hide the id field
-                if name == 'id':
-                    type = 'hidden'
-                    lbl = None
-
-                elif map.isstr:
-                    if map.definition == 'longtext':
-                        type = 'textarea'
-                    else:
-                        type = 'text'
-                        
-                elif map.isdate:
-                    type = 'date'
-
-                elif map.isdatetime:
-                    type = 'datetime-local'
-
-                # TODO We should probably have a map.isnumeric here
-                elif map.isdecimal:
-                    type = 'number'
-                    
-                    # A `step` of "any" allows decimal values to be
-                    # entered
-                    step = 'any'
-
-                else:
-                    continue
-
-                # Create a pom.input object to store the <label> with the
-                # <input> field.
-                inp = pom.input(name=name, type=type, label=lbl)
-
-                inp.attributes['data-entity-attribute'] = map.name
-
-                # Get the underlying <input> object
-                dominp = inp.input
-
-                # Set some browser validation attributes
-                if map.isstr:
-                    dominp.minlength = map.min
-                    dominp.maxlength = map.max
-                elif map.isdecimal:
-                    dominp.min = map.min
-                    dominp.max = map.max
-
-                if step:
-                    dominp.step = step
-
-                # Hexify the primary key
-                if name == 'id':
-                    inp.input.value = self.id.hex
-
-                frm += inp
-
-            rent = rent.orm.super
-
-        # Add a <button type="submit">
-        frm += dom.button('Submit', type='submit')
-
-        return frm
-
     def __repr__(self):
         """ Create a string representation of the entity.
         """
@@ -11958,6 +11840,123 @@ class orm:
         return self._constituents
 
     ''' HTML representations '''
+
+    @property
+    def form(self):
+        """ Return a <form> object for this `entity`. 
+
+        The <form> object can be sent to a browser to accept input by a
+        user to create or update the values of this `entity`.
+        """
+        # XXX Write tests
+        import pom, dom
+
+        # Create the <form> that we wil build and return
+        frm = dom.form()
+
+        # Get a referece to self's class. We will use it to ascend the
+        # inheritence hierarchy.
+        rent = builtins.type(self.instance)
+
+        # Assign the data-entity attribute of the <form>, e.g.:
+        # 
+        #     <form data-entity="product.service">
+        #
+        e = rent
+        e = f'{e.__module__}.{e.__name__}'
+        frm.attributes['data-entity'] = e
+
+        # Create a list to store map names we've encountered. This
+        # prevent access the same attribute twice.
+        names = list()
+
+        # The ascendancy loop
+        while rent:
+            # For each map ...
+            for map in rent.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                name = map.name
+                lbl = name.capitalize()
+
+                # Don't revisit the same name
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                # Skip fields the user should not be responsible for
+                if name == 'createdat':
+                    continue
+
+                if name == 'updatedat':
+                    continue
+
+                # The `step` attribute of the <input> element
+                step = None
+
+                # Hide the id field
+                if name == 'id':
+                    type = 'hidden'
+                    lbl = None
+
+                elif map.isstr:
+                    if map.definition == 'longtext':
+                        type = 'textarea'
+                    else:
+                        type = 'text'
+                        
+                elif map.isdate:
+                    type = 'date'
+
+                elif map.isdatetime:
+                    type = 'datetime-local'
+
+                # TODO We should probably have a map.isnumeric here
+                elif map.isdecimal:
+                    type = 'number'
+                    
+                    # A `step` of "any" allows decimal values to be
+                    # entered
+                    step = 'any'
+
+                else:
+                    continue
+
+                # Create a pom.input object to store the <label> with the
+                # <input> field.
+                inp = pom.input(name=name, type=type, label=lbl)
+
+                inp.attributes['data-entity-attribute'] = map.name
+
+                # Get the underlying <input> object
+                dominp = inp.input
+
+                # Set some browser validation attributes
+                if map.isstr:
+                    dominp.minlength = map.min
+                    dominp.maxlength = map.max
+                elif map.isdecimal:
+                    dominp.min = map.min
+                    dominp.max = map.max
+
+                if step:
+                    dominp.step = step
+
+                # Hexify the primary key
+                if name == 'id':
+                    inp.input.value = self.instance.id.hex
+
+                frm += inp
+
+            rent = rent.orm.super
+
+        # Add a <button type="submit">
+        frm += dom.button('Submit', type='submit')
+
+        return frm
+
     @property
     def card(self):
         """ Returns a read-only HTML representation of the entity. 

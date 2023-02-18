@@ -417,7 +417,7 @@ class ticketsspa(pom.spa):
             req = effort.requirement(id)
 
             if req.orm.isnew:
-                el = req.form
+                el = req.orm.form
                 el << dom.p('Create a ticket')
                 el.onsubmit += self.frm_onsubmit, el
             else:
