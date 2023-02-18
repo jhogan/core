@@ -1653,6 +1653,19 @@ class tester(entities.entity):
             
             self._failures += failure()
 
+    def click(self, e, tab):
+        """ XXX
+        """
+        trig = getattr(e, 'click')
+
+        with tab.capture() as msgs:
+            trig()
+
+        if last := msgs.last:
+            return last.response
+
+        return None
+
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
     tests.
