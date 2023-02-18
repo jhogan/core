@@ -1690,6 +1690,12 @@ class entities:
             self.onremove(self, entityremoveeventargs(e))
 
         for item in items:
+            # XXX This causes problems with
+			#     it_raises_onremove_and_onadd_when_calling__setitem__
+            #
+            if item in es:
+                continue
+
             self.onadd(self, entityaddeventargs(item))
 
     def __getitem__(self, key):
