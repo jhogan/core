@@ -14898,6 +14898,27 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             self.expect(db.RecordNotFoundError, pres.orm.reloaded)
 
+    def it_gets_form(self):
+        art = artist()
+        frm = art.orm.form
+
+        inps = frm['input']
+
+        ''' Default str (lastname) '''
+        name = 'lastname'
+        map = art.orm.mappings[name]
+        inp = inps[f'[name={name}]'].only
+
+        # Test type attribute
+        self.eq('text', inp.getattr('type'))
+
+        # Test minlength
+        self.eq(str(map.min), inp.getattr('minlength'))
+
+        self.eq(str(map.max), inp.getattr('maxlength'))
+
+        print(inp)
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -225,8 +225,8 @@ class testers(entities.entities):
         return r
 
     @property
-    def ok(self):
-        return all(x.ok for x in self)
+    def isok(self):
+        return all(x.isok for x in self)
 
     def __str__(self):
         return self._tostr(str, includeHeader=False)
@@ -1214,7 +1214,7 @@ class tester(entities.entity):
         return tester._browser(self, *args, **kwargs)
 
     @property
-    def ok(self):
+    def isok(self):
         return self.failures.isempty
 
     @staticmethod
@@ -1956,7 +1956,7 @@ class cli:
         print(ts)
 
         # Return exit code (0=success, 1=fail)
-        sys.exit(int(not ts.ok))
+        sys.exit(int(not ts.isok))
 
     def parseargs(self):
         # TODO Consider adding a -t to run whichever test has been
