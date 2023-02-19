@@ -461,11 +461,26 @@ class tester(entities.entity):
 
         ''' Inner classes '''
         class messages(entities.entities):
-            """ XXX
+            """ A class to collect browser `messages`
             """
 
         class message(entities.entity):
-            """ XXX
+            """ Represents a browser message.
+
+            A browser message is a request/response pairing. Each time
+            the browser tab navigates to a URL, or an XHR request is
+            made in the browser tab, a request is made. This request
+            makes up the request portion of a message. If the webserver
+            responds with something (which, of course, will usually be
+            the case), that response will become the response portion of
+            the message. 
+
+            `messages` are basically the entries in the table when you
+            go to a real browser's "Network" tab in dev tools.
+
+            These `tester` `tab` objects should always be recording
+            requests/respeone's as `message` object collected in the
+            `tab`'s `messages` collection.
             """
             def __init__(self, req=None, res=None, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -531,7 +546,8 @@ class tester(entities.entity):
                 self._onafterload = None
                 self.url = None
 
-                # XXX Explain 
+                # Create a `messages` collection to captures the
+                # request/responses that the `tab` makes.
                 self.messages = tester._browser.messages()
 
             def default_event(self, src, eargs):
@@ -650,7 +666,12 @@ class tester(entities.entity):
                     rent.elements.insert(ix, that)
 
                 def exec(el):
-                    """ XXX
+                    """ Read the <article> with an 'instructions' class
+                    for `instruction` elements.
+
+                    An example of an `instruction` is set-url which is the
+                    way Python code can cause JavaScript code running in
+                    the browser to set the browser`s `window.location`.
                     """
                     instrss = el['.instructions']
 
@@ -663,7 +684,6 @@ class tester(entities.entity):
                                 attr = instr.attributes['content']
                                 url = ecommerce.url(address=attr.value)
                                 self.url = url
-
 
                 ''' Method logic '''
 
@@ -1188,7 +1208,11 @@ class tester(entities.entity):
 
             @contextmanager
             def capture(self):
-                """ XXX
+                """ A context manager the browser `messages` generated
+                by an event - such as a button click.
+
+                This is used by tests to determine what the HTTP
+                response of a dom.event is.
                 """
                 msgs = tester._browser.messages()
 
@@ -1202,7 +1226,6 @@ class tester(entities.entity):
                     yield msgs
                 finally:
                     self.messages.onadd -= messages_onadd
-
                     
         ''' Class members of browser'''
         def __init__(
@@ -1672,7 +1695,11 @@ class tester(entities.entity):
             self._failures += failure()
 
     def click(self, e, tab):
-        """ XXX
+        """ Call the click() trigger method on `e`. Return the last
+        response the browser recorded.
+
+        Testing the return value is important for tests to ensure that
+        dom.events were successful.
         """
         trig = getattr(e, 'click')
 

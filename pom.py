@@ -1003,7 +1003,12 @@ function wake(el){
 }
 
 function exec(el){
-    /* XXX
+    /* Read the <article> with an 'instructions' class
+    for `instruction` elements.
+
+    An example of an `instruction` set-url which is the
+    way Python code can cause JavaScript code running in
+    the browser to set the browser`s `window.location`.
     */
     var instrss = el.querySelectorAll('.instructions')
 
