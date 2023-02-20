@@ -14902,12 +14902,24 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         art = artist()
         frm = art.orm.form
 
-        inps = frm['input']
+        # Test <form> element
+        cls = type(art)
+        name = f'{cls.__module__}.{cls.__name__}'
+        self.eq(name, frm.getattr('data-entity'))
 
         ''' Default str (lastname) '''
         name = 'lastname'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
         map = art.orm.mappings[name]
-        inp = inps[f'[name={name}]'].only
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
 
         # Test type attribute
         self.eq('text', inp.getattr('type'))
@@ -14915,9 +14927,86 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # Test minlength
         self.eq(str(map.min), inp.getattr('minlength'))
 
+        # Test length
         self.eq(str(map.max), inp.getattr('maxlength'))
 
-        print(inp)
+        ''' Default int (networth) '''
+        name = 'networth'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('number', inp.getattr('type'))
+
+        # Test min
+        self.eq(str(map.min), inp.getattr('min'))
+
+        # Test min
+        self.eq(str(map.max), inp.getattr('max'))
+
+        ''' Default date (dob2) '''
+        name = 'dob2'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('date', inp.getattr('type'))
+
+        # Test min
+        self.none(inp.getattr('min'))
+
+        # Test min
+        self.none(inp.getattr('max'))
+
+        ''' Default datetime (dob) '''
+        name = 'dob'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('datetime-local', inp.getattr('type'))
+
+        # Test min
+        self.none(inp.getattr('min'))
+
+        # Test min
+        self.none(inp.getattr('max'))
+
+        ''' <button type="submit"> '''
+        name = 'submit'
+        self.one(frm[f'button[type=submit]'])
+
+        # TODO We still need to tests <select>s and <input
+        # type="radio">, <input type="checkbox"> as well as more
+        # unusual/advanced types like "images", "file", "month",
+        # "password", "range", "tel", "time", "url", "week", etc.
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):

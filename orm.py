@@ -11935,6 +11935,9 @@ class orm:
                     # entered
                     step = 'any'
 
+                elif map.isnumeric:
+                    type = 'number'
+
                 else:
                     continue
 
@@ -11951,7 +11954,7 @@ class orm:
                 if map.isstr:
                     dominp.minlength = map.min
                     dominp.maxlength = map.max
-                elif map.isdecimal:
+                elif map.isnumeric:
                     dominp.min = map.min
                     dominp.max = map.max
 
