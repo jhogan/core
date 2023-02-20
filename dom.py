@@ -2414,7 +2414,7 @@ class element(entities.entity):
 
     @property
     def html(self):
-        """ Returns the HTML representation of the element and its
+        """ Returns the HTML representation of this `element` and its
         children.
 
         Note that there won't be any linefeeds or indentation to make
@@ -6917,9 +6917,9 @@ class html(element):
                         cur[0] += data
 
             def handle_entityref(self, name):
-                """ This method is called to process a named character reference
-                of the form &name; (e.g. &gt;), where name is a general entity
-                reference (e.g. 'gt').
+                """ This method is called to process a named character
+                reference of the form &name; (e.g. &gt;), where name is
+                a general entity reference (e.g. 'gt').
                 """
                 try:
                     cur = self.stack[-1]
@@ -6939,20 +6939,20 @@ class html(element):
                         cur[0] += txt
 
             def handle_charref(self, name):
-                """ This method is called to process decimal and hexadecimal
-                numeric character references of the form &#NNN; and &#xNNN;. For
-                example, the decimal equivalent for &gt; is &#62;, whereas the
-                hexadecimal is &#x3E;; in this case the method will receive '62'
-                or 'x3E'. This method is never called if convert_charrefs is
-                True.
+                """ This method is called to process decimal and
+                hexadecimal numeric character references of the form
+                &#NNN; and &#xNNN;. For example, the decimal equivalent
+                for &gt; is &#62;, whereas the hexadecimal is &#x3E;; in
+                this case the method will receive '62' or 'x3E'. This
+                method is never be called if convert_charrefs is True.
                 """
-                # TODO: This was added after the main html tests were written
-                # (not sure why it was left behind). We should write tests that
-                # target it specifically.
+                # TODO: This was added after the main html tests were
+                # written (not sure why it was left behind). We should
+                # write tests that target it specifically.
 
-                # TODO: There is a lot of shared logic between this handler and
-                # handle_entityref, handle_data, etc. We can start thinking
-                # about consolidating this logic.
+                # TODO: There is a lot of shared logic between this
+                # handler and handle_entityref, handle_data, etc. We can
+                # start thinking about consolidating this logic.
                 try:
                     cur = self.stack[-1]
                 except IndexError:

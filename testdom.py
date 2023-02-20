@@ -6,6 +6,7 @@ from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
 import dom, www
+import html as htmlmod
 import party
 import primative
 import re
@@ -1172,7 +1173,6 @@ class html(tester.tester):
         </html>
         '''
         self.expect(None, lambda: dom.html(html))
-
 
     def it_doesnt_parse_unknown_decls(self):
         # TODO The below dosen't work. The fake uknown declaration is
