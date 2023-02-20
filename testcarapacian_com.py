@@ -232,8 +232,7 @@ class ticketsspa_new(tester.tester):
 
         self.eq(id, req.id.hex)
 
-        # XXX This breaks
-        #self.eq(desc.text, req.description)
+        self.eq(desc.text, req.description)
 
         self.eq(reason.text, req.reason)
 
