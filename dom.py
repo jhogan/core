@@ -1104,14 +1104,7 @@ class elements(entities.entities):
         """
 
         if type(txt) is str:
-            # If we are appending a text node to a <script> tag, we
-            # don't want to do any HTML escaping. Escaping the
-            # contents of a <script> tag (e.g., JavaScript, JSON,
-            # etc) means the quotes and angle brakets would be
-            # garbled thus rending the script uninterpretable, e.g.,
-            # console.log(&#x27;Hello, world&#x27;)
-            esc = not isinstance(self.parent, script)
-            return text(txt, esc=esc)
+            return text(txt)
 
         return txt
 
@@ -2435,7 +2428,20 @@ class element(entities.entity):
             body = self.html
 
         for i, el in builtins.enumerate(self.elements):
-            body += el.html
+            
+            # Get the element's `html` string representation unless self
+            # is a <script> (see below)
+            attr = 'html'
+
+            if isinstance(el, text):
+                if isinstance(self, script):
+                    # If self is a <script> and `el` is a `text` node,
+                    # we want to get the node's unescaped text using
+                    # it's `value` attribute. The text in a <script>
+                    # should never be altered.
+                    attr = 'value'
+
+            body += getattr(el, attr)
 
         if isinstance(self, text):
             return body
@@ -2622,24 +2628,15 @@ class text(element):
         
         https://developer.mozilla.org/en-US/docs/Web/API/Text
     """
-    def __init__(self, v, esc=True, *args, **kwargs):
+    def __init__(self, v, *args, **kwargs):
         """ Create the text node.
 
         :param: v str: The value of the text node; i.e., the text
         itself.
-
-        :param: esc bool: Convert the characters &, < and > in v to
-        HTML-safe sequences. 
         """
         super().__init__(*args, **kwargs)
 
-        self._value = v
-
-        # We may want to do this in the html accessor
-        self._html = v
-        if esc:
-            import html as htmlmod
-            self._html = htmlmod.escape(self._value)
+        self.value = v
 
     def clone(self):
         """ Create a new text node with the same text value as this text
@@ -2670,17 +2667,30 @@ class text(element):
         """ Returns the HTML representation of the text node.  For
         effeciency, needless whitespace will be removed.
         """
-        return dedent(self._html).strip('\n')
+        import html as htmlmod
+        v =  dedent(self._value).strip('\n')
+
+        if not self._isesc:
+            v =  htmlmod.escape(v)
+
+        return v
 
     @html.setter
     def html(self, v):
-        self._html = v
+        raise NotImplementedError(
+            "Set text node's value with the 'value' property"
+        )
 
     @property
     def value(self):
         """ Return the text value of the text node.
         """
         return self._value
+
+    @value.setter
+    def value(self, v):
+        self._isesc = False
+        self._value = v
 
 class wbrs(elements):
     """ A class used to contain a collection of ``wbr`` elements.
@@ -6902,7 +6912,7 @@ class html(element):
                 else:
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += data
+                        last.value += data
                     else:
                         cur[0] += data
 
@@ -6918,10 +6928,13 @@ class html(element):
                         'No element to add text to', [None, self.getpos()]
                     )
                 else:
-                    txt = text('&%s;' % name, esc=False)
+                    import html as htmlmod
+                    txt = htmlmod.unescape('&' + name + ';');
+                    txt = text(txt)
+
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += txt.value
+                        last.value += txt.value
                     else:
                         cur[0] += txt
 
@@ -6947,10 +6960,14 @@ class html(element):
                         'No element to add text to', [None, self.getpos()]
                     )
                 else:
-                    txt = text('&#%s;' % name, esc=False)
+                    # Unescape text
+                    import html as htmlmod
+                    txt = htmlmod.unescape('&#' + name + ';');
+                    txt = text(txt)
+
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += txt.value
+                        last.value += txt.value
                     else:
                         cur[0] += txt
 

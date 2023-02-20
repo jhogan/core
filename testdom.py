@@ -546,7 +546,20 @@ class text(tester.tester):
 
         self.eq(expect, dom.text(txt).html)
 
-        self.eq(txt, dom.text(txt, esc=False).html)
+        expect = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn't matter, just throw it away!
+        </p>
+        ''')
+
+        self.eq(expect, dom.text(txt).value)
 
     def it_calls__str__(self):
         txt = self.dedent('''
@@ -1184,6 +1197,25 @@ class html(tester.tester):
         '''
         self.expect(NotImplementedError, lambda: dom.html(html))
 
+    def it_parses_text_node_with_html_entities(self):
+        v = "This paragraph's content has an HTML entity."
+        esc = htmlmod.escape(v)
+
+        html = self.dedent(f'''
+        <p>
+          {esc}
+        </p>
+        ''')
+
+        html1 = dom.html(html)
+
+        self.eq(html, html1.pretty) 
+
+        # Get the text node
+        txt = html1['p'].only.elements.only
+
+        self.eq(v, txt.value.strip())
+
 class markdown(tester.tester):
     def it_parses_code(self):
         md = dom.markdown('''
@@ -1519,17 +1551,25 @@ class markdown(tester.tester):
         self.eq(expect, md.pretty)
 
         md = dom.markdown('&copy;')
-        p = md['p'].first
+
+        # TODO Currently we don't preserve HTML entities if they can be
+        # unescaped. That's to say, after we parse &amp;, it is turned
+        # into ©. This may become a nusance for people who need these
+        # entities preserved. Consider a blogger who wants to use HTML
+        # entities for the sake of readability or software
+        # compatability. This would obviously be a problem becaus
+        # whenever they submitted their content to the server, it would
+        # be parsed and converted to the actual UTF-8 glyphs and then
+        # sent back to them.
         expect = self.dedent('''
         <p>
-          &copy;
+          ©
         </p>
         ''')
 
         self.eq(expect, md.pretty)
 
         md = dom.markdown('4 < 5')
-        p = md['p'].first
 
         expect = self.dedent('''
         <p>
