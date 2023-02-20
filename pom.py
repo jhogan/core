@@ -2416,7 +2416,6 @@ class input(dom.div):
 
         # TODO Ensure that 'type' is valid. In addition to text and
         # email, type can also be textarea and datalist.
-        self.classes += 'form-group'
 
         els = super().elements
 
