@@ -155,9 +155,8 @@ class tickets(tester.tester):
 
 class ticketsspa(tester.tester):
     def it_call_name(self):
-        # XXX Shouldn't this me carapacian_com.ticketsspa
-        pg = carapacian_com.tickets()
-        self.eq('tickets', pg.name)
+        pg = carapacian_com.ticketsspa.ticket()
+        self.eq('ticket', pg.name)
 
     def it_GETs(self):
         ws = carapacian_com.site()
@@ -168,7 +167,7 @@ class ticketsspa(tester.tester):
 
 class ticketsspa_new(tester.tester):
     def it_call__init__(self):
-        pg = carapacian_com.ticketsspa.new()
+        pg = carapacian_com.ticketsspa.ticket()
 
         inps = pg['form textarea[name=description]']
         self.one(inps)
@@ -179,7 +178,7 @@ class ticketsspa_new(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/new', ws)
+        res = tab.navigate('/en/ticketsspa/ticket', ws)
         self.status(200, res)
 
         frms = tab['form']
@@ -194,7 +193,7 @@ class ticketsspa_new(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/new', ws)
+        res = tab.navigate('/en/ticketsspa/ticket', ws)
         self.status(200, res)
 
         frm = tab['form'].only
@@ -224,14 +223,8 @@ class ticketsspa_new(tester.tester):
             db.RecordNotFoundError, lambda: effort.requirement(id)
         )
 
-        # XXX We need to find a way to get the results of a button
-        # click. We need to be able to do stuff like this:
-        #
-        #     res = btnsubmit.click()
-        #     self.ok(res)
-        #     
-       
-        btnsubmit.click()
+        res = self.click(btnsubmit, tab)
+        self.ok(res)
 
         req = self.expect(
             None, lambda: effort.requirement(id)
