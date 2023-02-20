@@ -7317,6 +7317,20 @@ class fieldmapping(mapping):
         return self._ix
 
     @property
+    def isnumeric(self):
+        """ XXX
+        """
+        # XXX Test
+        if self.isint:
+            return True
+        elif self.isfloat:
+            return True
+        elif self.isfloat:
+            return True
+        else:
+            return False
+
+    @property
     def isstr(self):
         """ Returns True if the mapping represents a str type.
         """
