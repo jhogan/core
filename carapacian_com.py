@@ -346,7 +346,6 @@ class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
     class ticket(pom.page):
         def frm_onsubmit(self, src, eargs):
-            # XXX Test updating dates to None (null) values
             frm = eargs.html.only
             inps = frm['input, textarea, hidden']
 

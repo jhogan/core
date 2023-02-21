@@ -82,6 +82,7 @@ class application:
         self._response = None
 
     _current = None
+
     @classmethod
     def _set_current(cls, v):
         cls._current = v
@@ -1317,7 +1318,7 @@ class request(entities.entity):
             
             https://foo.net:8000/en/my/page
         """
-        # XXX:fc4077ea Ensure this always returns a ecommerce.url
+        # TODO:fc4077ea Ensure this always returns an ecommerce.url
         if self._url:
             return self._url
 

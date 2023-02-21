@@ -826,11 +826,15 @@ function ajax(e){
 
                 // Get the direct children under the <body> tag of the
                 // HTML. These are the HTML fragments that will replace
-                // current HTML fragments.
+                // current HTML fragments. Note that the HTML we
+                // received probably does not contain an <html> or
+                // <body> tag; `parser.parseFromString` adds these tags
+                // to the DOM it creates so we have to account for that
+                // when we extract the elements we are interested in.
                 els = els.querySelectorAll('html>body>*')
 
-                // If a <main> tag was returned, we are doing a SPA page
-                // load.
+                // If a <main> tag was returned, we are doing an SPA
+                // page load.
                 if(els[0].tagName == 'MAIN'){
                     // Get the new <main> element
                     let new_ = els[0]
@@ -1018,6 +1022,8 @@ function exec(el){
         for (var instr of instrs){
             if (instr.classList.contains('set')){
                 if (instr.getAttribute('name') == 'url'){
+
+                    // Use pushState to change the url
                     var main = document.querySelector('main')
                     var content = instr.getAttribute('content')
                     window.history.pushState(
@@ -1026,6 +1032,7 @@ function exec(el){
                 }
             }
         }
+
     }
 }
 
@@ -2425,6 +2432,7 @@ class input(dom.div):
 
         if type == 'textarea':
             inp = dom.textarea(name=self.name)
+
         elif type == 'select':
             inp = dom.select(name=self.name)
             for opt in options:
@@ -2624,20 +2632,50 @@ class card(dom.article):
         super().__init__(*args, **kwargs)
 
 class instructions(dom.article):
-    """ XXX
+    """ A collection of `instruction` objects.
     """
-
     def __init__(self, *args, **kwargs):
         self.classes += 'instructions'
 
 class instruction(dom.meta):
-    """ XXX
+    """ Represents an instruction meant to be carried out by JavaScript
+    in the browser.
+
+    The instruction are smuggled into the browse by appending an
+    `instructions` collection (a subclass of dom.article) to some HTML
+    which is sent to the browser as a response to an XHR request. The
+    JavaScript examins the HTML for these instruction and executes them
+    on arrival.
+
+    This class represents an abstract instruction. Subclasses of this
+    class are intended to represent concrete instructions.
+
+    See the `exec()` function in eventjs for implementation details.
+    Also see the `element_event` method in tester.py for the "tester"
+    version of this function.
     """
     def __init__(self, *args, **kwargs):
+        """ Create an instruction object.
+        """
         self.classes += 'instruction'
 
 class set(instruction):
+    """ Represents an instruction to set an arbitrary object's value in
+    the browser tab.
+
+    Currently, the only thing this `instruction` can set is the URL in
+    the browser's location bar.  See the `exec()` function in eventjs
+    for details.
+    """
     def __init__(self, lhs, rhs, *args, **kwargs):
+        """ Create a `set` instruction.
+
+        :param: lhs str: The left-hand side of the assignment, i.e, the
+        name of the object being assigned the value.
+
+        :param: lhs str: The right-hand side of the assignment, i.e, the
+        value being assigned.
+        """
         self.lhs = lhs
         self.rhs = rhs
 

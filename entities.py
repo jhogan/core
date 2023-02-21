@@ -1713,9 +1713,6 @@ class entities:
 
         # Raise onadd for any item added by the assignment
         for item in items:
-            # XXX This causes problems with
-			#     it_raises_onremove_and_onadd_when_calling__setitem__
-            #
             if item in es:
                 continue
 

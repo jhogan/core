@@ -7318,7 +7318,7 @@ class fieldmapping(mapping):
 
     @property
     def isnumeric(self):
-        """ XXX
+        """ Returns true if the mapping is for an int, float or Decimal.
         """
         # XXX Test
         if self.isint:
@@ -11862,7 +11862,6 @@ class orm:
         The <form> object can be sent to a browser to accept input by a
         user to create or update the values of this `entity`.
         """
-        # XXX Write tests
         import pom, dom
 
         # Create the <form> that we wil build and return

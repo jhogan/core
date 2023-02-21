@@ -207,6 +207,8 @@ class ticketsspa_new(tester.tester):
         desc = inps['[name=description]'].only
         reason = inps['[name=reason]'].only
 
+        # XXX Test with non-null date values
+
         desc.text = self.dedent('''
             As a user,
             I would like the password field to be masked,

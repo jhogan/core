@@ -562,7 +562,10 @@ class url(orm.entity):
 
     @property
     def query(self):
-        """ XXX
+        """ Returns a string representation of the query string in the
+        URL (if there is one).
+
+        See also the `qs` attribute.
         """
         # XXX Test
         import urllib.parse
@@ -570,7 +573,12 @@ class url(orm.entity):
 
     @property
     def qs(self):
-        """ XXX
+        """ Return a dict containing the keys and values in the URL's
+        query sting (if there is one).
+
+            >>> url(address='https://google.com?s=test').qs
+            {'s': ['test']}
+
         """
         # XXX Test
         import urllib.parse
