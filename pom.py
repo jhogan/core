@@ -900,19 +900,7 @@ function ajax(e){
 // Once content has been loaded (DOMContentLoaded), we can add listeners
 // to the controls.
 document.addEventListener("DOMContentLoaded", function(ev) {
-    // For each currently supported trigger (you may
-    // have to update Triggers if the event you want to
-    // support doesn't exist)
-
-    // # XXX Use add_listeners()
-    for (trig of TRIGGERS){
-        var els = document.querySelectorAll(
-            '[data-' + trig + '-handler]'
-        )
-
-        for(el of els)
-            el.addEventListener(trig, ajax)
-    }
+    add_listeners(document.documentElement);
 
     els = document.querySelectorAll(
         'header>section>nav>ul>li a'
