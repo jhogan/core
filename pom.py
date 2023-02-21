@@ -1005,7 +1005,12 @@ function exec(el){
     var instrss = el.querySelectorAll('.instructions')
 
     for (var instrs of instrss){
-        instrs = instrs.querySelectorAll('.instruction')
+        // Remove the <article class="instructions"> element from the
+        // DOM first.
+        instrs.remove()
+
+        // Get all the instruction elements (<meta class="instruction").
+        var instrs = instrs.querySelectorAll('.instruction')
 
         // For each instruction
         for (var instr of instrs){
@@ -1018,9 +1023,9 @@ function exec(el){
 
                     // Use pushState to change the url
                     var main = document.querySelector('main')
-                    var content = instr.getAttribute('content')
+                    var url = instr.getAttribute('content')
                     window.history.pushState(
-                        main.outerHTML, null, content
+                        main.outerHTML, null, url
                     )
                 }
             }
