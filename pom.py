@@ -814,12 +814,14 @@ function ajax(e){
                 // Parse the HTML response
                 var parser = new DOMParser()
 
-                // XXX It's possible that we get nothing back (i.e.,
-                // xhr.responseText will be empty). In that case, don't
-                // parse or replace. Note that the "No fragment" button
-                // at https://c13fa8ce.carapacian.com/en/tickets
-                // produces a JavaScript error message when this
-                // happens.
+                // If no HTML was returned from the XHR request, we can
+                // return. Usually, events will return HTML, however it
+                // possible that in some cases they will choose not to.
+                if(!xhr.responseText){
+                    return;
+                }
+
+                // Parse the HTML we received into a DOM object.
                 var els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
