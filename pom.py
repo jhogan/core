@@ -956,8 +956,9 @@ function add_listeners(el){
             '[data-' + trig + '-handler]'
         )
 
-        for(el of els)
-            el.addEventListener(trig, ajax)
+        for(el1 of els){
+            el1.addEventListener(trig, ajax)
+        }
     }
 }
 
@@ -1006,8 +1007,13 @@ function exec(el){
     for (var instrs of instrss){
         instrs = instrs.querySelectorAll('.instruction')
 
+        // For each instruction
         for (var instr of instrs){
+            
+            // If we have a `set` instruction
             if (instr.classList.contains('set')){
+                
+                // If we are setting the "url"
                 if (instr.getAttribute('name') == 'url'){
 
                     // Use pushState to change the url
