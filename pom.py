@@ -841,9 +841,6 @@ function ajax(e){
                     // Get the new <main> element
                     let new_ = els[0]
 
-                    // XXX It looks like we can remove this
-                    let url = new_.getAttribute('data-path')
-
                     // Make sure event handler are hooked up to new
                     // <main> HTML.
                     add_listeners(new_);
