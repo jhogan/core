@@ -7325,7 +7325,7 @@ class fieldmapping(mapping):
             return True
         elif self.isfloat:
             return True
-        elif self.isfloat:
+        elif self.isdecimal:
             return True
         else:
             return False
