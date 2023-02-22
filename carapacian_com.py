@@ -393,7 +393,7 @@ class ticketsspa(pom.spa):
                 card.id = frm.id 
                 eargs.html = card
 
-                # XXX:fc4077ea 
+                # TODO:fc4077ea 
                 url = www.application.current.request.url
                 url = str(url)
 

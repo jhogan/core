@@ -259,6 +259,9 @@ class date(stddatetime.date):
         documentation for the timedelta constructor for more details on
         its parameters at 
         https://docs.python.org/3/library/datetime.html#timedelta-objects
+
+        XXX Document the allowable paramters: days=0, seconds=0,
+        microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0
         """
         r = date(stddatetime.date.today())
 

@@ -956,7 +956,7 @@ class elements(entities.entities):
 
         return sels.match(self)
 
-    def __setitem__(self, key, item):
+    def __setitem__(self, key, v):
         """ Set a direct child element of this `elements` collection by
         an index:
 
@@ -965,10 +965,9 @@ class elements(entities.entities):
 
         :param: key int|slice: The index to use.
 
-        :param: item dom.element: The element to set at the index.
+        :param: v dom.element: The element to set at the index.
         """
 
-        # XXX Rename 'item' to 'v'
         # XXX Test that the onadd and onremove events yield what was
         # actually added and removed
         # XXX Test for slices
@@ -993,7 +992,7 @@ class elements(entities.entities):
         # objects (which is what we will most likely be setting) are
         # iterable. However, super().__setitem__ needs to view
         # dom.element as regurlar objects; not collections or sequences.
-        super().__setitem__(key, item, collectivize=collectivize)
+        super().__setitem__(key, v, collectivize=collectivize)
 
     @property
     def children(self):

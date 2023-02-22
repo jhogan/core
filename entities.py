@@ -1639,17 +1639,16 @@ class entities:
 
         return r
 
-    # XXX Rename 'item' to 'v'
     # TODO __setitem__ should be similar to __getitem__ in that it
     # should be able to except a key of type that uses the `id`
     # attribute then the `name` attribute of `entity` objects.
-    def __setitem__(self, key, item, collectivize=None):
+    def __setitem__(self, key, v, collectivize=None):
         """ Implements an indexer that can be assigned an element.
 
             es[0] = e
             assert es.first is e
 
-        The ``key`` can be a slice and the ``item`` can be an iterable::
+        The ``key`` can be a slice and the ``v`` can be an iterable::
 
             # Create a collection and add a couple of elements to it
             es = entities()
@@ -1663,21 +1662,21 @@ class entities:
             assert es1.first is es.first
             assert es1.second is es.second
 
-        :param: key int|slice: The index used to set the item.
+        :param: key int|slice: The index used to set the v.
 
-        :param: item entitiy: The entity or subclass thereof that is
+        :param: v entitiy: The entity or subclass thereof that is
         being set.
 
         :param: collectivize callable: A method used to ensure the
-        current item at the index, as well as the new item(s), are
+        current v at the index, as well as the new v(s), are
         iterables.
         """
 
-        # Get the current item(s) at the index location
+        # Get the current v at the index location
         e = self[key]
 
-        # Set the new item to the index location
-        self._ls[key] = item
+        # Set the new v to the index location
+        self._ls[key] = v
 
         # If we were not given a collectivize function
         if not collectivize:
@@ -1701,22 +1700,22 @@ class entities:
         # could have been an iterable. Therefore, we need to convert
         # them to iterables then raise the onadd and onremove events for
         # each entity that had been removed and added.
-        items = collectivize(item)
+        items = collectivize(v)
         es = collectivize(e)
             
-        # Raise onremove for any item replace by the new item
-        for e, item in zip(es, items):
-            if item is e:
+        # Raise onremove for any v replace by the new v
+        for e, v in zip(es, items):
+            if v is e:
                 continue
 
             self.onremove(self, entityremoveeventargs(e))
 
-        # Raise onadd for any item added by the assignment
-        for item in items:
-            if item in es:
+        # Raise onadd for any v added by the assignment
+        for v in items:
+            if v in es:
                 continue
 
-            self.onadd(self, entityaddeventargs(item))
+            self.onadd(self, entityaddeventargs(v))
 
     def __getitem__(self, key):
         """ Implements an indexer for the collection::

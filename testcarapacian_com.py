@@ -11,6 +11,7 @@ from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
+from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort
@@ -18,6 +19,7 @@ import orm
 import party
 import pom
 import primative
+import random
 import tester
 
 class sites(tester.tester):
@@ -241,7 +243,7 @@ class ticketsspa_new(tester.tester):
         self.none(req.asset)
         self.none(req.product)
         self.zero(req.roles)
-
+        
     def it_creates_and_updates_qs(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
