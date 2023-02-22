@@ -171,10 +171,15 @@ class ticketsspa_new(tester.tester):
     def it_call__init__(self):
         pg = carapacian_com.ticketsspa.ticket()
 
-        inps = pg['form textarea[name=description]']
-        self.one(inps)
+        frm = pg['form'].only
+        inps = frm['input, textarea']
+        expect = [
+            'id',        'created',      'required',  'budget',
+            'quantity',  'description',  'reason'
+        ]
+        actual = inps.pluck('name')
 
-        # XXX:aa98969e Continue testing the various inputs
+        self.eq(expect, actual)
 
     def it_GETs(self):
         ws = carapacian_com.site()
@@ -183,13 +188,15 @@ class ticketsspa_new(tester.tester):
         res = tab.navigate('/en/ticketsspa/ticket', ws)
         self.status(200, res)
 
-        frms = tab['form']
-        self.one(frms)
+        frm = tab['form'].only
+        inps = frm['input, textarea']
+        expect = [
+            'id',        'created',      'required',  'budget',
+            'quantity',  'description',  'reason'
+        ]
+        actual = inps.pluck('name')
 
-        inps = tab['form textarea[name=description]']
-        self.one(inps)
-
-        # XXX:aa98969e Continue testing the various inputs
+        self.eq(expect, actual)
 
     def it_creates(self):
         ws = carapacian_com.site()
@@ -200,16 +207,20 @@ class ticketsspa_new(tester.tester):
 
         frm = tab['form'].only
 
-        inp = frm['input[name=id]'].only
-
-        id = inp.value
         
         inps = frm['input, textarea']
 
-        desc = inps['[name=description]'].only
-        reason = inps['[name=reason]'].only
+        ''' Test with main fields populated '''
+        id         =  frm['input[name=id]'].only
+        desc       =  inps['[name=description]'].only
+        created    =  inps['[name=created]'].only
+        required   =  inps['[name=required]'].only
+        budget     =  inps['[name=budget]'].only
+        qty        =  inps['[name=quantity]'].only
+        reason     =  inps['[name=reason]'].only
+        btnsubmit  =  frm['button[type=submit]'].only
 
-        # XXX Test with non-null date values
+        id = id.value
 
         desc.text = self.dedent('''
             As a user,
@@ -220,8 +231,6 @@ class ticketsspa_new(tester.tester):
         reason.text = self.dedent('''
             This feature is necessary to for security compliance.
         ''')
-
-        btnsubmit = frm['button[type=submit]'].only
 
         self.expect(
             db.RecordNotFoundError, lambda: effort.requirement(id)
