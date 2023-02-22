@@ -1421,7 +1421,6 @@ class element(entities.entity):
     def onfocus(self):
         """ Returns the `onfocus` event for this element.
         """
-        # XXX Remove return
         return self._on('focus')
 
     @onfocus.setter
@@ -1431,8 +1430,7 @@ class element(entities.entity):
     def focus(self):
         """ Triggers the `focus` event for this element.
         """
-        # XXX Remove return
-        return self._trigger('focus')()
+        self._trigger('focus')()
 
     @property
     def onblur(self):
@@ -1447,8 +1445,7 @@ class element(entities.entity):
     def blur(self):
         """ Triggers the `blur` event for this element.
         """
-        # XXX Remove return
-        return self._trigger('blur')()
+        self._trigger('blur')()
 
     @property
     def oninput(self):
@@ -1463,8 +1460,7 @@ class element(entities.entity):
     def input(self):
         """ Triggers the `input` event for this element.
         """
-        # XXX Remove return
-        return self._trigger('input')()
+        self._trigger('input')()
 
     def _on(self, ev):
         """ Return a memoized dom.event object for this event named by
@@ -2973,8 +2969,7 @@ class form(element):
     def submit(self):
         """ Triggers the `submit` event for this form.
         """
-        # XXX Remove return
-        return self._trigger('submit')()
+        self._trigger('submit')()
 
 class links(elements):
     """ A class used to contain a collection of ``link`` elements.
