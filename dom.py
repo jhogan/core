@@ -1421,6 +1421,7 @@ class element(entities.entity):
     def onfocus(self):
         """ Returns the `onfocus` event for this element.
         """
+        # XXX Remove return
         return self._on('focus')
 
     @onfocus.setter
@@ -1430,6 +1431,7 @@ class element(entities.entity):
     def focus(self):
         """ Triggers the `focus` event for this element.
         """
+        # XXX Remove return
         return self._trigger('focus')()
 
     @property
@@ -1445,6 +1447,7 @@ class element(entities.entity):
     def blur(self):
         """ Triggers the `blur` event for this element.
         """
+        # XXX Remove return
         return self._trigger('blur')()
 
     @property
@@ -1460,6 +1463,7 @@ class element(entities.entity):
     def input(self):
         """ Triggers the `input` event for this element.
         """
+        # XXX Remove return
         return self._trigger('input')()
 
     def _on(self, ev):
@@ -2969,6 +2973,7 @@ class form(element):
     def submit(self):
         """ Triggers the `submit` event for this form.
         """
+        # XXX Remove return
         return self._trigger('submit')()
 
 class links(elements):
