@@ -260,8 +260,19 @@ class date(stddatetime.date):
         its parameters at 
         https://docs.python.org/3/library/datetime.html#timedelta-objects
 
-        XXX Document the allowable paramters: days=0, seconds=0,
-        microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0
+        :param: days int|float: The number of days to offset the date.
+
+        :param: seconds int|float: The number of seconds to offset the date.
+
+        :param: microseconds int|float: The number of microseconds to offset the date.
+
+        :param: milliseconds int|float: The number of milliseconds to offset the date.
+
+        :param: minutes int|float: The number of minutes to offset the date.
+
+        :param: hours int|float: The number of hours to offset the date.
+
+        :param: weeks int|float: The number of weeks to offset the date.
         """
         r = date(stddatetime.date.today())
 
