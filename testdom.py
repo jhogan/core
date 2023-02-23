@@ -107,6 +107,75 @@ class elements(tester.tester):
         bs = html['strong']
         self.zero(bs)
 
+    def it_calls__setitem__(self):
+        added = list()
+        removed = list()
+
+        def clear():
+            nonlocal added, removed
+            added.clear()
+            removed.clear()
+
+        def elements_onadd(src, eargs):
+            added.append(eargs.entity)
+
+        def elements_onremove(src, eargs):
+            removed.append(eargs.entity)
+
+        ''' Quick test of append '''
+        clear()
+        div = dom.div()
+        div.elements.onadd += elements_onadd
+        div.elements.onremove += elements_onremove
+
+        p = dom.p()
+        p1 = dom.p()
+        p2 = dom.p()
+        p3 = dom.p()
+        p4 = dom.p()
+        p5 = dom.p()
+
+        div += p
+
+        self.one(added)
+        self.zero(removed)
+
+        self.is_(added[0], p)
+
+        ''' Set by index '''
+        clear()
+        div.elements[0] = p1
+
+        self.one(added)
+        self.one(removed)
+
+        self.is_(added[0], p1)
+        self.is_(removed[0], p)
+    
+        ''' Set elements by index '''
+        clear()
+        ps = dom.ps()
+        ps += p2, p3
+        div.elements[0] = ps
+
+        self.two(added)
+        self.one(removed)
+
+        self.is_(added[0], p2)
+        self.is_(added[1], p3)
+        self.is_(removed[0], p1)
+    
+        ''' Set by slice '''
+        clear()
+        ps = dom.ps()
+        ps += p4, p5
+        div.elements[:2] = ps
+
+        self.two(added)
+        self.two(removed)
+
+        self.eq([p4, p5], added[:2])
+        self.eq([p2, p3], removed[:2])
 class element(tester.tester):
     def it_raises_when_same_child_is_added_more_than_once(self):
         ''' Add child to element '''
