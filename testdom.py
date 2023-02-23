@@ -508,6 +508,31 @@ class element(tester.tester):
         self.is_(em, p.elements.second)
         self.is_(span, p.elements.third)
 
+    def it_calls_getattr(self):
+        html = dom.html('''
+            <p class='secret code' hidden id=123>password1</p>
+        ''')
+
+        p = html['p'].only
+
+        self.eq('secret code', p.getattr('class'))
+        self.eq(True, p.getattr('hidden'))
+        self.eq('123', p.getattr('id'))
+        self.eq(False, p.getattr('required'))
+
+    def it_calls_hasattr(self):
+        html = dom.html('''
+            <p class='secret code' hidden id=123>password1</p>
+        ''')
+
+        p = html['p'].only
+
+        self.true(p.hasattr('class'))
+        self.true(p.hasattr('hidden'))
+        self.true(p.hasattr('id'))
+        self.false(p.hasattr('required'))
+
+
 class test_comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
