@@ -146,7 +146,6 @@ class element(tester.tester):
         self.nine(ps)
         self.all(type(x) is dom.span for x in ps)
 
-        
     def it_raises_when_body_is_given_to_void_elements(self):
         ''' We want to get a ValueError when we add a body argument to
         an element that is marked `isvoid`. Elements that are "void",

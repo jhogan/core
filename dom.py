@@ -427,7 +427,7 @@ class attribute(entities.entity):
         <element name="value">
 
     Boolean attributes can have a value of None to indicate they are
-    present in the HTML but have to value assigned to them. For example,
+    present in the HTML but have no value assigned to them. For example,
     the following creates an ``input`` element that would be render as
     follows in HTML: <input type="checkbox" checked>
 
@@ -497,7 +497,7 @@ class attribute(entities.entity):
         # See the comment below to understand the intention of boolean
         # values in this context and write tests to ensure that
         # everytihng works as expected.
-
+        #
         # If v is a True, set it to None. This has the effect of
         # including the attribute but with no value, e.g.,
         # 
@@ -515,6 +515,14 @@ class attribute(entities.entity):
         # will remove the required attribute.
         #
         #     <input>
+        #
+        # On further reflection, it seems odd that the user should have
+        # to set an attribute to None or see its value as None.
+        # Retriveing a boolean attribute's value (like `required` or
+        # `hidden`) should yield a Boolean True or False, not a None. It
+        # may or may not make sense to store the under lying value as
+        # None, although it seems like True or `undef` would be clearer
+        # options.
         if v is True:
             v = None
         elif v is False:
@@ -968,9 +976,6 @@ class elements(entities.entities):
         :param: v dom.element: The element to set at the index.
         """
 
-        # XXX Test that the onadd and onremove events yield what was
-        # actually added and removed
-        # XXX Test for slices
         def collectivize(e):
             """ If `e` is a collection or sequence, return e, otherwise,
             put `e` in a list and return the list.
@@ -2264,7 +2269,6 @@ class element(entities.entity):
         This is a convenience methed since using the regurlar
         `attributes` collection tends to be too verbose.
         """
-        # XXX Test
         return self.attributes[attr].value
 
     def hasattr(self, attr):
