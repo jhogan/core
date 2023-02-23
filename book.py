@@ -7352,15 +7352,15 @@ with book('Hacking Carapacian Core'):
           proprietor that we switched to. The context manager will
           ensure that if there is an exception, the proprietor is
           switched back after the context manager is exited, thus
-          ensuring proper access is maintained after the exception.
+          ensuring proper tenancy is restored after the exception.
 
           In summary, the ORM ensures that a tenant's data is completly
           isolated from other tenants. This makes it possible to use the
           same physical database to store the records of multiple
           tentants.  This is an important feature for any SaaS product.
           Imagine logging into you Gmail account and seeing other
-          people's emails. What if other company's could see your Jira
-          tickets.  This would obviously be untenable (as it were). 
+          people's emails. Or what if other company's could see your
+          Jira tickets.  This would obviously be untenable (as it were). 
 
           You could create seperate physical databases for each client
           of your SaaS product to solve the same problem. However, this
@@ -7370,6 +7370,34 @@ with book('Hacking Carapacian Core'):
           tenants.
         ''')
 
+        with section('The public proprietor'):
+          print('''
+            Typically, each entity is owned by a legal entity such as a
+            company or person. There as an exception to this called the
+            "public" proprietor. This entity is hard-coded at
+            `parties.public`. This `party` entity is the proprietor for
+            all entities that are *public*. "Public" entities are those
+            that all proprietors may have read access two. These
+            entities are usually provided by the framework itself.
+
+            The above description may be a little abstruse, but some
+            example will make it clear as to why this is useful. Let's
+            say, for the sake of convenience, that the framework wanted
+            to offer to all tentents access to an object model of all
+            the postal codes, cities, states and countries in the world.
+            Obviously, such an object model would be useful to most
+            tenants since it would allow them to verify addresses that
+            users entered into the tentent's various address forms. The
+            object model could also suggest addresses for
+            autocompletion. (SaSS API services, such as MapBox, offer
+            access to such a database through their geocoding services.)
+            Ideally, the entities in this object model would be
+            readable to to all tentents in the system, yet no tentent
+            should be able to alter these entities. The framework would
+            consider these entities public property and would therefore
+            assign the `party.public` entity as their proprietor. 
+          ''')
+
       with section('Authorization', id='54014644'):
         """
           * Anonymous owner
@@ -7378,7 +7406,6 @@ with book('Hacking Carapacian Core'):
 
       with section('Authentication'):
         """
-          * Public proprietor
           * orm.security class
           * creatability, retrievability, updatability, deletability
         """
