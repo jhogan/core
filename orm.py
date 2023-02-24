@@ -47,8 +47,8 @@ TODOs:
         # point.
         assert pres.artist is art
 
-    TODO: No accessibility should be permitted when security().user is
-    None.
+    TODO:f3e6d6a5 No accessibility should be permitted when
+    security().user is None.
 
     FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
     for more.)
@@ -8858,7 +8858,7 @@ class orm:
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If there is no owner, then we don't care.
         # 
-        # TODO This can't be right!
+        # TODO:f3e6d6a5 This can't be right!
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if not security().owner:
             return
@@ -12337,7 +12337,7 @@ class violations(entitiesmod.entities):
         # NOTE:a22826fe At this point, it is not clear how anonymous or
         # unauthenicated users will work.  We have an anonymous person
         # (party.parties.anonymous). It should have an associated user
-        # record. This could be represent any unauthenicated user.
+        # record. This could be represented any unauthenicated user.
         import ecommerce
         if not isinstance(security().user, ecommerce.user):
             self += 'User must be authenticated'

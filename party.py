@@ -37,7 +37,6 @@ class parties(orm.entities):
 
     :abbr: pars
     """
-
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     # The primary key for the "public" proprietor, i.e.,
     # `party.parties.public` 
