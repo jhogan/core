@@ -15020,6 +15020,27 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # unusual/advanced types like "images", "file", "month",
         # "password", "range", "tel", "time", "url", "week", etc.
 
+    def it_gets_card(self):
+        art = artist.getvalid()
+        card = art.orm.card
+
+        # Test <card> element
+        cls = type(art)
+        name = f'{cls.__module__}.{cls.__name__}'
+        self.eq(name, card.getattr('data-entity'))
+
+        self.type(pom.card, card)
+
+        ''' Default str (lastname) '''
+        name = 'lastname'
+        map = art.orm.mappings[name]
+        div = card[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        self.eq(getattr(art, map.name), div['span'].text)
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
