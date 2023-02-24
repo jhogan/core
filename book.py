@@ -7311,10 +7311,10 @@ with book('Hacking Carapacian Core'):
           obviously important since we wouldn't want Beyond Meat to be
           able to access Otly's data and vice versa.
 
-          It's possbile to change the proprietor temporarily. This will
-          unlikely be needed for most use cases, but it is important to
-          know how to do this for some types of tests and for
-          lower-level code. We can use the `orm.proprietor` context
+          It's possbile to change the proprietor temporarily.  This is a
+          common tasks for building SaaS system where arbitrary tenant
+          isolation is a must. It's also useful for tests and many types
+          of low-level code.  We can use the `orm.proprietor` context
           manager to perform a temporary switch.
           
           Let's create a product as Oatly and perform a test that
@@ -7373,12 +7373,12 @@ with book('Hacking Carapacian Core'):
         with section('The public proprietor'):
           print('''
             Typically, each entity is owned by a legal entity such as a
-            company or person. There as an exception to this called the
+            company or person. There is an exception to this called the
             "public" proprietor. This entity is hard-coded at
             `parties.public`. This `party` entity is the proprietor for
             all entities that are *public*. "Public" entities are those
-            that all proprietors may have read access two. These
-            entities are usually provided by the framework itself.
+            that all proprietors have read access two. These entities
+            are usually provided by the framework itself.
 
             The above description may be a little abstruse, but some
             example will make it clear as to why this is useful. Let's
@@ -7391,22 +7391,34 @@ with book('Hacking Carapacian Core'):
             object model could also suggest addresses for
             autocompletion. (SaSS API services, such as MapBox, offer
             access to such a database through their geocoding services.)
-            Ideally, the entities in this object model would be
-            readable to to all tentents in the system, yet no tentent
-            should be able to alter these entities. The framework would
-            consider these entities public property and would therefore
-            assign the `party.public` entity as their proprietor. 
+            Ideally, the entities in this object model would be readable
+            by all tentents in the system, yet no tentent should be able
+            to alter these entities. The framework would consider these
+            entities public property and would therefore assign the
+            `party.public` entity as their proprietor. 
           ''')
 
       with section('Authorization', id='54014644'):
-        """
-          * Anonymous owner
-        """
+        """ Similar to the `proprietor` attribute that all entity object
+        have, there is also the `owner` attribute. This attribute is
+        the user that creates the entity. The `user` class is defined at
+        `ecommerce.user`. 
 
+        The owner of an entity usually determines what kind of access
+        the ORM will permit for the entity. Typically, if the current
+        logged in user is trying to read a entity it owns, the read
+        request will be successful. Other considerations may be made in
+        the accessibilty properties for various types of requests. 
+        """
 
       with section('Authentication'):
         """
+          * Anonymous owner
+          * Root user
+          * sudo context manager
+          * su context manager
           * orm.security class
+          * Define the override() context manager
           * creatability, retrievability, updatability, deletability
         """
 
