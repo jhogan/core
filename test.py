@@ -6294,6 +6294,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         comp = component()
         comp.name = uuid4().hex
         map = comp.orm.mappings['digest']
+        self.false(map.isnumeric)
 
         # Make sure the password field hasn't been tampered with
         self.ne(map.min, map.max) 
@@ -6428,6 +6429,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.true(hasattr(art, 'email'))
             self.eq(str(), art.email)
             self.eq((3, 254), (map.min, map.max))
+            self.false(map.isnumeric)
 
             art.email = email = 'USERNAME@DOMAIN.TDL'
             self.eq(email.lower(), art.email)
@@ -6510,6 +6512,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['type']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(1, map.min)
         self.eq(1, map.max)
 
@@ -6533,6 +6536,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['serial']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(255, map.min)
         self.eq(255, map.max)
 
@@ -6561,6 +6565,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['comments']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(1, map.min)
         self.eq(65535, map.max)
 
@@ -6742,6 +6747,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         comp = component.getvalid()
 
         map = comp.orm.mappings['width']
+        self.true(map.isfloat)
+        self.true(map.isnumeric)
         self.type(float, comp.width)
         self.eq(-9999.9, map.min)
         self.eq(9999.9, map.max)
@@ -6760,6 +6767,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         art = artist.getvalid()
 
         map = art.orm.mappings['phone']
+        self.true(map.isint)
+        self.true(map.isnumeric)
         self.type(int, art.phone)
         self.eq(1000000, map.min)
         self.eq(9999999, map.max)
@@ -6866,6 +6875,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             obj = cls.getvalid()
             map = obj.orm.mappings[attr]
+
+            self.true(map.isnumeric)
 
             min, max = map.min, map.max
 
