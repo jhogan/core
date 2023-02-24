@@ -808,6 +808,9 @@ function ajax(e){
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
 
+            var els = document.querySelectorAll('.exception')
+            els.forEach(e => e.remove())
+
             // If success...
             if (this.status < 400){
 
@@ -822,7 +825,7 @@ function ajax(e){
                 }
 
                 // Parse the HTML we received into a DOM object.
-                var els = parser.parseFromString(
+                els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
 
@@ -870,14 +873,6 @@ function ajax(e){
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
-                // XXX Remove this regardless of this.status: If we have
-                // a subsequent successful return, we will want to make
-                // sure the page no longer display the prior error
-                // message. Ensure this logic is in
-                // tester.browser._tab.element_event
-                let els = document.querySelectorAll('.exception')
-                els.forEach(e => e.remove())
-
                 // Insert the response HTML making it the first element
                 // under <main>. The response HTML will have a parent
                 // element with an "exception" class.
