@@ -2419,9 +2419,10 @@ class input(dom.div):
 
         els = super().elements
 
+        lbl = None
         if self.label:
-            # XXX Add the 'for' attribute to <label>
-            els += dom.label(self.label)
+            lbl = dom.label(self.label)
+            els += lbl
 
         if type == 'textarea':
             inp = dom.textarea(name=self.name)
@@ -2435,7 +2436,10 @@ class input(dom.div):
         else:
             inp = dom.input(name=self.name, type=type)
 
-        els += inp
+        if lbl:
+            lbl += inp
+        else:
+            els += inp
 
         if self.placeholder:
             inp.placeholder = self.placeholder
