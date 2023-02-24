@@ -1153,7 +1153,6 @@ class tester(entities.entity):
 
                 msg = tester._browser.message(req=req)
 
-                # XXX Test
                 self.messages += msg
 
                 app.breakonexception = \

@@ -432,7 +432,7 @@ class test_user(tester.tester):
             #
             #        self['password'].retrievability = False
 
-class test_url(tester.tester):
+class url(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'ecommerce',
         super().__init__(mods=mods, *args, **kwargs)

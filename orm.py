@@ -7320,7 +7320,6 @@ class fieldmapping(mapping):
     def isnumeric(self):
         """ Returns true if the mapping is for an int, float or Decimal.
         """
-        # XXX Test
         if self.isint:
             return True
         elif self.isfloat:
@@ -12003,7 +12002,6 @@ class orm:
 
         `card` is the read-only counterpart to the orm.form attribute.
         """
-        # XXX Write tests
         import dom, pom
 
         # Create the `card` object that we will build and return

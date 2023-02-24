@@ -567,7 +567,6 @@ class url(orm.entity):
 
         See also the `qs` attribute.
         """
-        # XXX Test
         import urllib.parse
         return urllib.parse.urlparse(self.address).query
 
@@ -580,10 +579,8 @@ class url(orm.entity):
             {'s': ['test']}
 
         """
-        # XXX Test
         import urllib.parse
         return urllib.parse.parse_qs(self.query)
-
 
     @property
     def creatability(self):

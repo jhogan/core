@@ -3276,7 +3276,6 @@ class button(element):
         searches for the <button>'s <form> and triggers the <form>'s
         `submit` event.
         """
-        # XXX Add tests
         if self.type == 'submit':
             # TODO We could also use the button.form (<button
             # form="frm-123>) attribute to find the form for the button

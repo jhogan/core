@@ -818,7 +818,7 @@ function ajax(e){
                 // return. Usually, events will return HTML, however it
                 // possible that in some cases they will choose not to.
                 if(!xhr.responseText){
-                    return;
+                    return
                 }
 
                 // Parse the HTML we received into a DOM object.
