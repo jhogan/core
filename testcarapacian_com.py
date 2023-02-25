@@ -252,7 +252,7 @@ class ticketsspa_new(tester.tester):
         self.none(req.asset)
         self.none(req.product)
         self.zero(req.roles)
-        
+
     def it_creates_and_updates_qs(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()

@@ -859,7 +859,7 @@ function ajax(e){
                         new_.outerHTML, null, pg
                     )
                 // If the element is not a <main>, we are doing a
-                // regular AJAX call, i.e., we are no loading a new
+                // regular AJAX call, i.e., we are not loading a new
                 // <main> as a SPA page.
                 }else{
                     // Iterate over each element and replace their
@@ -867,6 +867,9 @@ function ajax(e){
                     for(el of els){
                         // Use the fragment's id to find and replace
                         exec(el)
+
+                        // XXX Why does el.id return an <input> instead
+                        // of the value of the id attribute.
                         let old = document.querySelector('#' + el.id)
                         old.parentNode.replaceChild(el, old)
                     }
