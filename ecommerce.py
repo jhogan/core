@@ -596,7 +596,7 @@ class url(orm.entity):
         # NOTE:7a67115c I suppose anyone should be able to access a URL
         # in most cases. However, associations between ``urls`` and
         # other entity objects would work differently. But those
-        # accessibilty restrictions  would be enforced in the
+        # accessibility restrictions  would be enforced in the
         # association objects.  For now, permit readability to all
         # (within the current tenant (orm.proprietor) of course).
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣

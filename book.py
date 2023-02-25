@@ -7225,8 +7225,10 @@ with book('Hacking Carapacian Core'):
           a person) who has legal ownership of the data in the given
           entity.
 
-          The ORM only allows proprietors access to the entities they
-          own, i.e., **multitenancy** is supproted at the ORM level. 
+          Records owned by different proprietors can exist in the same
+          database. The ORM ensures that a proprietor can never access
+          records owned by another proprietor. This feature is known as
+          **multitenancy**.
 
           When a program or script begins to use the ORM, it is
           responsible for identifying who the proprietor is and
@@ -7248,20 +7250,175 @@ with book('Hacking Carapacian Core'):
           Above, we create a company called `bynd`. We get the
           `orm.security` singleton instance, and we set its `proprietor`
           attribute to `bynd`. Now the ORM knows who the proprietor is.
+
+          Any entity after this point will have its proprietor attribute
+          automatically assigned to `bynd`:
         ''')
 
+        with listing('Aserting entity proprietorship'):
+          # Create a new product
+          gd = product.good(name='Beyond Burger')
+
+          # The new product entity is the property of bynd
+          self.is_(bynd, gd.proprietor) 
+
+          # Save the product to the database
+          gd.save()
+
+          # Assert there are no issues reloading this product as the
+          # proprietor `bynd`
+          self.expect(None, gd.orm.reloaded)
+
+        print('''
+          Above we see that we can save and reload the product without
+          issue. Let's see what happens if we change the proprietor:
+        ''')
+
+        with listing('Change the proprietor and attempt to query'):
+          # Create the otly company
+          otly = party.company(name='Oatly Group AB')
+
+          # Make otly the proprietor
+          sec.proprietor = otly
+
+          # Assert that the ORM can't reload the Beyond Burger product
+          self.expect(db.RecordNotFoundError, gd.orm.reloaded)
+
+          # Assert that the ORM can't load by id
+          self.expect(db.RecordNotFoundError, product.good(gd.id)
+
+          # Assert that the ORM can't query
+          gds = products.goods(id, gd.id)
+          self.zero(gds)
+
+          # Assert that Otly can't make updates to the Beyond Meat's
+          # record
+          gd.comment = 'This is now Oatly property'
+          self.expect(orm.ProprietorError, gd.save)
+
+          # Assert that Otly can't create records and pass them off as
+          # Beyond Meat's records
+          gd = product.good('Impossible Burger')
+          gd.propritor = bynd
+          self.expect(orm.ProprietorError, gd.save)
+
+        print('''
+          As you can see, now that we have changed the propritor to
+          Oatly, the ORM behaves as if it is completely unaware of the
+          existance of Beyond Meat's records. Additionally, the ORM
+          ensures that records can't be update or created by Otly
+          and then assigned ownership to Beyond Meat. These measures are
+          obviously important since we wouldn't want Beyond Meat to be
+          able to access Otly's data and vice versa.
+
+          It's possbile to change the proprietor temporarily.  This is a
+          common tasks for building SaaS system where arbitrary tenant
+          isolation is a must. It's also useful for tests and many types
+          of low-level code.  We can use the `orm.proprietor` context
+          manager to perform a temporary switch.
+          
+          Let's create a product as Oatly and perform a test that
+          ensures another company, such as Beyond Meat, can't access the
+          data:
+        ''')
+
+        with listing('Temporarily swtiching proprietor'):
+          # Make otly the proprietor
+          sec.proprietor = otly
+
+          # Create a product as Otly
+          gd = product.good('Barista Edition')
+          gd.save()
+
+          # Reload product as bynd
+          with orm.proprietor(bynd):
+            # We expect the reload to fail
+            self.expect(db.RecordNotFoundError, gd.orm.reloaded)
+
+          # Out of the context manager, we are otly again, so we expect
+          # the reloda to succeed.
+          self.expect(None, gd.orm.reloaded)
+
+        print('''
+          As you can see, the `orm.proprietor` context manager
+          temporarily makes the proprietor `bynd`, meaning we can't
+          access any of `otly`'s entities. 
+
+          This example may seem a little remedial because we are just
+          demonstrating tenent entity isolation again. However, it's
+          import to use the context manager for situations like this. In
+          cases where there is an exception, execution of the code may
+          resume in some exception handler up the call stack as the
+          proprietor that we switched to. The context manager will
+          ensure that if there is an exception, the proprietor is
+          switched back after the context manager is exited, thus
+          ensuring proper tenancy is restored after the exception.
+
+          In summary, the ORM ensures that a tenant's data is completly
+          isolated from other tenants. This makes it possible to use the
+          same physical database to store the records of multiple
+          tentants.  This is an important feature for any SaaS product.
+          Imagine logging into you Gmail account and seeing other
+          people's emails. Or what if other company's could see your
+          Jira tickets.  This would obviously be untenable (as it were). 
+
+          You could create seperate physical databases for each client
+          of your SaaS product to solve the same problem. However, this
+          can produce needless overhead. For each new database, you need
+          to setup and maintain the database. In many situations, it may
+          be preferable to only have one database that can host multiple
+          tenants.
+        ''')
+
+        with section('The public proprietor'):
+          print('''
+            Typically, each entity is owned by a legal entity such as a
+            company or person. There is an exception to this called the
+            "public" proprietor. This entity is hard-coded at
+            `parties.public`. This `party` entity is the proprietor for
+            all entities that are *public*. "Public" entities are those
+            that all proprietors have read access two. These entities
+            are usually provided by the framework itself.
+
+            The above description may be a little abstruse, but some
+            example will make it clear as to why this is useful. Let's
+            say, for the sake of convenience, that the framework wanted
+            to offer to all tentents access to an object model of all
+            the postal codes, cities, states and countries in the world.
+            Obviously, such an object model would be useful to most
+            tenants since it would allow them to verify addresses that
+            users entered into the tentent's various address forms. The
+            object model could also suggest addresses for
+            autocompletion. (SaSS API services, such as MapBox, offer
+            access to such a database through their geocoding services.)
+            Ideally, the entities in this object model would be readable
+            by all tentents in the system, yet no tentent should be able
+            to alter these entities. The framework would consider these
+            entities public property and would therefore assign the
+            `party.public` entity as their proprietor. 
+          ''')
 
       with section('Authorization', id='54014644'):
-        ...
+        """ Similar to the `proprietor` attribute that all entity object
+        have, there is also the `owner` attribute. This attribute is
+        the user that creates the entity. The `user` class is defined at
+        `ecommerce.user`. 
 
+        The owner of an entity usually determines what kind of access
+        the ORM will permit for the entity. Typically, if the current
+        logged in user is trying to read a entity it owns, the read
+        request will be successful. Other considerations may be made in
+        the accessibilty properties for various types of requests. 
+        """
 
       with section('Authentication'):
         """
-          * Proprietor an multitenancy
-          *     Proprietor is shared by supers
-          *     Using the orm.proprietor context manager
-          * Public proprietor
+          * Anonymous owner
+          * Root user
+          * sudo context manager
+          * su context manager
           * orm.security class
+          * Define the override() context manager
           * creatability, retrievability, updatability, deletability
         """
 

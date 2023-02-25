@@ -460,7 +460,7 @@ class bot(ecommerce.agent):
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Set the ORM's owner to the bot's user object. We want all
-        # future accessibilty to consider the bot's user as the owner,
+        # future accessibility to consider the bot's user as the owner,
         # and all new records, such as log records, to be owned by the
         # bot's user.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -481,7 +481,7 @@ class bot(ecommerce.agent):
             orm.security().proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Override accessibilty controls because setting proprietor
+        # Override accessibility controls because setting proprietor
         # causes the current proprietor to be loaded, which causes
         # party.retrievability to be called, which, itself causes
         # proprietor to be loaded leading to infinite recursion.

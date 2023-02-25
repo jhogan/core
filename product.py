@@ -207,7 +207,6 @@ class prices(orm.entities):
 
         return pr, basepr + discounts + surcharges
                 
-    
 class bases(prices):                       pass
 class discounts(prices):                   pass
 class surcharges(prices):                  pass
