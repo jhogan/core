@@ -291,6 +291,24 @@ class ticketsspa_ticket(tester.tester):
 
         self.eq(id, tab.url.qs['id'][0])
 
+    def it_edits(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        req = effort.requirement()
+        req.save()
+
+        res = tab.navigate(f'/en/ticketsspa/ticket?id={req.id}', ws)
+        self.status(200, res)
+
+        btnedit = res['button.edit'].only
+
+        btnedit.click()
+        print(tab)
+
+
+        
+
 
 if __name__ == '__main__':
     tester.cli().run()
