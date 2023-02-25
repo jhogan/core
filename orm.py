@@ -12007,6 +12007,8 @@ class orm:
         # Create the `card` object that we will build and return
         card = pom.card()
 
+        card.btnedit = dom.button('Edit')
+
         inst = self.instance
         rent = builtins.type(inst)
 

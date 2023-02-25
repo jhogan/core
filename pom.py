@@ -2628,6 +2628,23 @@ class card(dom.article):
         self.classes += 'card'
         super().__init__(*args, **kwargs)
 
+    @property
+    def btnedit(self):
+        return self['button.edit'].first
+
+    @btnedit.setter
+    def btnedit(self, v):
+
+        btnedits = self['button.edit']
+
+        B(btnedits.count)
+
+        btnedits.remove()
+        # XXX Can we remove by CSS selector?
+        #self.remove('button.edit')
+        v.classes += 'edit'
+        self += v
+
 class instructions(dom.article):
     """ A collection of `instruction` objects.
     """

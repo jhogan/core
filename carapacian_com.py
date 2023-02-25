@@ -345,6 +345,14 @@ class tickets(pom.page):
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
     class ticket(pom.page):
+        def btnedit_onclick(self, src, eargs):
+            card = eargs.html.only
+            id = card.getattr('data-entity-id')
+            req = effort.requirement(id)
+
+            eargs.html = req.orm.form
+            eargs.html.id = card.id
+            
         def frm_onsubmit(self, src, eargs):
             frm = eargs.html.only
             inps = frm['input, textarea, hidden']
@@ -387,6 +395,8 @@ class ticketsspa(pom.spa):
             else:
                 card = req.orm.card
 
+                card.btnedit.onclick += self.btnedit_onclick
+
                 # Set the card's id attribute to that of the <form> so
                 # the JavaScript in the client can replace the <form>
                 # with the card.
@@ -421,6 +431,9 @@ class ticketsspa(pom.spa):
                 el.onsubmit += self.frm_onsubmit, el
             else:
                 el = req.orm.card
+                card = el
+                if btnedit := card.btnedit:
+                    el.btnedit.onclick += self.btnedit_onclick, card
 
             self.main += el
     
