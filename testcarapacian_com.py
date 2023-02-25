@@ -167,7 +167,11 @@ class ticketsspa(tester.tester):
         res = tab.get('/en/ticketsspa', ws)
         self.status(200, res)
 
-class ticketsspa_new(tester.tester):
+class ticketsspa_ticket(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = carapacian_com.site().Proprietor
+        super().__init__(propr=propr, *args, **kwargs)
+
     def it_call__init__(self):
         pg = carapacian_com.ticketsspa.ticket()
 
