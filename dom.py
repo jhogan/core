@@ -589,8 +589,12 @@ class attribute(entities.entity):
         """ Returns a str (non-HTML) representation of the attribute
         ('attr="value"').
         """
-        r = '%s="%s"'
-        r %= self.name, self.value
+
+        r = self.name
+
+        if not self.isboolean:
+            r += f'="{self.value}"'
+
         return r
 
     @property
@@ -2485,7 +2489,7 @@ class element(entities.entity):
 
     def __repr__(self):
         r = '%s(%s)'
-        attrs = ' '.join(str(x) for x in self.attributes)
+        attrs = ', '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
         return r
 
