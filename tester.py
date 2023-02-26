@@ -1329,7 +1329,7 @@ class tester(entities.entity):
         if actual: self._failures += failure()
 
     def falsey(self, actual, msg=None):
-        if not actual: self._failures += failure()
+        if actual: self._failures += failure()
 
     def assertFail(self, msg=None):
         self._failures += failure()
