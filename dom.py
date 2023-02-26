@@ -367,6 +367,8 @@ class attributes(entities.entities):
                 else:
                     attr._classes = item._classes
             else:
+                if item is None:
+                    item = attribute.undef
                 attr.value = item
         else:
             if key == 'class':
