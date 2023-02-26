@@ -123,6 +123,11 @@ TODOs
     (the hacks always defaults standard mode (`html`)).  When correcting
     this, be sure to grep for the snowflake 10d9a676 as there are
     several other places that reference this TODO.
+
+    TODO Some elements like <meta>, <br/>, etc., should not be
+    allowed to have content appended to them. An exception should
+    be raised when that happens, or maybe the document's `invaild`
+    property should be True.
 """
 
 # References:
@@ -155,7 +160,7 @@ class attributes(entities.entities):
         self.element = el
         
     def __iadd__(self, *o):
-        """ Append an attribute to the collection via the += operator::
+        """ Append an attribute to the collection via the += operator:
 
             # Create an element
             p = dom.p()
@@ -170,15 +175,19 @@ class attributes(entities.entities):
         for o in o:
             if type(o) in (tuple, list):
                 o = attribute.create(*o)
+
             super().__iadd__(o)
+
         return self
 
     def clone(self):
         """ Returns a cloned version of the attributes collection.
         """
         attrs = type(self)(self.element)
+
         for attr in self:
             attrs += attr.clone()
+
         return attrs
             
     def append(self, o, v=None, uniq=False):
@@ -190,7 +199,7 @@ class attributes(entities.entities):
             attribute
             ---------
             The most obvious way to append an attribute to a collection
-            is to simple append an attribute objects:
+            is to simply append an attribute objects:
 
                 # Create a <p>
                 p = dom.p()
@@ -198,25 +207,27 @@ class attributes(entities.entities):
                 # Create an attribute object: id="my-id-value"
                 attr = dom.attribute('id', 'my-id-value')
 
-                # Append the object such that <p> becomes 
-                # <p id="my-id-value"></p>
+                # Append the object such that <p> becomes:
+                #
+                #     <p id="my-id-value"></p>
+                #
                 p.attributes += attr
 
             tuple
             -----
-            The above could have been append as a tuple instead::
+            The above could have been append as a tuple instead:
 
                 p.attributes += id', 'my-id-value'
 
             list
             ----
-            List work similarly::
+            Lists work similarly:
 
                 p.attributes += [id', 'my-id-value']
 
             dict
             ----
-            With dict's we can add multiple attrs in one line::
+            With dict's we can add multiple attrs in one line:
 
                 p.attributes += {
                     'id':    'my-id-value',
@@ -225,8 +236,8 @@ class attributes(entities.entities):
 
             attributes collections
             ----------------------
-            With attributes collections we can also add multiple attrs
-            in one line::
+            With attributes collections, we can also add multiple attrs
+            in one line:
 
                 attrs = dom.attributes()
                 attrs += 'id', 'my-id-value'
@@ -237,11 +248,7 @@ class attributes(entities.entities):
         attribute is not already in the collection.
         """
 
-        # TODO Some elements like <meta>, <br/>, etc., should not be
-        # allowed to have content appended to them. An exception should
-        # be raised when that happens, or maybe the document's `invaild`
-        # property should be True.
-            
+        # TODO Use isinstance
         if type(o) is str:
             o = attribute(o, v)
 
@@ -264,31 +271,32 @@ class attributes(entities.entities):
         """ Returns an `attribute` object based on the given `key`.
 
         :param: key int|slice|str: The index value used to find the
-        item
+        item.
+
             If the `key` is an `int`, return the attribute based on its
             position in the collection. (Note that in these examples,
-            `attrs` represents an attribute's collection)::
+            `attrs` represents an attribute's collection):
 
                 assert attrs[0] is attrs.first
 
-            If the `key` is a slice, return a slice of the attributes::
+            If the `key` is a slice, return a slice of the attributes:
 
                 assert attrs[0:2] == (attrs.first, attrs.second)
 
-            If the `key` is a str, return the attribute object by name::
+            If the `key` is a str, return the attribute object by name:
                 
                 attr = attribute(name='checked', value=True)
                 attrs += attr
 
-                attr is attrs['checked']
+                assert attr is attrs['checked']
 
-            Note that __getitem__ can also be used to set create new
-            attributes::
+            Note that __getitem__ can also be used to set and create new
+            attributes:
                 
                 attr = attrs['newattr']
                 attr.value = 'newvalue'
 
-                assert 'newvalue' == attrs['newattr']
+                assert 'newvalue' == attrs['newattr'].value
         """
 
         if isinstance(key, int):
@@ -326,7 +334,7 @@ class attributes(entities.entities):
             return self._ls[-1]
 
     def __setitem__(self, key, item):
-        """ Sets an `attribute` object based on the given `key`::
+        """ Sets an `attribute` object based on the given `key`:
 
             attrs['checked'] = True
 
@@ -360,6 +368,9 @@ class attributes(entities.entities):
                 else:
                     attr._classes = item._classes
             else:
+                if item is None:
+                    item = attribute.undef
+
                 attr.value = item
         else:
             if key == 'class':
@@ -380,8 +391,9 @@ class attributes(entities.entities):
 
     @property
     def _defined(self):
-        ''' Return a list of attributes that have values. (See
-        `attribute.isdef` for more information)
+        ''' Return a list of attributes that have values. 
+
+        See `attribute.isdef` for more information.
         '''
         return [x for x in self._ls if x.isdef]
 
@@ -422,20 +434,19 @@ class attributes(entities.entities):
         
 class attribute(entities.entity):
     """ A object that represents an HTML5 attribute. An attribute will
-    have a name and usually a value::
+    have a name and usually a value:
 
         <element name="value">
 
-    Boolean attributes can have a value of None to indicate they are
-    present in the HTML but have no value assigned to them. For example,
-    the following creates an ``input`` element that would be render as
-    follows in HTML: <input type="checkbox" checked>
+    Boolean attributes can have a value of True to indicate they are
+    present in the HTML. For example, the following creates an `input`
+    element that would be render as follows in HTML: <input
+    type="checkbox" checked>
 
         inp = dom.input()
         inp.attributes['type'] = checkbox
-        inp.attributes['checked'] = None
+        inp.attributes['checked'] = True
     """
-
     class undef:
         """ A class used to indicate that an attribute has not been
         defined.
@@ -478,26 +489,33 @@ class attribute(entities.entity):
     @property
     def value(self):
         """ Returns the value of the attribute.
+
+        The value will be the string that the attribute was
+        assigned. If the attribute is a boolean value, True will be
+        returned if the attribute exists. Otherwise, None will be
+        returned.
         """
         if self.isdef:
+            # If value is None but the attribute is "defined", it must
+            # be a boolean value so return True.
             if self._value is None:
-                return None
+                return True
+
+            # Return a stringified version
             return str(self._value)
+
         return None
 
     @value.setter
     def value(self, v):
         """ Sets the value of the attribute.
+
+        :param: v str|True|None: The value to set the attribute to.
         """
         # TODO We should raise ValueError if v contains an ambiguous
         # ampersand.
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
 
-        # TODO Setting attributes to boolean values has not been tested.
-        # See the comment below to understand the intention of boolean
-        # values in this context and write tests to ensure that
-        # everytihng works as expected.
-        #
         # If v is a True, set it to None. This has the effect of
         # including the attribute but with no value, e.g.,
         # 
@@ -516,13 +534,6 @@ class attribute(entities.entity):
         #
         #     <input>
         #
-        # On further reflection, it seems odd that the user should have
-        # to set an attribute to None or see its value as None.
-        # Retriveing a boolean attribute's value (like `required` or
-        # `hidden`) should yield a Boolean True or False, not a None. It
-        # may or may not make sense to store the under lying value as
-        # None, although it seems like True or `undef` would be clearer
-        # options.
         if v is True:
             v = None
         elif v is False:
@@ -532,9 +543,10 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
-        """ Returns True if an attribute is defined, False otherwise. An
-        undefined attribute can be created by indexing the `attributes`
-        collection without setting a `value`::
+        """ Returns True if an attribute is defined, False otherwise. 
+
+        An undefined attribute can be created by indexing the
+        `attributes` collection without setting a `value`:
 
             id = attrs['id']
 
@@ -544,8 +556,8 @@ class attribute(entities.entity):
 
             assert attrs.count == 0
 
-        If the use decides later to give `id` a value, the `attrs`
-        collection will reveal the attribute to the user::
+        If the user decides later to give `id` a value, the `attrs`
+        collection will reveal the attribute to the user:
             
             assert attrs.count == 0
             id.value = 'myvalue'
@@ -567,6 +579,12 @@ class attribute(entities.entity):
 
         return attribute(name, v)
 
+    @property
+    def isboolean(self):
+        """ Returns True if the attribute is a boolean.
+        """
+        return self.value is True
+
     def __repr__(self):
         """ Returns a str (non-HTML) representation of the attribute.
         """
@@ -578,19 +596,21 @@ class attribute(entities.entity):
         """ Returns a str (non-HTML) representation of the attribute
         ('attr="value"').
         """
-        r = '%s="%s"'
-        r %= self.name, self.value
+        r = self.name
+
+        if not self.isboolean:
+            r += f'="{self.value}"'
+
         return r
 
     @property
     def html(self):
         """ Returns a string of HTML representing the attribute.
-        Example::
+        Example:
             
             attributename="attribute-value"
         """
-
-        if self.value is None:
+        if self.isboolean:
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
@@ -2263,11 +2283,15 @@ class element(entities.entity):
         self._attributes = v
 
     def getattr(self, attr):
-        """ Returns the value of the attribute `attr` for this
-        `element`.
+        """ Returns the str value of the attribute `attr` for this
+        `element`. For Boolean values (i.e., attributes that appear
+        alone without a value), True is returned. If the attribute does
+        not exist, None is returned.
 
         This is a convenience methed since using the regurlar
         `attributes` collection tends to be too verbose.
+
+        :param: str attr: The name of the attribute to get.
         """
         return self.attributes[attr].value
 
@@ -2474,7 +2498,7 @@ class element(entities.entity):
 
     def __repr__(self):
         r = '%s(%s)'
-        attrs = ' '.join(str(x) for x in self.attributes)
+        attrs = ', '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
         return r
 
