@@ -196,7 +196,7 @@ class dom_file(tester.tester):
                 'https://code.jquery.com/jquery-3.5.1.js',
                 scripts.second.src
             )
-            self.eq(None, scripts.second.integrity)
+            self.true(scripts.second.integrity)
             self.eq('anonymous', scripts.second.crossorigin)
             
             self.eq(
@@ -215,7 +215,7 @@ class dom_file(tester.tester):
                 scripts.ultimate.src
             )
 
-            self.eq(None, scripts.ultimate.integrity)
+            self.true(scripts.ultimate.integrity)
             self.eq('use-credentials', scripts.ultimate.crossorigin)
 
             for script in scripts:
@@ -340,7 +340,7 @@ class dom_file(tester.tester):
                 ),
                 scripts.first.src
             )
-            self.eq(None, scripts.first.integrity)
+            self.true(scripts.first.integrity)
             self.eq('anonymous', scripts.first.crossorigin)
 
             resxs = file.resources('name', resx.name)

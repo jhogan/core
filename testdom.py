@@ -516,9 +516,9 @@ class element(tester.tester):
         p = html['p'].only
 
         self.eq('secret code', p.getattr('class'))
-        self.eq(True, p.getattr('hidden'))
+        self.true(p.getattr('hidden'))
         self.eq('123', p.getattr('id'))
-        self.eq(False, p.getattr('required'))
+        self.none(p.getattr('required'))
 
     def it_calls_hasattr(self):
         html = dom.html('''
@@ -833,10 +833,9 @@ class attribute(tester.tester):
         self.eq('<input disabled>', inp.html)
 
         # Unset with None
-        B()
         inp.attributes['disabled'] = None
 
-        self.expect(IndexError, lambda: inp.attributes['disabled'])
+        self.false(inp.attributes['disabled'].isdef)
 
         self.zero(inp.attributes)
 
@@ -855,11 +854,10 @@ class attribute(tester.tester):
 
         inp.attributes.remove('disabled')
 
-        self.expect(IndexError, lambda: inp.attributes['disabled'])
+        self.false(inp.attributes['disabled'].isdef)
 
         ''' Set and unset by operating append and removing
         '''
-
         # Implicit setting
         inp = dom.input()
         inp.attributes += 'disabled'
@@ -869,9 +867,10 @@ class attribute(tester.tester):
         self.eq('<input disabled>', inp.pretty)
         self.eq('<input disabled>', inp.html)
 
-        self.expect(IndexError, lambda: inp.attributes['disabled'])
+        inp.attributes -= 'disabled'
 
-        self.none(attr.value)
+        self.false(inp.attributes['disabled'].isdef)
+
         self.zero(inp.attributes)
         self.eq('<input>', inp.pretty)
         self.eq('<input>', inp.html)
@@ -887,7 +886,7 @@ class attribute(tester.tester):
 
         inp.attributes -= 'disabled'
 
-        self.expect(IndexError, lambda: inp.attributes['disabled'])
+        self.false(inp.attributes['disabled'].isdef)
         self.zero(inp.attributes)
         self.eq('<input>', inp.pretty)
         self.eq('<input>', inp.html)
