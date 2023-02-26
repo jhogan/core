@@ -123,6 +123,11 @@ TODOs
     (the hacks always defaults standard mode (`html`)).  When correcting
     this, be sure to grep for the snowflake 10d9a676 as there are
     several other places that reference this TODO.
+
+    TODO Some elements like <meta>, <br/>, etc., should not be
+    allowed to have content appended to them. An exception should
+    be raised when that happens, or maybe the document's `invaild`
+    property should be True.
 """
 
 # References:
@@ -155,7 +160,7 @@ class attributes(entities.entities):
         self.element = el
         
     def __iadd__(self, *o):
-        """ Append an attribute to the collection via the += operator::
+        """ Append an attribute to the collection via the += operator:
 
             # Create an element
             p = dom.p()
@@ -170,15 +175,19 @@ class attributes(entities.entities):
         for o in o:
             if type(o) in (tuple, list):
                 o = attribute.create(*o)
+
             super().__iadd__(o)
+
         return self
 
     def clone(self):
         """ Returns a cloned version of the attributes collection.
         """
         attrs = type(self)(self.element)
+
         for attr in self:
             attrs += attr.clone()
+
         return attrs
             
     def append(self, o, v=None, uniq=False):
@@ -198,25 +207,27 @@ class attributes(entities.entities):
                 # Create an attribute object: id="my-id-value"
                 attr = dom.attribute('id', 'my-id-value')
 
-                # Append the object such that <p> becomes 
-                # <p id="my-id-value"></p>
+                # Append the object such that <p> becomes:
+                #
+                #     <p id="my-id-value"></p>
+                #
                 p.attributes += attr
 
             tuple
             -----
-            The above could have been append as a tuple instead::
+            The above could have been append as a tuple instead:
 
                 p.attributes += id', 'my-id-value'
 
             list
             ----
-            List work similarly::
+            Lists work similarly:
 
                 p.attributes += [id', 'my-id-value']
 
             dict
             ----
-            With dict's we can add multiple attrs in one line::
+            With dict's we can add multiple attrs in one line:
 
                 p.attributes += {
                     'id':    'my-id-value',
@@ -225,8 +236,8 @@ class attributes(entities.entities):
 
             attributes collections
             ----------------------
-            With attributes collections we can also add multiple attrs
-            in one line::
+            With attributes collections, we can also add multiple attrs
+            in one line:
 
                 attrs = dom.attributes()
                 attrs += 'id', 'my-id-value'
@@ -237,11 +248,7 @@ class attributes(entities.entities):
         attribute is not already in the collection.
         """
 
-        # TODO Some elements like <meta>, <br/>, etc., should not be
-        # allowed to have content appended to them. An exception should
-        # be raised when that happens, or maybe the document's `invaild`
-        # property should be True.
-            
+        # TODO Use isinstance
         if type(o) is str:
             o = attribute(o, v)
 
@@ -326,7 +333,7 @@ class attributes(entities.entities):
             return self._ls[-1]
 
     def __setitem__(self, key, item):
-        """ Sets an `attribute` object based on the given `key`::
+        """ Sets an `attribute` object based on the given `key`:
 
             attrs['checked'] = True
 

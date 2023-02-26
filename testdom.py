@@ -532,8 +532,7 @@ class element(tester.tester):
         self.true(p.hasattr('id'))
         self.false(p.hasattr('required'))
 
-
-class test_comment(tester.tester):
+class comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
         com = dom.comment(txt)
@@ -941,10 +940,10 @@ class attribute(tester.tester):
         p.attributes += 'name', name
         p.attributes += style
         p.attributes += 'class', cls
-        self.true('data-id'    in  p.attributes)
-        self.true('name'  in  p.attributes)
-        self.true(style   in  p.attributes)
-        self.true('class' in  p.attributes)
+        self.true('data-id'  in  p.attributes)
+        self.true('name'     in  p.attributes)
+        self.true(style      in  p.attributes)
+        self.true('class'    in  p.attributes)
 
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
