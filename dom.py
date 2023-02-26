@@ -490,8 +490,10 @@ class attribute(entities.entity):
         """
         if self.isdef:
             if self._value is None:
-                return None
+                return True
+
             return str(self._value)
+
         return None
 
     @value.setter
