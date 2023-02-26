@@ -7409,7 +7409,61 @@ with book('Hacking Carapacian Core'):
         logged in user is trying to read a entity it owns, the read
         request will be successful. Other considerations may be made in
         the accessibilty properties for various types of requests. 
+
+        Let's take a look at an example to solidify these concepts. We
+        will use one user to create a `requirement` entity.
+        (`requirements` are similar to issues in a ticketing system
+        such a Jira).
         """
+        
+        with listing('Authorization'):
+          import ecommerce, effort
+
+          # Create two users
+          alice = ecommerce.user(name='alice')
+          bob = ecommerce.user(name='bob')
+          alice.save(bob)
+
+          # Make alice the current user
+          orm.security().owner = alice
+
+          # Create a requirement object
+          req = effort.requirement()
+
+          # Since alice is the current owner, the new entity is owned by
+          # alice.
+          is_(req.owner, alice)
+
+          # Save and reload. We expect no issue because requirements can
+          # be read by the user who created them.
+          req.save()
+          req = expect(None, req.orm.reloaded)
+
+          # Assert that the owner is still alice
+          is_(req.owner, alice)
+
+          # Switch the current user to bob
+          orm.security().owner = bob
+
+          # We now expect an AuthorizationError if we try to load
+          # alice's requirement. bob, being a random user, does not get
+          # access to anyones requirement entities by default.
+          expect(
+            orm.AuthorizationError, 
+            lambda: effort.requirement(req.id)
+          )
+
+        print('''
+          As you can see, `requirements` created by `alice` can be read
+          by `alice` but not by `bob`. This should be intuitive because
+          if we create a requirement in ticketing system, we don't
+          expect the whole world to see them. However, if `bob` were in
+          the same department as `alice`, or was assigned to the project
+          that the requirement was created for, we may expect him to have
+          access to this `requirement`. 
+        ''')
+
+
 
       with section('Authentication'):
         """
