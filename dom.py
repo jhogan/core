@@ -429,13 +429,13 @@ class attributes(entities.entities):
         
 class attribute(entities.entity):
     """ A object that represents an HTML5 attribute. An attribute will
-    have a name and usually a value::
+    have a name and usually a value:
 
         <element name="value">
 
     Boolean attributes can have a value of None to indicate they are
     present in the HTML but have no value assigned to them. For example,
-    the following creates an ``input`` element that would be render as
+    the following creates an `input` element that would be render as
     follows in HTML: <input type="checkbox" checked>
 
         inp = dom.input()
