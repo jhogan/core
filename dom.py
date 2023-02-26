@@ -581,9 +581,9 @@ class attribute(entities.entity):
 
     @property
     def isboolean(self):
-        return self.value in (True, False)
         """ Returns True if the attribute is a boolean.
         """
+        return self.value is True
 
     def __repr__(self):
         """ Returns a str (non-HTML) representation of the attribute.
@@ -610,8 +610,7 @@ class attribute(entities.entity):
             
             attributename="attribute-value"
         """
-
-        if self.value is True:
+        if self.isboolean:
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
