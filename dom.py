@@ -609,7 +609,7 @@ class attribute(entities.entity):
             attributename="attribute-value"
         """
 
-        if self.value is None:
+        if self.value is True:
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
