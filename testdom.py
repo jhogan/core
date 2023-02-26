@@ -802,40 +802,96 @@ class attribute(tester.tester):
 
         self.eq(2, i)
 
-    def it_sets_None_attr(self):
+    def it_sets_and_unsents_boolean_attributes(self):
+        ''' Set and unset using __setitem__ '''
         inp = dom.input()
-        inp.attributes['disabled'] = None
+        inp.attributes['disabled'] = True
+
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
+
         self.one(inp.attributes)
 
-        expect = self.dedent('''
-        <input disabled>
-        ''')
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
 
-        self.eq(expect, inp.pretty)
+        # Unset by assigning False
+        inp.attributes['disabled'] = False
 
+        attr = inp.attributes['disabled']
+        self.none(attr.value)
+
+        self.zero(inp.attributes)
+
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
+        # Unset by assigning None
+
+        # Set back to True
+        inp.attributes['disabled'] = True
+        self.eq('<input disabled>', inp.html)
+
+        # Unset with None
+        B()
+        inp.attributes['disabled'] = None
+
+        self.expect(IndexError, lambda: inp.attributes['disabled'])
+
+        self.zero(inp.attributes)
+
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
+        ''' Set and unset by appending and removing'''
         inp = dom.input()
         inp.attributes.append('disabled')
-        self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
 
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
+        self.one(inp.attributes)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        inp.attributes.remove('disabled')
+
+        self.expect(IndexError, lambda: inp.attributes['disabled'])
+
+        ''' Set and unset by operating append and removing
+        '''
+
+        # Implicit setting
         inp = dom.input()
         inp.attributes += 'disabled'
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
         self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        self.expect(IndexError, lambda: inp.attributes['disabled'])
+
+        self.none(attr.value)
+        self.zero(inp.attributes)
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
         
+        # Explicit setting
         inp = dom.input()
-        inp.attributes += 'disabled', None
+        inp.attributes += 'disabled', True
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
         self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        inp.attributes -= 'disabled'
+
+        self.expect(IndexError, lambda: inp.attributes['disabled'])
+        self.zero(inp.attributes)
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
 
     def it_appends_attribute(self):
         # Append attribute object
