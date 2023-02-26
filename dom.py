@@ -574,6 +574,10 @@ class attribute(entities.entity):
 
         return attribute(name, v)
 
+    @property
+    def isboolean(self):
+        return self.value in (True, False)
+
     def __repr__(self):
         """ Returns a str (non-HTML) representation of the attribute.
         """
