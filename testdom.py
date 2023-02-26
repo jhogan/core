@@ -892,6 +892,15 @@ class attribute(tester.tester):
         self.eq('<input>', inp.pretty)
         self.eq('<input>', inp.html)
 
+    def it_calls__repr__(self):
+        inp = dom.input()
+        self.eq('input()', repr(inp))
+
+        inp.attributes += 'disabled'
+        self.eq('input(disabled)', repr(inp))
+        
+        inp.attributes += 'id', '123'
+        self.eq('input(disabled, id="123")', repr(inp))
 
     def it_appends_attribute(self):
         # Append attribute object
