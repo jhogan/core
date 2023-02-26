@@ -1296,13 +1296,13 @@ class tester(entities.entity):
             self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
     def true(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
@@ -1314,13 +1314,13 @@ class tester(entities.entity):
         if not actual: self._failures += failure()
 
     def assertFalse(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
     def false(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
@@ -1496,28 +1496,28 @@ class tester(entities.entity):
 
     def assertValid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if not v:
             self._failures += failure(ent=ent)
 
     def valid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if not v:
             self._failures += failure(ent=ent)
 
     def assertInValid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if v:
             self._failures += failure(ent=ent)
 
     def invalid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if v:
             self._failures += failure(ent=ent)
