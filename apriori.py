@@ -125,6 +125,15 @@ class requirement(orm.entity):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
+    @property
+    def updatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # TODO Implement
+        # TODO Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
+
 class type(orm.entity):
     """  An abstract entity to describe the type of another class. This
     class is used when a entity needs a many-to-one class that
