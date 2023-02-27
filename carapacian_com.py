@@ -350,8 +350,13 @@ class ticketsspa(pom.spa):
             id = card.getattr('data-entity-id')
             req = effort.requirement(id)
 
-            eargs.html = req.orm.form
+            # XXX Use eargs.html setter to take care of id attribute
+            frm = req.orm.form
+            eargs.html = frm
             eargs.html.id = card.id
+
+            # Subscribe the form's <button type="submit> to self.frm_onsubmit
+            frm.onsubmit += self.frm_onsubmit, frm
             
         def frm_onsubmit(self, src, eargs):
             frm = eargs.html.only
@@ -395,7 +400,7 @@ class ticketsspa(pom.spa):
             else:
                 card = req.orm.card
 
-                card.btnedit.onclick += self.btnedit_onclick
+                card.btnedit.onclick += self.btnedit_onclick, card
 
                 # Set the card's id attribute to that of the <form> so
                 # the JavaScript in the client can replace the <form>
