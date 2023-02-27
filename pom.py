@@ -871,11 +871,11 @@ function ajax(e){
                         // Add event listeners to new HTML
                         add_listeners(el);
 
+                        // Get the id of the element. `el.id` doesn't
+                        // work here.
                         let id = el.getAttribute('id')
 
-                        // XXX Why does el.id return an <input> instead
-                        // of the value of the id attribute.
-                        let old = document.querySelector('#' + el.id)
+                        let old = document.querySelector('#' + id)
                         old.parentNode.replaceChild(el, old)
                     }
                 }
