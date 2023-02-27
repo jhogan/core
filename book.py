@@ -7406,14 +7406,15 @@ with book('Hacking Carapacian Core'):
 
         The owner of an entity usually determines what kind of access
         the ORM will permit for the entity. Typically, if the current
-        logged in user is trying to read a entity it owns, the read
-        request will be successful. Other considerations may be made in
-        the accessibilty properties for various types of requests. 
+        logged in user is trying to read an entity that it owns, the
+        read request will be successful. Other considerations may be
+        made in the accessibilty properties for various types of
+        requests. 
 
         Let's take a look at an example to solidify these concepts. We
         will use one user to create a `requirement` entity.
-        (`requirements` are similar to issues in a ticketing system
-        such a Jira).
+        (`requirements` are similar to issues in a ticketing system such
+        a Jira).
         """
         
         with listing('Authorization'):
@@ -7447,7 +7448,7 @@ with book('Hacking Carapacian Core'):
 
           # We now expect an AuthorizationError if we try to load
           # alice's requirement. bob, being a random user, does not get
-          # access to anyones requirement entities by default.
+          # access to anyone`s requirement entities by default.
           expect(
             orm.AuthorizationError, 
             lambda: effort.requirement(req.id)
@@ -7456,13 +7457,21 @@ with book('Hacking Carapacian Core'):
         print('''
           As you can see, `requirements` created by `alice` can be read
           by `alice` but not by `bob`. This should be intuitive because
-          if we create a requirement in ticketing system, we don't
+          if we create a requirement in a ticketing system, we don't
           expect the whole world to see them. However, if `bob` were in
           the same department as `alice`, or was assigned to the project
           that the requirement was created for, we may expect him to have
           access to this `requirement`. 
-        ''')
 
+          At this point you may be wondering what makes the
+          determination about who can access entity objects. Every
+          entity inherits four accessibility properties that it is
+          expected to inherit. These accessibility properties are called
+          `creatability`, `retrievability`, `updatability` and
+          `deletability` These property methods contain the
+          authorization logic that determines whether the current user
+          is has clearance for the give type of access.
+        ''')
 
 
       with section('Authentication'):
