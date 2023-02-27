@@ -868,6 +868,9 @@ function ajax(e){
                         // Use the fragment's id to find and replace
                         exec(el)
 
+                        // Add event listeners to new HTML
+                        add_listeners(el);
+
                         let id = el.getAttribute('id')
 
                         // XXX Why does el.id return an <input> instead
