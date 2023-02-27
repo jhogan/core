@@ -954,12 +954,17 @@ function add_listeners(el){
      * data-{trigger}-handler attributes. Uses this information to
      * attach el to event the `ajax` event handler.
     */
-    for (trig of TRIGGERS){
+    var rent
+    if(rent = el.parentElement){
+        el = rent
+    }
+
+    for (var trig of TRIGGERS){
         var els = el.querySelectorAll(
             '[data-' + trig + '-handler]'
         )
 
-        for(el1 of els){
+        for(var el1 of els){
             el1.addEventListener(trig, ajax)
         }
     }
@@ -978,7 +983,7 @@ function wake(el){
     */
 
     if (el.tagName != 'FORM'){
-        return;
+        return
     }
 
     // Get all elements of the <form> with a `name` attribute
