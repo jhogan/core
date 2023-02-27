@@ -11865,10 +11865,11 @@ class orm:
 
         # Create the <form> that we wil build and return
         frm = dom.form()
+        inst = self.instance
 
         # Get a referece to self's class. We will use it to ascend the
         # inheritence hierarchy.
-        rent = builtins.type(self.instance)
+        rent = builtins.type(inst)
 
         # Assign the data-entity attribute of the <form>, e.g.:
         # 
@@ -11961,7 +11962,9 @@ class orm:
 
                 # Hexify the primary key
                 if name == 'id':
-                    inp.input.value = self.instance.id.hex
+                    inp.input.value = inst.id.hex
+
+                dominp.value = getattr(inst, name)
 
                 frm += inp
 
