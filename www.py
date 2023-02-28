@@ -1331,7 +1331,7 @@ class request(entities.entity):
         path = self.path
 
         if qs:
-            path += "?{qs}"
+            path += f"?{qs}"
 
         import urllib
         return urllib.parse.urlunparse([
