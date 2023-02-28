@@ -11967,7 +11967,15 @@ class orm:
                 if name == 'id':
                     inp.input.value = inst.id.hex
 
-                dominp.value = getattr(inst, name)
+                v = getattr(inst, name)
+                
+                if v is None:
+                    v = str()
+
+                if isinstance(dominp, dom.textarea):
+                    dominp += dom.text(v)
+                else:
+                    dominp.value = v
 
                 frm += inp
 
