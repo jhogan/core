@@ -420,12 +420,13 @@ class ticketsspa(pom.spa):
                 #     url.qs['id'] = req.id.hex
                 #
 
-                url += f'?id={req.id.hex}'
+                if 'id=' not in url:
+                    url += f'?id={req.id.hex}'
 
-                instrs = pom.instructions()
-                instrs += pom.set('url', url)
+                    instrs = pom.instructions()
+                    instrs += pom.set('url', url)
 
-                card += instrs
+                    card += instrs
 
         def main(self, id=None):
             req = effort.requirement(id)
