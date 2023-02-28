@@ -2434,6 +2434,7 @@ class input(dom.div):
 
         lbl = None
         if self.label:
+            # XXX Use `for` attribute of label instead of nesting
             lbl = dom.label(self.label)
             els += lbl
 

@@ -11946,7 +11946,7 @@ class orm:
 
                 inp.attributes['data-entity-attribute'] = map.name
 
-                # Get the underlying <input> object
+                # Get the underlying <input>/<textaria> object
                 dominp = inp.input
 
                 # Set some browser validation attributes
@@ -11956,6 +11956,9 @@ class orm:
                 elif map.isnumeric:
                     dominp.min = map.min
                     dominp.max = map.max
+
+                # TODO Should we use <time> for datetimes? Are we doing
+                # that in orm.card?
 
                 if step:
                     dominp.step = step

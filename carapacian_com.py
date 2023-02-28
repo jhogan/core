@@ -412,7 +412,7 @@ class ticketsspa(pom.spa):
                 url = www.application.current.request.url
                 url = str(url)
 
-                # TODO We need to come up with a way to make
+                # XXX We need to come up with a way to make
                 # ecommerce.urls mutatable. Since they are ensured, this
                 # isn't really possible. We want to be able to do
                 # something like thin

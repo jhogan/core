@@ -2692,6 +2692,7 @@ class text(element):
         effeciency, needless whitespace will be removed.
         """
         import html as htmlmod
+
         v =  dedent(self._value).strip('\n')
 
         if not self._isesc:

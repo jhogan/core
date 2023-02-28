@@ -825,8 +825,8 @@ class request(entities.entity):
         return 'en'
 
     def __call__(self):
-        """ Makes the HTTP request which this `request` object was created to
-        make.
+        """ Makes the HTTP request which this `request` object was
+        created to make.
 
         When the request is for a WSGI app, a determination is made as
         to whether the request is for a web page (`pom.page`) or for a
