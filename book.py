@@ -7466,13 +7466,110 @@ with book('Hacking Carapacian Core'):
           At this point you may be wondering what makes the
           determination about who can access entity objects. Every
           entity inherits four accessibility properties that it is
-          expected to inherit. These accessibility properties are called
+          expected to override. These accessibility properties are
           `creatability`, `retrievability`, `updatability` and
           `deletability` These property methods contain the
           authorization logic that determines whether the current user
-          is has clearance for the give type of access.
+          has clearance for the give type of access.
+
+          Below we create a new entity called `feedback` that is
+          intended to collect feedback from user about some product.
+          Let's see how we can ensure that the right people have the
+          right access to `feedback` entities.
         ''')
 
+        with listing('Accessibility properties'):
+          # Create the feedbacks collection
+          class feedbacks(orm.entities):
+            pass
+
+          class feedback(orm.entity):
+            # The text that the user enters to provide feedback
+            text = text
+
+            # The time the feedback was submitted
+            submitted = datetime
+
+            def creatability(self):
+              # Anyone, including anonymous (unauthenicated) users, can
+              # create a (provide) feedback. So return an empty
+              # violations collection.
+              return orm.violations.empty
+
+            def retrievability(self):
+              vs = orm.violations()
+              usr = orm.security().user
+
+              # The user must be a product manager to read the feedback
+              if not usr.isproductmanager:
+                vs += (
+                  'User must be a product manager'
+                )
+
+              return vs
+
+            @property
+            def updatability(self):
+              vs = orm.violations()
+              usr = orm.security().user
+
+              # Only the owner of the feedback can update it
+              if usr is not self.owner:
+                  vs += 'Only the author of the feedback can change it'
+
+              return vs
+
+            @property
+            def deletability(self):
+              # Feedbacks can not be physically removed from the system
+              vs = orm.violations()
+              vs += 'Feedback cannot be deleted'
+              return vs
+
+        print('''
+          In the above example, the `feedback` entity overrides the
+          accessibility properties. Accessibility is controlled by
+          whether or not an `orm.violations` collection contains
+          `orm.violation` objects. If the collection is not empty,
+          access will be prevented. A violation message is provided to
+          help the user understand why they have been denied access.
+
+          Let's see what happens when someone tries to edit someones
+          else's feedback.
+        ''')
+
+        with listing('Violating authorization'):
+          # Make alice the current user
+          orm.security().owner = alice
+
+          # Monkey-patch alice and bob to indicate they are not product
+          # managers
+          alice.isproductmanager = False
+          bob.isproductmanager = False
+
+          # Create the feedback as alice
+          fb = feedback(
+            text = (
+              'I am not 100% percent satisfied with the product I '
+              'ordered. please make it better.'
+            )
+          )
+
+          # Save the feedback. There should be no problem here because
+          # the `creatability` properties` has it that anyone can create
+          # a feedback
+          fb.save()
+
+          # Change the current user to bob
+          orm.security().owner = bob
+
+          # Somehow, bob got the id of the feedback
+          id = fb.id
+
+          # We expect bob to get an AuthorizationError when reading the
+          # feedback because the `retrievability` property has it that
+          # only product managers can read authorization errors.
+          self.expect(orm.AuthorizationError, feedback(id))
 
       with section('Authentication'):
         """
