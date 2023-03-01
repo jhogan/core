@@ -2717,3 +2717,201 @@ class browser(entities.entity):
         collection, and return the new tab.
         """
         return self.tabs.tab()
+
+class urls(entities.entities):
+    """ XXX
+    """
+
+class url(entities.entity):
+    """ Represents a URL.
+    """
+
+    def __init__(self, name, *args, **kwargs):
+        self._scheme = None
+        self._host = None
+        self._path = None
+        self._query = None
+        self._fragment = None
+        self._username = None
+        self._password = None
+        self._port = None
+        self.name = name
+        super().__init__(*args, **kwargs)
+
+    def __truediv__(self, other):
+        """ Overrides the / operator to allow for path joining
+
+            wiki = url(name='https://www.wikipedia.org/') 
+            py = wiki / 'wiki/Python'
+
+            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+        """
+
+        # XXX Test
+        name = os.path.join(self.name, other)
+
+        return url(name)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, v):
+        import urllib.parse
+        prs = urllib.parse.urlparse(v)
+        self.scheme = prs.scheme
+        self.host = prs.hostname
+        self.path = prs.path
+        self.query = prs.query
+        self.fragment = prs.fragment
+        self.username = prs.username
+        self.password = prs.password
+        self.port = prs.port
+        
+    @property
+    def scheme(self):
+        """ Returns the scheme (sometimes refered to as the protocol)
+        portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "scheme" would be returned.
+        """
+        if not self._scheme:
+            return None
+
+        return self._scheme
+
+    @scheme.setter
+    def scheme(self, v):
+        self._scheme = v
+
+    @property
+    def host(self):
+        """ Returns the hostname portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "netloc" would be returned.
+        """
+        return self._host
+
+    @host.setter
+    def host(self, v):
+        self._host = v
+
+    @property
+    def path(self):
+        """ Returns the path portion of the URL.
+
+        Given the URL:
+            scheme://netloc:1234/path/to/resource;parameters?query#fragment
+
+        returns: '/path/to/resource;parameters'
+        """
+        return self._path
+
+    @path.setter
+    def path(self, v):
+        self._path = v
+
+    @property
+    def query(self):
+        """ Returns a string representation of the query string in the
+        URL (if there is one).
+
+        See also the `qs` attribute.
+        """
+        if not self._query:
+            return None
+
+        return self._query
+
+    @query.setter
+    def query(self, v):
+        self._query = v
+
+    @property
+    def fragment(self):
+        """ XXX
+        """
+        if not self._fragment:
+            return None
+
+        return self._fragment
+
+    @fragment.setter
+    def fragment(self, v):
+        self._fragment = v
+
+    @property
+    def username(self):
+        """ XXX
+        """
+        if not self._username:
+            return None
+
+        return self._username
+
+    @username.setter
+    def username(self, v):
+        self._username = v
+
+    @property
+    def password(self):
+        """ XXX
+        """
+        if not self._password:
+            return None
+
+        return self._password
+
+    @password.setter
+    def password(self, v):
+        self._password = v
+
+    @property
+    def port(self):
+        """ Returns the port portion of the URL as an int.
+
+        Given the URL "scheme://netloc:1234/path;parameters?query#fragment",
+        1234 would be returned.
+        """
+        if not self._port:
+            if self.scheme == 'http':
+                return 80
+            if self.scheme == 'https':
+                return 443
+
+        return self._port
+
+    @port.setter
+    def port(self, v):
+        self._port = v
+
+    @property
+    def paths(self):
+        """ Returns a list of path elements in the URL.
+
+        Given the URL:
+        
+             scheme://netloc:1234/path/to/resource?query#fragment
+        
+        The return would be:
+       
+            ['path', 'to', 'resource']
+        """
+
+        return [x for x in self.path.split(os.sep) if x]
+
+    @property
+    def qs(self):
+        """ Return a dict containing the keys and values in the URL's
+        query sting (if there is one).
+
+            >>> url(address='https://google.com?s=test').qs
+            {'s': ['test']}
+
+        """
+        import urllib.parse
+        return urllib.parse.parse_qs(self.query)
+

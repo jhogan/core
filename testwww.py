@@ -100,5 +100,83 @@ class headers(tester.tester):
         self.eq('xyz', hdrs.second.value)
         self.two(hdrs)
 
+class url(tester.tester):
+    def it_gets_scheme(self):
+        url = www.url('www.google.com')
+        self.none(url.scheme)
+
+        url = www.url('http://www.google.com')
+        self.eq('http', url.scheme)
+
+    def it_gets_host(self):
+        url = www.url('www.google.com')
+        self.none(url.host)
+
+        url = www.url('http://www.google.com')
+        self.eq('www.google.com', url.host)
+
+    def it_gets_path(self):
+        path = 'this/is/a/path'
+        url = www.url(path)
+        self.none(url.host)
+        self.none(url.scheme)
+        self.eq(path, url.path)
+
+        url = www.url(f'http://www.google.com/{path}')
+        self.eq('http', url.scheme)
+        self.eq('www.google.com', url.host)
+        self.eq('/' + path, url.path)
+
+    def it_gets_query(self):
+        url = www.url('http://www.google.com')
+        self.none(url.query)
+
+        url = www.url('http://www.google.com?s=test')
+        self.eq('s=test', url.query)
+
+    def it_gets_fragment(self):
+        url = www.url('http://www.google.com')
+        self.none(url.fragment)
+
+        url = www.url('http://www.google.com#')
+        self.none(url.fragment)
+
+        url = www.url('http://www.google.com#frag')
+        self.eq('frag', url.fragment)
+
+        url = www.url('http://www.google.com?query=test#frag')
+
+        self.eq('frag', url.fragment)
+
+    def it_gets_username(self):
+        url = www.url('http://www.google.com')
+        self.none(url.username)
+
+        url = www.url('http://uid@www.google.com')
+        self.eq('uid', url.username)
+
+        url = www.url('http://uid:pwd@www.google.com')
+        self.eq('uid', url.username)
+
+    def it_gets_password(self):
+        url = www.url('http://www.google.com')
+        self.none(url.password)
+
+        url = www.url('http://uid@www.google.com')
+        self.none(url.password)
+
+        url = www.url('http://uid:pwd@www.google.com')
+        self.eq('pwd', url.password)
+
+    def it_gets_port(self):
+        url = www.url('http://www.google.com')
+        self.eq(80, url.port)
+
+        url = www.url('https://www.google.com')
+        self.eq(443, url.port)
+
+        url = www.url('herpderp://www.google.com')
+        self.none(url.port)
+
 if __name__ == '__main__':
     tester.cli().run()
