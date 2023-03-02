@@ -2725,8 +2725,9 @@ class urls(entities.entities):
 class url(entities.entity):
     """ Represents a URL.
     """
+    # XXX Comment
 
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name=None, *args, **kwargs):
         self._scheme = None
         self._host = None
         self._path = None
@@ -2754,7 +2755,45 @@ class url(entities.entity):
 
     @property
     def name(self):
-        return self._name
+        from urllib.parse import urlunparse
+
+        scheme = self.scheme
+        if not scheme:
+            raise ValueError('Must provide scheme')
+
+        if not self.host:
+            raise ValueError('Must provide host')
+
+        if self.query:
+            if not self.path:
+                raise ValueError('Must provide path')
+
+        host = self.host
+
+        if uid := self.username:
+            if pwd := self.password:
+                host = f'{uid}:{pwd}@{host}'
+            else:
+                host = f'{uid}@{host}'
+
+        if port := self.port:
+            if scheme == 'http':
+                if port != 80:
+                    host += f':{port}'
+            elif scheme == 'https':
+                if port != 443:
+                    host += f':{port}'
+
+        tup = (
+            scheme,
+            host,
+            self.path or '',
+            '',
+            self.query,
+            self.fragment,
+        )
+        r = urlunparse(tup)
+        return  r
 
     @name.setter
     def name(self, v):
@@ -2808,6 +2847,9 @@ class url(entities.entity):
 
         returns: '/path/to/resource;parameters'
         """
+        if not self._path:
+            return None
+
         return self._path
 
     @path.setter
@@ -2914,4 +2956,13 @@ class url(entities.entity):
         """
         import urllib.parse
         return urllib.parse.parse_qs(self.query)
+
+    @qs.setter
+    def qs(self, v):
+        from urllib.parse import urlencode as enc
+        self.query = enc(v, doseq=True)
+        
+
+    def __str__(self):
+        return self.name
 
