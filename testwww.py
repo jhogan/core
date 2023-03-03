@@ -531,6 +531,7 @@ class url(tester.tester):
         self.eq(expect, url.name)
         self.eq(expect, str(url))
 
+        self.eq(expect, repr(url))
 
 if __name__ == '__main__':
     tester.cli().run()

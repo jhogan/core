@@ -2966,3 +2966,33 @@ class url(entities.entity):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        r = type(self).__name__ 
+
+        attrs = (
+            'scheme',
+            'username',
+            'password',
+            'host',
+            'port',
+            'path',
+            'query',
+            'fragment',
+        )
+
+        r += '('
+
+        for attr in attrs:
+            v = getattr(self, attr)
+            r += f'{attr}='
+            if isinstance(v, str):
+                r += f'"{v}"'
+            else:
+                r += f'{v}'
+
+            r += ', '
+        
+        r = r.rstrip(', ')
+        r += ')'
+        return r
+
