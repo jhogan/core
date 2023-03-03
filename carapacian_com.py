@@ -400,18 +400,16 @@ class ticketsspa(pom.spa):
             else:
                 card = req.orm.card
 
+                card.id = frm.id 
                 card.btnedit.onclick += self.btnedit_onclick, card
 
                 # Set the card's id attribute to that of the <form> so
                 # the JavaScript in the client can replace the <form>
                 # with the card.
-                card.id = frm.id 
                 eargs.html = card
 
                 # TODO:fc4077ea 
                 url = www.application.current.request.url
-                url = str(url)
-
                 # XXX We need to come up with a way to make
                 # ecommerce.urls mutatable. Since they are ensured, this
                 # isn't really possible. We want to be able to do
