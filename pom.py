@@ -991,6 +991,10 @@ function wake(el){
 
     for (var el of els){
         if (el.tagName == 'TEXTAREA'){
+            while(el.firstChild){
+                el.removeChild(el.lastChild)
+            }
+
             var nd = document.createTextNode(el.value)
             el.appendChild(nd)
         }
