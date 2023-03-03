@@ -1197,7 +1197,7 @@ class tester(entities.entity):
                         )
                         self.browser.cookies += cookie 
 
-                self.referer = ecommerce.url(address=req.url)
+                self.referer = req.url
 
                 self.page = pg
                 self.site = ws
