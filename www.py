@@ -361,7 +361,7 @@ class request(entities.entity):
         :param: app application: The WSGI application object for this
         request.
 
-        :param: url ecommerce.url: The URL object containing the URL
+        :XXX param: url ecommerce.url: The URL object containing the URL
         being accessed.
         """
         self.app           =  app
@@ -1314,9 +1314,8 @@ class request(entities.entity):
 
     @property
     def url(self):
-        """ Return the URL for the request, for example::
-            
-            https://foo.net:8000/en/my/page
+        """ Return a www.url object representing the target URL of the
+        this `request`.
         """
         # TODO:fc4077ea Ensure this always returns an ecommerce.url
         if self._url:
@@ -2961,7 +2960,6 @@ class url(entities.entity):
     def qs(self, v):
         from urllib.parse import urlencode as enc
         self.query = enc(v, doseq=True)
-        
 
     def __str__(self):
         return self.name
