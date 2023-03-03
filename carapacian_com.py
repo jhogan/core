@@ -418,11 +418,13 @@ class ticketsspa(pom.spa):
                 #     url.qs['id'] = req.id.hex
                 #
 
-                if 'id=' not in url:
-                    url += f'?id={req.id.hex}'
+                qs = url.qs
+                if qs.get('id') != req.id.hex:
+                    qs['id'] = req.id.hex
+                    url.qs = qs
 
                     instrs = pom.instructions()
-                    instrs += pom.set('url', url)
+                    instrs += pom.set('url', str(url))
 
                     card += instrs
 
