@@ -1317,25 +1317,17 @@ class request(entities.entity):
         """ Return a www.url object representing the target URL of the
         this `request`.
         """
-        # TODO:fc4077ea Ensure this always returns an ecommerce.url
-        if self._url:
-            return self._url
 
-        scheme = self.scheme
-        servername = self.servername
-        if self.port:
-            servername += ':' + str(self.port)
+        if not self._url:
+            self._url = url()
 
-        qs = self.qs
-        path = self.path
+        self._url.scheme = self.scheme
+        self._url.host = self.servername
+        self._url.port = self.port
+        self._url.path = self.path
+        self._url.query = self.qs
 
-        if qs:
-            path += f"?{qs}"
-
-        import urllib
-        return urllib.parse.urlunparse([
-            scheme, servername, path, None, None, None
-        ])
+        return self._url
 
     @property
     def isget(self):
