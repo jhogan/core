@@ -2727,6 +2727,139 @@ class set(instruction):
         self.classes += 'set'
 
         super().__init__(*args, **kwargs)
-    
 
+class crud(page):
+    """ XXX Comment class
+    """
+    # XXX Write complete tests
+    def __init__(self, e, name=None, pgs=None, *args, **kwargs):
+        self.entity = e
+        super().__init__(name=name, pgs=None, *args, **kwargs)
 
+    @property
+    def entity(self):
+        import importlib
+        importlib.import_module(self._entity.__module__)
+
+        return self._entity
+
+    @entity.setter
+    def entity(self, v):
+        self._entity = v
+
+    def btnedit_onclick(self, src, eargs):
+        card = eargs.html.only
+        id = card.getattr('data-entity-id')
+        e = self.entity(id)
+
+        # XXX:b48259de Update eargs.html with logic to replace id
+        frm = e.orm.form
+        eargs.html = frm
+        eargs.html.id = card.id
+
+        # Subscribe the form's <button type="submit> to self.frm_onsubmit
+        frm.onsubmit += self.frm_onsubmit, frm
+
+        btncancel = dom.button('Cancel')
+
+        btncancel.onclick += self.btncancel_onclick, frm
+
+        frm += btncancel
+
+    def btncancel_onclick(self, src, eargs):
+        frm = eargs.html.only
+
+        id = frm['input[name=id]'].only.value
+
+        e = self.entity(id)
+
+        card = e.orm.card
+
+        eargs.html = card
+
+        # XXX:b48259de Update eargs.html with logic to replace id
+        eargs.html.id = frm.id
+
+        card.btnedit.onclick += self.btnedit_onclick, card
+
+    def frm_onsubmit(self, src, eargs):
+        frm = eargs.html.only
+        inps = frm['input, textarea, hidden']
+
+        e = None
+        id = inps['[name=id]'].only.value
+        if id:
+            try:
+                id = UUID(id)
+            except:
+                raise
+            else:
+                try:
+                    e = self.entity(id)
+                except db.RecordNotFoundError:
+                    pass
+
+        if not e:
+            e = self.entity()
+
+        for inp in inps:
+            if isinstance(inp, dom.textarea):
+                v = inp.text
+
+            elif isinstance(inp, dom.input):
+                v = inp.value
+
+            if v == '':
+                v = None
+
+            if inp.name == 'id':
+                v = UUID(v)
+
+            setattr(e, inp.name, v)
+
+        try:
+            e.save()
+        except:
+            raise
+        else:
+            card = e.orm.card
+
+            # XXX:b48259de Update eargs.html with logic to replace id
+            eargs.html = card
+
+            card.btnedit.onclick += self.btnedit_onclick, card
+
+            # TODO:fc4077ea 
+            url = www.application.current.request.url
+            # XXX We need to come up with a way to make
+            # ecommerce.urls mutatable. Since they are ensured, this
+            # isn't really possible. We want to be able to do
+            # something like thin
+            #
+            #     url.qs['id'] = e.id.hex
+            #
+
+            qs = url.qs
+            if qs.get('id') != e.id.hex:
+                qs['id'] = e.id.hex
+                url.qs = qs
+
+                instrs = instructions()
+                instrs += set('url', str(url))
+
+                card += instrs
+
+    def main(self, id=None):
+        e = self.entity(id)
+        self.instance = e
+
+        if e.orm.isnew:
+            el = e.orm.form
+            el.onsubmit += self.frm_onsubmit, el
+        else:
+            el = e.orm.card
+            card = el
+            if btnedit := card.btnedit:
+                el.btnedit.onclick += self.btnedit_onclick, card
+
+        self.main += el

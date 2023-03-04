@@ -10041,14 +10041,14 @@ class eventargs(entities.eventargs):
         # XXX Explain
         if html := self._html:
             if isinstance(v, element):
+                if v.id:
+                    raise ValueError(
+                        "Can't overwrite existing id"
+                    )
+
                 v.id = html.only.id
 
         self._html = v
-
-
-
-
-
 
     def preventDefault(self):
         self.cancel = True

@@ -344,123 +344,15 @@ class tickets(pom.page):
 
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
-    class ticket(pom.page):
-        def btnedit_onclick(self, src, eargs):
-            card = eargs.html.only
-            id = card.getattr('data-entity-id')
-            req = effort.requirement(id)
-
-            # XXX:b48259de Update eargs.html with logic to replace id
-            frm = req.orm.form
-            eargs.html = frm
-            eargs.html.id = card.id
-
-            # Subscribe the form's <button type="submit> to self.frm_onsubmit
-            frm.onsubmit += self.frm_onsubmit, frm
-
-            btncancel = dom.button('Cancel')
-
-            btncancel.onclick += self.btncancel_onclick, frm
-
-            frm += btncancel
-
-        def btncancel_onclick(self, src, eargs):
-            frm = eargs.html.only
-
-            id = frm['input[name=id]'].only.value
-
-            req = effort.requirement(id)
-
-            card = req.orm.card
-
-            eargs.html = card
-
-            # XXX:b48259de Update eargs.html with logic to replace id
-            eargs.html.id = frm.id
-
-            card.btnedit.onclick += self.btnedit_onclick, card
-
-        def frm_onsubmit(self, src, eargs):
-            frm = eargs.html.only
-            inps = frm['input, textarea, hidden']
-
-            req = None
-            id = inps['[name=id]'].only.value
-            if id:
-                try:
-                    id = UUID(id)
-                except:
-                    raise
-                else:
-                    try:
-                        req = effort.requirement(id)
-                    except db.RecordNotFoundError:
-                        pass
-
-            if not req:
-                req = effort.requirement()
-
-            for inp in inps:
-                if isinstance(inp, dom.textarea):
-                    v = inp.text
-
-                elif isinstance(inp, dom.input):
-                    v = inp.value
-
-                if v == '':
-                    v = None
-
-                if inp.name == 'id':
-                    v = UUID(v)
-
-                setattr(req, inp.name, v)
-
-            try:
-                req.save()
-            except:
-                raise
-            else:
-                card = req.orm.card
-
-                # XXX:b48259de Update eargs.html with logic to replace id
-                eargs.html = card
-
-                card.btnedit.onclick += self.btnedit_onclick, card
-
-                # TODO:fc4077ea 
-                url = www.application.current.request.url
-                # XXX We need to come up with a way to make
-                # ecommerce.urls mutatable. Since they are ensured, this
-                # isn't really possible. We want to be able to do
-                # something like thin
-                #
-                #     url.qs['id'] = req.id.hex
-                #
-
-                qs = url.qs
-                if qs.get('id') != req.id.hex:
-                    qs['id'] = req.id.hex
-                    url.qs = qs
-
-                    instrs = pom.instructions()
-                    instrs += pom.set('url', str(url))
-
-                    card += instrs
+    class ticket(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(effort.requirement, *args, **kwargs)
 
         def main(self, id=None):
-            req = effort.requirement(id)
+            super().main(id=id)
 
-            if req.orm.isnew:
-                el = req.orm.form
-                el << dom.p('Create a ticket')
-                el.onsubmit += self.frm_onsubmit, el
-            else:
-                el = req.orm.card
-                card = el
-                if btnedit := card.btnedit:
-                    el.btnedit.onclick += self.btnedit_onclick, card
-
-            self.main += el
+            if self.instance.orm.isnew:
+                self.main << dom.h1('Create a ticket')
     
     class people(pom.page):
         ''' Inner classes (pages) '''
