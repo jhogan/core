@@ -357,7 +357,29 @@ class ticketsspa(pom.spa):
 
             # Subscribe the form's <button type="submit> to self.frm_onsubmit
             frm.onsubmit += self.frm_onsubmit, frm
-            
+
+            btncancel = dom.button('Cancel')
+
+            btncancel.onclick += self.btncancel_onclick, frm
+
+            frm += btncancel
+
+        def btncancel_onclick(self, src, eargs):
+            frm = eargs.html.only
+
+            id = frm['input[name=id]'].only.value
+
+            req = effort.requirement(id)
+
+            card = req.orm.card
+
+            eargs.html = card
+
+            # XXX:b48259de Update eargs.html with logic to replace id
+            eargs.html.id = frm.id
+
+            card.btnedit.onclick += self.btnedit_onclick, card
+
         def frm_onsubmit(self, src, eargs):
             frm = eargs.html.only
             inps = frm['input, textarea, hidden']
