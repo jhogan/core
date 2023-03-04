@@ -990,6 +990,9 @@ function wake(el){
     var els = el.querySelectorAll('[name]')
 
     for (var el of els){
+        
+        // Append a text node to <textarea> elements containing the data
+        // in its .value property.
         if (el.tagName == 'TEXTAREA'){
             while(el.firstChild){
                 el.removeChild(el.lastChild)

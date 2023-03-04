@@ -350,7 +350,7 @@ class ticketsspa(pom.spa):
             id = card.getattr('data-entity-id')
             req = effort.requirement(id)
 
-            # XXX Use eargs.html setter to take care of id attribute
+            # XXX:b48259de Update eargs.html with logic to replace id
             frm = req.orm.form
             eargs.html = frm
             eargs.html.id = card.id

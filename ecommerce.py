@@ -464,6 +464,9 @@ class url(orm.entity):
     "The Data Model Resource Book Volume 2".
     """
 
+    # TODO Use a private www.url object to return parts of the URL in
+    # properties such as `scheme`, `host`, `port`, etc.
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
