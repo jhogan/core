@@ -10027,10 +10027,28 @@ class eventargs(entities.eventargs):
 
         self.handler  =  hnd
         self.src      =  src
-        self.html     =  html
+        self._html     =  html
 
         # The name of the method that triggered the event
         self.trigger  =  trigger
+
+    @property
+    def html(self):
+        return self._html
+
+    @html.setter
+    def html(self, v):
+        # XXX Explain
+        if html := self._html:
+            if isinstance(v, element):
+                v.id = html.only.id
+
+        self._html = v
+
+
+
+
+
 
     def preventDefault(self):
         self.cancel = True

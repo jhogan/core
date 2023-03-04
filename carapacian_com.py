@@ -422,13 +422,10 @@ class ticketsspa(pom.spa):
             else:
                 card = req.orm.card
 
-                card.id = frm.id 
-                card.btnedit.onclick += self.btnedit_onclick, card
-
-                # Set the card's id attribute to that of the <form> so
-                # the JavaScript in the client can replace the <form>
-                # with the card.
+                # XXX:b48259de Update eargs.html with logic to replace id
                 eargs.html = card
+
+                card.btnedit.onclick += self.btnedit_onclick, card
 
                 # TODO:fc4077ea 
                 url = www.application.current.request.url
