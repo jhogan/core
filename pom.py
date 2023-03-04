@@ -994,11 +994,18 @@ function wake(el){
         // Append a text node to <textarea> elements containing the data
         // in its .value property.
         if (el.tagName == 'TEXTAREA'){
+            
+            // Create text node before.
+            // NOTE Do this first because removing the child nodes
+            // affects el.value in some cases.
+            var nd = document.createTextNode(el.value)
+
+            // Clear the current text nodes
             while(el.firstChild){
                 el.removeChild(el.lastChild)
             }
 
-            var nd = document.createTextNode(el.value)
+            // Append
             el.appendChild(nd)
         }
         if (el.tagName == 'INPUT'){
