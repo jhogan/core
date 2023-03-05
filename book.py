@@ -7529,9 +7529,9 @@ with book('Hacking Carapacian Core'):
         print('''
           In the above example, the `feedback` entity overrides the
           accessibility properties. Accessibility is controlled by
-          whether or not an `orm.violations` collection contains
+          whether or not an `orm.violations` collection contains any
           `orm.violation` objects. If the collection is not empty,
-          access will be prevented. A violation message is provided to
+          access will be prevented. The violation message is provided to
           help the user understand why they have been denied access.
 
           Let's see what happens when someone tries to edit someones
@@ -7556,20 +7556,75 @@ with book('Hacking Carapacian Core'):
           )
 
           # Save the feedback. There should be no problem here because
-          # the `creatability` properties` has it that anyone can create
-          # a feedback
+          # the `creatability` property` has it that anyone can create
+          # a feedback.
           fb.save()
 
-          # Change the current user to bob
+          # Change the current user to bob.
           orm.security().owner = bob
 
-          # Somehow, bob got the id of the feedback
+          # Let's assume that somehow, bob got the id of the feedback
           id = fb.id
 
           # We expect bob to get an AuthorizationError when reading the
           # feedback because the `retrievability` property has it that
           # only product managers can read authorization errors.
           self.expect(orm.AuthorizationError, feedback(id))
+
+        print('''
+          In summary, every entity has four accessability properties
+          which determine what type of access, if any, a user has to
+          said entity. This centralizes authoration logic an the entity
+          level so it doesn't have to be scattered through webpages,
+          endpoints, etc. If a user violates an authororization check,
+          they receive an `orm.Authentication`. This exception contains
+          the `orm.violations` collection accessable via the exception`s
+          `violations` property. This collection can be used by the user
+          interface to display to the user what the authorization issue
+          is. This information may be useful in working with an
+          administrator to troubleshoot a permissions issue.
+
+          So far we have discussed regular user accounts. There are two
+          special user accounts worth mentioning.
+
+          The **root** user can be found at `ecommerce.users.root`. When
+          the current user is set to `root`, the ORM will ignore the
+          accessibility properties mentioned above. Let's see how we can
+          use the `root` account to access `alice`'s feedback.
+        ''')
+
+        with listing('Using root user')
+          # Set current user to root
+          orm.security().user = ecommerce.users.root
+
+          # Read alice's feedback from the database. We expect no
+          # exception.
+          self.expect(None, feedback(id))
+
+        print('''
+          As you can see, `root` has no problem reading the `feedback`. 
+
+          Switching to the `root` user can be useful for some special
+          tasks. A convenient and safe way to switch to `root` is with
+          the context mananger `orm.sudo`:
+        ''')
+
+        with listing('Using root user')
+          # The user is currently bob
+          self.is_(orm.security().owner, bob)
+
+          # Set current user to root
+          with orm.sudo():
+            # Assert that the curren user is now root
+            self.is_(orm.security().user, ecommerce.users.root)
+
+            # Read alice's feedback from the database. We expect no
+            # exception.
+            self.expect(None, feedback(id))
+
+          # The current user is restored to bob
+          self.is_(orm.security().owner, bob)
+
 
       with section('Authentication'):
         """
