@@ -348,8 +348,8 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(effort.requirement, *args, **kwargs)
 
-        def main(self, id=None):
-            super().main(id=id)
+        def main(self, id:str=None, crud:str='create'):
+            super().main(id=id, crud=crud)
 
             if self.instance.orm.isnew:
                 self.main << dom.h1('Create a ticket')
