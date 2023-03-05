@@ -2775,6 +2775,19 @@ class crud(page):
 
         frm += btncancel
 
+        ''' Add crud=edit to url '''
+        url = www.application.current.request.url
+
+        qs = url.qs
+        qs['id'] = e.id.hex
+        qs['crud'] = 'update'
+        url.qs = qs
+
+        instrs = instructions()
+        instrs += set('url', str(url))
+
+        frm += instrs
+
     def btncancel_onclick(self, src, eargs):
         frm = eargs.html.only
 
@@ -2787,6 +2800,19 @@ class crud(page):
         eargs.html = card
 
         card.btnedit.onclick += self.btnedit_onclick, card
+
+        ''' Add crud=retrieve to url '''
+        url = www.application.current.request.url
+
+        qs = url.qs
+        qs['id'] = e.id.hex
+        qs['crud'] = 'retrieve'
+        url.qs = qs
+
+        instrs = instructions()
+        instrs += set('url', str(url))
+
+        card += instrs
 
     def frm_onsubmit(self, src, eargs):
         frm = eargs.html.only
