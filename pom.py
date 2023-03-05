@@ -2733,9 +2733,19 @@ class crud(page):
     """
     # XXX Write complete tests
     def __init__(self, e, name=None, pgs=None, *args, **kwargs):
-        self.entity = e
+        self.entity     =  e
+        self._instance  =  None
+        self._form      =  None
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
+    @property
+    def instance(self):
+        return self._instance
+
+    @instance.setter
+    def instance(self, v):
+        self._instance = v
+        
     @property
     def entity(self):
         import importlib
@@ -2751,6 +2761,7 @@ class crud(page):
         card = eargs.html.only
         id = card.getattr('data-entity-id')
         e = self.entity(id)
+        self.instance = e
 
         # XXX:b48259de Update eargs.html with logic to replace id
         frm = e.orm.form
@@ -2842,6 +2853,7 @@ class crud(page):
             qs = url.qs
             if qs.get('id') != e.id.hex:
                 qs['id'] = e.id.hex
+                qs['crud'] = 'retrieve'
                 url.qs = qs
 
                 instrs = instructions()
@@ -2849,11 +2861,37 @@ class crud(page):
 
                 card += instrs
 
-    def main(self, id=None):
+    def main(self, id:str=None, crud:str='create'):
         e = self.entity(id)
         self.instance = e
 
-        if e.orm.isnew:
+        frm = False
+        if id:
+            if crud == 'create':
+                raise ValueError(
+                    'Cannot create when given an id'
+                )
+
+            elif crud == 'retrieve':
+                frm = False
+
+            elif crud == 'update':
+                frm = True
+        else:
+            if crud == 'create':
+                frm = True
+
+            elif crud == 'retrieve':
+                raise ValueError(
+                    'Cannot retrieve without id'
+                )
+                
+            elif crud == 'update':
+                raise ValueError(
+                    'Cannot create when given an id'
+                )
+
+        if frm:
             el = e.orm.form
             el.onsubmit += self.frm_onsubmit, el
         else:
