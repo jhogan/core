@@ -2765,7 +2765,6 @@ class crud(page):
 
         frm = e.orm.form
         eargs.html = frm
-        eargs.html.id = card.id
 
         # Subscribe the form's <button type="submit> to self.frm_onsubmit
         frm.onsubmit += self.frm_onsubmit, frm
