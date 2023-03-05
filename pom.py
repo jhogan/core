@@ -2763,7 +2763,6 @@ class crud(page):
         e = self.entity(id)
         self.instance = e
 
-        # XXX:b48259de Update eargs.html with logic to replace id
         frm = e.orm.form
         eargs.html = frm
         eargs.html.id = card.id
@@ -2787,9 +2786,6 @@ class crud(page):
         card = e.orm.card
 
         eargs.html = card
-
-        # XXX:b48259de Update eargs.html with logic to replace id
-        eargs.html.id = frm.id
 
         card.btnedit.onclick += self.btnedit_onclick, card
 
@@ -2835,20 +2831,11 @@ class crud(page):
         else:
             card = e.orm.card
 
-            # XXX:b48259de Update eargs.html with logic to replace id
             eargs.html = card
 
             card.btnedit.onclick += self.btnedit_onclick, card
 
-            # TODO:fc4077ea 
             url = www.application.current.request.url
-            # XXX We need to come up with a way to make
-            # ecommerce.urls mutatable. Since they are ensured, this
-            # isn't really possible. We want to be able to do
-            # something like thin
-            #
-            #     url.qs['id'] = e.id.hex
-            #
 
             qs = url.qs
             if qs.get('id') != e.id.hex:

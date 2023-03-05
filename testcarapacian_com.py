@@ -304,11 +304,6 @@ class ticketsspa_ticket(tester.tester):
         btnedit = res['button.edit'].only
 
         btnedit.click()
-        print(tab)
-
-
-        
-
 
 if __name__ == '__main__':
     tester.cli().run()
