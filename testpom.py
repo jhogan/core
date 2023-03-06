@@ -3227,6 +3227,36 @@ class cpu_page(tester.benchmark):
                                      2    0.000    2.938  www.py:649(log)
         '''
 
+class card(tester.tester):
+    def it_calls__init__(self):
+        card = pom.card()
+        self.true('card' in card.classes)
+
+    def it_calls_btnedit(self):
+        # Defaults to none
+        card = pom.card()
+        self.none(card.btnedit)
+
+        # Set
+        btn = dom.button('Edit me')
+        card.btnedit = btn
+
+        self.true('edit' in btn.classes)
+
+        # Get
+        self.is_(btn, card.btnedit)
+
+        # Make sure there's only one edit button
+        self.one(card['button.edit'])
+
+        # Reset with new button and test
+        btn1 = dom.button('Another Edit me')
+        card.btnedit = btn1
+        self.is_(btn1, card.btnedit)
+
+        # Make sure there's only one edit button
+        self.one(card['button.edit'])
+
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA
