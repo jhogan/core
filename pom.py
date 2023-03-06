@@ -1674,6 +1674,8 @@ class page(dom.html):
         """ Create a web page.
 
         :param: name str: The name of the page.
+
+        TODO Comment on pgs
         """
         super().__init__(*args, **kwargs)
 
@@ -2729,10 +2731,19 @@ class set(instruction):
         super().__init__(*args, **kwargs)
 
 class crud(page):
-    """ XXX Comment class
+    """ A class to implement the display logic to create, retrieve,
+    update and delete an given `orm.entity`.
     """
     # XXX Write complete tests
     def __init__(self, e, name=None, pgs=None, *args, **kwargs):
+        """ Create a `crud` page object. 
+
+        :param: e orm.entitymeta: An `orm.entity` class reference an
+        instance of which will be used by this page to perform CRUD
+        operations on.
+
+        :param: name str: The name of the page.
+        """
         self.entity     =  e
         self._instance  =  None
         self._form      =  None
@@ -2740,14 +2751,26 @@ class crud(page):
 
     @property
     def instance(self):
+        """ Return the instance of `self.entity`, i.e., the `orm.entity`
+        that this `crud` page uses to perform CRUD operations on.
+        """
         return self._instance
 
     @instance.setter
     def instance(self, v):
+        """ Set the `orm.entity` object reference for this `crud` page.
+        """
         self._instance = v
         
     @property
     def entity(self):
+        """ Returns the class reference to the `orm.entity` class that
+        this `crud` page operates on.
+        """
+        # Import the module that the `orm.entity` was defined in. This
+        # way, whenever a caller needs to access the class, its module
+        # will have been imported and the class will be ready to be
+        # instantiated.
         import importlib
         importlib.import_module(self._entity.__module__)
 
@@ -2755,72 +2778,131 @@ class crud(page):
 
     @entity.setter
     def entity(self, v):
+        """ Set the class reference to the `orm.entity` this `crud` page
+        will operate on.
+        """
         self._entity = v
 
     def btnedit_onclick(self, src, eargs):
+        """ An event handler to capture the `click` event triggered by
+        the `card`'s edit button.
+
+        When the user clicks the edit <button>, they will want their
+        browsers to convert the `card` into a `form` so they can edit
+        the entity's values. This handler gives them that form.
+        """
+
+        # Get the card and the entity's id
         card = eargs.html.only
         id = card.getattr('data-entity-id')
+
+        # Instantiate the orm.entity and store a reference to the
+        # instance
         e = self.entity(id)
         self.instance = e
 
+        # Create a form and assign it to the eags.html so the browser
+        # receives it
         frm = e.orm.form
         eargs.html = frm
 
         # Subscribe the form's <button type="submit> to self.frm_onsubmit
         frm.onsubmit += self.frm_onsubmit, frm
 
+        # Create a Cancel button
         btncancel = dom.button('Cancel')
 
+        # Subscribe the button to btncancel_onclick which will discard
+        # the `form` and return a `card`.
         btncancel.onclick += self.btncancel_onclick, frm
 
+        # Add button to `form`
         frm += btncancel
 
         ''' Add crud=edit to url '''
+
+        # Get the url that the request was made to
         url = www.application.current.request.url
 
+        # Set the id and crud parameters in the queny sting to
+        # appropriate values
         qs = url.qs
         qs['id'] = e.id.hex
         qs['crud'] = 'update'
         url.qs = qs
 
         instrs = instructions()
+        # Create a `set` instruction for the JavaScript in the browser
+        # to carry out. This instructs the browse to replace the URL in
+        # the URL bar with `url`.
         instrs += set('url', str(url))
 
+        # Add the instructions collection to the <form> element.
         frm += instrs
 
     def btncancel_onclick(self, src, eargs):
+        """ An event handler to capture the user clicking the Cancel
+        button.
+        """
+        # Get the <form> that was canceled.
         frm = eargs.html.only
 
+        # Get the entity's hex id from the form 
+        # (<input hidden name="id" # value="A1B2C3...")
         id = frm['input[name=id]'].only.value
 
+        # Load the orm.entity given the id from the <form>
         e = self.entity(id)
 
+        # Create a card article to return to the browser
         card = e.orm.card
 
+        # Return card article to browser
         eargs.html = card
 
+        # Subscribet the card's Edit button's onclick event to
+        # self.btnedit
         card.btnedit.onclick += self.btnedit_onclick, card
 
         ''' Add crud=retrieve to url '''
+
+        # Get the requested url
         url = www.application.current.request.url
 
+        # Change its query string params setting `id` and `crud`
         qs = url.qs
         qs['id'] = e.id.hex
         qs['crud'] = 'retrieve'
         url.qs = qs
 
+        # Instruct the browser to set the URL bar to `url`
         instrs = instructions()
         instrs += set('url', str(url))
 
+        # Add `instructions` to `card`
         card += instrs
 
     def frm_onsubmit(self, src, eargs):
+        """ An event handler to capture the submission of the <form> for
+        this `crud` page.
+        """
+        # Get the <form> that was submitted
         frm = eargs.html.only
+
+        # Get the input values
+
+        # XXX Should we remove `, hidden`? 'input' should capture any
+        # hidden inputs.
         inps = frm['input, textarea, hidden']
 
+        # Use the id input (<input name=id>) to get the entity's id. Use
+        # that id to try to load the entity.
         e = None
         id = inps['[name=id]'].only.value
         if id:
+            # XXX We probably don't need this try block because
+            # orm.entity.__init__ will raisea TypeError if id is not a
+            # UUID.
             try:
                 id = UUID(id)
             except:
@@ -2831,9 +2913,12 @@ class crud(page):
                 except db.RecordNotFoundError:
                     pass
 
+        # If `entity` with `id` was not found above, create a new one
         if not e:
             e = self.entity()
 
+        # Assig values from the <form>'s <input>s to the enity's
+        # attributes
         for inp in inps:
             if isinstance(inp, dom.textarea):
                 v = inp.text
@@ -2849,25 +2934,36 @@ class crud(page):
 
             setattr(e, inp.name, v)
 
+        # Save entity to database
+
+        # XXX There is no need for a try block here. Just save then
+        # proceed to create card
         try:
             e.save()
         except:
             raise
         else:
+            # Create a `card` to return to the browser
             card = e.orm.card
 
             eargs.html = card
 
+            # Subscribe the onclick event of the card's edit button to
+            # self.btnedit_onclick
             card.btnedit.onclick += self.btnedit_onclick, card
 
+            # Get the requested url
             url = www.application.current.request.url
 
+            # Update the id and crud parameters in the browse to the
+            # appropriate values.
             qs = url.qs
             if qs.get('id') != e.id.hex:
                 qs['id'] = e.id.hex
                 qs['crud'] = 'retrieve'
                 url.qs = qs
 
+                # Instruct the browser to update the URL bar to `url`.
                 instrs = instructions()
                 instrs += set('url', str(url))
 

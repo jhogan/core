@@ -93,7 +93,8 @@ class elements(tester.tester):
         rm_uuids(html)
         self.eq(TestHtmlMin, html.html)
 
-    def it_removes_elements(self):
+    def it_calls_remove(self):
+        ''' Remove self '''
         html = dom.html(TestHtml)
 
         bs = html['strong']
@@ -176,6 +177,7 @@ class elements(tester.tester):
 
         self.eq([p4, p5], added[:2])
         self.eq([p2, p3], removed[:2])
+
 class element(tester.tester):
     def it_raises_when_same_child_is_added_more_than_once(self):
         ''' Add child to element '''
