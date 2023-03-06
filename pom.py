@@ -2450,7 +2450,6 @@ class input(dom.div):
 
         lbl = None
         if self.label:
-            # XXX Use `for` attribute of label instead of nesting
             lbl = dom.label(self.label)
             els += lbl
 
@@ -2467,9 +2466,10 @@ class input(dom.div):
             inp = dom.input(name=self.name, type=type)
 
         if lbl:
-            lbl += inp
-        else:
-            els += inp
+            inp.identify()
+            lbl.for_ = inp.id
+            
+        els += inp
 
         if self.placeholder:
             inp.placeholder = self.placeholder
