@@ -534,6 +534,37 @@ class element(tester.tester):
         self.true(p.hasattr('id'))
         self.false(p.hasattr('required'))
 
+    def it_calls_remove(self):
+        ''' Remove self '''
+        html = dom.html(TestHtml)
+        ps = html['body>p']
+
+        # We should start with three
+        self.three(ps)
+
+        # Get first and remove it
+        p = html['body>p'].first
+        p.remove()
+
+        ps = html['body>p']
+        self.two(ps)
+
+        ''' Remove children by selector '''
+        html = dom.html(TestHtml)
+
+        # We should start with three paragraphs
+        ps = html['body>p']
+        self.three(ps)
+
+        # Get <body>
+        body = html['body'].only
+
+        # Remove by selector
+        body.remove('p')
+
+        ps = html['body>p']
+        self.zero(ps)
+
 class comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
