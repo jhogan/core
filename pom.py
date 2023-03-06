@@ -2664,14 +2664,7 @@ class card(dom.article):
 
     @btnedit.setter
     def btnedit(self, v):
-
-        btnedits = self['button.edit']
-
-        B(btnedits.count)
-
-        btnedits.remove()
-        # XXX Can we remove by CSS selector?
-        #self.remove('button.edit')
+        self.remove('button.edit')
         v.classes += 'edit'
         self += v
 

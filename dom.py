@@ -1535,9 +1535,16 @@ class element(entities.entity):
         :param: e entity|entities|callable|int|str: The entity or a
         way of referencing entity objects to be removed.
         """
-        if el:
+        if isinstance(el, element):
             # Remove el from self's child elements.
             return self.elements.remove(el)
+
+        elif isinstance(el, str):
+            # Remove by CSS selector
+            sels = el
+            els = self.elements[sels]
+            return els.remove()
+
         else:
             # This block causes `.remove` to behave more like jQuery's
             # version in that you can just call the `.remove` method on
