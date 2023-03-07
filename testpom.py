@@ -30,6 +30,33 @@ import pytz
 import tester
 import www
 
+class persons(orm.entities):
+    pass
+
+class person(orm.entity):
+    name = str
+    born = date
+    bio  = orm.text
+
+    @classmethod
+    def getvalid(cls):
+        e = cls()
+        e.name = 'Jesse'
+        e.born = '1976-04-15'
+        e.bio = (
+            "Hello. I'm a professional programmer"
+        )
+        return e
+
+    @property
+    def creatability(self):
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        return orm.violations.empty
+
+
 class foonets(pom.sites):
     pass
 
