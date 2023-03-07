@@ -50,6 +50,7 @@ class foonet(pom.site):
 
         ''' Pages '''
         self.pages += home()
+        self.pages += artist()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
@@ -3098,6 +3099,11 @@ class home(pom.page):
     @property
     def name(self):
         return 'index'
+
+class artist(pom.crud):
+    def __init__(self, *args, **kwargs):
+        from test import artist
+        super().__init__(e=artist, *args, **kwargs)
 
 class spa(pom.spa):
     ''' Inner classes of spa '''
