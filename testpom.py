@@ -3129,8 +3129,7 @@ class home(pom.page):
 
 class profile(pom.crud):
     def __init__(self, *args, **kwargs):
-        from test import artist
-        super().__init__(e=artist, *args, **kwargs)
+        super().__init__(e=person, *args, **kwargs)
 
 class spa(pom.spa):
     ''' Inner classes of spa '''
@@ -3291,6 +3290,13 @@ class card(tester.tester):
         self.one(card['button.edit'])
 
 class crud(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.rebuildtables:
+            orm.orm.recreate(
+                person,
+            )
+
     def it_GETs_form(self):
         ws = foonet()
         tab = self.browser().tab()
