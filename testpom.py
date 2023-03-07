@@ -3278,7 +3278,6 @@ class crud(tester.tester):
         self.eq(32, maps.count)
 
         names = res['form']['textarea, input, select'].pluck('name')
-        print(names)
         for map in maps.fieldmappings:
             if map.name in ('createdat', 'updatedat'):
                 continue
@@ -3328,6 +3327,7 @@ class crud(tester.tester):
         # booleans, etc.
 
     def it_creates(self):
+        # XXX Comment
         ws = foonet()
         tab = self.browser().tab()
 

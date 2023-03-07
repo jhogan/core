@@ -12069,6 +12069,10 @@ class orm:
                 card += div
 
                 # Add a <label> to the <div>
+
+                # XXX Use the `for` attribute instead of testing. we
+                # have already done this for `form`, but we need to do
+                # it here as well.
                 lbl = dom.label(name.capitalize())
                 div += lbl
 
