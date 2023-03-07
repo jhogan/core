@@ -2819,6 +2819,7 @@ class crud(page):
 
         # Set the id and crud parameters in the queny sting to
         # appropriate values
+        # TODO: 872fd252
         qs = url.qs
         qs['id'] = e.id.hex
         qs['crud'] = 'update'
@@ -2863,6 +2864,7 @@ class crud(page):
         url = www.application.current.request.url
 
         # Change its query string params setting `id` and `crud`
+        # TODO: 872fd252
         qs = url.qs
         qs['id'] = e.id.hex
         qs['crud'] = 'retrieve'
@@ -2950,6 +2952,7 @@ class crud(page):
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.
+            # TODO: 872fd252
             qs = url.qs
             if qs.get('id') != e.id.hex:
                 qs['id'] = e.id.hex

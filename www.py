@@ -2945,6 +2945,18 @@ class url(entities.entity):
             {'s': ['test']}
 
         """
+        # TODO:872fd252 Ideally, we should be able to use the qs
+        # property in a way that is similar to a dict:
+        #
+        #     id = url.qs['id']
+        #     del url.qs['id'[
+        #     url.qs['search'] = 'Men's shoes'
+        #
+        # This could be done by having this method return an object that
+        # overrides __getitem__ and __setitem__ and keeps the parameters
+        # in an internal data structure. We should be able to make it
+        # backwords compatible with the current inteface if done
+        # correctly.
         import urllib.parse
         return urllib.parse.parse_qs(self.query)
 
@@ -2960,14 +2972,8 @@ class url(entities.entity):
         r = type(self).__name__ 
 
         attrs = (
-            'scheme',
-            'username',
-            'password',
-            'host',
-            'port',
-            'path',
-            'query',
-            'fragment',
+            'scheme',  'username',  'password',  'host',
+            'port',    'path',      'query',     'fragment',
         )
 
         r += '('
