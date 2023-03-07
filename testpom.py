@@ -3364,32 +3364,50 @@ class crud(tester.tester):
         ws = foonet()
         tab = self.browser().tab()
 
-        from test import artist
-
-        art = artist.getvalid()
-
-        maps = orm.mappings()
-        for map in artist.orm.mappings.fieldmappings:
-            v = getattr(art, map.name)
-
-            if v:
-                maps += map
-
+        per = person.getvalid()
 
         # Get form
-        res = tab.navigate('/en/artist', ws)
+        tab.navigate('/en/profile?crud=create', ws)
 
-        for map in maps:
-            div = res[f'[data-entity-attribute={map.name}]']
-            print(map)
+        frm = tab['form']
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            div = frm[f'[data-entity-attribute={map.name}]']
             el = div['input, textarea'].only
 
             if isinstance(el, dom.input):
-                el.value = map.value
+                el.value = getattr(per, map.name)
             elif isinstance(el, dom.textarea):
-                el.text = map.value
+                el.text =  getattr(per, map.name)
 
+        btnsubmit = frm['button[type=submit]'].only
 
+        btnsubmit.click()
+
+        card = tab['article.card'].only
+
+        id = card['[data-entity-attribute=id] span'].only.text
+
+        per1 = self.expect(None, lambda: person(id))
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            v1 = getattr(per1, map.name)
+
+            self.eq(v, v1)
 
 
 Favicon = '''
