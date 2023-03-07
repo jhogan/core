@@ -3263,6 +3263,102 @@ class card(tester.tester):
         # Make sure there's only one edit button
         self.one(card['button.edit'])
 
+class crud(tester.tester):
+    def it_GETs_form(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/artist', ws)
+
+        ''' Ensure we get all the input-type elements '''
+        from test import artist
+        maps = artist.orm.mappings
+
+        # Make sure we got the mappings correctly
+        self.eq(32, maps.count)
+
+        names = res['form']['textarea, input, select'].pluck('name')
+        print(names)
+        for map in maps.fieldmappings:
+            if map.name in ('createdat', 'updatedat'):
+                continue
+
+            if map.isbytes:
+                continue
+
+            self.true(map.name in names, repr(map))
+
+        ''' Test fields '''
+
+        # Test str
+        '''
+        A standard str. Example:
+
+            <div data-entity-attribute="firstname">
+                <label for="xcWYXcvmbQPGRCqw3q-506g">
+                    Firstname
+                </label>
+                <input 
+                    name="firstname" type="text" id="xcWYXcvmbQPGRCqw3q-506g" 
+                    minlength="1" maxlength="255" value=""
+                >
+        </div>
+        '''
+
+        # Get div
+        div = res['[data-entity-attribute=firstname]'].only
+
+        # <label>
+        lbl = div['label'].only
+        self.eq('Firstname', lbl.text)
+
+        # <input>
+        inp = div['input'].only
+
+        self.eq('firstname', inp.name)
+        self.eq('text', inp.type)
+        self.eq(lbl.for_, inp.id)
+        self.eq('1', inp.minlength)
+        self.eq('255', inp.maxlength)
+        self.eq(str(), inp.value)
+
+        # TODO Continue these tests for <textare>s, <select>'s, <input
+        # type=checkbox>, <input type=radio>. Test for different data
+        # types as well such as `text` (blob), floats, decimal,
+        # booleans, etc.
+
+    def it_creates(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        from test import artist
+
+        art = artist.getvalid()
+
+        maps = orm.mappings()
+        for map in artist.orm.mappings.fieldmappings:
+            v = getattr(art, map.name)
+
+            if v:
+                maps += map
+
+
+        # Get form
+        res = tab.navigate('/en/artist', ws)
+
+        for map in maps:
+            div = res[f'[data-entity-attribute={map.name}]']
+            print(map)
+            el = div['input, textarea'].only
+
+            if isinstance(el, dom.input):
+                el.value = map.value
+            elif isinstance(el, dom.textarea):
+                el.text = map.value
+
+
+
+
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA
