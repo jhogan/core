@@ -2710,33 +2710,54 @@ class browser(entities.entity):
         return self.tabs.tab()
 
 class urls(entities.entities):
-    """ XXX
+    """ A collection of `url` objects.
     """
 
 class url(entities.entity):
     """ Represents a URL.
+
+    This class can be used to parse a URL string and easily parse out
+    parts of the URL:
+
+        >>> url = www.url('https://www.google.com?s=Test')
+        >>> assert url.scheme == 'https'
+        >>> assert url.host == 'www.google.com'
+        >>> assert url.query == 's=Test'
+
+    We can alse use the object's setters to build or mutate an `url`
+    object.
+
+        >>> url = www.url()
+        >>> url.scheme = 'https'
+        >>> url.host = 'www.google.com'
+        >>> url.query = 's=Test'
+        >>> assert str(url) == 'https://www.google.com?s=Test'
+        
     """
     # XXX Comment
 
     def __init__(self, name=None, *args, **kwargs):
-        self._scheme = None
-        self._host = None
-        self._path = None
-        self._query = None
-        self._fragment = None
-        self._username = None
-        self._password = None
-        self._port = None
-        self.name = name
+        """ Create a URL object.
+
+        :param: name str: The URL string.
+        """
+        self._scheme    =  None
+        self._host      =  None
+        self._path      =  None
+        self._query     =  None
+        self._fragment  =  None
+        self._username  =  None
+        self._password  =  None
+        self._port      =  None
+        self.name       =  name
         super().__init__(*args, **kwargs)
 
     def __truediv__(self, other):
         """ Overrides the / operator to allow for path joining
 
-            wiki = url(name='https://www.wikipedia.org/') 
-            py = wiki / 'wiki/Python'
-
-            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+            >>> wiki = url(name='https://www.wikipedia.org/') 
+            >>> py = wiki / 'wiki/Python'
+            >>> assert py.name == 'https://www.wikipedia.org/wiki/Python'
         """
 
         # XXX Test
@@ -2746,6 +2767,8 @@ class url(entities.entity):
 
     @property
     def name(self):
+        """ Return the URL string.
+        """
         from urllib.parse import urlunparse
 
         scheme = self.scheme
@@ -2788,6 +2811,8 @@ class url(entities.entity):
 
     @name.setter
     def name(self, v):
+        """ Set the URL string.
+        """
         import urllib.parse
         prs = urllib.parse.urlparse(v)
         self.scheme = prs.scheme
@@ -2814,6 +2839,8 @@ class url(entities.entity):
 
     @scheme.setter
     def scheme(self, v):
+        """ Set the scheme.
+        """
         self._scheme = v
 
     @property
@@ -2827,6 +2854,8 @@ class url(entities.entity):
 
     @host.setter
     def host(self, v):
+        """ Set the host.
+        """
         self._host = v
 
     @property
@@ -2845,6 +2874,8 @@ class url(entities.entity):
 
     @path.setter
     def path(self, v):
+        """ Set the path.
+        """
         self._path = v
 
     @property
@@ -2861,11 +2892,14 @@ class url(entities.entity):
 
     @query.setter
     def query(self, v):
+        """ Set the query string.
+        """
         self._query = v
 
     @property
     def fragment(self):
-        """ XXX
+        """ Return the fragment portion (the part after the #) of the
+        URL. 
         """
         if not self._fragment:
             return None
@@ -2878,7 +2912,7 @@ class url(entities.entity):
 
     @property
     def username(self):
-        """ XXX
+        """ Return the username portion of the URL.
         """
         if not self._username:
             return None
@@ -2887,11 +2921,13 @@ class url(entities.entity):
 
     @username.setter
     def username(self, v):
+        """ Set the username portion of the URL.
+        """
         self._username = v
 
     @property
     def password(self):
-        """ XXX
+        """ Return the password portion of the URL.
         """
         if not self._password:
             return None
@@ -2900,6 +2936,8 @@ class url(entities.entity):
 
     @password.setter
     def password(self, v):
+        """ Set the password portion of the URL.
+        """
         self._password = v
 
     @property
@@ -2919,6 +2957,8 @@ class url(entities.entity):
 
     @port.setter
     def port(self, v):
+        """ Set the port portion of the url.
+        """
         self._port = v
 
     @property
@@ -2933,6 +2973,7 @@ class url(entities.entity):
        
             ['path', 'to', 'resource']
         """
+        # TODO Write tests
 
         return [x for x in self.path.split(os.sep) if x]
 
@@ -2966,9 +3007,14 @@ class url(entities.entity):
         self.query = enc(v, doseq=True)
 
     def __str__(self):
+        """ Return the URL string.
+        """
         return self.name
 
     def __repr__(self):
+        """ Return a programmer-friendly representation of this URL
+        object.
+        """
         r = type(self).__name__ 
 
         attrs = (

@@ -10041,11 +10041,19 @@ class eventargs(entities.eventargs):
 
     @property
     def html(self):
+        """ The HTML sent from the browser to the event handler. The
+        HTML can be modified (or replaced using the `html` setter) and
+        the changed HTML received by the browser.
+        """
         return self._html
 
     @html.setter
     def html(self, v):
-        # XXX Explain
+        # If we are replacing existing HTML, use the id from the old
+        # HTML's root and use it for the new HTML. We do this because
+        # JavaScript in the browser (eventjs) uses the id of the HTML it
+        # sent to be the same as what it receives so it replace the old
+        # HTML in the DOM with the new HTML.
         if html := self._html:
             if isinstance(v, element):
                 if v.id:
