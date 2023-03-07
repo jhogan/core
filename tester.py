@@ -449,7 +449,17 @@ class tester(entities.entity):
 
     @property
     def rebuildtables(self):
-        return self.testers.rebuildtables
+        try:
+            testers = self.testers
+        except AttributeError as ex:
+            raise AttributeError(
+                'The testers attribute is not available. '
+                "Make sure that you are calling super()'s constructor "
+                "in the subclass's constructor before doing "
+                'anything else.'
+            ) from ex
+        else:
+            return self.testers.rebuildtables
 
     class _browsers(www.browsers):
         pass
