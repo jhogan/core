@@ -3302,62 +3302,80 @@ class crud(tester.tester):
         ws = foonet()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/artist', ws)
+        # Get form
+        tab.navigate('/en/profile?crud=create', ws)
 
-        ''' Ensure we get all the input-type elements '''
-        from test import artist
-        maps = artist.orm.mappings
+        frm = tab['form'].only
 
-        # Make sure we got the mappings correctly
-        self.eq(32, maps.count)
-
-        names = res['form']['textarea, input, select'].pluck('name')
-        for map in maps.fieldmappings:
-            if map.name in ('createdat', 'updatedat'):
-                continue
-
-            if map.isbytes:
-                continue
-
-            self.true(map.name in names, repr(map))
-
-        ''' Test fields '''
-
-        # Test str
+        ''' Default str '''
         '''
-        A standard str. Example:
-
-            <div data-entity-attribute="firstname">
-                <label for="xcWYXcvmbQPGRCqw3q-506g">
-                    Firstname
-                </label>
-                <input 
-                    name="firstname" type="text" id="xcWYXcvmbQPGRCqw3q-506g" 
-                    minlength="1" maxlength="255" value=""
-                >
+        <div data-entity-attribute="name">
+          <label for="x_oH0njadTO2QpsceA2s3vw">
+            Name
+          </label>
+          <input 
+            name="name" 
+            type="text" 
+            id="x_oH0njadTO2QpsceA2s3vw" 
+            minlength="1" 
+            maxlength="255" 
+            value=""
+          >
         </div>
         '''
 
-        # Get div
-        div = res['[data-entity-attribute=firstname]'].only
-
-        # <label>
+        div = frm['[data-entity-attribute=name]'].only
         lbl = div['label'].only
-        self.eq('Firstname', lbl.text)
-
-        # <input>
         inp = div['input'].only
 
-        self.eq('firstname', inp.name)
+        self.eq('name', inp.name)
         self.eq('text', inp.type)
         self.eq(lbl.for_, inp.id)
         self.eq('1', inp.minlength)
         self.eq('255', inp.maxlength)
+
+        # Default date
+        '''
+          <div data-entity-attribute="born">
+            <label for="xuPaeyvPXRt6loWYwjjX_lw">
+              Born
+            </label>
+            <input name="born" type="date" id="xuPaeyvPXRt6loWYwjjX_lw" value="">
+          </div>
+        '''
+
+        div = frm['[data-entity-attribute=born]'].only
+        lbl = div['label'].only
+        inp = div['input'].only
+
+        self.eq('born', inp.name)
+        self.eq('date', inp.type)
+        self.eq(lbl.for_, inp.id)
         self.eq(str(), inp.value)
 
-        # TODO Continue these tests for <textare>s, <select>'s, <input
-        # type=checkbox>, <input type=radio>. Test for different data
-        # types as well such as `text` (blob), floats, decimal,
+        # Default text
+        '''
+          <div data-entity-attribute="bio">
+            <label for="xmubrEcPVTs2M6nLoAV_Ldw">
+              Bio
+            </label>
+            <textarea name="bio" id="xmubrEcPVTs2M6nLoAV_Ldw" minlength="1" maxlength="65535">
+            </textarea>
+          </div>
+        '''
+        div = frm['[data-entity-attribute=bio]'].only
+        lbl = div['label'].only
+        inp = div['textarea'].only
+
+        self.eq('bio', inp.name)
+        self.eq(lbl.for_, inp.id)
+        self.eq(str(), inp.text)
+        self.eq('1', inp.minlength)
+        self.eq('65535', inp.maxlength)
+
+        # TODO Continue these tests for <select>'s, 
+        # <input type=checkbox>, <input type=radio>. Test for different
+        # data types as well such as `text` (blob), floats, decimal,
         # booleans, etc.
 
     def it_creates(self):
