@@ -3291,7 +3291,8 @@ class card(tester.tester):
 
 class crud(tester.tester):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        propr = foonet.Proprietor
+        super().__init__(propr=propr, *args, **kwargs)
         if self.rebuildtables:
             orm.orm.recreate(
                 person,
