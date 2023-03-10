@@ -3378,6 +3378,67 @@ class crud(tester.tester):
         # data types as well such as `text` (blob), floats, decimal,
         # booleans, etc.
 
+    def it_retrieves(self):
+        per = person.getvalid()
+        per.save()
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=retrieve', ws)
+
+        card = tab['article.card'].only
+
+
+        '''
+          <button class="edit" data-click-handler="btnedit_onclick" data-click-fragments="#xelp1mJ-MQBu0znR0o_E0Lg">
+            Edit
+          </button>
+        '''
+
+        btn = card['button.edit'].only
+
+        self.eq('btnedit_onclick', btn.getattr('data-click-handler'))
+        self.eq(card.id, btn.getattr('data-click-fragments')[1:])
+        self.eq('Edit', btn.text)
+
+        '''
+          <div data-entity-attribute="name">
+            <label>
+              Name
+              <span>
+                Jesse
+              </span>
+            </label>
+          </div>
+        '''
+
+        div = card['[data-entity-attribute]'].only
+        lbl = div['label'].only
+        te
+
+        '''
+
+          <div data-entity-attribute="born">
+            <label>
+              Born
+              <span>
+                1976-04-15
+              </span>
+            </label>
+          </div>
+          <div data-entity-attribute="bio">
+            <label>
+              Bio
+              <span>
+                Hello. I&#x27;m a professional programmer
+              </span>
+            </label>
+          </div>
+        '''
+        print(card)
+
     def it_creates(self):
         # XXX Comment
         ws = foonet()
