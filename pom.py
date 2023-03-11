@@ -2919,40 +2919,34 @@ class crud(page):
             setattr(e, inp.name, v)
 
         # Save entity to database
+        e.save()
 
-        # XXX There is no need for a try block here. Just save then
-        # proceed to create card
-        try:
-            e.save()
-        except:
-            raise
-        else:
-            # Create a `card` to return to the browser
-            card = e.orm.card
+        # Create a `card` to return to the browser
+        card = e.orm.card
 
-            eargs.html = card
+        eargs.html = card
 
-            # Subscribe the onclick event of the card's edit button to
-            # self.btnedit_onclick
-            card.btnedit.onclick += self.btnedit_onclick, card
+        # Subscribe the onclick event of the card's edit button to
+        # self.btnedit_onclick
+        card.btnedit.onclick += self.btnedit_onclick, card
 
-            # Get the requested url
-            url = www.application.current.request.url
+        # Get the requested url
+        url = www.application.current.request.url
 
-            # Update the id and crud parameters in the browse to the
-            # appropriate values.
-            # TODO: 872fd252
-            qs = url.qs
-            if qs.get('id') != e.id.hex:
-                qs['id'] = e.id.hex
-                qs['crud'] = 'retrieve'
-                url.qs = qs
+        # Update the id and crud parameters in the browse to the
+        # appropriate values.
+        # TODO: 872fd252
+        qs = url.qs
+        if qs.get('id') != e.id.hex:
+            qs['id'] = e.id.hex
+            qs['crud'] = 'retrieve'
+            url.qs = qs
 
-                # Instruct the browser to update the URL bar to `url`.
-                instrs = instructions()
-                instrs += set('url', str(url))
+            # Instruct the browser to update the URL bar to `url`.
+            instrs = instructions()
+            instrs += set('url', str(url))
 
-                card += instrs
+            card += instrs
 
     def main(self, id:str=None, crud:str='create'):
         """ The main handler for this `crud` page.
