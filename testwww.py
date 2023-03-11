@@ -101,6 +101,29 @@ class headers(tester.tester):
         self.two(hdrs)
 
 class url(tester.tester):
+    def it_calls__init__(self):
+        ''' With name '''
+        url = www.url(
+            'http://user:pass1@www.google.com:88?query=test#frag'
+        )
+        self.eq('http',            url.scheme)
+        self.eq('user',            url.username)
+        self.eq('pass1',           url.password)
+        self.eq('www.google.com',  url.host)
+        self.eq(88,                url.port)
+        self.eq('query=test',      url.query)
+        self.eq('frag',            url.fragment)
+
+        ''' Without name '''
+        url = www.url()
+        self.none(url.scheme)
+        self.none(url.username)
+        self.none(url.password)
+        self.none(url.host)
+        self.none(url.port)
+        self.none(url.query)
+        self.none(url.fragment)
+
     def it_gets_scheme(self):
         url = www.url('www.google.com')
         self.none(url.scheme)
@@ -206,14 +229,6 @@ class url(tester.tester):
 
         url = www.url('herpderp://www.google.com')
         self.none(url.port)
-
-    def it_calls__init__(self):
-        # XXX Complete
-        ''' With name '''
-        url = www.url('http://www.google.com:88?query=test#frag')
-
-        ''' Without name '''
-        url = www.url()
 
     def it_sets_host(self):
         url = www.url()
