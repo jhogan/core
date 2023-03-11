@@ -58,6 +58,10 @@ class person(orm.entity):
     def retrievability(self):
         return orm.violations.empty
 
+    @property
+    def updatability(self):
+        return orm.violations.empty
+
 
 class foonets(pom.sites):
     pass
