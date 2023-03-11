@@ -3513,7 +3513,6 @@ class crud(tester.tester):
             </span>
           </div>
         '''
-        print(card)
 
         # Get elements
         div = card['[data-entity-attribute=bio]'].only
