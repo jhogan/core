@@ -3380,68 +3380,7 @@ class crud(tester.tester):
         # data types as well such as `text` (blob), floats, decimal,
         # booleans, etc.
 
-    def it_retrieves(self):
-        per = person.getvalid()
-        per.save()
-
-        ws = foonet()
-        tab = self.browser().tab()
-
-        # Get form
-        tab.navigate(f'/en/profile?id={per.id}&crud=retrieve', ws)
-
-        card = tab['article.card'].only
-
-        '''
-          <button class="edit" data-click-handler="btnedit_onclick" data-click-fragments="#xelp1mJ-MQBu0znR0o_E0Lg">
-            Edit
-          </button>
-        '''
-
-        btn = card['button.edit'].only
-
-        self.eq('btnedit_onclick', btn.getattr('data-click-handler'))
-        self.eq(card.id, btn.getattr('data-click-fragments')[1:])
-        self.eq('Edit', btn.text)
-
-        '''
-          <div data-entity-attribute="name">
-            <label>
-              Name
-              <span>
-                Jesse
-              </span>
-            </label>
-          </div>
-        '''
-
-        div = card['[data-entity-attribute]'].only
-        lbl = div['label'].only
-        te
-
-        '''
-
-          <div data-entity-attribute="born">
-            <label>
-              Born
-              <span>
-                1976-04-15
-              </span>
-            </label>
-          </div>
-          <div data-entity-attribute="bio">
-            <label>
-              Bio
-              <span>
-                Hello. I&#x27;m a professional programmer
-              </span>
-            </label>
-          </div>
-        '''
-        print(card)
-
     def it_creates(self):
-        # XXX Comment
         ws = foonet()
         tab = self.browser().tab()
 
@@ -3490,6 +3429,150 @@ class crud(tester.tester):
 
             self.eq(v, v1)
 
+    def it_retrieves(self):
+        per = person.getvalid()
+        per.save()
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=retrieve', ws)
+
+        card = tab['article.card'].only
+
+        '''
+          <button class="edit" data-click-handler="btnedit_onclick" data-click-fragments="#xelp1mJ-MQBu0znR0o_E0Lg">
+            Edit
+          </button>
+        '''
+
+        btn = card['button.edit'].only
+
+        self.eq('btnedit_onclick', btn.getattr('data-click-handler'))
+        self.eq(card.id, btn.getattr('data-click-fragments')[1:])
+        self.eq('Edit', btn.text)
+
+        '''
+          <div data-entity-attribute="name">
+            <label for="xHth2cToUSfaODKVsoIDKlw">
+              Name
+            </label>
+            <span id="xHth2cToUSfaODKVsoIDKlw">
+              Jesse
+            </span>
+          </div>
+        '''
+
+        # Get elements
+        div = card['[data-entity-attribute=name]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Name', lbl.text)
+
+        # Span
+        self.eq(per.name, span.text)
+        self.eq(lbl.for_, span.id)
+
+        '''
+          <div data-entity-attribute="born">
+            <label for="x25v_AqZbSiSyYu99lc1KRQ">
+              Born
+            </label>
+            <span id="x25v_AqZbSiSyYu99lc1KRQ">
+              1976-04-15
+            </span>
+          </div>
+        '''
+
+        # Get elements
+        div = card['[data-entity-attribute=born]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Born', lbl.text)
+
+        # Span
+        self.eq(per.born, primative.date(span.text))
+        self.eq(lbl.for_, span.id)
+
+        '''
+          <div data-entity-attribute="bio">
+            <label for="xLDT9TgHfTOKPgQyuwx1HrQ">
+              Bio
+            </label>
+            <span id="xLDT9TgHfTOKPgQyuwx1HrQ">
+              Hello. I&#x27;m a professional programmer
+            </span>
+          </div>
+        '''
+        print(card)
+
+        # Get elements
+        div = card['[data-entity-attribute=bio]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Bio', lbl.text)
+
+        # Span
+        self.eq(per.bio, span.text)
+        self.eq(lbl.for_, span.id)
+
+    def it_updates(self):
+        ''' Happy path '''
+        per = person.getvalid()
+        per.save()
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=update', ws)
+
+        frm = tab['form'].only
+
+        name = uuid4().hex
+        bio = uuid4().hex
+        born = primative.date('1413-03-04')
+
+        frm['[data-entity-attribute=name] input'].only.value = name
+        frm['[data-entity-attribute=born] input'].only.value = str(born)
+        frm['[data-entity-attribute=bio] textarea'].only.text = bio
+
+        frm['button[type=submit]'].only.click()
+
+        per1 = per.orm.reloaded()
+
+        self.eq(name, per1.name)
+        self.eq(born, per1.born)
+        self.eq(bio,  per1.bio)
+
+        ''' Update with bad id '''
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=update', ws)
+        frm = tab['form'].only
+
+        name = uuid4().hex
+
+        inp = frm['[data-entity-attribute=id] input'].only
+        inp.value = 'not-a-uuid'
+        frm['[data-entity-attribute=name] input'].only.value = name
+
+        btn = frm['button[type=submit]'].only
+        
+        res = self.click(btn, tab)
+
+        # NOTE Maybe this should be h422. For browsers it probably
+        # doesn't matter that much, but for RPC it may.
+        self.h500(res)
+
+        type = tab['.exception span.type'].only.text
+        self.eq('ValueError', type)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA

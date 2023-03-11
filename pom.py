@@ -2727,7 +2727,6 @@ class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete an given `orm.entity`.
     """
-    # XXX Write complete tests
     def __init__(self, e, name=None, pgs=None, *args, **kwargs):
         """ Create a `crud` page object. 
 
