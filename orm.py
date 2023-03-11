@@ -11953,6 +11953,7 @@ class orm:
                 if map.isstr:
                     dominp.minlength = map.min
                     dominp.maxlength = map.max
+
                 elif map.isnumeric:
                     dominp.min = map.min
                     dominp.max = map.max
@@ -12074,6 +12075,7 @@ class orm:
                 # have already done this for `form`, but we need to do
                 # it here as well.
                 lbl = dom.label(name.capitalize())
+
                 div += lbl
 
                 # Create a <span> to hold the mapping's value

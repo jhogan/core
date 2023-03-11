@@ -588,6 +588,7 @@ class status(tester.tester):
 
                 with orm.su(bot.sendbot.user):
                     # Create status objects in dis.status
+
                     dispatcher.dispatch(dis)
                     self.multiple(sts)
 

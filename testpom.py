@@ -30,6 +30,8 @@ import pytz
 import tester
 import www
 
+# TODO We should get datetime and date from `primative`
+
 class persons(orm.entities):
     pass
 
@@ -3389,7 +3391,6 @@ class crud(tester.tester):
         tab.navigate(f'/en/profile?id={per.id}&crud=retrieve', ws)
 
         card = tab['article.card'].only
-
 
         '''
           <button class="edit" data-click-handler="btnedit_onclick" data-click-fragments="#xelp1mJ-MQBu0znR0o_E0Lg">
