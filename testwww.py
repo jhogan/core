@@ -546,6 +546,19 @@ class url(tester.tester):
         self.eq(expect, url.name)
         self.eq(expect, str(url))
 
+        expect = (
+            'url('
+                'scheme="http", '
+                'username="username", '
+                'password="password", '
+                'host="www.google.com", '
+                'port=88, '
+                'path="this/is/the/path", '
+                'query="herp=derp&gerp=cherp", '
+                'fragment="this-part"'
+            ')'
+        )
+
         self.eq(expect, repr(url))
 
 if __name__ == '__main__':
