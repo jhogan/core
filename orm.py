@@ -12071,16 +12071,17 @@ class orm:
 
                 # Add a <label> to the <div>
 
-                # XXX Use the `for` attribute instead of testing. we
-                # have already done this for `form`, but we need to do
-                # it here as well.
                 lbl = dom.label(name.capitalize())
 
                 div += lbl
 
                 # Create a <span> to hold the mapping's value
                 v = getattr(inst, name)
-                lbl += dom.span(v)
+                span = dom.span(v)
+                div += span
+
+                span.identify()
+                lbl.for_ = span.id
 
             # Ascend
             rent = rent.orm.super
