@@ -340,7 +340,8 @@ class postmark(emailer):
         """ The base URL for endpoints used by this ``api``class.
         """
         if not self._base:
-            self._base = ecommerce.url(address='https://api.postmarkapp.com')
+            self._base = www.url('https://api.postmarkapp.com')
+
         return self._base
 
     @property

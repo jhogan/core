@@ -365,6 +365,12 @@ class request(entities.entity):
         :XXX param: url ecommerce.url: The URL object containing the URL
         being accessed.
         """
+
+        if url and not isinstance(url, sys.modules['www'].url):
+            raise TypeError(
+                'Invalid url type'
+            )
+
         self.app           =  app
         if app:
             self.app._request  =  self
@@ -679,8 +685,7 @@ class request(entities.entity):
         if self.iswsgi:
             return self.environment['SERVER_NAME']
 
-        import urllib
-        return urllib.parse.urlparse(self._url).hostname
+        return self._url.host
 
     @property
     def arguments(self):
@@ -706,8 +711,7 @@ class request(entities.entity):
 
             return qs
 
-        import urllib
-        return urllib.parse.urlparse(self._url).query
+        return self._url.query
 
     @property
     def site(self):
@@ -1168,6 +1172,9 @@ class request(entities.entity):
                 path = '/en/index'
             return path
 
+        return self._url.path
+
+
     def getpath(self, lang=False):
         """ Get the path. By default get the path with the language code
         removed.
@@ -1301,7 +1308,7 @@ class request(entities.entity):
             return self.environment['wsgi.url_scheme'].lower()
 
         import urllib
-        return urllib.parse.urlparse(self._url).scheme
+        return urllib.parse.urlparse(str(self._url)).scheme
 
     @property
     def port(self):
@@ -1310,8 +1317,7 @@ class request(entities.entity):
         if self.iswsgi:
             return int(self.environment['SERVER_PORT'])
 
-        import urllib
-        return urllib.parse.urlparse(self._url).port
+        return self._url.port
 
     @property
     def url(self):
@@ -2605,7 +2611,7 @@ class browser(entities.entity):
 
             import urllib.request
             req1 = urllib.request.Request(
-                url, body, hdrs, method=meth
+                str(url), body, hdrs, method=meth
             )
 
             req1.add_header('Content-Length', req.size)
@@ -2753,19 +2759,6 @@ class url(entities.entity):
         self.name       =  name
         super().__init__(*args, **kwargs)
 
-    def __truediv__(self, other):
-        """ Overrides the / operator to allow for path joining
-
-            >>> wiki = url(name='https://www.wikipedia.org/') 
-            >>> py = wiki / 'wiki/Python'
-            >>> assert py.name == 'https://www.wikipedia.org/wiki/Python'
-        """
-
-        # XXX Test
-        name = os.path.join(self.name, other)
-
-        return url(name)
-
     @property
     def name(self):
         """ Return the URL string.
@@ -2825,6 +2818,19 @@ class url(entities.entity):
         self.password = prs.password
         self.port = prs.port
         
+    def __truediv__(self, other):
+        """ Overrides the / operator to allow for path joining
+
+            wiki = url(name='https://www.wikipedia.org/') 
+            py = wiki / 'wiki/Python'
+
+            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+        """
+        # TODO Add tests
+        name = os.path.join(str(self), other)
+
+        return url(name)
+
     @property
     def scheme(self):
         """ Returns the scheme (sometimes refered to as the protocol)
