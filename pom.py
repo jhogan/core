@@ -2885,9 +2885,7 @@ class crud(page):
 
         # Get the input values
 
-        # XXX Should we remove `, hidden`? 'input' should capture any
-        # hidden inputs.
-        inps = frm['input, textarea, hidden']
+        inps = frm['input, textarea']
 
         # Use the id input (<input name=id>) to get the entity's id. Use
         # that id to try to load the entity.
