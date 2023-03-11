@@ -1701,6 +1701,12 @@ class tester(entities.entity):
             
             self._failures += failure()
 
+    def h500(self, res):
+        if res.status != 500:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
     def click(self, e, tab):
         """ Call the click() trigger method on `e`. Return the last
         response the browser recorded.
