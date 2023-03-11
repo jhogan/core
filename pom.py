@@ -2892,18 +2892,10 @@ class crud(page):
         e = None
         id = inps['[name=id]'].only.value
         if id:
-            # XXX We probably don't need this try block because
-            # orm.entity.__init__ will raisea TypeError if id is not a
-            # UUID.
             try:
-                id = UUID(id)
-            except:
-                raise
-            else:
-                try:
-                    e = self.entity(id)
-                except db.RecordNotFoundError:
-                    pass
+                e = self.entity(id)
+            except db.RecordNotFoundError:
+                pass
 
         # If `entity` with `id` was not found above, create a new one
         if not e:
