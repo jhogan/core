@@ -189,7 +189,7 @@ class ticketsspa_ticket(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/ticket', ws)
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
         self.status(200, res)
 
         frm = tab['form'].only
@@ -206,7 +206,7 @@ class ticketsspa_ticket(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/ticket', ws)
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
         self.status(200, res)
 
         frm = tab['form'].only
@@ -261,7 +261,7 @@ class ticketsspa_ticket(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        res = tab.navigate('/en/ticketsspa/ticket', ws)
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
         self.status(200, res)
 
         frm = tab['form'].only
@@ -287,7 +287,7 @@ class ticketsspa_ticket(tester.tester):
         art = res.html.first
         id = art.attributes['data-entity-id'].value
 
-        self.eq(f'id={id}', tab.url.query)
+        self.eq(f'id={id}&crud=retrieve', tab.url.query)
 
         self.eq(id, tab.url.qs['id'][0])
 

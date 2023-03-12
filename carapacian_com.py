@@ -348,7 +348,7 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(effort.requirement, *args, **kwargs)
 
-        def main(self, id:str=None, crud:str='create'):
+        def main(self, id:str=None, crud:str='retrieve'):
             super().main(id=id, crud=crud)
 
             if self.instance.orm.isnew:
@@ -484,7 +484,9 @@ class ticketsspa(pom.spa):
         ''' SPA Menu '''
         mnu = pom.menu('Spa')
         self.header.menus += mnu
-        mnu.items  +=  pom.menu.item('New',   'ticketsspa/ticket')
+        mnu.items  +=  pom.menu.item(
+            'New', 'ticketsspa/ticket?crud=create'
+        )
         mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlog')
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')

@@ -2948,7 +2948,7 @@ class crud(page):
 
             card += instrs
 
-    def main(self, id:str=None, crud:str='create'):
+    def main(self, id:str=None, crud:str='retrieve'):
         """ The main handler for this `crud` page.
         """
         # Instantiate the entity that this crud page operates on
