@@ -565,7 +565,7 @@ class site(tester.tester):
 
     def it_calls__init__(self):
         ws = foonet()
-        self.seven(ws.pages)
+        self.eight(ws.pages)
 
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
@@ -674,18 +674,18 @@ class site(tester.tester):
         ws = foonet()
         mnu = ws.header.makemain()
 
-        self.six(mnu.items.elements)
+        self.seven(mnu.items.elements)
 
         self.eq(
             [
-                '/index', '/about', '/contact-us', 
+                '/index', '/profile', '/about', '/contact-us', 
                 '/blogs', '/admin', '/spa'
             ],
             mnu.items.pluck('page.path')
         )
 
         self.eq(
-            [home, about, contact_us, blogs, admin, spa],
+            [home, profile, about, contact_us, blogs, admin, spa],
             [type(x) for x in  mnu.items.pluck('page')]
         )
 
@@ -731,10 +731,10 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.six(mnu.items.elements)
+        self.seven(mnu.items.elements)
 
         # Blogs item
-        itm = mnu.items.fourth
+        itm = mnu.items.fifth
 
         ''' It updates a menu item '''
         sels = dom.selectors('li > a[href="%s"]' % '/blogs/categories')
@@ -760,7 +760,7 @@ class site(tester.tester):
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
 
-        self.seven(mnu.items.elements)
+        self.eight(mnu.items.elements)
 
         sels = dom.selectors('li')
 
@@ -773,7 +773,8 @@ class site(tester.tester):
         self.one(mnu[sels])
 
         # Remove the blog menu
-        itms = mnu.items.remove(mnu.items.fourth)
+
+        itms = mnu.items.remove(mnu.items.fifth)
         self.one(itms)
         self.type(pom.menu.item, itms.first)
         self.eq('blogs', itms.first.text)
