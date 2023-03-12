@@ -7574,8 +7574,8 @@ with book('Hacking Carapacian Core'):
         print('''
           In summary, every entity has four accessability properties
           which determine what type of access, if any, a user has to
-          said entity. This centralizes authoration logic an the entity
-          level so it doesn't have to be scattered through webpages,
+          said entity. This centralizes authorization logic at the entity
+          level so it doesn't have to be scattered throughout webpages,
           endpoints, etc. If a user violates an authororization check,
           they receive an `orm.Authentication`. This exception contains
           the `orm.violations` collection accessable via the exception`s
@@ -7625,6 +7625,40 @@ with book('Hacking Carapacian Core'):
           # The current user is restored to bob
           self.is_(orm.security().owner, bob)
 
+        print('''
+          The other special user is found at `ecommerce.anonymous`. The
+          `anonymous` is the unauthenticated user. If a user has not
+          logged into a website for example, the `anonymous` user set to
+          the current user.
+
+          The `anonymous` user is useful for tracking user visitations
+          to websites when no user is logged in. The accessibility
+          methods mentioned above can be written to provide or deny
+          access to to some certain operations based on whether or not
+          the user is anonymous.
+
+          We've covered the `orm.sudo` context manager. There are
+          several other context managers that make working with the
+          `orm.security` class easy. 
+
+          First there is the `orm.su` context manager. This allows you
+          to switch the current user temporarily.
+        ''')
+
+        with listing('Using the `orm.su` context manager'):
+          # Get a reference to the orm.security singleton
+          sec = orm.security()
+
+          # Assert that bob is the current user
+          self.is_(bob, sec.user)
+          
+          # Switch users to alice
+          with orm.su(alice):
+            # Assert that alice is now the current user
+            self.is_(alice, sec.user)
+            
+          # Assert that bob has been restored as the current user
+          self.is_(bob, sec.user)
 
       with section('Authentication'):
         """
