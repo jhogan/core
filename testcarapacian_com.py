@@ -211,7 +211,7 @@ class ticketsspa_ticket(tester.tester):
         reason     =  inps['[name=reason]'].only
         btnsubmit  =  frm['button[type=submit]'].only
 
-        id = id.value
+        id = UUID(id.value)
 
         desc.text = self.dedent('''
             As a user,
@@ -234,7 +234,7 @@ class ticketsspa_ticket(tester.tester):
             None, lambda: effort.requirement(id)
         )
 
-        self.eq(id, req.id.hex)
+        self.eq(id.hex, req.id.hex)
 
         self.eq(desc.text, req.description)
 
