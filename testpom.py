@@ -62,7 +62,6 @@ class person(orm.entity):
     def updatability(self):
         return orm.violations.empty
 
-
 class foonets(pom.sites):
     pass
 
@@ -3152,9 +3151,10 @@ class spa(pom.spa):
     def main(self):
         if not self.header.menu:
             self.header.makemain()
+
         self.main += dom.p('Welcome to the SPA')
 
-        ''' SPA Menu '''
+        ''' Create all menu '''
         self.header.menus += pom.menu.make(self.pages, 'spa')
 
 class google(pom.page):

@@ -962,10 +962,10 @@ class request(entities.entity):
             elif self.forfile:
                 # ... if the request is for a file from the framework's
                 # file system.
-
                 path = None
                 path = self.path
                 pub = self.site.public
+
                 try:
                     # Try to get the file from the website's public
                     # directory
@@ -999,6 +999,7 @@ class request(entities.entity):
                 res.body = pg.main.html
             else:
                 raise
+
         finally:
             # Finish of the hit log
             self.log()
