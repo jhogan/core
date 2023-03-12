@@ -3157,6 +3157,13 @@ class spa(pom.spa):
         ''' Create all menu '''
         self.header.menus += pom.menu.make(self.pages, 'spa')
 
+        mnuspa = self.header.menus['nav[aria-label=Spa]'].only
+
+        prof = profile()
+        mnuspa.items += pom.menu.item(
+            'New profile', f'{prof.path}?crud=create'
+        )
+
 class google(pom.page):
     def main(self, **kwargs):
         # HTTP 302 Found (i.e., redirect)
