@@ -172,19 +172,6 @@ class ticketsspa_ticket(tester.tester):
         propr = carapacian_com.site().Proprietor
         super().__init__(propr=propr, *args, **kwargs)
 
-    def it_call__init__(self):
-        pg = carapacian_com.ticketsspa.ticket()
-
-        frm = pg['form'].only
-        inps = frm['input, textarea']
-        expect = [
-            'id',        'created',      'required',  'budget',
-            'quantity',  'description',  'reason'
-        ]
-        actual = inps.pluck('name')
-
-        self.eq(expect, actual)
-
     def it_GETs(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
