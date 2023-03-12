@@ -71,7 +71,7 @@ class home(tester.tester):
         mods = 'file', 'asset', 
         super().__init__(mods=mods, *args, **kwargs)
 
-    def it_call_name(self):
+    def it_calls_name(self):
         pg = carapacian_com.home()
         self.eq('index', pg.name)
 
@@ -107,7 +107,7 @@ class tickets(tester.tester):
         mods = 'file', 'asset', 
         super().__init__(mods=mods, *args, **kwargs)
 
-    def it_call_name(self):
+    def it_calls_name(self):
         pg = carapacian_com.tickets()
         self.eq('tickets', pg.name)
 
@@ -156,7 +156,7 @@ class tickets(tester.tester):
         self.eq(dt1.date, today)
 
 class ticketsspa(tester.tester):
-    def it_call_name(self):
+    def it_calls_name(self):
         pg = carapacian_com.ticketsspa.ticket()
         self.eq('ticket', pg.name)
 
