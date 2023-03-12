@@ -7406,14 +7406,15 @@ with book('Hacking Carapacian Core'):
 
         The owner of an entity usually determines what kind of access
         the ORM will permit for the entity. Typically, if the current
-        logged in user is trying to read a entity it owns, the read
-        request will be successful. Other considerations may be made in
-        the accessibilty properties for various types of requests. 
+        logged in user is trying to read an entity that it owns, the
+        read request will be successful. Other considerations may be
+        made in the accessibilty properties for various types of
+        requests. 
 
         Let's take a look at an example to solidify these concepts. We
         will use one user to create a `requirement` entity.
-        (`requirements` are similar to issues in a ticketing system
-        such a Jira).
+        (`requirements` are similar to issues in a ticketing system such
+        a Jira).
         """
         
         with listing('Authorization'):
@@ -7447,7 +7448,7 @@ with book('Hacking Carapacian Core'):
 
           # We now expect an AuthorizationError if we try to load
           # alice's requirement. bob, being a random user, does not get
-          # access to anyones requirement entities by default.
+          # access to anyone`s requirement entities by default.
           expect(
             orm.AuthorizationError, 
             lambda: effort.requirement(req.id)
@@ -7456,13 +7457,173 @@ with book('Hacking Carapacian Core'):
         print('''
           As you can see, `requirements` created by `alice` can be read
           by `alice` but not by `bob`. This should be intuitive because
-          if we create a requirement in ticketing system, we don't
+          if we create a requirement in a ticketing system, we don't
           expect the whole world to see them. However, if `bob` were in
           the same department as `alice`, or was assigned to the project
           that the requirement was created for, we may expect him to have
           access to this `requirement`. 
+
+          At this point you may be wondering what makes the
+          determination about who can access entity objects. Every
+          entity inherits four accessibility properties that it is
+          expected to override. These accessibility properties are
+          `creatability`, `retrievability`, `updatability` and
+          `deletability` These property methods contain the
+          authorization logic that determines whether the current user
+          has clearance for the give type of access.
+
+          Below we create a new entity called `feedback` that is
+          intended to collect feedback from user about some product.
+          Let's see how we can ensure that the right people have the
+          right access to `feedback` entities.
         ''')
 
+        with listing('Accessibility properties'):
+          # Create the feedbacks collection
+          class feedbacks(orm.entities):
+            pass
+
+          class feedback(orm.entity):
+            # The text that the user enters to provide feedback
+            text = text
+
+            # The time the feedback was submitted
+            submitted = datetime
+
+            def creatability(self):
+              # Anyone, including anonymous (unauthenicated) users, can
+              # create a (provide) feedback. So return an empty
+              # violations collection.
+              return orm.violations.empty
+
+            def retrievability(self):
+              vs = orm.violations()
+              usr = orm.security().user
+
+              # The user must be a product manager to read the feedback
+              if not usr.isproductmanager:
+                vs += (
+                  'User must be a product manager'
+                )
+
+              return vs
+
+            @property
+            def updatability(self):
+              vs = orm.violations()
+              usr = orm.security().user
+
+              # Only the owner of the feedback can update it
+              if usr is not self.owner:
+                  vs += 'Only the author of the feedback can change it'
+
+              return vs
+
+            @property
+            def deletability(self):
+              # Feedbacks can not be physically removed from the system
+              vs = orm.violations()
+              vs += 'Feedback cannot be deleted'
+              return vs
+
+        print('''
+          In the above example, the `feedback` entity overrides the
+          accessibility properties. Accessibility is controlled by
+          whether or not an `orm.violations` collection contains any
+          `orm.violation` objects. If the collection is not empty,
+          access will be prevented. The violation message is provided to
+          help the user understand why they have been denied access.
+
+          Let's see what happens when someone tries to edit someones
+          else's feedback.
+        ''')
+
+        with listing('Violating authorization'):
+          # Make alice the current user
+          orm.security().owner = alice
+
+          # Monkey-patch alice and bob to indicate they are not product
+          # managers
+          alice.isproductmanager = False
+          bob.isproductmanager = False
+
+          # Create the feedback as alice
+          fb = feedback(
+            text = (
+              'I am not 100% percent satisfied with the product I '
+              'ordered. please make it better.'
+            )
+          )
+
+          # Save the feedback. There should be no problem here because
+          # the `creatability` property` has it that anyone can create
+          # a feedback.
+          fb.save()
+
+          # Change the current user to bob.
+          orm.security().owner = bob
+
+          # Let's assume that somehow, bob got the id of the feedback
+          id = fb.id
+
+          # We expect bob to get an AuthorizationError when reading the
+          # feedback because the `retrievability` property has it that
+          # only product managers can read authorization errors.
+          self.expect(orm.AuthorizationError, feedback(id))
+
+        print('''
+          In summary, every entity has four accessability properties
+          which determine what type of access, if any, a user has to
+          said entity. This centralizes authoration logic an the entity
+          level so it doesn't have to be scattered through webpages,
+          endpoints, etc. If a user violates an authororization check,
+          they receive an `orm.Authentication`. This exception contains
+          the `orm.violations` collection accessable via the exception`s
+          `violations` property. This collection can be used by the user
+          interface to display to the user what the authorization issue
+          is. This information may be useful in working with an
+          administrator to troubleshoot a permissions issue.
+
+          So far we have discussed regular user accounts. There are two
+          special user accounts worth mentioning.
+
+          The **root** user can be found at `ecommerce.users.root`. When
+          the current user is set to `root`, the ORM will ignore the
+          accessibility properties mentioned above. Let's see how we can
+          use the `root` account to access `alice`'s feedback.
+        ''')
+
+        with listing('Using root user')
+          # Set current user to root
+          orm.security().user = ecommerce.users.root
+
+          # Read alice's feedback from the database. We expect no
+          # exception.
+          self.expect(None, feedback(id))
+
+        print('''
+          As you can see, `root` has no problem reading the `feedback`. 
+
+          Switching to the `root` user can be useful for some special
+          tasks. A convenient and safe way to switch to `root` is with
+          the context mananger `orm.sudo`:
+        ''')
+
+        with listing('Using root user')
+          # The user is currently bob
+          self.is_(orm.security().owner, bob)
+
+          # Set current user to root
+          with orm.sudo():
+            # Assert that the curren user is now root
+            self.is_(orm.security().user, ecommerce.users.root)
+
+            # Read alice's feedback from the database. We expect no
+            # exception.
+            self.expect(None, feedback(id))
+
+          # The current user is restored to bob
+          self.is_(orm.security().owner, bob)
 
 
       with section('Authentication'):
