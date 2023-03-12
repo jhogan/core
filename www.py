@@ -362,8 +362,8 @@ class request(entities.entity):
         :param: app application: The WSGI application object for this
         request.
 
-        :XXX param: url ecommerce.url: The URL object containing the URL
-        being accessed.
+        :param: url www.url: The URL object representing the URL being
+        requested.
         """
 
         if url and not isinstance(url, sys.modules['www'].url):
@@ -2741,8 +2741,6 @@ class url(entities.entity):
         >>> assert str(url) == 'https://www.google.com?s=Test'
         
     """
-    # XXX Comment
-
     def __init__(self, name=None, *args, **kwargs):
         """ Create a URL object.
 
@@ -3010,6 +3008,8 @@ class url(entities.entity):
 
     @qs.setter
     def qs(self, v):
+        """ Set the qs attribute to `v`.
+        """
         from urllib.parse import urlencode as enc
         self.query = enc(v, doseq=True)
 
