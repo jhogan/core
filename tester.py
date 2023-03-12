@@ -1679,7 +1679,15 @@ class tester(entities.entity):
             ok = 'FAIL'
 
         name = self.__class__.__name__
-        r += "[{}]{}{}".format(name, ' ' * (72 - len(name) - 4), ok)
+        file = sys.modules[self.__class__.__module__].__file__
+
+        file = file.lstrip('./')
+
+        file = os.path.basename(file)
+
+        test = f'({file}) [{name}]'
+
+        r += "{}{}{}".format(test, ' ' * (72 - len(test) - 4), ok)
 
         if self.failures.isempty:
             return r
