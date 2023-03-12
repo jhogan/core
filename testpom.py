@@ -3385,6 +3385,23 @@ class crud(tester.tester):
         # data types as well such as `text` (blob), floats, decimal,
         # booleans, etc.
 
+    def it_gets_from_spa(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        tab.navigate('/en/spa', ws)
+        mnuspa = tab['nav[aria-label=Spa]'].only
+
+        aprofile = mnuspa['a[href$="/profile?crud=create"]'].only
+
+        res = self.click(aprofile, tab)
+        self.h200(res)
+
+        # TODO We should also test different crud operations here. At
+        # the moment, only 'create' makes sense for a menu. We would
+        # want hyperlinks for things like 'retrieve', 'update', ande
+        # 'delete'.
+
     def it_creates(self):
         ws = foonet()
         tab = self.browser().tab()

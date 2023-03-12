@@ -2150,7 +2150,7 @@ class page(dom.html):
                     if eargs.handler:
                         meth(src=eargs.src, eargs=eargs)
                     else:
-                        meth()
+                        meth(**self._arguments)
                 else:
                     try:
                         main = self._mainfunc
