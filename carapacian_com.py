@@ -456,9 +456,10 @@ class ticketsspa(pom.spa):
             </table>
             ''')
 
-    class backlog(pom.page):
-        def main(self):
-            self.main += dom.p('Backlog')
+    class backlog(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(effort.requirements, *args, **kwargs)
+
 
     class search(pom.page):
         def main(self):
