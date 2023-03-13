@@ -2952,57 +2952,65 @@ class crud(page):
         """ The main handler for this `crud` page.
         """
         # Instantiate the entity that this crud page operates on
-        e = self.entity(id)
-        self.instance = e
 
-        # Don't create and return a <form> by default
         frm = False
-        if id:
-            if crud == 'create':
-                raise ValueError(
-                    'Cannot create when given an id'
-                )
+        if isinstance(self.entity, orm.entitiesmeta):
+            # XXX Replace `all` with an instantiation with arguments
+            e = self.entity.orm.all
 
-            elif crud == 'retrieve':
-                frm = False
+            # XXX:76756507 s/table1/table
+            el = e.orm.table1
+        elif isinstance(self.entity, orm.entitymeta):
+            if id:
+                if crud == 'create':
+                    raise ValueError(
+                        'Cannot create when given an id'
+                    )
 
-            elif crud == 'update':
-                # If CRUD is 'update' and we have an id, we want to send
-                # back a form so user can update an entity object.
-                frm = True
-        else:
-            if crud == 'create':
-                # If CRUD is 'create' and we have no id, we want to send
-                # back a blank form so user can create an entity object.
-                frm = True
+                elif crud == 'retrieve':
+                    frm = False
 
-            elif crud == 'retrieve':
-                raise ValueError(
-                    'Cannot retrieve without id'
-                )
-                
-            elif crud == 'update':
-                raise ValueError(
-                    'Cannot create when given an id'
-                )
+                elif crud == 'update':
+                    # If CRUD is 'update' and we have an id, we want to
+                    # send back a form so user can update an entity
+                    # object.
+                    frm = True
+            else:
+                if crud == 'create':
+                    # If CRUD is 'create' and we have no id, we want to
+                    # send back a blank form so user can create an
+                    # entity object.
+                    frm = True
 
-        if frm:
-            # If frm is True, add a <form> for the entity to the page's
-            # <main>
-            el = e.orm.form
+                elif crud == 'retrieve':
+                    raise ValueError(
+                        'Cannot retrieve without id'
+                    )
+                    
+                elif crud == 'update':
+                    raise ValueError(
+                        'Cannot create when given an id'
+                    )
 
-            # Captur form submission
-            el.onsubmit += self.frm_onsubmit, el
-        else:
-            # If frm is None, add a card to the page so user is able to
-            # read entity values.
-            el = e.orm.card
-            card = el
+            e = self.entity(id)
+            if frm:
+                # If frm is True, add a <form> for the entity to the
+                # page's <main>
+                el = e.orm.form
 
-            # Subscribe the Edit button to self.btnedit_onclick. This
-            # allows user to get a <form> version of the card so the
-            # entity can be updated.
-            if btnedit := card.btnedit:
-                el.btnedit.onclick += self.btnedit_onclick, card
+                # Capture form submission
+                el.onsubmit += self.frm_onsubmit, el
+            else:
+                # If frm is None, add a card to the page so user is able
+                # to read entity values.
+                el = e.orm.card
+                card = el
 
+                # Subscribe the Edit button to self.btnedit_onclick.
+                # This allows user to get a <form> version of the card
+                # so the entity can be updated.
+                if btnedit := card.btnedit:
+                    el.btnedit.onclick += self.btnedit_onclick, card
+
+        self.instance = e
         self.main += el
