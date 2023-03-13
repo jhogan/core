@@ -11987,6 +11987,97 @@ class orm:
 
         return frm
 
+    # XXX:76756507 Looks like we need to change the existing orm.table
+    # to orm.tablename so we can claim the name `table` for the below
+    # property.
+    @property
+    def table1(self):
+        """ XXX
+        """
+        import dom
+        tbl    =  dom.table()
+        thead  =  dom.thead()
+        tr     =  dom.tr()
+
+        tbl    +=  thead
+        thead  +=  tr
+
+        rent = self.entity
+
+        names = list()
+        # The inheritance ascension loop
+        while rent:
+            
+            # Iterate over the mappings
+            for map in rent.orm.mappings:
+                name = map.name
+
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                if isinstance(map, foreignkeyfieldmapping):
+                    continue
+
+                if name in ('createdat', 'updatedat'):
+                    continue
+
+                if name in names:
+                    continue
+
+                names.append(name)
+
+
+                tr += dom.th(name)
+
+            # Ascend
+            rent = rent.orm.super
+
+
+        tbody = dom.tbody()
+        tbl += tbody
+
+        for e in self.instance:
+            tbody += e.orm.tr
+
+        return tbl
+
+    @property
+    def tr(self):
+        """ XXX
+        """
+        import dom
+        tr = dom.tr()
+
+        rent = self.entity
+        names = list()
+        # The inheritance ascension loop
+        while rent:
+            
+            # Iterate over the mappings
+            for map in rent.orm.mappings:
+                name = map.name
+
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                if isinstance(map, foreignkeyfieldmapping):
+                    continue
+
+                if name in ('createdat', 'updatedat'):
+                    continue
+
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                tr += dom.td(getattr(self.instance, name))
+
+            # Ascend
+            rent = rent.orm.super
+
+        return tr
+
     @property
     def card(self):
         """ Returns a read-only HTML representation of the entity. 
