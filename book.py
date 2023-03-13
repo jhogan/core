@@ -7626,16 +7626,16 @@ with book('Hacking Carapacian Core'):
           self.is_(orm.security().owner, bob)
 
         print('''
-          The other special user is found at `ecommerce.anonymous`. The
-          `anonymous` is the unauthenticated user. If a user has not
+          The other special user is found at `ecommerce.anonymous`. 
+          `anonymous` represents the unauthenticated user. If a user has not
           logged into a website for example, the `anonymous` user set to
           the current user.
 
           The `anonymous` user is useful for tracking user visitations
           to websites when no user is logged in. The accessibility
           methods mentioned above can be written to provide or deny
-          access to to some certain operations based on whether or not
-          the user is anonymous.
+          access to certain operations based on whether or not the user
+          is anonymous.
 
           We've covered the `orm.sudo` context manager. There are
           several other context managers that make working with the
@@ -7659,6 +7659,29 @@ with book('Hacking Carapacian Core'):
             
           # Assert that bob has been restored as the current user
           self.is_(bob, sec.user)
+
+        print('''
+          The final context manager is `orm.override`. By using
+          `orm.override`, you can cause the code `with` to be unaffected
+          by any constraints placed on it by accessibility properties.
+          For example, the `deletability` method of the `feedback option
+          prevented any user from being able to delete the `feedback`.
+          We can circumvent this by using the `orm.override` context
+          manager:
+        ''')
+
+        with listing('Using the `orm.override` context manager'):
+          # We expect an AuthorizationError if we delete a feedback
+          # object
+          self.expect(orm.AuthorizationError, lambda: fb.delete)
+
+          # We can get around this by using orm.override
+          with orm.override():
+            # Now we expect no exception
+            self.expect(None, lambda: fb.delete)
+
+          # Assert that the feedback was indeed deleted
+          self.expect(db.RecordNotFoundError, lambda: fb.orm.reloaded))
 
       with section('Authentication'):
         """
