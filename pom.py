@@ -2784,19 +2784,32 @@ class crud(page):
         the entity's values. This handler gives them that form.
         """
 
-        # Get the card and the entity's id
-        card = eargs.html.only
-        id = card.getattr('data-entity-id')
+        # Get the card or tr represeting the entity.
+        el = eargs.html.only
+
+        # Get the entity's id
+        id = el.getattr('data-entity-id')
 
         # Instantiate the orm.entity and store a reference to the
         # instance
-        e = self.entity(id)
+        # XXX Explain
+        e = self.entity.orm.entity(id)
         self.instance = e
 
         # Create a form and assign it to the eags.html so the browser
         # receives it
+
         frm = e.orm.form
-        eargs.html = frm
+        if isinstance(el, dom.tr):
+            tr = el
+            tr.remove('td')
+            td = dom.td()
+            td += frm
+            tr += td
+        elif isinstance(el, dom.form):
+            eargs.html = frm
+        else:
+            raise TypeError('Invalid element')
 
         # Subscribe the form's <button type="submit> to self.frm_onsubmit
         frm.onsubmit += self.frm_onsubmit, frm
@@ -2960,6 +2973,27 @@ class crud(page):
 
             # XXX:76756507 s/table1/table
             el = e.orm.table1
+
+            tds = el['td[data-entity-attribute=id]']
+
+            # XXX Explain
+            for td in tds:
+                menu = dom.menu()
+
+                # Edit
+                li = dom.li()
+                a = dom.a('Edit', href=self.path)
+                a.onclick += self.btnedit_onclick, td.parent
+                li += a
+                menu += li
+
+                # Quick
+                li = dom.li()
+                li += dom.a('Quick Edit')
+                menu += li
+
+                td += menu
+
         elif isinstance(self.entity, orm.entitymeta):
             if id:
                 if crud == 'create':
