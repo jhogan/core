@@ -4159,6 +4159,25 @@ class embed(element):
     def width(self, v):
         self.attributes['width'].value = v
 
+class menus(elements):
+    """ A class used to contain a collection of ``menu`` elements.
+    """
+
+class menu(element):
+    """ The <menu> HTML element is described in the HTML specification
+    as a semantic alternative to <ul>, but treated by browsers (and
+    exposed through the accessibility tree) as no different than <ul>.
+    It represents an unordered list of items (which are represented by
+    <li> elements).
+
+    Usage notes
+    -----------
+    The <menu> and <ul> elements both represent an unordered list of
+    items. The key difference is that <ul> primarily contains items for
+    display, while <menu> was intended for interactive items. The
+    related <menuitem> element has been deprecated.
+    """
+
 class meters(elements):
     """ A class used to contain a collection of ``embed`` elements.
     """
