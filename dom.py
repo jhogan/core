@@ -2310,6 +2310,11 @@ class element(entities.entity):
         """
         return self.attributes[attr].value
 
+    def setattr(self, attr, v):
+        """ XXX
+        """
+        self.attributes[attr].value = v
+
     def hasattr(self, attr):
         """ Returns True if this `element` has the attribute `attr` in
         its collection of attributes, False otherwise.
