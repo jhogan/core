@@ -460,7 +460,6 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(effort.requirements, *args, **kwargs)
 
-
     class search(pom.page):
         def main(self):
             self.main += dom.p('Search')

@@ -12032,7 +12032,6 @@ class orm:
             # Ascend
             rent = rent.orm.super
 
-
         tbody = dom.tbody()
         tbl += tbody
 
