@@ -12045,7 +12045,13 @@ class orm:
         """ XXX
         """
         import dom
+        inst = self.instance
         tr = dom.tr()
+
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+        tr.setattr('data-entity', e)
+        tr.setattr('data-entity-id', inst.id.hex)
 
         rent = self.entity
         names = list()
@@ -12070,7 +12076,9 @@ class orm:
 
                 names.append(name)
 
-                tr += dom.td(getattr(self.instance, name))
+                td = dom.td(getattr(self.instance, name))
+                td.setattr('data-entity-attribute', name)
+                tr += td
 
             # Ascend
             rent = rent.orm.super
