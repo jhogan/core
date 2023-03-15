@@ -825,18 +825,9 @@ function ajax(e){
                 }
 
                 // Parse the HTML we received into a DOM object.
-                els = parser.parseFromString(
-                    xhr.responseText, "text/html"
-                )
-
-                // Get the direct children under the <body> tag of the
-                // HTML. These are the HTML fragments that will replace
-                // current HTML fragments. Note that the HTML we
-                // received probably does not contain an <html> or
-                // <body> tag; `parser.parseFromString` adds these tags
-                // to the DOM it creates so we have to account for that
-                // when we extract the elements we are interested in.
-                els = els.querySelectorAll('html>body>*')
+                var temp = document.createElement('template')
+                temp.innerHTML = xhr.responseText
+                els = temp.content.children
 
                 // If a <main> tag was returned, we are doing an SPA
                 // page load.
