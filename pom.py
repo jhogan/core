@@ -2799,24 +2799,31 @@ class crud(page):
         frm = e.orm.form
         if isinstance(el, dom.tr):
             tr = el
-            tr.remove('td')
+            tds = tr.remove('td')
+
+            # XXX Add colspan
+            colspan = max(tds.count - 1, 1)
             td = dom.td()
             td += frm
             tr += td
+            target = tr
+
         elif isinstance(el, dom.form):
             eargs.html = frm
+            target = frm
+
         else:
             raise TypeError('Invalid element')
 
         # Subscribe the form's <button type="submit> to self.frm_onsubmit
-        frm.onsubmit += self.frm_onsubmit, frm
+        frm.onsubmit += self.frm_onsubmit, target
 
         # Create a Cancel button
         btncancel = dom.button('Cancel')
 
         # Subscribe the button to btncancel_onclick which will discard
         # the `form` and return a `card`.
-        btncancel.onclick += self.btncancel_onclick, frm
+        btncancel.onclick += self.btncancel_onclick, target
 
         # Add button to `form`
         frm += btncancel
@@ -2848,50 +2855,87 @@ class crud(page):
         button.
         """
         # Get the <form> that was canceled.
-        frm = eargs.html.only
+        el = eargs.html.only
 
         # Get the entity's hex id from the form 
         # (<input hidden name="id" # value="A1B2C3...")
-        id = frm['input[name=id]'].only.value
+        id = el['input[name=id]'].only.value
 
         # Load the orm.entity given the id from the <form>
-        e = self.entity(id)
+        e = self.entity.orm.entity(id)
 
-        # Create a card article to return to the browser
-        card = e.orm.card
+        if isinstance(el, dom.tr):
+            tr = e.orm.tr
+            eargs.html = tr
 
-        # Return card article to browser
-        eargs.html = card
+            td = tr['td[data-entity-attribute=id]'].only
 
-        # Subscribet the card's Edit button's onclick event to
-        # self.btnedit
-        card.btnedit.onclick += self.btnedit_onclick, card
+            # XXX Explain
+            # XXX:ce60836a Put in a reusuable method
+            menu = dom.menu()
 
-        ''' Add crud=retrieve to url '''
+            # Edit
+            li = dom.li()
+            a = dom.a('Edit', href=self.path)
 
-        # Get the requested url
-        url = www.application.current.request.url
+            a.onclick += self.btnedit_onclick, td.parent
+            li += a
+            menu += li
 
-        # Change its query string params setting `id` and `crud`
-        # TODO: 872fd252
-        qs = url.qs
-        qs['id'] = e.id.hex
-        qs['crud'] = 'retrieve'
-        url.qs = qs
+            # Quick
+            li = dom.li()
+            li += dom.a('Quick Edit')
+            menu += li
 
-        # Instruct the browser to set the URL bar to `url`
-        instrs = instructions()
-        instrs += set('url', str(url))
+            td += menu
 
-        # Add `instructions` to `card`
-        card += instrs
+        elif isinstance(el, dom.form):
+            # Create a card article to return to the browser
+            card = e.orm.card
+
+            # Return card article to browser
+            eargs.html = card
+
+            # Subscribet the card's Edit button's onclick event to
+            # self.btnedit
+            card.btnedit.onclick += self.btnedit_onclick, card
+
+            ''' Add crud=retrieve to url '''
+
+            # Get the requested url
+            url = www.application.current.request.url
+
+            # XXX Update url for dom.tr
+
+            # Change its query string params setting `id` and `crud`
+            # TODO: 872fd252
+            qs = url.qs
+            qs['id'] = e.id.hex
+            qs['crud'] = 'retrieve'
+            url.qs = qs
+
+            # Instruct the browser to set the URL bar to `url`
+            instrs = instructions()
+            instrs += set('url', str(url))
+
+            # Add `instructions` to `card`
+            card += instrs
 
     def frm_onsubmit(self, src, eargs):
         """ An event handler to capture the submission of the <form> for
         this `crud` page.
         """
         # Get the <form> that was submitted
-        frm = eargs.html.only
+
+        el = eargs.html.only
+
+        # XXX Explain
+        tr = None
+        if isinstance(el, dom.tr):
+            tr = el
+            frm = tr['form'].only
+        elif isinstance(el, dom.frm):
+            frm = el
 
         # Get the input values
 
@@ -2903,13 +2947,15 @@ class crud(page):
         id = inps['[name=id]'].only.value
         if id:
             try:
-                e = self.entity(id)
+                # XXX Explain
+                e = self.entity.orm.entity(id)
             except db.RecordNotFoundError:
                 pass
 
         # If `entity` with `id` was not found above, create a new one
         if not e:
-            e = self.entity()
+            # XXX Explain
+            e = self.entity.orm.entity()
 
         # Assig values from the <form>'s <input>s to the enity's
         # attributes
@@ -2931,32 +2977,58 @@ class crud(page):
         # Save entity to database
         e.save()
 
-        # Create a `card` to return to the browser
-        card = e.orm.card
+        if tr:
+            tr = e.orm.tr
 
-        eargs.html = card
+            tds = tr['td[data-entity-attribute=id]']
+            eargs.html = tr
 
-        # Subscribe the onclick event of the card's edit button to
-        # self.btnedit_onclick
-        card.btnedit.onclick += self.btnedit_onclick, card
+            # XXX:ce60836a 
+            for td in tds:
+                menu = dom.menu()
 
-        # Get the requested url
-        url = www.application.current.request.url
+                # Edit
+                li = dom.li()
+                a = dom.a('Edit', href=self.path)
+                a.onclick += self.btnedit_onclick, td.parent
+                li += a
+                menu += li
 
-        # Update the id and crud parameters in the browse to the
-        # appropriate values.
-        # TODO: 872fd252
-        qs = url.qs
-        if qs.get('id') != e.id.hex:
-            qs['id'] = e.id.hex
-            qs['crud'] = 'retrieve'
-            url.qs = qs
+                # Quick
+                li = dom.li()
+                li += dom.a('Quick Edit')
+                menu += li
 
-            # Instruct the browser to update the URL bar to `url`.
-            instrs = instructions()
-            instrs += set('url', str(url))
+                td += menu
+        else:
+            # Create a `card` to return to the browser
+            card = e.orm.card
 
-            card += instrs
+            eargs.html = card
+
+            # Subscribe the onclick event of the card's edit button to
+            # self.btnedit_onclick
+            card.btnedit.onclick += self.btnedit_onclick, card
+
+            # Get the requested url
+            url = www.application.current.request.url
+
+            # Update the id and crud parameters in the browse to the
+            # appropriate values.  TODO: 872fd252
+
+            # XXX Update url for dom.tr
+
+            qs = url.qs
+            if qs.get('id') != e.id.hex:
+                qs['id'] = e.id.hex
+                qs['crud'] = 'retrieve'
+                url.qs = qs
+
+                # Instruct the browser to update the URL bar to `url`.
+                instrs = instructions()
+                instrs += set('url', str(url))
+
+                card += instrs
 
     def main(self, id:str=None, crud:str='retrieve'):
         """ The main handler for this `crud` page.
