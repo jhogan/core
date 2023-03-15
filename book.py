@@ -7398,6 +7398,32 @@ with book('Hacking Carapacian Core'):
             `party.public` entity as their proprietor. 
           ''')
 
+      with section('Authentication'):
+        print('''
+          Currently, the framework provides support for basic password
+          authorization. The `pom.site` class has an `authenticate`
+          method which takes a username and a password. The user name is
+          used to search for an `ecommerce.user` entity. If found, the
+          `ecommerce.user` has an `ispassword` method which hashes the
+          provide password and compares it to the hashed password in the
+          entity's corresponding table. If `user.ispassword` tells
+          `site.authenticate` that the supplied password is correct, a
+          login form can be written to generate a JWT for the user and
+          set as a cookie in the user's browser. The test
+          `pom.page.it_authenticates` has an example how how to do this.
+
+          Once the user has been authenticated, the `user` object is set
+          to `orm.security().user`. The ORM will use this object to
+          enforce authorization restrictions on the user as you will see
+          in the next chapter.
+
+          Note that `orm.security().user` and `orm.security().owner` are
+          synonyms. Be mindful of that as you read the next section. The
+          reason for this is that a user is the **owner** of any entity
+          it creates so in some contexts, it makes sense to refer to the
+          current logged-in ``user`` as the current ``owner``.
+        ''')
+
       with section('Authorization', id='54014644'):
         """ Similar to the `proprietor` attribute that all entity object
         have, there is also the `owner` attribute. This attribute is
@@ -7662,12 +7688,12 @@ with book('Hacking Carapacian Core'):
 
         print('''
           The final context manager is `orm.override`. By using
-          `orm.override`, you can cause the code `with` to be unaffected
-          by any constraints placed on it by accessibility properties.
-          For example, the `deletability` method of the `feedback option
-          prevented any user from being able to delete the `feedback`.
-          We can circumvent this by using the `orm.override` context
-          manager:
+          `orm.override`, you can cause the code in the `with` block to
+          be unaffected by any constraints placed on it by accessibility
+          properties.  For example, the `deletability` method of the
+          `feedback option preventes any user from being able to delete
+          the `feedback`.  We can circumvent this by using the
+          `orm.override` context manager:
         ''')
 
         with listing('Using the `orm.override` context manager'):
