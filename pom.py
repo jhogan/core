@@ -971,6 +971,8 @@ function wake(els){
      * assigns the data to the <form>'s elements. Once complete, the
      * outerHTML will contain the values that the user has put into the
      * form fields.
+
+     XXX Update comments
     */
 
     for (var el of els){
@@ -2796,6 +2798,7 @@ class crud(page):
         # Create a form and assign it to the eags.html so the browser
         # receives it
 
+        # XXX Explain
         frm = e.orm.form
         if isinstance(el, dom.tr):
             tr = el
@@ -2833,6 +2836,8 @@ class crud(page):
         # Get the url that the request was made to
         url = www.application.current.request.url
 
+        # XXX Ensure URL is update correctly when tr
+
         # Set the id and crud parameters in the queny sting to
         # appropriate values
         # TODO: 872fd252
@@ -2854,6 +2859,8 @@ class crud(page):
         """ An event handler to capture the user clicking the Cancel
         button.
         """
+        # XXX Update comments
+
         # Get the <form> that was canceled.
         el = eargs.html.only
 
@@ -2957,7 +2964,7 @@ class crud(page):
             # XXX Explain
             e = self.entity.orm.entity()
 
-        # Assig values from the <form>'s <input>s to the enity's
+        # Assign values from the <form>'s <input>s to the entity's
         # attributes
         for inp in inps:
             if isinstance(inp, dom.textarea):
@@ -3046,12 +3053,15 @@ class crud(page):
             tds = el['td[data-entity-attribute=id]']
 
             # XXX Explain
+            # XXX:ce60836a Put in a reusuable method
             for td in tds:
                 menu = dom.menu()
 
                 # Edit
                 li = dom.li()
                 a = dom.a('Edit', href=self.path)
+
+                # XXX Shoud we use td.closest('tr')?
                 a.onclick += self.btnedit_onclick, td.parent
                 li += a
                 menu += li
