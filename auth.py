@@ -15,6 +15,7 @@ import primative
 import www
 
 class jwt(entity):
+    # TODO Comment class
     def __init__(self, tok=None, ttl=24):
         super().__init__()
         self._exp = datetime.utcnow() + timedelta(hours=ttl)
@@ -24,9 +25,9 @@ class jwt(entity):
         self.onaftervaluechange += self._self_onaftervaluechange
 
     def _self_onaftervaluechange(self, src, eargs):
-        # If a property is changes, set _token to None so self.token recreates
-        # the token. Otherwise, we would get the same token despite a change a
-        # property.
+        # If a property is changes, set _token to None so self.token
+        # recreates the token. Otherwise, we would get the same token
+        # despite a change a property.
         self._token = None
         
     @property
@@ -84,10 +85,9 @@ class jwt(entity):
         """ Create a JWT for the ``usr`` and return a Set-Cookie header.
         """
 
-        # TODO Hours (ttl) should come from the config file at the
-        # site "level" of the config file. Given that,
-        # the site object would have the ability to issue
-        # jwts instead of using the auth.jwt class itself:
+        # TODO Hours (ttl) should come from a constant in a site's
+        # module Given that, the site object would have the ability to
+        # issue jwts instead of using the auth.jwt class itself:
         #
         #     t = self.site.jwt()
 
@@ -135,4 +135,3 @@ class jwt(entity):
 
     def __str__(self):
         return  self.token
-        
