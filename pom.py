@@ -787,8 +787,8 @@ function ajax(e){
     }else{
         // Concatenate the fragment's HTML
         html = ''
+        wake(els)
         for(el of els){
-            wake(el)
             html += el.outerHTML
         }
 
@@ -970,7 +970,7 @@ function add_listeners(el){
     }
 }
 
-function wake(el){
+function wake(els){
     /* Make the element (typically a <form>) fully aware of the values
      * that the user has put in its form fields.
      * 
@@ -982,37 +982,43 @@ function wake(el){
      * form fields.
     */
 
-    if (el.tagName != 'FORM'){
-        return
-    }
-
-    // Get all elements of the <form> with a `name` attribute
-    var els = el.querySelectorAll('[name]')
-
     for (var el of els){
-        
-        // Append a text node to <textarea> elements containing the data
-        // in its .value property.
-        if (el.tagName == 'TEXTAREA'){
+        // Recurse
+        wake(el.children)
+
+        if (el.tagName != 'FORM'){
+            continue
+        }
+
+        // Get all elements of the <form> with a `name` attribute
+        var els = el.querySelectorAll('[name]')
+
+        for (var el of els){
             
-            // Create text node before.
-            // NOTE Do this first because removing the child nodes
-            // affects el.value in some cases.
-            var nd = document.createTextNode(el.value)
+            // Append a text node to <textarea> elements containing the data
+            // in its .value property.
+            if (el.tagName == 'TEXTAREA'){
+                
+                // Create text node before.
+                // NOTE Do this first because removing the child nodes
+                // affects el.value in some cases.
+                var nd = document.createTextNode(el.value)
 
-            // Clear the current text nodes
-            while(el.firstChild){
-                el.removeChild(el.lastChild)
+                // Clear the current text nodes
+                while(el.firstChild){
+                    el.removeChild(el.lastChild)
+                }
+
+                // Append
+                el.appendChild(nd)
             }
+            if (el.tagName == 'INPUT'){
+                el.setAttribute('value', el.value)
+            }
+            // TODO Add support for other input elements like checkboxes,
+            // dropdown lists, etc.
+        }
 
-            // Append
-            el.appendChild(nd)
-        }
-        if (el.tagName == 'INPUT'){
-            el.setAttribute('value', el.value)
-        }
-        // TODO Add support for other input elements like checkboxes,
-        // dropdown lists, etc.
     }
 }
 
