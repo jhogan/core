@@ -3182,15 +3182,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         p1, p2 = _p1, _p2
 
         if p2 is None and p1 != '':
-            msg = '''
-                Missing arguments collection.  Be sure to add arguments
-                in the *args portion of the constructor.  If no args are
-                needed for the query, just pass an empty tuple to
-                indicate that none are needed.  Note that this is an
-                opportunity to evaluate whether or not you are opening
-                up an SQL injection attact vector.
-            '''
-            raise ValueError(textwrap.dedent(msg).lstrip())
+            # If you encounter this exception, be sure to add arguments
+            # in the *args portion of the constructor.  If no args are
+            # needed for the query, just pass an empty tuple to indicate
+            # that none are needed.  Note that this is an opportunity to
+            # evaluate whether or not you are opening up an SQL
+            # injection attact vector.
+            raise ValueError('Missing arguments collection')
 
         args = list(args)
         for k, v in kwargs.items():
