@@ -3075,7 +3075,6 @@ class crud(page):
                     id = td.parent.getattr('data-entity-id')
 
                     # Use os.path.join
-                    B()
                     path = self.spa.path + det().path
 
                     path += f'?id={id}&crud=update'
