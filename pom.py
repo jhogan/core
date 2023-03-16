@@ -2726,7 +2726,9 @@ class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete an given `orm.entity`.
     """
-    def __init__(self, e, name=None, pgs=None, *args, **kwargs):
+    def __init__(self, 
+        e, name=None, pgs=None, detail=None, *args, **kwargs
+    ):
         """ Create a `crud` page object. 
 
         :param: e orm.entitymeta: An `orm.entity` class reference an
@@ -2736,6 +2738,7 @@ class crud(page):
         :param: name str: The name of the page.
         """
         self.entity     =  e
+        self.detail    =  detail
         self._instance  =  None
         self._form      =  None
         super().__init__(name=name, pgs=None, *args, **kwargs)
@@ -3057,18 +3060,29 @@ class crud(page):
             for td in tds:
                 menu = dom.menu()
 
-                # Edit
+                if det := self.detail:
+                    # Edit
+                    li = dom.li()
+
+
+                    id = td.parent.getattr('data-entity-id')
+
+                    # Use os.path.join
+                    B()
+                    path = self.spa.path + det().path
+
+                    path += f'?id={id}&crud=update'
+                    a = dom.a('Edit', href=path)
+                    li += a
+                    menu += li
+
+                # Quick
                 li = dom.li()
-                a = dom.a('Edit', href=self.path)
+                a = dom.a('Quick Edit', href=self.path)
 
                 # XXX Shoud we use td.closest('tr')?
                 a.onclick += self.btnedit_onclick, td.parent
                 li += a
-                menu += li
-
-                # Quick
-                li = dom.li()
-                li += dom.a('Quick Edit')
                 menu += li
 
                 td += menu

@@ -458,7 +458,14 @@ class ticketsspa(pom.spa):
 
     class backlog(pom.crud):
         def __init__(self, *args, **kwargs):
-            super().__init__(effort.requirements, *args, **kwargs)
+
+            super().__init__(
+                effort.requirements, 
+                detail = ticketsspa.ticket,
+                *args, **kwargs
+            )
+
+
 
     class search(pom.page):
         def main(self):
