@@ -1720,11 +1720,18 @@ class page(dom.html):
         times has the same effect on the `page` object as calling it
         once.
         """
-        mnus = self.header.menus
-        for a in mnus['a']:
+
+        # XXX Remove
+        #mnus = self.header.menus
+        #for a in mnus['a']:
+        for a in self['a']:
 
             # If the anchor has already been lingualized
             if a.href.startswith(f'/{lang}/'):
+                continue
+
+            # Only lingualize internal links # XXX Experimental
+            if not a.href.startswith('/'):
                 continue
 
             href  =  a.href
