@@ -7407,10 +7407,12 @@ with book('Hacking Carapacian Core'):
           `ecommerce.user` has an `ispassword` method which hashes the
           provide password and compares it to the hashed password in the
           entity's corresponding table. If `user.ispassword` tells
-          `site.authenticate` that the supplied password is correct, a
-          login form can be written to generate a JWT for the user and
-          set as a cookie in the user's browser. The test
-          `pom.page.it_authenticates` has an example how how to do this.
+          `site.authenticate` that the supplied password is correct, we
+          know that the user has provided the correct password.
+          A login form can be written to use this information to
+          generate a JWT for the user and it set as a cookie in the
+          user's browser. The `pom.page.it_authenticates` illustrates
+          how to do this.
 
           Once the user has been authenticated, the `user` object is set
           to `orm.security().user`. The ORM will use this object to
@@ -7419,9 +7421,10 @@ with book('Hacking Carapacian Core'):
 
           Note that `orm.security().user` and `orm.security().owner` are
           synonyms. Be mindful of that as you read the next section. The
-          reason for this is that a user is the **owner** of any entity
-          it creates so in some contexts, it makes sense to refer to the
-          current logged-in ``user`` as the current ``owner``.
+          reason for this is that the current user/owner is the
+          **owner** of any entity it creates so in some contexts, it
+          makes sense to refer to the current logged-in ``user`` as the
+          current ``owner``.
         ''')
 
       with section('Authorization', id='54014644'):
@@ -7654,8 +7657,8 @@ with book('Hacking Carapacian Core'):
         print('''
           The other special user is found at `ecommerce.anonymous`. 
           `anonymous` represents the unauthenticated user. If a user has not
-          logged into a website for example, the `anonymous` user set to
-          the current user.
+          logged into a website for example, the current user will be
+          set to `anonymous`.
 
           The `anonymous` user is useful for tracking user visitations
           to websites when no user is logged in. The accessibility
@@ -7690,15 +7693,15 @@ with book('Hacking Carapacian Core'):
           The final context manager is `orm.override`. By using
           `orm.override`, you can cause the code in the `with` block to
           be unaffected by any constraints placed on it by accessibility
-          properties.  For example, the `deletability` method of the
-          `feedback option preventes any user from being able to delete
+          properties.  For example, the `deletability` property of the
+          `feedback` option prevents any user from being able to delete
           the `feedback`.  We can circumvent this by using the
           `orm.override` context manager:
         ''')
 
         with listing('Using the `orm.override` context manager'):
           # We expect an AuthorizationError if we delete a feedback
-          # object
+          # object as bob
           self.expect(orm.AuthorizationError, lambda: fb.delete)
 
           # We can get around this by using orm.override
@@ -7706,20 +7709,8 @@ with book('Hacking Carapacian Core'):
             # Now we expect no exception
             self.expect(None, lambda: fb.delete)
 
-          # Assert that the feedback was indeed deleted
-          self.expect(db.RecordNotFoundError, lambda: fb.orm.reloaded))
-
-      with section('Authentication'):
-        """
-          * Anonymous owner
-          * Root user
-          * sudo context manager
-          * su context manager
-          * orm.security class
-          * Define the override() context manager
-          * creatability, retrievability, updatability, deletability
-        """
-
+            # Assert that the feedback was indeed deleted
+            self.expect(db.RecordNotFoundError, lambda: fb.orm.reloaded))
 
     with section('Validation', id='012b0632'):
       ...
