@@ -978,8 +978,9 @@ function add_listeners(el){
 }
 
 function wake(els){
-    /* Make the element (typically a <form>) fully aware of the values
-     * that the user has put in its form fields.
+    /* Recursive through each element in `els` seaching form <form>'s.
+     * When found, makes them fully aware of the values that the user
+     * has put in its form fields.
      * 
      * Wake solves sort of an odd problem. When user's enter data into
      * form fields, that data is not immediatly accessable in the HTML
@@ -987,14 +988,15 @@ function wake(els){
      * assigns the data to the <form>'s elements. Once complete, the
      * outerHTML will contain the values that the user has put into the
      * form fields.
-
-     XXX Update comments
     */
 
+    // Iterate
     for (var el of els){
+
         // Recurse
         wake(el.children)
 
+        // Ignore non <form> elements
         if (el.tagName != 'FORM'){
             continue
         }
@@ -1003,9 +1005,8 @@ function wake(els){
         var els = el.querySelectorAll('[name]')
 
         for (var el of els){
-            
-            // Append a text node to <textarea> elements containing the data
-            // in its .value property.
+            // Append a text node to <textarea> elements containing the
+            // data in its .value property.
             if (el.tagName == 'TEXTAREA'){
                 
                 // Create text node before.
@@ -1027,7 +1028,6 @@ function wake(els){
             // TODO Add support for other input elements like checkboxes,
             // dropdown lists, etc.
         }
-
     }
 }
 
@@ -2816,29 +2816,50 @@ class crud(page):
         id = el.getattr('data-entity-id')
 
         # Instantiate the orm.entity and store a reference to the
-        # instance
-        # XXX Explain
+        # instance Use `orm.entity` to ensure we get the *singural*
+        # entity class which we will construct with the id.
         e = self.entity.orm.entity(id)
         self.instance = e
 
         # Create a form and assign it to the eags.html so the browser
         # receives it
 
-        # XXX Explain
+        # Get the <form> representation of the entity
         frm = e.orm.form
+
+        # If the browser sent us a <tr> add a new <td> to the <tr>. The
+        # <td> will contain the new <form>. This is the "quick edit"
+        # <form>.
         if isinstance(el, dom.tr):
+            # Assign to tr for clarity
             tr = el
+
+            # Remove the <td>'s are in the the <tr>
             tds = tr.remove('td')
 
-            # XXX Add colspan
+            # Create a colspan so the new form will span the length of
+            # the <tr>
             colspan = max(tds.count - 1, 1)
-            td = dom.td()
+
+            # Create new <td>
+            td = dom.td(colspan=colspan)
+
+            # Add <form> to <td>
             td += frm
+
+            # Add <td> to <tr>
             tr += td
+
+            # Make the <tr> the target of event subscriptions below
             target = tr
 
+        # If the browser sent us a <form>...
         elif isinstance(el, dom.form):
+            # Return the new form
             eargs.html = frm
+
+            # Make the new <form> the target of the following event
+            # subscriptions
             target = frm
 
         else:
@@ -2862,7 +2883,7 @@ class crud(page):
         # Get the url that the request was made to
         url = www.application.current.request.url
 
-        # XXX Ensure URL is update correctly when tr
+        # XXX Ensure URL is updated correctly when tr
 
         # Set the id and crud parameters in the queny sting to
         # appropriate values
@@ -2882,11 +2903,9 @@ class crud(page):
         frm += instrs
 
     def btncancel_onclick(self, src, eargs):
-        """ An event handler to capture the user clicking the Cancel
-        button.
+        """ An event handler to be invoked when the user clicks the
+        Cancel button.
         """
-        # XXX Update comments
-
         # Get the <form> that was canceled.
         el = eargs.html.only
 
@@ -2897,25 +2916,35 @@ class crud(page):
         # Load the orm.entity given the id from the <form>
         e = self.entity.orm.entity(id)
 
+        # If the browser sent us a <tr>
         if isinstance(el, dom.tr):
+            # Get the <tr> form the newly instantiated entity
             tr = e.orm.tr
+
+            # Return the new <tr> to the browser
             eargs.html = tr
 
+            # Get the <td> for the entity's id. We will add the <menu>
+            # to that <td>
             td = tr['td[data-entity-attribute=id]'].only
 
-            # XXX Explain
-            # XXX:ce60836a Put in a reusuable method
+            # Create a <menu>
             menu = dom.menu()
 
-            # Edit
+            # Create the "Edit" links
             li = dom.li()
             a = dom.a('Edit', href=self.path)
 
+            # When user clicks the Edit link, the btnedit_onclick
+            # handler will be invoked
             a.onclick += self.btnedit_onclick, td.parent
+
+            # Add <a> to <li>, then add that to <menu>
             li += a
             menu += li
 
-            # Quick
+            # Create the Quick Edit links
+            # XXX Complete
             li = dom.li()
             li += dom.a('Quick Edit')
             menu += li
