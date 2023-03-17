@@ -3087,13 +3087,10 @@ class crud(page):
                     # Edit
                     li = dom.li()
 
-
                     id = td.parent.getattr('data-entity-id')
 
-                    # Use os.path.join
-                    path = self.spa.path + det().path
+                    path = f'{det.path}?id={id}&crud=update'
 
-                    path += f'?id={id}&crud=update'
                     a = dom.a('Edit', href=path)
                     li += a
                     menu += li
