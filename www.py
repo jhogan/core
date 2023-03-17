@@ -908,12 +908,18 @@ class request(entities.entity):
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
+                # If the page is a SPA page, get the <main> tag add add
+                # the `spa-data-path` attribute to it.
+                # TODO:2ef451ff We may only need to do this in the 
+                # after the following conditional since this logic is
+                # here twice.
                 if pg.isspa:
                     main = pg['html>body>main'].only
                     path = f'/{self.language}{pg.path}'
                     main.attributes += 'spa-data-path', path
 
-                # Get the main SPA application page for the page.
+                # Get the main SPA application page for the page if
+                # there is one.
                 if spa := pg.spa:
                     
                     # Clear page. See the comment above on why we clear.
@@ -927,16 +933,18 @@ class request(entities.entity):
                     spa.main = pg.main
 
                     # We want to return the SPA page, so make it the
-                    # `pg` so it's contents will be returned by the
-                    # following code.
+                    # `pg` so its contents will be returned by the
+                    # code below.
                     pg = spa
 
+                    # TODO:2ef451ff
                     main = pg['html>body>main'].only
                     path = f'/{self.language}{pg.path}'
-
                     main.attributes += 'spa-data-path', path
 
                 if not self.isevent:
+                    # Add the language code to any anchors, i.e., add
+                    # the 'en' to /en/path/to/page.
                     pg._lingualize(self.language)
 
                 if not self.ishead:

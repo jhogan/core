@@ -691,7 +691,13 @@ class site(asset.asset):
 function is_nav_link(e){
     /* Returns true if the element `e` is a "nav link",
     i.e., it is an anchor tag nested within a <nav>.
+
+    XXX Update comments
+
     */
+
+    // XXX Use var/let
+
 
     rent = e.parentNode
 
@@ -1720,6 +1726,9 @@ class page(dom.html):
         times has the same effect on the `page` object as calling it
         once.
         """
+
+        # XXX Why do paths double up with this change, e.g.,
+        # en/ticketsspa/ticketsspa/backlog`
 
         # XXX Remove
         #mnus = self.header.menus
