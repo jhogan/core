@@ -2733,9 +2733,7 @@ class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete an given `orm.entity`.
     """
-    def __init__(self, 
-        e, name=None, pgs=None, detail=None, *args, **kwargs
-    ):
+    def __init__(self, e, name=None, pgs=None, *args, **kwargs):
         """ Create a `crud` page object. 
 
         :param: e orm.entitymeta: An `orm.entity` class reference an
@@ -2745,7 +2743,6 @@ class crud(page):
         :param: name str: The name of the page.
         """
         self.entity     =  e
-        self.detail    =  detail
         self._instance  =  None
         self._form      =  None
         super().__init__(name=name, pgs=None, *args, **kwargs)
