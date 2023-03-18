@@ -729,17 +729,12 @@ function is_nav_link(e){
     return false
 }
 
+function is_page_link(e){
     var main = document.querySelector('main')
     var spa_path = main.getAttribute('spa-data-path')
     var href = e.getAttribute('href')
-    href = href.substring(3)
 
-    if (href.startsWith(spa_path)){
-        return true;
-    }
-
-
-    return false
+    return href.startsWith(spa_path)
 }
 
 function ajax(e){
