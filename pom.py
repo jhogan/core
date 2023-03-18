@@ -978,6 +978,19 @@ function add_listeners(el){
             el1.addEventListener(trig, ajax)
         }
     }
+
+    var main = document.getElementsByTagName('main')[0]
+    var spa_path = main.getAttribute('spa-data-path')
+
+    if(spa_path){
+        var sels = 'a[href^="' + spa_path + '"]'
+        sels += ':not([data-click-handler])'
+        var as = document.querySelectorAll(sels)
+        for (var a of as){
+            a.addEventListener('click', ajax)
+        }
+    }
+
 }
 
 function wake(els){
