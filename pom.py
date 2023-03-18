@@ -749,6 +749,8 @@ function ajax(e){
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
+    var ispg = !isnav && is_page_link(src)
+
     var nav = src.closest('nav');
 
     // If the element being clicked is a nav link
@@ -798,6 +800,9 @@ function ajax(e){
 
     // If the user clicked a nav link
     if (isnav){
+        pg = src.getAttribute('href')
+    }else if (ispg){
+        html = ''
         pg = src.getAttribute('href')
     }else{
         // Concatenate the fragment's HTML
