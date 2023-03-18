@@ -833,10 +833,6 @@ function ajax(e){
 
             // If success...
             if (this.status < 400){
-
-                // Parse the HTML response
-                var parser = new DOMParser()
-
                 // If no HTML was returned from the XHR request, we can
                 // return. Usually, events will return HTML, however it
                 // possible that in some cases they will choose not to.
