@@ -960,7 +960,10 @@ function add_listeners(el){
     /* Takes an element `el` and examins it for any
      * data-{trigger}-handler attributes. Uses this information to
      * attach el to event the `ajax` event handler.
+
+     XXX Update comments
     */
+
     var rent
     if(rent = el.parentElement){
         el = rent
