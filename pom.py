@@ -711,19 +711,23 @@ function is_nav_link(e){
         rent = rent.parentNode
     }
 
-    if (!found) return false
+    if (found){
 '''
 
         r += f'''
-    as = rent.querySelectorAll('{page.IsNavSelector}')
+        as = rent.querySelectorAll('{page.IsNavSelector}')
 '''
 
         r += '''
-    for(a of as){
-        if (a === e){
-            return true
+        for(a of as){
+            if (a === e){
+                return true
+            }
         }
     }
+
+    return false
+}
 
     var main = document.querySelector('main')
     var spa_path = main.getAttribute('spa-data-path')
