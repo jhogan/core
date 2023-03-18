@@ -730,6 +730,13 @@ function is_nav_link(e){
 }
 
 function is_page_link(e){
+    /* Returns true if the user clicked a page link, false otherwise.
+
+    A page link as an anchor that links to another, internal page in the
+    SPA application. The intention of clicking one in to navigate to the
+    the page through an xhr call. The page's HTML is put into the
+    existing <main> tag replacing <main>'s existing content.
+    */
     var main = document.querySelector('main')
     var spa_path = main.getAttribute('spa-data-path')
     var href = e.getAttribute('href')
@@ -749,6 +756,7 @@ function ajax(e){
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
+    // Is the element a page link
     var ispg = !isnav && is_page_link(src)
 
     var nav = src.closest('nav');
@@ -801,6 +809,8 @@ function ajax(e){
     // If the user clicked a nav link
     if (isnav){
         pg = src.getAttribute('href')
+
+    // If the user clicked a page link
     }else if (ispg){
         html = ''
         pg = src.getAttribute('href')
@@ -959,9 +969,9 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 function add_listeners(el){
     /* Takes an element `el` and examins it for any
      * data-{trigger}-handler attributes. Uses this information to
-     * attach el to event the `ajax` event handler.
-
-     XXX Update comments
+     * attach el to event the `ajax` event handler. Additionally, if
+     * this is an SPA application, page links are sought and their
+     * `click` events are subscribed to the the `ajax` handler.
     */
 
     var rent
@@ -979,18 +989,24 @@ function add_listeners(el){
         }
     }
 
+    // Get page's <main>
     var main = document.getElementsByTagName('main')[0]
+
+    // Get <main>'s spa-data-path attribute
     var spa_path = main.getAttribute('spa-data-path')
 
+    // If this is a spa page
     if(spa_path){
+        // Search for page links
         var sels = 'a[href^="' + spa_path + '"]'
         sels += ':not([data-click-handler])'
         var as = document.querySelectorAll(sels)
+
+        // Subscribet
         for (var a of as){
             a.addEventListener('click', ajax)
         }
     }
-
 }
 
 function wake(els){
@@ -3007,32 +3023,41 @@ class crud(page):
 
         el = eargs.html.only
 
-        # XXX Explain
         tr = None
+
+        # If browser sent a <tr>
         if isinstance(el, dom.tr):
             tr = el
+
+            # The <form> that is being submitted will be in the <tr>
+            # that the browser sent. Obtain that so we can persist its
+            # values
             frm = tr['form'].only
+
+        # If browser sent a <form>
         elif isinstance(el, dom.frm):
+            # Get the form so we can persist its values
             frm = el
 
         # Get the input values
-
         inps = frm['input, textarea']
 
         # Use the id input (<input name=id>) to get the entity's id. Use
         # that id to try to load the entity.
         e = None
+
+        # Get the id from the the id <input>
         id = inps['[name=id]'].only.value
+
         if id:
             try:
-                # XXX Explain
+                # Load the entity
                 e = self.entity.orm.entity(id)
             except db.RecordNotFoundError:
                 pass
 
         # If `entity` with `id` was not found above, create a new one
         if not e:
-            # XXX Explain
             e = self.entity.orm.entity()
 
         # Assign values from the <form>'s <input>s to the entity's
@@ -3061,7 +3086,6 @@ class crud(page):
             tds = tr['td[data-entity-attribute=id]']
             eargs.html = tr
 
-            # XXX:ce60836a 
             for td in tds:
                 menu = dom.menu()
 
@@ -3082,6 +3106,7 @@ class crud(page):
             # Create a `card` to return to the browser
             card = e.orm.card
 
+            # Return card to browser
             eargs.html = card
 
             # Subscribe the onclick event of the card's edit button to
@@ -3114,6 +3139,9 @@ class crud(page):
         # Instantiate the entity that this crud page operates on
 
         frm = False
+
+        # If the entity we are working with is a collection, load the
+        # collection then return it as a <table>.
         if isinstance(self.entity, orm.entitiesmeta):
             # XXX Replace `all` with an instantiation with arguments
             e = self.entity.orm.all
@@ -3144,13 +3172,16 @@ class crud(page):
                 li = dom.li()
                 a = dom.a('Quick Edit', href=self.path)
 
-                # XXX Shoud we use td.closest('tr')?
+                # XXX Should we use td.closest('tr')?
                 a.onclick += self.btnedit_onclick, td.parent
                 li += a
                 menu += li
 
                 td += menu
 
+        # If the entity we are working with is an individual, load the
+        # entity by id then return a <form> or card (<article>) with the
+        # entity's contents.
         elif isinstance(self.entity, orm.entitymeta):
             if id:
                 if crud == 'create':
@@ -3163,13 +3194,13 @@ class crud(page):
 
                 elif crud == 'update':
                     # If CRUD is 'update' and we have an id, we want to
-                    # send back a form so user can update an entity
+                    # send back a form so users can update an entity
                     # object.
                     frm = True
             else:
                 if crud == 'create':
                     # If CRUD is 'create' and we have no id, we want to
-                    # send back a blank form so user can create an
+                    # send back a blank <form> so the user can create an
                     # entity object.
                     frm = True
 
@@ -3183,7 +3214,9 @@ class crud(page):
                         'Cannot create when given an id'
                     )
 
+            # Load entity
             e = self.entity(id)
+
             if frm:
                 # If frm is True, add a <form> for the entity to the
                 # page's <main>
@@ -3204,4 +3237,7 @@ class crud(page):
                     el.btnedit.onclick += self.btnedit_onclick, card
 
         self.instance = e
+
+        # Add whichever element we created (<form>, <article>, <table>)
+        # to <main>.
         self.main += el
