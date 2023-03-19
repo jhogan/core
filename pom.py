@@ -2896,8 +2896,11 @@ class crud(page):
             # Make the <tr> the target of event subscriptions below
             target = tr
 
-        # If the browser sent us a <form>...
-        elif isinstance(el, dom.form):
+        # If the browser sent us a card
+        elif isinstance(el, dom.article):
+            if 'card' not in el.classes:
+                raise TypeError('Article is not a card')
+
             # Return the new form
             eargs.html = frm
 
