@@ -2974,26 +2974,11 @@ class crud(page):
             # to that <td>
             td = tr['td[data-entity-attribute=id]'].only
 
-            # Create a <menu>
-            menu = dom.menu()
+            menu = self._menu(td)
 
-            # Create the "Edit" links
-            li = dom.li()
-            a = dom.a('Edit', href=self.path)
-
-            # When user clicks the Edit link, the btnedit_onclick
-            # handler will be invoked
-            a.onclick += self.btnedit_onclick, td.parent
-
-            # Add <a> to <li>, then add that to <menu>
-            li += a
-            menu += li
-
-            # Create the Quick Edit links
-            # XXX Complete
-            li = dom.li()
-            li += dom.a('Quick Edit')
-            menu += li
+            # Get the "Quick Edit" anchor (<a rel="edit preview">)
+            a = menu['a[rel~=edit][rel~=preview]'].only
+            a.onclick += self.btnedit_onclick, td.closest('tr')
 
             td += menu
 
@@ -3097,25 +3082,31 @@ class crud(page):
         if tr:
             tr = e.orm.tr
 
-            tds = tr['td[data-entity-attribute=id]']
             eargs.html = tr
 
-            for td in tds:
-                menu = dom.menu()
+            td = tr['td[data-entity-attribute=id]'].only
 
-                # Edit
-                li = dom.li()
-                a = dom.a('Edit', href=self.path)
-                a.onclick += self.btnedit_onclick, td.parent
-                li += a
-                menu += li
+            '''
+            menu = dom.menu()
+            # Edit
+            li = dom.li()
+            a = dom.a('Edit', href=self.path)
+            a.onclick += self.btnedit_onclick, td.parent
+            li += a
+            menu += li
 
-                # Quick
-                li = dom.li()
-                li += dom.a('Quick Edit')
-                menu += li
+            # Quick
+            li = dom.li()
+            li += dom.a('Quick Edit')
+            menu += li
+            '''
 
-                td += menu
+            menu = self._menu(td)
+            a = menu['a[rel~=edit][rel~=preview]'].only
+            a.onclick += self.btnedit_onclick, td.closest('tr')
+            B()
+
+            td += menu
         else:
             # Create a `card` to return to the browser
             card = e.orm.card
@@ -3169,28 +3160,10 @@ class crud(page):
             # to contain the "Edit", "Quick Edit", etc. links. Add the
             # <menu> to the <td>
             for td in tds:
-                menu = dom.menu()
-
-                if det := self.detail:
-                    # Edit
-                    li = dom.li()
-
-                    id = td.parent.getattr('data-entity-id')
-
-                    path = f'{det.path}?id={id}&crud=update'
-
-                    a = dom.a('Edit', href=path)
-                    li += a
-                    menu += li
-
-                # Quick
-                li = dom.li()
-                a = dom.a('Quick Edit', href=self.path)
-
-                # XXX Should we use td.closest('tr')?
-                a.onclick += self.btnedit_onclick, td.parent
-                li += a
-                menu += li
+                menu = self._menu(td)
+                # Get the "Quick Edit" anchor (<a rel="edit preview">)
+                a = menu['a[rel~=edit][rel~=preview]'].only
+                a.onclick += self.btnedit_onclick, td.closest('tr')
 
                 td += menu
 
@@ -3256,3 +3229,31 @@ class crud(page):
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
         self.main += el
+
+    def _menu(self, td):
+        """ XXX
+        """
+        menu = dom.menu()
+
+        if det := self.detail:
+            # Edit
+            li = dom.li()
+
+            id = td.parent.getattr('data-entity-id')
+
+            path = f'{det.path}?id={id}&crud=update'
+            path += f'&oncomplete={self.path}'
+
+            a = dom.a('Edit', href=path, rel='edit')
+            li += a
+            menu += li
+
+        # Quick
+        li = dom.li()
+        a = dom.a('Quick Edit', href=self.path, rel='edit preview')
+
+        li += a
+        menu += li
+
+        return menu
+
