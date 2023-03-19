@@ -3133,7 +3133,7 @@ class crud(page):
 
                 card += instrs
 
-    def main(self, id:str=None, crud:str='retrieve'):
+    def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
         """
         # Instantiate the entity that this crud page operates on
