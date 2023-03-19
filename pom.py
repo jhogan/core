@@ -1783,10 +1783,6 @@ class page(dom.html):
         times has the same effect on the `page` object as calling it
         once.
         """
-
-        # XXX Why do paths double up with this change, e.g.,
-        # en/ticketsspa/ticketsspa/backlog`
-
         # XXX Remove
         #mnus = self.header.menus
         #for a in mnus['a']:
@@ -3086,25 +3082,9 @@ class crud(page):
 
             td = tr['td[data-entity-attribute=id]'].only
 
-            '''
-            menu = dom.menu()
-            # Edit
-            li = dom.li()
-            a = dom.a('Edit', href=self.path)
-            a.onclick += self.btnedit_onclick, td.parent
-            li += a
-            menu += li
-
-            # Quick
-            li = dom.li()
-            li += dom.a('Quick Edit')
-            menu += li
-            '''
-
             menu = self._menu(td)
             a = menu['a[rel~=edit][rel~=preview]'].only
             a.onclick += self.btnedit_onclick, td.closest('tr')
-            B()
 
             td += menu
         else:
@@ -3237,32 +3217,50 @@ class crud(page):
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
 
+        # If there is an oncomplete page to return to
         if oncomplete:
-           pg = self.site.pages[oncomplete]
-           a = dom.a('Back', href=pg.path)
-           self.main += a
+            # Find the page
+            pg = self.site.pages[oncomplete]
+
+            # Add a "Back" button to that page
+            a = dom.a('Back', href=pg.path)
+            self.main += a
 
         self.main += el
 
     def _menu(self, td):
-        """ XXX
+        """ Create a new <menu> object that acts as a context menu for
+        the given <tr>.
+
+        A table row <tr> for an entity can have several items such as
+        "Edit', 'Quick Edit', 'Preview', 'Delete', etc. This <menu>
+        provides those function for the entity represented by the <tr>.
         """
+
+        # XXX Replace td parameter with trw
+
+        # Create the menu to return
         menu = dom.menu()
 
+        # If there is a detail page...
         if det := self.detail:
-            # Edit
+
+            # Create an "Edit" link
             li = dom.li()
 
+            # Get entity's UUID
             id = td.parent.getattr('data-entity-id')
 
+            # Create a path string to the details page
             path = f'{det.path}?id={id}&crud=update'
             path += f'&oncomplete={self.path}'
 
+            # Create the "Edit" link
             a = dom.a('Edit', href=path, rel='edit')
             li += a
             menu += li
 
-        # Quick
+        # Create the Quick Edit link
         li = dom.li()
         a = dom.a('Quick Edit', href=self.path, rel='edit preview')
 

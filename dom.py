@@ -2303,15 +2303,36 @@ class element(entities.entity):
         alone without a value), True is returned. If the attribute does
         not exist, None is returned.
 
-        This is a convenience methed since using the regurlar
+        This is a convenience methed since using the regular
         `attributes` collection tends to be too verbose.
 
-        :param: str attr: The name of the attribute to get.
+        :param: attr str: The name of the attribute to get.
         """
         return self.attributes[attr].value
 
     def setattr(self, attr, v):
-        """ XXX
+        """ Set the value of an element's attribute.
+
+        This is a convenience methed since using the regular
+        `attributes` collection tends to be too verbose.
+
+        :param: attr str: The name of the attribute to set.
+
+        :param v str: The value to set the attribute to.
+
+        Example
+        -------
+
+            # Create an anchor
+            a = dom.a('Google')
+
+            # You can use the `href` attribute since it is a standard
+            # HTML attribute
+            a.herf = 'https://www.google.com'
+
+            # Add a data-external. This is non-standard so we have to
+            # use set attr.
+            a.setattr('data-external', True)
         """
         self.attributes[attr].value = v
 
