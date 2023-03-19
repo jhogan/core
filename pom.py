@@ -876,13 +876,13 @@ function ajax(e){
                     // Get the new <main> element
                     let new_ = els[0]
 
-                    // Make sure event handler are hooked up to new
-                    // <main> HTML.
-                    add_listeners(new_);
-
                     // Replace the current <main> element with the new_
                     // one received from the AJAX call.
                     main.parentNode.replaceChild(new_, main)
+
+                    // Make sure event handler are hooked up to new
+                    // <main> HTML.
+                    add_listeners(new_);
 
                     // Push the HTML of the new <main> object on to the
                     // history stack so users can get to it by clicking
