@@ -3212,6 +3212,14 @@ class crud(page):
 
                 # Capture form submission
                 el.onsubmit += self.frm_onsubmit, el
+
+                btncancel = dom.button('Cancel')
+
+                if crud == 'update':
+                    btncancel.onclick += self.btncancel_onclick, el
+
+                el += btncancel
+
             else:
                 # If frm is None, add a card to the page so user is able
                 # to read entity values.
