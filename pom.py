@@ -3034,7 +3034,7 @@ class crud(page):
             frm = tr['form'].only
 
         # If browser sent a <form>
-        elif isinstance(el, dom.frm):
+        elif isinstance(el, dom.form):
             # Get the form so we can persist its values
             frm = el
 
