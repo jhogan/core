@@ -741,6 +741,17 @@ function is_page_link(e){
     var spa_path = main.getAttribute('spa-data-path')
     var href = e.getAttribute('href')
 
+    // if href is null, it's not a page link
+    if (href == null){
+        return false
+    }
+
+    // If the anchor is a reference to the current page, it is not
+    // considered a link
+    if (href == document.location.pathname){
+        return false
+    }
+
     return href.startsWith(spa_path)
 }
 
