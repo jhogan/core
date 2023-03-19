@@ -3236,6 +3236,12 @@ class crud(page):
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
+
+        if oncomplete:
+           pg = self.site.pages[oncomplete]
+           a = dom.a('Back', href=pg.path)
+           self.main += a
+
         self.main += el
 
     def _menu(self, td):
