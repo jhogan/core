@@ -756,6 +756,10 @@ function is_page_link(e){
 }
 
 function ajax(e){
+    // TODO Write entire handler in a try block. Otherwise we may not
+    // get to `e.preventDefault()` and we end up submitting the form,
+    // navigating the browser to a different pages, etc.
+
     /* Process the event for the given control.  */
 
     // The event trigger (e.g., "blur", "click", etc.)
@@ -3162,8 +3166,9 @@ class crud(page):
 
             tds = el['td[data-entity-attribute=id]']
 
-            # XXX Explain
-            # XXX:ce60836a Put in a reusuable method
+            # For each <td> in the <table>, create a coresponding <menu>
+            # to contain the "Edit", "Quick Edit", etc. links. Add the
+            # <menu> to the <td>
             for td in tds:
                 menu = dom.menu()
 
