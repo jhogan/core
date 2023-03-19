@@ -1796,10 +1796,6 @@ class page(dom.html):
             if a.href.startswith(f'/{lang}/'):
                 continue
 
-            # Only lingualize internal links # XXX Experimental
-            if not a.href.startswith('/'):
-                continue
-
             href  =  a.href
             sep   =  os.path.sep
             a.href = os.path.join(
