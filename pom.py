@@ -897,9 +897,6 @@ function ajax(e){
                     // Iterate over each element and replace their
                     // client-side counterpart
                     for(el of els){
-                        // Use the fragment's id to find and replace
-                        exec(el)
-
                         // Add event listeners to new HTML
                         add_listeners(el);
 
@@ -909,6 +906,12 @@ function ajax(e){
 
                         let old = document.querySelector('#' + id)
                         old.parentNode.replaceChild(el, old)
+
+                        // Execute any .instructions in the HTML. If
+                        // there is a set-url instruction, the URL will
+                        // be set using a history.pushState.
+                        exec(el)
+
                     }
                 }
             }else{ // If there was an error...
