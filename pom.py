@@ -904,6 +904,7 @@ function ajax(e){
                         // work here.
                         let id = el.getAttribute('id')
 
+                        // Use the fragment's id to find and replace
                         let old = document.querySelector('#' + id)
                         old.parentNode.replaceChild(el, old)
 
@@ -2997,8 +2998,6 @@ class crud(page):
             # Get the requested url
             url = www.application.current.request.url
 
-            # XXX Update url for dom.tr
-
             # Change its query string params setting `id` and `crud`
             # TODO: 872fd252
             qs = url.qs
@@ -3106,8 +3105,6 @@ class crud(page):
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.  TODO: 872fd252
-
-            # XXX Update url for dom.tr
 
             qs = url.qs
             if qs.get('id') != e.id.hex:

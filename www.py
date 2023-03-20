@@ -920,6 +920,13 @@ class request(entities.entity):
 
                 # Get the main SPA application page for the page if
                 # there is one.
+                # XXX Change to 
+                #
+                #     if not pg.isevent and spa := pg.spa:
+                #
+                #
+                # If this is just an event, I don't think there is a
+                # need to embed the pg into its spa.
                 if spa := pg.spa:
                     
                     # Clear page. See the comment above on why we clear.
