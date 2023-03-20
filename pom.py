@@ -2959,6 +2959,9 @@ class crud(page):
         # (<input hidden name="id" # value="A1B2C3...")
         id = el['input[name=id]'].only.value
 
+        # Get the requested url
+        url = www.application.current.request.url
+
         # Load the orm.entity given the id from the <form>
         e = self.entity.orm.entity(id)
 
@@ -2982,6 +2985,28 @@ class crud(page):
 
             td += menu
 
+            # Update url by removing the id and crud parameters from the
+            # query string. We are basically returning the crud page to
+            # its pain, tabular view.
+            qs = url.qs
+            del qs['id']
+            del qs['crud']
+            url.qs = qs
+
+            # Instruct the browser to set the URL bar to `url`
+            instrs = instructions()
+            instrs += set('url', str(url))
+
+            # NOTE We need to put the instr in a <td> otherwise the
+            # <template>-based parser will see the instructions article
+            # as a distinct child element as if it were not within the
+            # <tr>.
+            td = dom.td()
+            td += instrs
+
+            # Add `instructions` to `card`
+            tr += td
+
         elif isinstance(el, dom.form):
             # Create a card article to return to the browser
             card = e.orm.card
@@ -2995,8 +3020,6 @@ class crud(page):
 
             ''' Add crud=retrieve to url '''
 
-            # Get the requested url
-            url = www.application.current.request.url
 
             # Change its query string params setting `id` and `crud`
             # TODO: 872fd252
@@ -3077,6 +3100,9 @@ class crud(page):
         # Save entity to database
         e.save()
 
+        # Get the requested url
+        url = www.application.current.request.url
+
         if tr:
             tr = e.orm.tr
 
@@ -3089,6 +3115,28 @@ class crud(page):
             a.onclick += self.btnedit_onclick, td.closest('tr')
 
             td += menu
+
+            # Update url by removing the id and crud parameters from the
+            # query string. We are basically returning the crud page to
+            # its pain, tabular view.
+            qs = url.qs
+            del qs['id']
+            del qs['crud']
+            url.qs = qs
+
+            # Instruct the browser to set the URL bar to `url`
+            instrs = instructions()
+            instrs += set('url', str(url))
+
+            # NOTE We need to put the instr in a <td> otherwise the
+            # <template>-based parser will see the instructions article
+            # as a distinct child element as if it were not within the
+            # <tr>.
+            td = dom.td()
+            td += instrs
+
+            # Add `instructions` to `card`
+            tr += td
         else:
             # Create a `card` to return to the browser
             card = e.orm.card
@@ -3099,9 +3147,6 @@ class crud(page):
             # Subscribe the onclick event of the card's edit button to
             # self.btnedit_onclick
             card.btnedit.onclick += self.btnedit_onclick, card
-
-            # Get the requested url
-            url = www.application.current.request.url
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.  TODO: 872fd252
