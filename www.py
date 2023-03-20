@@ -949,10 +949,11 @@ class request(entities.entity):
                     path = f'/{self.language}{pg.path}'
                     main.attributes += 'spa-data-path', path
 
-                if not self.isevent:
-                    # Add the language code to any anchors, i.e., add
-                    # the 'en' to /en/path/to/page.
-                    pg._lingualize(self.language)
+                lang = self.language
+
+                # Add the language code to any anchors, i.e., add
+                # the 'en' to /en/path/to/page.
+                pg._lingualize(lang)
 
                 if not self.ishead:
                     # If we are processing an event
@@ -968,6 +969,7 @@ class request(entities.entity):
                             # Presumably, this eventarg was modified by
                             # the above call to pg.
                             if eargs.html:
+                                self.lingualize(lang, eargs.html)
                                 res.body = eargs.html.html
                     else:
                         # HACK:10d9a676 We shoudn't have to prepend
@@ -1021,6 +1023,42 @@ class request(entities.entity):
 
         # Return the response object
         return res
+
+    @staticmethod
+    def lingualize(lang, e):
+        """ Iterate over the each anchor tag in this `page` and ensure
+        that `lang` is prepended to each anchor's HREF.
+
+            # Assuming `lang` is 'en'
+            assert lang == 'en'
+
+            # Before lingualization
+            <a href="/some/path">link</a>
+
+            # After lingualization
+            <a href="/en/some/path">link</a>
+
+        Note that this method is idempotent, i.e., calling it multiple
+        times has the same effect on the `page` object as calling it
+        once.
+        
+        # XXX Update comments
+        """
+        # XXX Remove
+        #mnus = self.header.menus
+        #for a in mnus['a']:
+        for a in e['a']:
+
+            # If the anchor has already been lingualized
+            if a.href.startswith(f'/{lang}/'):
+                continue
+
+            href  =  a.href
+            sep   =  os.path.sep
+            a.href = os.path.join(
+                sep, lang, href.lstrip(sep)
+            )
+
 
     @property
     def hit(self):
