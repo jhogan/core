@@ -1026,23 +1026,25 @@ class request(entities.entity):
 
     @staticmethod
     def lingualize(lang, e):
-        """ Iterate over the each anchor tag in this `page` and ensure
+        """ Iterate over the each anchor tag under `e` and ensure
         that `lang` is prepended to each anchor's HREF.
 
             # Assuming `lang` is 'en'
             assert lang == 'en'
 
-            # Before lingualization
+            # An anchor befor lingualization
             <a href="/some/path">link</a>
 
-            # After lingualization
+            # An anchor after lingualization
             <a href="/en/some/path">link</a>
 
         Note that this method is idempotent, i.e., calling it multiple
         times has the same effect on the `page` object as calling it
         once.
-        
-        # XXX Update comments
+
+        :param: lang str: The two character language code to use.
+
+        :param: e dom.element: The element to lingualize.
         """
         # XXX Remove
         #mnus = self.header.menus
@@ -1058,7 +1060,6 @@ class request(entities.entity):
             a.href = os.path.join(
                 sep, lang, href.lstrip(sep)
             )
-
 
     @property
     def hit(self):

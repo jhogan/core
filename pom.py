@@ -691,9 +691,6 @@ class site(asset.asset):
 function is_nav_link(e){
     /* Returns true if the element `e` is a "nav link",
     i.e., it is an anchor tag nested within a <nav>.
-
-    XXX Update comments
-
     */
 
     // XXX Use var/let
@@ -2928,8 +2925,6 @@ class crud(page):
 
         # Get the url that the request was made to
         url = www.application.current.request.url
-
-        # XXX Ensure URL is updated correctly when tr
 
         # Set the id and crud parameters in the queny sting to
         # appropriate values

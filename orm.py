@@ -11990,7 +11990,8 @@ class orm:
     # property.
     @property
     def table1(self):
-        """ XXX
+        """ Return an HTML table (dom.table) that represents this
+        orm's entities collection.
         """
         import dom
         tbl    =  dom.table()
@@ -12040,7 +12041,8 @@ class orm:
 
     @property
     def tr(self):
-        """ XXX
+        """ Returns a table row (dom.tr) representation of this `orm`'s
+        entity.
         """
         import dom
         inst = self.instance
