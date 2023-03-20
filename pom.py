@@ -1019,7 +1019,7 @@ function add_listeners(el){
         // Search for page links
         var sels = 'a[href^="' + spa_path + '"]'
         sels += ':not([data-click-handler])'
-        var as = document.querySelectorAll(sels)
+        var as = el.querySelectorAll(sels)
 
         // Subscribet
         for (var a of as){
