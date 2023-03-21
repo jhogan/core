@@ -1082,20 +1082,21 @@ function wake(els){
 }
 
 function exec(els){
-    /* Read the <article> with an 'instructions' class
-    for `instruction` elements.
-
-    An example of an `instruction` set-url which is the way Python code
-    can cause JavaScript code running in the browser to set the
-    browser`s `window.location`.
-
-    XXX Update
+    /* For each element in `els`, read the <article> with an
+     * 'instructions' class for `instruction` elements.  An example of
+     * an `instruction` is "set-url" which is the way server-side code
+     * can cause the browser`s `window.location` to be set.
     */
 
+    // For each element in the `els` sequence
     for (el of els){
+        
+        // Get all <article class='instructions'>
         var instrss = el.querySelectorAll('.instructions')
 
+        // For each instruction set
         for (var instrs of instrss){
+
             // Remove the <article class="instructions"> element from the
             // DOM first.
             instrs.remove()
@@ -1103,7 +1104,7 @@ function exec(els){
             // Get all the instruction elements (<meta class="instruction").
             var instrs = instrs.querySelectorAll('.instruction')
 
-            // For each instruction
+            // For each instruction in the instruction set
             for (var instr of instrs){
                 
                 // If we have a `set` instruction
@@ -2960,15 +2961,24 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
-        # XXX Explain
+        # Get the oncomplete path. This represents the page to return to
+        # when the submit or cancel button is clicked.
         oncompletes = el['[data-oncomplete]']
         if oncompletes.issingular:
+
+            # Read path
             path = oncompletes.only.text
 
+            # For each page in the spa application
             for pg in self.spa.pages:
+                
+                # If we found a matching page
                 if pg.path == path:
+                    # Run the page
                     pg()
 
+                    # Get the requested url and remove its query string
+                    # parameters
                     qs = url.qs
 
                     for k in ('id', 'crud', 'oncomplete'):
@@ -2976,6 +2986,9 @@ class crud(page):
                             del qs[k]
                     url.qs = qs
 
+                    # Set the URL object path proprety to the oncomplete
+                    # page's path and instruct the browser to set the
+                    # URL bar to this path.
                     url.path = req.language + pg.path
 
                     instrs = instructions()
@@ -2983,7 +2996,6 @@ class crud(page):
                     pg.main += instrs
 
                     eargs.html = pg.main
-                    print(eargs.html)
                     return
             else:
                 raise www.NotFoundError('Oncomplete not found')
@@ -3330,7 +3342,6 @@ class crud(page):
         # to <main>.
 
         # If there is an oncomplete page to return to
-        # XXX We may want to remove the Back link
         if oncomplete:
             # Find the page
             pg = self.site.pages[oncomplete]
@@ -3350,7 +3361,7 @@ class crud(page):
         provides those function for the entity represented by the <tr>.
         """
 
-        # XXX Replace td parameter with trw
+        # XXX Replace td parameter with tr
 
         # Create the menu to return
         menu = dom.menu()
