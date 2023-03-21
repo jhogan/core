@@ -862,6 +862,7 @@ function ajax(e){
                     return
                 }
 
+
                 // Parse the HTML we received into a DOM object.
                 var temp = document.createElement('template')
                 temp.innerHTML = xhr.responseText
@@ -1086,6 +1087,8 @@ function exec(el){
     An example of an `instruction` set-url which is the way Python code
     can cause JavaScript code running in the browser to set the
     browser`s `window.location`.
+
+    XXX Update
     */
     var instrss = el.querySelectorAll('.instructions')
 
@@ -3015,7 +3018,6 @@ class crud(page):
 
             ''' Add crud=retrieve to url '''
 
-
             # Change its query string params setting `id` and `crud`
             # TODO: 872fd252
             qs = url.qs
@@ -3145,15 +3147,14 @@ class crud(page):
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.  TODO: 872fd252
-
             qs = url.qs
             if qs.get('id') != e.id.hex:
                 qs['id'] = e.id.hex
                 qs['crud'] = 'retrieve'
                 url.qs = qs
 
-                # Instruct the browser to update the URL bar to `url`.
                 instrs = instructions()
+                # Instruct the browser to update the URL bar to `url`.
                 instrs += set('url', str(url))
 
                 card += instrs
@@ -3258,6 +3259,7 @@ class crud(page):
         # to <main>.
 
         # If there is an oncomplete page to return to
+        # XXX We may want to remove the Back link
         if oncomplete:
             # Find the page
             pg = self.site.pages[oncomplete]
