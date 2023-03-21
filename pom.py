@@ -2957,12 +2957,41 @@ class crud(page):
         # Get the <form> that was canceled.
         el = eargs.html.only
 
+        # Get the requested url
+        req = www.application.current.request
+        url = req.url
+
+        # XXX Explain
+        oncompletes = el['[data-oncomplete]']
+        if oncompletes.issingular:
+            path = oncompletes.only.text
+
+            for pg in self.spa.pages:
+                if pg.path == path:
+                    pg()
+
+                    qs = url.qs
+
+                    for k in ('id', 'crud', 'oncomplete'):
+                        with suppress(KeyError):
+                            del qs[k]
+                    url.qs = qs
+
+                    url.path = req.language + pg.path
+
+                    instrs = instructions()
+                    instrs += set('url', str(url))
+                    pg.main += instrs
+
+                    eargs.html = pg.main
+                    print(eargs.html)
+                    return
+            else:
+                raise www.NotFoundError('Oncomplete not found')
+
         # Get the entity's hex id from the form 
         # (<input hidden name="id" # value="A1B2C3...")
         id = el['input[name=id]'].only.value
-
-        # Get the requested url
-        url = www.application.current.request.url
 
         # Load the orm.entity given the id from the <form>
         e = self.entity.orm.entity(id)
@@ -2991,8 +3020,11 @@ class crud(page):
             # query string. We are basically returning the crud page to
             # its pain, tabular view.
             qs = url.qs
-            del qs['id']
-            del qs['crud']
+
+            for k in ('id', 'crud'):
+                with suppress(KeyError):
+                    del qs[k]
+
             url.qs = qs
 
             # Instruct the browser to set the URL bar to `url`
@@ -3102,7 +3134,36 @@ class crud(page):
         e.save()
 
         # Get the requested url
-        url = www.application.current.request.url
+        req = www.application.current.request
+        url = req.url
+
+        # XXX Explain
+        oncompletes = el['[data-oncomplete]']
+        if oncompletes.issingular:
+            path = oncompletes.only.text
+
+            for pg in self.spa.pages:
+                if pg.path == path:
+                    pg()
+
+                    qs = url.qs
+
+                    for k in ('id', 'crud', 'oncomplete'):
+                        with suppress(KeyError):
+                            del qs[k]
+                    url.qs = qs
+
+                    url.path = req.language + pg.path
+
+                    instrs = instructions()
+                    instrs += set('url', str(url))
+                    pg.main += instrs
+
+                    eargs.html = pg.main
+                    print(eargs.html)
+                    return
+            else:
+                raise www.NotFoundError('Oncomplete not found')
 
         if tr:
             tr = e.orm.tr
@@ -3121,8 +3182,10 @@ class crud(page):
             # query string. We are basically returning the crud page to
             # its pain, tabular view.
             qs = url.qs
-            del qs['id']
-            del qs['crud']
+            for k in ('id', 'crud'):
+                with suppress(KeyError):
+                    del qs[k]
+
             url.qs = qs
 
             # Instruct the browser to set the URL bar to `url`
@@ -3244,6 +3307,11 @@ class crud(page):
                     btncancel.onclick += self.btncancel_onclick, el
 
                 el += btncancel
+
+                if oncomplete:
+                    span = dom.span(oncomplete, hidden=True)
+                    span.setattr('data-oncomplete', oncomplete)
+                    el += span
 
             else:
                 # If frm is None, add a card to the page so user is able
