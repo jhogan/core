@@ -911,9 +911,8 @@ function ajax(e){
                         // Execute any .instructions in the HTML. If
                         // there is a set-url instruction, the URL will
                         // be set using a history.pushState.
-                        exec(el)
-
                     }
+                    exec(els)
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
