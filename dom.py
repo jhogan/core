@@ -2534,6 +2534,10 @@ class element(entities.entity):
     def last(self):
         return self.elements.last
 
+    @property
+    def isplurality(self):
+        return self.elements.isplurality
+
     def __str__(self):
         return self.pretty
 
