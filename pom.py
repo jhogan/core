@@ -1080,7 +1080,7 @@ function wake(els){
     }
 }
 
-function exec(el){
+function exec(els){
     /* Read the <article> with an 'instructions' class
     for `instruction` elements.
 
@@ -1090,35 +1090,37 @@ function exec(el){
 
     XXX Update
     */
-    var instrss = el.querySelectorAll('.instructions')
 
-    for (var instrs of instrss){
-        // Remove the <article class="instructions"> element from the
-        // DOM first.
-        instrs.remove()
+    for (el of els){
+        var instrss = el.querySelectorAll('.instructions')
 
-        // Get all the instruction elements (<meta class="instruction").
-        var instrs = instrs.querySelectorAll('.instruction')
+        for (var instrs of instrss){
+            // Remove the <article class="instructions"> element from the
+            // DOM first.
+            instrs.remove()
 
-        // For each instruction
-        for (var instr of instrs){
-            
-            // If we have a `set` instruction
-            if (instr.classList.contains('set')){
+            // Get all the instruction elements (<meta class="instruction").
+            var instrs = instrs.querySelectorAll('.instruction')
+
+            // For each instruction
+            for (var instr of instrs){
                 
-                // If we are setting the "url"
-                if (instr.getAttribute('name') == 'url'){
+                // If we have a `set` instruction
+                if (instr.classList.contains('set')){
+                    
+                    // If we are setting the "url"
+                    if (instr.getAttribute('name') == 'url'){
 
-                    // Use pushState to change the url
-                    var main = document.querySelector('main')
-                    var url = instr.getAttribute('content')
-                    window.history.pushState(
-                        main.outerHTML, null, url
-                    )
+                        // Use pushState to change the url
+                        var main = document.querySelector('main')
+                        var url = instr.getAttribute('content')
+                        window.history.pushState(
+                            main.outerHTML, null, url
+                        )
+                    }
                 }
             }
         }
-
     }
 }
 
