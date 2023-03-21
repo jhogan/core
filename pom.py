@@ -888,6 +888,8 @@ function ajax(e){
                     window.history.pushState(
                         new_.outerHTML, null, pg
                     )
+
+                    exec([new_])
                 // If the element is not a <main>, we are doing a
                 // regular AJAX call, i.e., we are not loading a new
                 // <main> as a SPA page.
