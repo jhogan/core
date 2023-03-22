@@ -864,7 +864,6 @@ function ajax(e){
                     return
                 }
 
-
                 // Parse the HTML we received into a DOM object.
                 var temp = document.createElement('template')
                 temp.innerHTML = xhr.responseText
@@ -2951,7 +2950,7 @@ class crud(page):
         # Get the url that the request was made to
         url = www.application.current.request.url
 
-        # Set the id and crud parameters in the queny sting to
+        # Set the id and crud parameters in the query string to
         # appropriate values
         # TODO: 872fd252
         qs = url.qs
@@ -2979,6 +2978,7 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
+        # XXX Centralize oncomplete logic
         # Get the oncomplete path. This represents the page to return to
         # when the submit or cancel button is clicked.
         oncompletes = el['[data-oncomplete]']
@@ -3102,7 +3102,6 @@ class crud(page):
         this `crud` page.
         """
         # Get the <form> that was submitted
-
         el = eargs.html.only
 
         tr = None
@@ -3189,19 +3188,25 @@ class crud(page):
                     pg.main += instrs
 
                     eargs.html = pg.main
-                    print(eargs.html)
                     return
             else:
                 raise www.NotFoundError('Oncomplete not found')
 
+        # If the browser sent a <tr>
         if tr:
+            
+            # Get the <tr> representation of the entity
             tr = e.orm.tr
 
+            # Set the <tr> back to the browser
             eargs.html = tr
 
             td = tr['td[data-entity-attribute=id]'].only
 
+            # Add a menu to the <tr>
             menu = self._menu(td)
+
+            # Subscribe events to the menu's items
             a = menu['a[rel~=edit][rel~=preview]'].only
             a.onclick += self.btnedit_onclick, td.closest('tr')
 
