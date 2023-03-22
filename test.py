@@ -27,19 +27,20 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from uuid import uuid4
-import sys
-import types
 import account
 import asset
-import inspect
 import auth
 import base64
 import budget
 import builtins
 import codecs
 import dateutil
-import uuid
 import db
+import inspect
+import pom
+import sys
+import types
+import uuid
 
 # TODO use an alias here
 import decimal; dec=decimal.Decimal
@@ -4541,7 +4542,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 # This happened today:
                 # HAPPENED Jun 2, 2020
                 # HAPPENED Aug 24, 2022
-                print('This bug has happened befor')
+                print('This bug has happened before')
                 B()
             t.retrieved(rprs1)
 
@@ -6293,6 +6294,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         comp = component()
         comp.name = uuid4().hex
         map = comp.orm.mappings['digest']
+        self.false(map.isnumeric)
 
         # Make sure the password field hasn't been tampered with
         self.ne(map.min, map.max) 
@@ -6427,6 +6429,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.true(hasattr(art, 'email'))
             self.eq(str(), art.email)
             self.eq((3, 254), (map.min, map.max))
+            self.false(map.isnumeric)
 
             art.email = email = 'USERNAME@DOMAIN.TDL'
             self.eq(email.lower(), art.email)
@@ -6509,6 +6512,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['type']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(1, map.min)
         self.eq(1, map.max)
 
@@ -6532,6 +6536,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['serial']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(255, map.min)
         self.eq(255, map.max)
 
@@ -6560,6 +6565,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         map = artifact.orm.mappings['comments']
 
         self.true(map.isstr)
+        self.false(map.isnumeric)
         self.eq(1, map.min)
         self.eq(65535, map.max)
 
@@ -6741,6 +6747,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         comp = component.getvalid()
 
         map = comp.orm.mappings['width']
+        self.true(map.isfloat)
+        self.true(map.isnumeric)
         self.type(float, comp.width)
         self.eq(-9999.9, map.min)
         self.eq(9999.9, map.max)
@@ -6759,6 +6767,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         art = artist.getvalid()
 
         map = art.orm.mappings['phone']
+        self.true(map.isint)
+        self.true(map.isnumeric)
         self.type(int, art.phone)
         self.eq(1000000, map.min)
         self.eq(9999999, map.max)
@@ -6865,6 +6875,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             obj = cls.getvalid()
             map = obj.orm.mappings[attr]
+
+            self.true(map.isnumeric)
 
             min, max = map.min, map.max
 
@@ -14897,6 +14909,137 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 continue
 
             self.expect(db.RecordNotFoundError, pres.orm.reloaded)
+
+    def it_gets_form(self):
+        art = artist()
+        frm = art.orm.form
+
+        # Test <form> element
+        cls = type(art)
+        name = f'{cls.__module__}.{cls.__name__}'
+        self.eq(name, frm.getattr('data-entity'))
+
+        ''' Default str (lastname) '''
+        name = 'lastname'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('text', inp.getattr('type'))
+
+        # Test minlength
+        self.eq(str(map.min), inp.getattr('minlength'))
+
+        # Test length
+        self.eq(str(map.max), inp.getattr('maxlength'))
+
+        ''' Default int (networth) '''
+        name = 'networth'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('number', inp.getattr('type'))
+
+        # Test min
+        self.eq(str(map.min), inp.getattr('min'))
+
+        # Test min
+        self.eq(str(map.max), inp.getattr('max'))
+
+        ''' Default date (dob2) '''
+        name = 'dob2'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('date', inp.getattr('type'))
+
+        # Test min
+        self.none(inp.getattr('min'))
+
+        # Test min
+        self.none(inp.getattr('max'))
+
+        ''' Default datetime (dob) '''
+        name = 'dob'
+        div = frm[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        # Test <input>
+        map = art.orm.mappings[name]
+        inp = div['input'].only
+
+        # Test name
+        self.eq(name, inp.name)
+
+        # Test type attribute
+        self.eq('datetime-local', inp.getattr('type'))
+
+        # Test min
+        self.none(inp.getattr('min'))
+
+        # Test min
+        self.none(inp.getattr('max'))
+
+        ''' <button type="submit"> '''
+        name = 'submit'
+        self.one(frm[f'button[type=submit]'])
+
+        # TODO We still need to tests <select>s and <input
+        # type="radio">, <input type="checkbox"> as well as more
+        # unusual/advanced types like "images", "file", "month",
+        # "password", "range", "tel", "time", "url", "week", etc.
+
+    def it_gets_card(self):
+        art = artist.getvalid()
+        card = art.orm.card
+
+        # Test <card> element
+        cls = type(art)
+        name = f'{cls.__module__}.{cls.__name__}'
+        self.eq(name, card.getattr('data-entity'))
+
+        self.type(pom.card, card)
+
+        ''' Default str (lastname) '''
+        name = 'lastname'
+        map = art.orm.mappings[name]
+        div = card[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        self.eq(getattr(art, map.name), div['span'].text)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):

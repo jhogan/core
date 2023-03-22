@@ -10,11 +10,14 @@ from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
+import db
 import dom
 import ecommerce
+import effort
 import file
 import party
 import pom
+import www
 
 class sites(pom.sites):
     pass
@@ -341,9 +344,15 @@ class tickets(pom.page):
 
 class ticketsspa(pom.spa):
     ''' Inner classes (pages) '''
-    class new(pom.page):
-        def main(self):
-            self.main += dom.p('Create a ticket')
+    class ticket(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(effort.requirement, *args, **kwargs)
+
+        def main(self, id:str=None, crud:str='retrieve'):
+            super().main(id=id, crud=crud)
+
+            if self.instance.orm.isnew:
+                self.main << dom.h1('Create a ticket')
     
     class people(pom.page):
         ''' Inner classes (pages) '''
@@ -462,7 +471,7 @@ class ticketsspa(pom.spa):
 
         # Main
         self.pages += ticketsspa.backlog()
-        self.pages += ticketsspa.new()
+        self.pages += ticketsspa.ticket()
         self.pages += ticketsspa.search()
         self.pages += ticketsspa.people()
 
@@ -473,7 +482,15 @@ class ticketsspa(pom.spa):
         self.main += dom.p('Carapacian Tickets SPA')
 
         ''' SPA Menu '''
-        self.header.menus += pom.menu.make(self.pages, 'spa')
+        mnu = pom.menu('Spa')
+        self.header.menus += mnu
+        mnu.items  +=  pom.menu.item(
+            'New', 'ticketsspa/ticket?crud=create'
+        )
+        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlog')
+        mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
+        mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
+
 
 # The Css for the site. See site.styles
 Css = '''

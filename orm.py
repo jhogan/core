@@ -5569,28 +5569,37 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __repr__(self):
         """ Create a string representation of the entity.
         """
-        if self.id is undef:
-            id = '<undef>'
-        else:
-            id = self.id
+        names = list()
+        kvps = list()
+        cls = type(self)
+        rent = cls
+        kvps.append(f'id={self.id}')
+        while rent:
+            for map in rent.orm.mappings.fieldmappings:
+                name = map.name
+                if name in names:
+                    continue
 
-        try:
-            name = self.name
-        except builtins.AttributeError:
-            name = ''
-        except Exception as ex:
-            name = f', name=<ERROR {ex}>'
-        else:
-            if name:
-                name = f", name='{self.name}'"
+                names.append(name)
 
-        r = (
-            f'{type(self).__module__}.'
-            f'{type(self).__name__}('
-                f'id={id}'
-                f'{name}'
-            ')'
-        )
+                v = getattr(self, name)
+
+                if v is not None:
+                    if map.isstr or map.isdatetime or map.isdate:
+                        v = f"'{v}'"
+
+                kvps.append(f'{name}={v}')
+
+            rent = rent.orm.super
+
+        mod = cls.__module__
+        name = cls.__name__
+        r = f'{mod}.{name}(\n  '
+
+        r += ',\n  '.join(kvps)
+            
+        r += '\n)'
+
         return r
 
     def __str__(self):
@@ -7308,6 +7317,19 @@ class fieldmapping(mapping):
         return self._ix
 
     @property
+    def isnumeric(self):
+        """ Returns true if the mapping is for an int, float or Decimal.
+        """
+        if self.isint:
+            return True
+        elif self.isfloat:
+            return True
+        elif self.isdecimal:
+            return True
+        else:
+            return False
+
+    @property
     def isstr(self):
         """ Returns True if the mapping represents a str type.
         """
@@ -7652,28 +7674,28 @@ class fieldmapping(mapping):
 
         elif self.isint:
             if self.min < 0:
-                if    self.min  >=  -128         and  self.max  <=  127:
+                if self.min >= -128 and self.max <= 127:
                     return 'tinyint'
-                elif  self.min  >=  -32768       and  self.max  <=  32767:
+                elif self.min >= -32768 and self.max <= 32767:
                     return 'smallint'
-                elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                elif self.min >= -8388608 and self.max <= 8388607:
                     return 'mediumint'
-                elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                elif self.min >= -2147483648 and self.max <= 2147483647:
                     return 'int'
-                elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                elif self.min >= -2**63 and self.max <= 2**63-1:
                     return 'bigint'
                 else:
                     raise ValueError()
             else:
-                if self.max  <=  255:
+                if self.max <= 255:
                     return 'tinyint unsigned'
-                elif self.max  <=  65535:
+                elif self.max <= 65535:
                     return 'smallint unsigned'
-                elif self.max  <=  16777215:
+                elif self.max <= 16777215:
                     return 'mediumint unsigned'
-                elif self.max  <=  4294967295:
+                elif self.max <= 4294967295:
                     return 'int unsigned'
-                elif self.max  <=  (2 ** 64) - 1:
+                elif self.max <= (2 ** 64) - 1:
                     return 'bigint unsigned'
                 else:
                     raise ValueError()
@@ -7936,7 +7958,6 @@ class primarykeyfieldmapping(fieldmapping):
     def __init__(self):
         """ Instatiate.
         """
-
         # Ensure the type is `types.pk` (primary key).
         super().__init__(type=types.pk)
 
@@ -11830,6 +11851,242 @@ class orm:
                         e = maps[int(not bool(i))].entity
                         self._constituents += constituent(e)
         return self._constituents
+
+    ''' HTML representations '''
+
+    @property
+    def form(self):
+        """ Return a <form> object for this `entity`. 
+
+        The <form> object can be sent to a browser to accept input by a
+        user to create or update the values of this `entity`.
+        """
+        import pom, dom
+
+        # Create the <form> that we wil build and return
+        frm = dom.form()
+        inst = self.instance
+
+        # Get a referece to self's class. We will use it to ascend the
+        # inheritence hierarchy.
+        rent = builtins.type(inst)
+
+        # Assign the data-entity attribute of the <form>, e.g.:
+        # 
+        #     <form data-entity="product.service">
+        #
+        e = rent
+        e = f'{e.__module__}.{e.__name__}'
+        frm.attributes['data-entity'] = e
+
+        # Create a list to store map names we've encountered. This
+        # prevent access the same attribute twice.
+        names = list()
+
+        # The ascendancy loop
+        while rent:
+            # For each map ...
+            for map in rent.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                name = map.name
+                lbl = name.capitalize()
+
+                # Don't revisit the same name
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                # Skip fields the user should not be responsible for
+                if name == 'createdat':
+                    continue
+
+                if name == 'updatedat':
+                    continue
+
+                # The `step` attribute of the <input> element
+                step = None
+
+                # Hide the id field
+                if name == 'id':
+                    type = 'hidden'
+                    lbl = None
+
+                elif map.isstr:
+                    if map.definition == 'longtext':
+                        type = 'textarea'
+                    else:
+                        type = 'text'
+                        
+                elif map.isdate:
+                    type = 'date'
+
+                elif map.isdatetime:
+                    type = 'datetime-local'
+
+                # TODO We should probably have a map.isnumeric here
+                elif map.isdecimal:
+                    type = 'number'
+                    
+                    # A `step` of "any" allows decimal values to be
+                    # entered
+                    step = 'any'
+
+                elif map.isnumeric:
+                    type = 'number'
+
+                else:
+                    continue
+
+                # Create a pom.input object to store the <label> with the
+                # <input> field.
+                inp = pom.input(name=name, type=type, label=lbl)
+
+                inp.attributes['data-entity-attribute'] = map.name
+
+                # Get the underlying <input>/<textaria> object
+                dominp = inp.input
+
+                # Set some browser validation attributes
+                if map.isstr:
+                    dominp.minlength = map.min
+                    dominp.maxlength = map.max
+
+                elif map.isnumeric:
+                    dominp.min = map.min
+                    dominp.max = map.max
+
+                # TODO Should we use <time> for datetimes? Are we doing
+                # that in orm.card?
+
+                if step:
+                    dominp.step = step
+
+                # Hexify the primary key
+                if name == 'id':
+                    inp.input.value = inst.id.hex
+
+                v = getattr(inst, name)
+                
+                if v is None:
+                    v = str()
+
+                if isinstance(dominp, dom.textarea):
+                    dominp += dom.text(v)
+                else:
+                    dominp.value = v
+
+                frm += inp
+
+            rent = rent.orm.super
+
+        # Add a <button type="submit">
+        frm += dom.button('Submit', type='submit')
+
+        return frm
+
+    @property
+    def card(self):
+        """ Returns a read-only HTML representation of the entity. 
+
+        cards are <article>s that show the entity's attribute names
+        along with their values. Other metadata is included to make it
+        easy to address the various elements (by CSS and JavaScript):
+
+            <article class="card" 
+                data-entity="effort.requirement" 
+                data-entity-id="68d5ddd32748445ca363798b33b90188"
+            >
+                <div data-entity-attribute="id">
+                    <label>
+                        Id
+                        <span>68d5ddd3-2748-445c-a363-798b33b90188</span>
+                    </label>
+                </div>
+                <div data-entity-attribute="description">
+                    <label>
+                        Description
+                        <span>
+                            The description
+                        </span>
+                    </label>
+                </div>
+            </article>
+
+        `card` is the read-only counterpart to the orm.form attribute.
+        """
+        import dom, pom
+
+        # Create the `card` object that we will build and return
+        card = pom.card()
+
+        card.btnedit = dom.button('Edit')
+
+        inst = self.instance
+        rent = builtins.type(inst)
+
+        # Set some attributes that store meta data
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+        card.attributes['data-entity'] = e
+        card.attributes['data-entity-id'] = inst.id.hex
+
+        # Create a `names` list so we don't use the same attribute name
+        # twice.
+        names = list()
+
+        # The inheritance ascension loop
+        while rent:
+            
+            # Iterate over the mappings
+            for map in rent.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                if isinstance(map, foreignkeyfieldmapping):
+                    continue
+
+                name = map.name
+                label = name.capitalize()
+
+                # Prevent redundant use of a name
+                if name in names:
+                    continue
+
+                names.append(name)
+
+                # Skip systemic attributes 
+                if name == 'createdat':
+                    continue
+
+                if name == 'updatedat':
+                    continue
+
+                # Create a <div> for each mapping
+                div = dom.div()
+                div.attributes['data-entity-attribute'] = name
+                card += div
+
+                # Add a <label> to the <div>
+
+                lbl = dom.label(name.capitalize())
+
+                div += lbl
+
+                # Create a <span> to hold the mapping's value
+                v = getattr(inst, name)
+                span = dom.span(v)
+                div += span
+
+                span.identify()
+                lbl.for_ = span.id
+
+            # Ascend
+            rent = rent.orm.super
+
+        return card
 
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()

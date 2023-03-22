@@ -432,7 +432,7 @@ class test_user(tester.tester):
             #
             #        self['password'].retrievability = False
 
-class test_url(tester.tester):
+class url(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'ecommerce',
         super().__init__(mods=mods, *args, **kwargs)
@@ -472,6 +472,22 @@ class test_url(tester.tester):
         with orm.override(False):
             with orm.su(usr):
                 self.expect(None, url.orm.reloaded)
+
+    def it_calls_query(self):
+        qry = 'herp=derp'
+        url = ecommerce.url(address=f'https://www.slashdot.com?{qry}')
+        self.eq(qry, url.query)
+
+    def it_calls_qs(self):
+        qry = 'herp=derp&slurp=gerp'
+        url = ecommerce.url(address=f'https://www.slashdot.com?{qry}')
+
+        expect = {
+            'herp': ['derp'], 
+            'slurp': ['gerp']
+        }
+        self.eq(expect, url.qs)
+
 
 if __name__ == '__main__':
     tester.cli().run()

@@ -108,6 +108,31 @@ class requirement(orm.entity):
     # Explains why there is a need for the requirements
     reason = text
 
+    ''' Accessability '''
+    @property
+    def creatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # TODO Implement
+        # TODO Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # TODO Implement
+        # TODO Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
+    @property
+    def updatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # TODO Implement
+        # TODO Add tests
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return orm.violations.empty
+
 
 class type(orm.entity):
     """  An abstract entity to describe the type of another class. This

@@ -123,6 +123,11 @@ TODOs
     (the hacks always defaults standard mode (`html`)).  When correcting
     this, be sure to grep for the snowflake 10d9a676 as there are
     several other places that reference this TODO.
+
+    TODO Some elements like <meta>, <br/>, etc., should not be
+    allowed to have content appended to them. An exception should
+    be raised when that happens, or maybe the document's `invaild`
+    property should be True.
 """
 
 # References:
@@ -155,7 +160,7 @@ class attributes(entities.entities):
         self.element = el
         
     def __iadd__(self, *o):
-        """ Append an attribute to the collection via the += operator::
+        """ Append an attribute to the collection via the += operator:
 
             # Create an element
             p = dom.p()
@@ -170,15 +175,19 @@ class attributes(entities.entities):
         for o in o:
             if type(o) in (tuple, list):
                 o = attribute.create(*o)
+
             super().__iadd__(o)
+
         return self
 
     def clone(self):
         """ Returns a cloned version of the attributes collection.
         """
         attrs = type(self)(self.element)
+
         for attr in self:
             attrs += attr.clone()
+
         return attrs
             
     def append(self, o, v=None, uniq=False):
@@ -190,7 +199,7 @@ class attributes(entities.entities):
             attribute
             ---------
             The most obvious way to append an attribute to a collection
-            is to simple append an attribute objects:
+            is to simply append an attribute objects:
 
                 # Create a <p>
                 p = dom.p()
@@ -198,25 +207,27 @@ class attributes(entities.entities):
                 # Create an attribute object: id="my-id-value"
                 attr = dom.attribute('id', 'my-id-value')
 
-                # Append the object such that <p> becomes 
-                # <p id="my-id-value"></p>
+                # Append the object such that <p> becomes:
+                #
+                #     <p id="my-id-value"></p>
+                #
                 p.attributes += attr
 
             tuple
             -----
-            The above could have been append as a tuple instead::
+            The above could have been append as a tuple instead:
 
                 p.attributes += id', 'my-id-value'
 
             list
             ----
-            List work similarly::
+            Lists work similarly:
 
                 p.attributes += [id', 'my-id-value']
 
             dict
             ----
-            With dict's we can add multiple attrs in one line::
+            With dict's we can add multiple attrs in one line:
 
                 p.attributes += {
                     'id':    'my-id-value',
@@ -225,8 +236,8 @@ class attributes(entities.entities):
 
             attributes collections
             ----------------------
-            With attributes collections we can also add multiple attrs
-            in one line::
+            With attributes collections, we can also add multiple attrs
+            in one line:
 
                 attrs = dom.attributes()
                 attrs += 'id', 'my-id-value'
@@ -237,11 +248,7 @@ class attributes(entities.entities):
         attribute is not already in the collection.
         """
 
-        # TODO Some elements like <meta>, <br/>, etc., should not be
-        # allowed to have content appended to them. An exception should
-        # be raised when that happens, or maybe the document's `invaild`
-        # property should be True.
-            
+        # TODO Use isinstance
         if type(o) is str:
             o = attribute(o, v)
 
@@ -264,31 +271,32 @@ class attributes(entities.entities):
         """ Returns an `attribute` object based on the given `key`.
 
         :param: key int|slice|str: The index value used to find the
-        item
+        item.
+
             If the `key` is an `int`, return the attribute based on its
             position in the collection. (Note that in these examples,
-            `attrs` represents an attribute's collection)::
+            `attrs` represents an attribute's collection):
 
                 assert attrs[0] is attrs.first
 
-            If the `key` is a slice, return a slice of the attributes::
+            If the `key` is a slice, return a slice of the attributes:
 
                 assert attrs[0:2] == (attrs.first, attrs.second)
 
-            If the `key` is a str, return the attribute object by name::
+            If the `key` is a str, return the attribute object by name:
                 
                 attr = attribute(name='checked', value=True)
                 attrs += attr
 
-                attr is attrs['checked']
+                assert attr is attrs['checked']
 
-            Note that __getitem__ can also be used to set create new
-            attributes::
+            Note that __getitem__ can also be used to set and create new
+            attributes:
                 
                 attr = attrs['newattr']
                 attr.value = 'newvalue'
 
-                assert 'newvalue' == attrs['newattr']
+                assert 'newvalue' == attrs['newattr'].value
         """
 
         if isinstance(key, int):
@@ -326,7 +334,7 @@ class attributes(entities.entities):
             return self._ls[-1]
 
     def __setitem__(self, key, item):
-        """ Sets an `attribute` object based on the given `key`::
+        """ Sets an `attribute` object based on the given `key`:
 
             attrs['checked'] = True
 
@@ -360,6 +368,9 @@ class attributes(entities.entities):
                 else:
                     attr._classes = item._classes
             else:
+                if item is None:
+                    item = attribute.undef
+
                 attr.value = item
         else:
             if key == 'class':
@@ -380,8 +391,9 @@ class attributes(entities.entities):
 
     @property
     def _defined(self):
-        ''' Return a list of attributes that have values. (See
-        `attribute.isdef` for more information)
+        ''' Return a list of attributes that have values. 
+
+        See `attribute.isdef` for more information.
         '''
         return [x for x in self._ls if x.isdef]
 
@@ -422,20 +434,19 @@ class attributes(entities.entities):
         
 class attribute(entities.entity):
     """ A object that represents an HTML5 attribute. An attribute will
-    have a name and usually a value::
+    have a name and usually a value:
 
         <element name="value">
 
-    Boolean attributes can have a value of None to indicate they are
-    present in the HTML but have to value assigned to them. For example,
-    the following creates an ``input`` element that would be render as
-    follows in HTML: <input type="checkbox" checked>
+    Boolean attributes can have a value of True to indicate they are
+    present in the HTML. For example, the following creates an `input`
+    element that would be render as follows in HTML: <input
+    type="checkbox" checked>
 
         inp = dom.input()
         inp.attributes['type'] = checkbox
-        inp.attributes['checked'] = None
+        inp.attributes['checked'] = True
     """
-
     class undef:
         """ A class used to indicate that an attribute has not been
         defined.
@@ -478,25 +489,32 @@ class attribute(entities.entity):
     @property
     def value(self):
         """ Returns the value of the attribute.
+
+        The value will be the string that the attribute was
+        assigned. If the attribute is a boolean value, True will be
+        returned if the attribute exists. Otherwise, None will be
+        returned.
         """
         if self.isdef:
+            # If value is None but the attribute is "defined", it must
+            # be a boolean value so return True.
             if self._value is None:
-                return None
+                return True
+
+            # Return a stringified version
             return str(self._value)
+
         return None
 
     @value.setter
     def value(self, v):
         """ Sets the value of the attribute.
+
+        :param: v str|True|None: The value to set the attribute to.
         """
         # TODO We should raise ValueError if v contains an ambiguous
         # ampersand.
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-
-        # TODO Setting attributes to boolean values has not been tested.
-        # See the comment below to understand the intention of boolean
-        # values in this context and write tests to ensure that
-        # everytihng works as expected.
 
         # If v is a True, set it to None. This has the effect of
         # including the attribute but with no value, e.g.,
@@ -515,6 +533,7 @@ class attribute(entities.entity):
         # will remove the required attribute.
         #
         #     <input>
+        #
         if v is True:
             v = None
         elif v is False:
@@ -524,9 +543,10 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
-        """ Returns True if an attribute is defined, False otherwise. An
-        undefined attribute can be created by indexing the `attributes`
-        collection without setting a `value`::
+        """ Returns True if an attribute is defined, False otherwise. 
+
+        An undefined attribute can be created by indexing the
+        `attributes` collection without setting a `value`:
 
             id = attrs['id']
 
@@ -536,8 +556,8 @@ class attribute(entities.entity):
 
             assert attrs.count == 0
 
-        If the use decides later to give `id` a value, the `attrs`
-        collection will reveal the attribute to the user::
+        If the user decides later to give `id` a value, the `attrs`
+        collection will reveal the attribute to the user:
             
             assert attrs.count == 0
             id.value = 'myvalue'
@@ -559,6 +579,12 @@ class attribute(entities.entity):
 
         return attribute(name, v)
 
+    @property
+    def isboolean(self):
+        """ Returns True if the attribute is a boolean.
+        """
+        return self.value is True
+
     def __repr__(self):
         """ Returns a str (non-HTML) representation of the attribute.
         """
@@ -570,19 +596,21 @@ class attribute(entities.entity):
         """ Returns a str (non-HTML) representation of the attribute
         ('attr="value"').
         """
-        r = '%s="%s"'
-        r %= self.name, self.value
+        r = self.name
+
+        if not self.isboolean:
+            r += f'="{self.value}"'
+
         return r
 
     @property
     def html(self):
         """ Returns a string of HTML representing the attribute.
-        Example::
+        Example:
             
             attributename="attribute-value"
         """
-
-        if self.value is None:
+        if self.isboolean:
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
@@ -956,6 +984,41 @@ class elements(entities.entities):
 
         return sels.match(self)
 
+    def __setitem__(self, key, v):
+        """ Set a direct child element of this `elements` collection by
+        an index:
+
+            div = dom.html('<div><p>Replace Me</p></div>')
+            div.elements[0] = dom.p('The replacement')
+
+        :param: key int|slice: The index to use.
+
+        :param: v dom.element: The element to set at the index.
+        """
+
+        def collectivize(e):
+            """ If `e` is a collection or sequence, return e, otherwise,
+            put `e` in a list and return the list.
+
+            :param: e dom.element|dom.elements The element(s) to
+            collectivize.
+            """
+            if isinstance(e, element):
+                return [e]
+            elif isinstance(e, elements):
+                return e
+            elif hasattr(e, '__iter__'):
+                return e
+            else:
+                return [e]
+
+        # Call super()'s __setitem__ to perform the actual setting. We
+        # give it our own collectivize method because dom.element
+        # objects (which is what we will most likely be setting) are
+        # iterable. However, super().__setitem__ needs to view
+        # dom.element as regurlar objects; not collections or sequences.
+        super().__setitem__(key, v, collectivize=collectivize)
+
     @property
     def children(self):
         """ Returns a new ``elements`` collection containing all
@@ -1048,6 +1111,7 @@ class elements(entities.entities):
     def _setparent(self, v):
         if self.parent:
             raise MoveError('Parent already set')
+
         self._parent = v
 
     def _text2element(self, txt):
@@ -1064,14 +1128,7 @@ class elements(entities.entities):
         """
 
         if type(txt) is str:
-            # If we are appending a text node to a <script> tag, we
-            # don't want to do any HTML escaping. Escaping the
-            # contents of a <script> tag (e.g., JavaScript, JSON,
-            # etc) means the quotes and angle brakets would be
-            # garbled thus rending the script uninterpretable, e.g.,
-            # console.log(&#x27;Hello, world&#x27;)
-            esc = not isinstance(self.parent, script)
-            return text(txt, esc=esc)
+            return text(txt)
 
         return txt
 
@@ -1364,7 +1421,7 @@ class element(entities.entity):
     # A tuple of supported trigger methods. These correspond to DOM
     # methods, such as element.focus(), which trigger a corresponding
     # event (onfocus).
-    Triggers = 'click', 'focus', 'blur', 'input',
+    Triggers = 'click', 'focus', 'blur', 'input', 'submit'
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
     # keydown/onkeydown), Make sure you add the trigger to the
@@ -1383,10 +1440,7 @@ class element(entities.entity):
     def click(self):
         """ Triggers the `click` event for this element.
         """
-        # TODO I think we can remove the `return` keyword from these
-        # lines. The return value is always None because it is calling
-        # the event (entities.event.__call__)
-        return self._trigger('click')()
+        self._trigger('click')()
 
     @property
     def onfocus(self):
@@ -1401,7 +1455,7 @@ class element(entities.entity):
     def focus(self):
         """ Triggers the `focus` event for this element.
         """
-        return self._trigger('focus')()
+        self._trigger('focus')()
 
     @property
     def onblur(self):
@@ -1416,7 +1470,7 @@ class element(entities.entity):
     def blur(self):
         """ Triggers the `blur` event for this element.
         """
-        return self._trigger('blur')()
+        self._trigger('blur')()
 
     @property
     def oninput(self):
@@ -1431,7 +1485,7 @@ class element(entities.entity):
     def input(self):
         """ Triggers the `input` event for this element.
         """
-        return self._trigger('input')()
+        self._trigger('input')()
 
     def _on(self, ev):
         """ Return a memoized dom.event object for this event named by
@@ -1481,9 +1535,16 @@ class element(entities.entity):
         :param: e entity|entities|callable|int|str: The entity or a
         way of referencing entity objects to be removed.
         """
-        if el:
+        if isinstance(el, element):
             # Remove el from self's child elements.
             return self.elements.remove(el)
+
+        elif isinstance(el, str):
+            # Remove by CSS selector
+            sels = el
+            els = self.elements[sels]
+            return els.remove()
+
         else:
             # This block causes `.remove` to behave more like jQuery's
             # version in that you can just call the `.remove` method on
@@ -1565,6 +1626,9 @@ class element(entities.entity):
                     f'parent {rent}'
                 )
         
+    def __setitem__(self, ix, v):
+        self.elements[ix] = v
+
     @property
     def first(self):
         """ Returns the first child element under this `element` object.
@@ -1595,6 +1659,14 @@ class element(entities.entity):
         returned.
         """
         return self.elements.fourth
+
+    @property
+    def fifth(self):
+        """ Returns the fifth child element under this `element` object.
+        If the collection has fewer than 4 elements underneath, None is
+        returned.
+        """
+        return self.elements.fifth
 
     @property
     def seventh(self):
@@ -2008,6 +2080,7 @@ class element(entities.entity):
     def _setparent(self, v):
         if v and self.parent and self.parent is not v:
             raise MoveError('Parent already set')
+
         self._parent = v
 
     def getsiblings(self, accompany=False):
@@ -2224,6 +2297,19 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def getattr(self, attr):
+        """ Returns the str value of the attribute `attr` for this
+        `element`. For Boolean values (i.e., attributes that appear
+        alone without a value), True is returned. If the attribute does
+        not exist, None is returned.
+
+        This is a convenience methed since using the regurlar
+        `attributes` collection tends to be too verbose.
+
+        :param: str attr: The name of the attribute to get.
+        """
+        return self.attributes[attr].value
+
     def hasattr(self, attr):
         """ Returns True if this `element` has the attribute `attr` in
         its collection of attributes, False otherwise.
@@ -2367,7 +2453,7 @@ class element(entities.entity):
 
     @property
     def html(self):
-        """ Returns the HTML representation of the element and its
+        """ Returns the HTML representation of this `element` and its
         children.
 
         Note that there won't be any linefeeds or indentation to make
@@ -2381,7 +2467,20 @@ class element(entities.entity):
             body = self.html
 
         for i, el in builtins.enumerate(self.elements):
-            body += el.html
+            
+            # Get the element's `html` string representation unless self
+            # is a <script> (see below)
+            attr = 'html'
+
+            if isinstance(el, text):
+                if isinstance(self, script):
+                    # If self is a <script> and `el` is a `text` node,
+                    # we want to get the node's unescaped text using
+                    # it's `value` attribute. The text in a <script>
+                    # should never be altered.
+                    attr = 'value'
+
+            body += getattr(el, attr)
 
         if isinstance(self, text):
             return body
@@ -2414,7 +2513,7 @@ class element(entities.entity):
 
     def __repr__(self):
         r = '%s(%s)'
-        attrs = ' '.join(str(x) for x in self.attributes)
+        attrs = ', '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
         return r
 
@@ -2568,24 +2667,15 @@ class text(element):
         
         https://developer.mozilla.org/en-US/docs/Web/API/Text
     """
-    def __init__(self, v, esc=True, *args, **kwargs):
+    def __init__(self, v, *args, **kwargs):
         """ Create the text node.
 
         :param: v str: The value of the text node; i.e., the text
         itself.
-
-        :param: esc bool: Convert the characters &, < and > in v to
-        HTML-safe sequences. 
         """
         super().__init__(*args, **kwargs)
 
-        self._value = v
-
-        # We may want to do this in the html accessor
-        self._html = v
-        if esc:
-            import html as htmlmod
-            self._html = htmlmod.escape(self._value)
+        self.value = v
 
     def clone(self):
         """ Create a new text node with the same text value as this text
@@ -2616,17 +2706,31 @@ class text(element):
         """ Returns the HTML representation of the text node.  For
         effeciency, needless whitespace will be removed.
         """
-        return dedent(self._html).strip('\n')
+        import html as htmlmod
+
+        v =  dedent(self._value).strip('\n')
+
+        if not self._isesc:
+            v =  htmlmod.escape(v)
+
+        return v
 
     @html.setter
     def html(self, v):
-        self._html = v
+        raise NotImplementedError(
+            "Set text node's value with the 'value' property"
+        )
 
     @property
     def value(self):
         """ Return the text value of the text node.
         """
         return self._value
+
+    @value.setter
+    def value(self, v):
+        self._isesc = False
+        self._value = v
 
 class wbrs(elements):
     """ A class used to contain a collection of ``wbr`` elements.
@@ -2894,6 +2998,22 @@ class form(element):
     @autocomplete.setter
     def autocomplete(self, v):
         self.attributes['autocomplete'].value = v
+
+    ''' Events '''
+    @property
+    def onsubmit(self):
+        """ Returns the `onsubmit` event for this form.
+        """
+        return self._on('submit')
+
+    @onsubmit.setter
+    def onsubmit(self, v):
+        setattr(self, '_onsubmit', v)
+
+    def submit(self):
+        """ Triggers the `submit` event for this form.
+        """
+        self._trigger('submit')()
 
 class links(elements):
     """ A class used to contain a collection of ``link`` elements.
@@ -3188,6 +3308,23 @@ class button(element):
     @formmethod.setter
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
+
+    def click(self):
+        """ Triggers the click event for a button.
+
+        For <button>s that have a `type` of "submit", this event
+        searches for the <button>'s <form> and triggers the <form>'s
+        `submit` event.
+        """
+        if self.type == 'submit':
+            # TODO We could also use the button.form (<button
+            # form="frm-123>) attribute to find the form for the button
+            # if the "closest" is not found.
+            frm = self.closest('form')
+            if frm:
+                frm.submit()
+                
+        self._trigger('click')()
 
 class navs(elements):
     """ A class used to contain a collection of ``nav`` elements.
@@ -6814,14 +6951,14 @@ class html(element):
                 else:
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += data
+                        last.value += data
                     else:
                         cur[0] += data
 
             def handle_entityref(self, name):
-                """ This method is called to process a named character reference
-                of the form &name; (e.g. &gt;), where name is a general entity
-                reference (e.g. 'gt').
+                """ This method is called to process a named character
+                reference of the form &name; (e.g. &gt;), where name is
+                a general entity reference (e.g. 'gt').
                 """
                 try:
                     cur = self.stack[-1]
@@ -6830,28 +6967,31 @@ class html(element):
                         'No element to add text to', [None, self.getpos()]
                     )
                 else:
-                    txt = text('&%s;' % name, esc=False)
+                    import html as htmlmod
+                    txt = htmlmod.unescape('&' + name + ';');
+                    txt = text(txt)
+
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += txt.value
+                        last.value += txt.value
                     else:
                         cur[0] += txt
 
             def handle_charref(self, name):
-                """ This method is called to process decimal and hexadecimal
-                numeric character references of the form &#NNN; and &#xNNN;. For
-                example, the decimal equivalent for &gt; is &#62;, whereas the
-                hexadecimal is &#x3E;; in this case the method will receive '62'
-                or 'x3E'. This method is never called if convert_charrefs is
-                True.
+                """ This method is called to process decimal and
+                hexadecimal numeric character references of the form
+                &#NNN; and &#xNNN;. For example, the decimal equivalent
+                for &gt; is &#62;, whereas the hexadecimal is &#x3E;; in
+                this case the method will receive '62' or 'x3E'. This
+                method is never be called if convert_charrefs is True.
                 """
-                # TODO: This was added after the main html tests were written
-                # (not sure why it was left behind). We should write tests that
-                # target it specifically.
+                # TODO: This was added after the main html tests were
+                # written (not sure why it was left behind). We should
+                # write tests that target it specifically.
 
-                # TODO: There is a lot of shared logic between this handler and
-                # handle_entityref, handle_data, etc. We can start thinking
-                # about consolidating this logic.
+                # TODO: There is a lot of shared logic between this
+                # handler and handle_entityref, handle_data, etc. We can
+                # start thinking about consolidating this logic.
                 try:
                     cur = self.stack[-1]
                 except IndexError:
@@ -6859,10 +6999,14 @@ class html(element):
                         'No element to add text to', [None, self.getpos()]
                     )
                 else:
-                    txt = text('&#%s;' % name, esc=False)
+                    # Unescape text
+                    import html as htmlmod
+                    txt = htmlmod.unescape('&#' + name + ';');
+                    txt = text(txt)
+
                     last = cur[0].elements.last
                     if type(last) is text:
-                        last.html += txt.value
+                        last.value += txt.value
                     else:
                         cur[0] += txt
 
@@ -9898,10 +10042,36 @@ class eventargs(entities.eventargs):
 
         self.handler  =  hnd
         self.src      =  src
-        self.html     =  html
+        self._html     =  html
 
         # The name of the method that triggered the event
         self.trigger  =  trigger
+
+    @property
+    def html(self):
+        """ The HTML sent from the browser to the event handler. The
+        HTML can be modified (or replaced using the `html` setter) and
+        the changed HTML received by the browser.
+        """
+        return self._html
+
+    @html.setter
+    def html(self, v):
+        # If we are replacing existing HTML, use the id from the old
+        # HTML's root and use it for the new HTML. We do this because
+        # JavaScript in the browser (eventjs) uses the id of the HTML it
+        # sent to be the same as what it receives so it replace the old
+        # HTML in the DOM with the new HTML.
+        if html := self._html:
+            if isinstance(v, element):
+                if v.id:
+                    raise ValueError(
+                        "Can't overwrite existing id"
+                    )
+
+                v.id = html.only.id
+
+        self._html = v
 
     def preventDefault(self):
         self.cancel = True

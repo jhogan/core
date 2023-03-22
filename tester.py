@@ -26,6 +26,7 @@ import inspect
 import io
 import json
 import logs
+import os
 import party
 import pdb
 import pom
@@ -225,8 +226,8 @@ class testers(entities.entities):
         return r
 
     @property
-    def ok(self):
-        return all(x.ok for x in self)
+    def isok(self):
+        return all(x.isok for x in self)
 
     def __str__(self):
         return self._tostr(str, includeHeader=False)
@@ -449,7 +450,17 @@ class tester(entities.entity):
 
     @property
     def rebuildtables(self):
-        return self.testers.rebuildtables
+        try:
+            testers = self.testers
+        except AttributeError as ex:
+            raise AttributeError(
+                'The testers attribute is not available. '
+                "Make sure that you are calling super()'s constructor "
+                "in the subclass's constructor before doing "
+                'anything else.'
+            ) from ex
+        else:
+            return self.testers.rebuildtables
 
     class _browsers(www.browsers):
         pass
@@ -460,6 +471,34 @@ class tester(entities.entity):
             self.tester = t
 
         ''' Inner classes '''
+        class messages(entities.entities):
+            """ A class to collect browser `messages`
+            """
+
+        class message(entities.entity):
+            """ Represents a browser message.
+
+            A browser message is a request/response pairing. Each time
+            the browser tab navigates to a URL, or an XHR request is
+            made in the browser tab, a request is made. This request
+            makes up the request portion of a message. If the webserver
+            responds with something (which, of course, will usually be
+            the case), that response will become the response portion of
+            the message. 
+
+            `messages` are basically the entries in the table when you
+            go to a real browser's "Network" tab in dev tools.
+
+            These `tester` `tab` objects should always be recording
+            requests/respeone's as `message` object collected in the
+            `tab`'s `messages` collection.
+            """
+            def __init__(self, req=None, res=None, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+                self.request = req
+                self.response = res
+
         class _tabs(www.browser._tabs):
             """ A collection of test browser tabs.
 
@@ -517,6 +556,10 @@ class tester(entities.entity):
                 self._onbeforeunload = None
                 self._onafterload = None
                 self.url = None
+
+                # Create a `messages` collection to captures the
+                # request/responses that the `tab` makes.
+                self.messages = tester._browser.messages()
 
             def default_event(self, src, eargs):
                 """ This is the default event handler for all supported
@@ -633,6 +676,26 @@ class tester(entities.entity):
                     # Put `that` where `this` was
                     rent.elements.insert(ix, that)
 
+                def exec(el):
+                    """ Read the <article> with an 'instructions' class
+                    for `instruction` elements.
+
+                    An example of an `instruction` is set-url which is the
+                    way Python code can cause JavaScript code running in
+                    the browser to set the browser`s `window.location`.
+                    """
+                    instrss = el['.instructions']
+
+                    for instrs in instrss:
+                        instrs = instrs['.instruction']
+
+                        for instr in instrs:
+                            attr = instr.attributes['name']
+                            if attr.value == 'url':
+                                attr = instr.attributes['content']
+                                url = ecommerce.url(address=attr.value)
+                                self.url = url
+
                 ''' Method logic '''
 
                 isnav = is_nav_link(src)
@@ -686,7 +749,7 @@ class tester(entities.entity):
                     mod += res.html.only
                     return
 
-                if isnav:
+                if isinstance(res.html.first, dom.main):
                     # Replace the <main> element with the response
                     # (res.html)
                     main = res.html.only
@@ -701,6 +764,8 @@ class tester(entities.entity):
                     # subject of the event from the tab's DOM (.html)
                     ids = list('#' + x.id for x in eargs.html)
                     for i, id in enumerate(ids):
+                        el = res.html[i]
+                        exec(el)
                         replace(id, res.html[i])
 
             # TODO The ability for a tab to maintain its own internal
@@ -1097,6 +1162,10 @@ class tester(entities.entity):
                 # Create request. Associate with app.
                 req = www.request(app)
 
+                msg = tester._browser.message(req=req)
+
+                self.messages += msg
+
                 app.breakonexception = \
                     self.browser.tester.testers.breakonexception
                 
@@ -1104,6 +1173,8 @@ class tester(entities.entity):
                 iter = app(env, start_response)
 
                 res = www.response(req) 
+
+                msg.response = res
 
                 # Just get the status code from st (which contains the
                 # entire phrase, i.e., '200 OK'). In the future, we may
@@ -1137,12 +1208,33 @@ class tester(entities.entity):
                         )
                         self.browser.cookies += cookie 
 
-                self.referer = ecommerce.url(address=req.url)
+                self.referer = req.url
 
                 self.page = pg
                 self.site = ws
                 return res
 
+            @contextmanager
+            def capture(self):
+                """ A context manager the browser `messages` generated
+                by an event - such as a button click.
+
+                This is used by tests to determine what the HTTP
+                response of a dom.event is.
+                """
+                msgs = tester._browser.messages()
+
+                def messages_onadd(src, eargs):
+                    nonlocal msgs
+                    e = eargs.entity
+                    msgs += e
+                    
+                try:
+                    self.messages.onadd += messages_onadd
+                    yield msgs
+                finally:
+                    self.messages.onadd -= messages_onadd
+                    
         ''' Class members of browser'''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
@@ -1171,7 +1263,7 @@ class tester(entities.entity):
         return tester._browser(self, *args, **kwargs)
 
     @property
-    def ok(self):
+    def isok(self):
         return self.failures.isempty
 
     @staticmethod
@@ -1215,13 +1307,13 @@ class tester(entities.entity):
             self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
 
     def true(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if not actual: self._failures += failure()
@@ -1233,13 +1325,13 @@ class tester(entities.entity):
         if not actual: self._failures += failure()
 
     def assertFalse(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
 
     def false(self, actual, msg=None):
-        if type(actual) != bool:
+        if type(actual) is not bool:
             raise builtins.ValueError('actual must be bool')
 
         if actual: self._failures += failure()
@@ -1248,7 +1340,7 @@ class tester(entities.entity):
         if actual: self._failures += failure()
 
     def falsey(self, actual, msg=None):
-        if not actual: self._failures += failure()
+        if actual: self._failures += failure()
 
     def assertFail(self, msg=None):
         self._failures += failure()
@@ -1415,28 +1507,28 @@ class tester(entities.entity):
 
     def assertValid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if not v:
             self._failures += failure(ent=ent)
 
     def valid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if not v:
             self._failures += failure(ent=ent)
 
     def assertInValid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if v:
             self._failures += failure(ent=ent)
 
     def invalid(self, ent):
         v = ent.isvalid
-        if type(v) != bool:
+        if type(v) is not bool:
             raise Exception('invalid property must be a boolean')
         if v:
             self._failures += failure(ent=ent)
@@ -1587,7 +1679,15 @@ class tester(entities.entity):
             ok = 'FAIL'
 
         name = self.__class__.__name__
-        r += "[{}]{}{}".format(name, ' ' * (72 - len(name) - 4), ok)
+        file = sys.modules[self.__class__.__module__].__file__
+
+        file = file.lstrip('./')
+
+        file = os.path.basename(file)
+
+        test = f'({file}) [{name}]'
+
+        r += "{}{}{}".format(test, ' ' * (72 - len(test) - 4), ok)
 
         if self.failures.isempty:
             return r
@@ -1609,6 +1709,35 @@ class tester(entities.entity):
             msg = f'Actual status: {res.status}'
             
             self._failures += failure()
+
+    def h200(self, res):
+        if res.status != 200:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
+    def h500(self, res):
+        if res.status != 500:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
+    def click(self, e, tab):
+        """ Call the click() trigger method on `e`. Return the last
+        response the browser recorded.
+
+        Testing the return value is important for tests to ensure that
+        dom.events were successful.
+        """
+        trig = getattr(e, 'click')
+
+        with tab.capture() as msgs:
+            trig()
+
+        if last := msgs.last:
+            return last.response
+
+        return None
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
@@ -1913,7 +2042,7 @@ class cli:
         print(ts)
 
         # Return exit code (0=success, 1=fail)
-        sys.exit(int(not ts.ok))
+        sys.exit(int(not ts.isok))
 
     def parseargs(self):
         # TODO Consider adding a -t to run whichever test has been

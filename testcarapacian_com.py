@@ -11,11 +11,15 @@ from datetime import timezone, datetime, date
 from dbg import B, PM
 from func import enumerate, getattr
 from uuid import uuid4, UUID
+from decimal import Decimal as dec
 import carapacian_com
+import db
+import effort
 import orm
 import party
 import pom
 import primative
+import random
 import tester
 
 class sites(tester.tester):
@@ -67,7 +71,7 @@ class home(tester.tester):
         mods = 'file', 'asset', 
         super().__init__(mods=mods, *args, **kwargs)
 
-    def it_call_name(self):
+    def it_calls_name(self):
         pg = carapacian_com.home()
         self.eq('index', pg.name)
 
@@ -85,7 +89,6 @@ class home(tester.tester):
         tab = self.browser().tab()
 
         res = tab.navigate('/', ws)
-        print(tab)
         self.status(200, res)
 
         mnus = tab['header>section>nav[aria-label=Main]']
@@ -104,7 +107,7 @@ class tickets(tester.tester):
         mods = 'file', 'asset', 
         super().__init__(mods=mods, *args, **kwargs)
 
-    def it_call_name(self):
+    def it_calls_name(self):
         pg = carapacian_com.tickets()
         self.eq('tickets', pg.name)
 
@@ -153,9 +156,9 @@ class tickets(tester.tester):
         self.eq(dt1.date, today)
 
 class ticketsspa(tester.tester):
-    def it_call_name(self):
-        pg = carapacian_com.tickets()
-        self.eq('tickets', pg.name)
+    def it_calls_name(self):
+        pg = carapacian_com.ticketsspa.ticket()
+        self.eq('ticket', pg.name)
 
     def it_GETs(self):
         ws = carapacian_com.site()
@@ -163,6 +166,131 @@ class ticketsspa(tester.tester):
 
         res = tab.get('/en/ticketsspa', ws)
         self.status(200, res)
+
+class ticketsspa_ticket(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = carapacian_com.site().Proprietor
+        super().__init__(propr=propr, *args, **kwargs)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
+        self.status(200, res)
+
+        frm = tab['form'].only
+        inps = frm['input, textarea']
+        expect = [
+            'id',        'created',      'required',  'budget',
+            'quantity',  'description',  'reason'
+        ]
+        actual = inps.pluck('name')
+
+        self.eq(expect, actual)
+
+    def it_creates(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
+        self.status(200, res)
+
+        frm = tab['form'].only
+
+        
+        inps = frm['input, textarea']
+
+        ''' Test with main fields populated '''
+        id         =  frm['input[name=id]'].only
+        desc       =  inps['[name=description]'].only
+        created    =  inps['[name=created]'].only
+        required   =  inps['[name=required]'].only
+        budget     =  inps['[name=budget]'].only
+        qty        =  inps['[name=quantity]'].only
+        reason     =  inps['[name=reason]'].only
+        btnsubmit  =  frm['button[type=submit]'].only
+
+        id = UUID(id.value)
+
+        desc.text = self.dedent('''
+            As a user,
+            I would like the password field to be masked,
+            So ne'er-do-well can shoulder surf my password.
+        ''')
+
+        reason.text = self.dedent('''
+            This feature is necessary to for security compliance.
+        ''')
+
+        self.expect(
+            db.RecordNotFoundError, lambda: effort.requirement(id)
+        )
+
+        res = self.click(btnsubmit, tab)
+        self.ok(res)
+
+        req = self.expect(
+            None, lambda: effort.requirement(id)
+        )
+
+        self.eq(id.hex, req.id.hex)
+
+        self.eq(desc.text, req.description)
+
+        self.eq(reason.text, req.reason)
+
+        self.none(req.asset)
+        self.none(req.product)
+        self.zero(req.roles)
+
+    def it_creates_and_updates_qs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        res = tab.navigate('/en/ticketsspa/ticket?crud=create', ws)
+        self.status(200, res)
+
+        frm = tab['form'].only
+
+        inp = frm['input[name=id]'].only
+
+        inps = frm['input, textarea']
+
+        desc = inps['[name=description]'].only
+        reason = inps['[name=reason]'].only
+
+        desc.text = self.dedent('''
+            As a user,
+            I would like the password field to be masked,
+            So ne'er-do-well can shoulder surf my password.
+        ''')
+
+        btnsubmit = frm['button[type=submit]'].only
+
+        res = self.click(btnsubmit, tab)
+        self.ok(res)
+
+        art = res.html.first
+        id = art.attributes['data-entity-id'].value
+
+        self.eq(f'id={id}&crud=retrieve', tab.url.query)
+
+        self.eq(id, tab.url.qs['id'][0])
+
+    def it_edits(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        req = effort.requirement()
+        req.save()
+
+        res = tab.navigate(f'/en/ticketsspa/ticket?id={req.id}', ws)
+        self.status(200, res)
+
+        btnedit = res['button.edit'].only
+
+        btnedit.click()
 
 if __name__ == '__main__':
     tester.cli().run()

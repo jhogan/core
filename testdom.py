@@ -6,6 +6,7 @@ from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
 import dom, www
+import html as htmlmod
 import party
 import primative
 import re
@@ -92,7 +93,8 @@ class elements(tester.tester):
         rm_uuids(html)
         self.eq(TestHtmlMin, html.html)
 
-    def it_removes_elements(self):
+    def it_calls_remove(self):
+        ''' Remove self '''
         html = dom.html(TestHtml)
 
         bs = html['strong']
@@ -105,6 +107,76 @@ class elements(tester.tester):
 
         bs = html['strong']
         self.zero(bs)
+
+    def it_calls__setitem__(self):
+        added = list()
+        removed = list()
+
+        def clear():
+            nonlocal added, removed
+            added.clear()
+            removed.clear()
+
+        def elements_onadd(src, eargs):
+            added.append(eargs.entity)
+
+        def elements_onremove(src, eargs):
+            removed.append(eargs.entity)
+
+        ''' Quick test of append '''
+        clear()
+        div = dom.div()
+        div.elements.onadd += elements_onadd
+        div.elements.onremove += elements_onremove
+
+        p = dom.p()
+        p1 = dom.p()
+        p2 = dom.p()
+        p3 = dom.p()
+        p4 = dom.p()
+        p5 = dom.p()
+
+        div += p
+
+        self.one(added)
+        self.zero(removed)
+
+        self.is_(added[0], p)
+
+        ''' Set by index '''
+        clear()
+        div.elements[0] = p1
+
+        self.one(added)
+        self.one(removed)
+
+        self.is_(added[0], p1)
+        self.is_(removed[0], p)
+    
+        ''' Set elements by index '''
+        clear()
+        ps = dom.ps()
+        ps += p2, p3
+        div.elements[0] = ps
+
+        self.two(added)
+        self.one(removed)
+
+        self.is_(added[0], p2)
+        self.is_(added[1], p3)
+        self.is_(removed[0], p1)
+    
+        ''' Set by slice '''
+        clear()
+        ps = dom.ps()
+        ps += p4, p5
+        div.elements[:2] = ps
+
+        self.two(added)
+        self.two(removed)
+
+        self.eq([p4, p5], added[:2])
+        self.eq([p2, p3], removed[:2])
 
 class element(tester.tester):
     def it_raises_when_same_child_is_added_more_than_once(self):
@@ -145,7 +217,6 @@ class element(tester.tester):
         self.nine(ps)
         self.all(type(x) is dom.span for x in ps)
 
-        
     def it_raises_when_body_is_given_to_void_elements(self):
         ''' We want to get a ValueError when we add a body argument to
         an element that is marked `isvoid`. Elements that are "void",
@@ -439,7 +510,62 @@ class element(tester.tester):
         self.is_(em, p.elements.second)
         self.is_(span, p.elements.third)
 
-class test_comment(tester.tester):
+    def it_calls_getattr(self):
+        html = dom.html('''
+            <p class='secret code' hidden id=123>password1</p>
+        ''')
+
+        p = html['p'].only
+
+        self.eq('secret code', p.getattr('class'))
+        self.true(p.getattr('hidden'))
+        self.eq('123', p.getattr('id'))
+        self.none(p.getattr('required'))
+
+    def it_calls_hasattr(self):
+        html = dom.html('''
+            <p class='secret code' hidden id=123>password1</p>
+        ''')
+
+        p = html['p'].only
+
+        self.true(p.hasattr('class'))
+        self.true(p.hasattr('hidden'))
+        self.true(p.hasattr('id'))
+        self.false(p.hasattr('required'))
+
+    def it_calls_remove(self):
+        ''' Remove self '''
+        html = dom.html(TestHtml)
+        ps = html['body>p']
+
+        # We should start with three
+        self.three(ps)
+
+        # Get first and remove it
+        p = html['body>p'].first
+        p.remove()
+
+        ps = html['body>p']
+        self.two(ps)
+
+        ''' Remove children by selector '''
+        html = dom.html(TestHtml)
+
+        # We should start with three paragraphs
+        ps = html['body>p']
+        self.three(ps)
+
+        # Get <body>
+        body = html['body'].only
+
+        # Remove by selector
+        body.remove('p')
+
+        ps = html['body>p']
+        self.zero(ps)
+
+class comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
         com = dom.comment(txt)
@@ -546,7 +672,20 @@ class text(tester.tester):
 
         self.eq(expect, dom.text(txt).html)
 
-        self.eq(txt, dom.text(txt, esc=False).html)
+        expect = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn't matter, just throw it away!
+        </p>
+        ''')
+
+        self.eq(expect, dom.text(txt).value)
 
     def it_calls__str__(self):
         txt = self.dedent('''
@@ -696,40 +835,104 @@ class attribute(tester.tester):
 
         self.eq(2, i)
 
-    def it_sets_None_attr(self):
+    def it_sets_and_unsents_boolean_attributes(self):
+        ''' Set and unset using __setitem__ '''
         inp = dom.input()
-        inp.attributes['disabled'] = None
+        inp.attributes['disabled'] = True
+
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
+
         self.one(inp.attributes)
 
-        expect = self.dedent('''
-        <input disabled>
-        ''')
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
 
-        self.eq(expect, inp.pretty)
+        # Unset by assigning False
+        inp.attributes['disabled'] = False
 
+        attr = inp.attributes['disabled']
+        self.none(attr.value)
+
+        self.zero(inp.attributes)
+
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
+        # Unset by assigning None
+
+        # Set back to True
+        inp.attributes['disabled'] = True
+        self.eq('<input disabled>', inp.html)
+
+        # Unset with None
+        inp.attributes['disabled'] = None
+
+        self.false(inp.attributes['disabled'].isdef)
+
+        self.zero(inp.attributes)
+
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
+        ''' Set and unset by appending and removing'''
         inp = dom.input()
         inp.attributes.append('disabled')
-        self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
 
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
+        self.one(inp.attributes)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        inp.attributes.remove('disabled')
+
+        self.false(inp.attributes['disabled'].isdef)
+
+        ''' Set and unset by operating append and removing
+        '''
+        # Implicit setting
         inp = dom.input()
         inp.attributes += 'disabled'
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
         self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        inp.attributes -= 'disabled'
+
+        self.false(inp.attributes['disabled'].isdef)
+
+        self.zero(inp.attributes)
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
         
+        # Explicit setting
         inp = dom.input()
-        inp.attributes += 'disabled', None
+        inp.attributes += 'disabled', True
+        attr = inp.attributes['disabled']
+        self.true(attr.value)
         self.one(inp.attributes)
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-        self.eq(expect, inp.pretty)
+        self.eq('<input disabled>', inp.pretty)
+        self.eq('<input disabled>', inp.html)
+
+        inp.attributes -= 'disabled'
+
+        self.false(inp.attributes['disabled'].isdef)
+        self.zero(inp.attributes)
+        self.eq('<input>', inp.pretty)
+        self.eq('<input>', inp.html)
+
+    def it_calls__repr__(self):
+        inp = dom.input()
+        self.eq('input()', repr(inp))
+
+        inp.attributes += 'disabled'
+        self.eq('input(disabled)', repr(inp))
+        
+        inp.attributes += 'id', '123'
+        self.eq('input(disabled, id="123")', repr(inp))
 
     def it_appends_attribute(self):
         # Append attribute object
@@ -834,10 +1037,10 @@ class attribute(tester.tester):
         p.attributes += 'name', name
         p.attributes += style
         p.attributes += 'class', cls
-        self.true('data-id'    in  p.attributes)
-        self.true('name'  in  p.attributes)
-        self.true(style   in  p.attributes)
-        self.true('class' in  p.attributes)
+        self.true('data-id'  in  p.attributes)
+        self.true('name'     in  p.attributes)
+        self.true(style      in  p.attributes)
+        self.true('class'    in  p.attributes)
 
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
@@ -1160,7 +1363,6 @@ class html(tester.tester):
         '''
         self.expect(None, lambda: dom.html(html))
 
-
     def it_doesnt_parse_unknown_decls(self):
         # TODO The below dosen't work. The fake uknown declaration is
         # interpreted as a comment. The parses `unknown_decl` method is
@@ -1183,6 +1385,25 @@ class html(tester.tester):
         </html>
         '''
         self.expect(NotImplementedError, lambda: dom.html(html))
+
+    def it_parses_text_node_with_html_entities(self):
+        v = "This paragraph's content has an HTML entity."
+        esc = htmlmod.escape(v)
+
+        html = self.dedent(f'''
+        <p>
+          {esc}
+        </p>
+        ''')
+
+        html1 = dom.html(html)
+
+        self.eq(html, html1.pretty) 
+
+        # Get the text node
+        txt = html1['p'].only.elements.only
+
+        self.eq(v, txt.value.strip())
 
 class markdown(tester.tester):
     def it_parses_code(self):
@@ -1519,17 +1740,25 @@ class markdown(tester.tester):
         self.eq(expect, md.pretty)
 
         md = dom.markdown('&copy;')
-        p = md['p'].first
+
+        # TODO Currently we don't preserve HTML entities if they can be
+        # unescaped. That's to say, after we parse &amp;, it is turned
+        # into ©. This may become a nusance for people who need these
+        # entities preserved. Consider a blogger who wants to use HTML
+        # entities for the sake of readability or software
+        # compatability. This would obviously be a problem becaus
+        # whenever they submitted their content to the server, it would
+        # be parsed and converted to the actual UTF-8 glyphs and then
+        # sent back to them.
         expect = self.dedent('''
         <p>
-          &copy;
+          ©
         </p>
         ''')
 
         self.eq(expect, md.pretty)
 
         md = dom.markdown('4 < 5')
-        p = md['p'].first
 
         expect = self.dedent('''
         <p>

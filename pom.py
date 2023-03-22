@@ -749,9 +749,6 @@ function ajax(e){
                 return;
             }
 
-            // Prevent the browser from trying to load the HREF at the
-            // navigation link. We will do that here.
-            e.preventDefault()
         }else{
             // If the user clicked a nav link, but we aren't in SPA
             // mode, allow the browser to navigate to the link in the
@@ -759,6 +756,9 @@ function ajax(e){
             return;
         }
     }
+
+    // At this point, preventDefault() because it's all AJAX from here. 
+    e.preventDefault()
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
@@ -787,8 +787,10 @@ function ajax(e){
     }else{
         // Concatenate the fragment's HTML
         html = ''
-        for(el of els)
+        for(el of els){
+            wake(el)
             html += el.outerHTML
+        }
 
         pg = window.location.href
     }
@@ -806,44 +808,79 @@ function ajax(e){
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
 
+            var els = document.querySelectorAll('.exception')
+            els.forEach(e => e.remove())
+
             // If success...
             if (this.status < 400){
 
                 // Parse the HTML response
                 var parser = new DOMParser()
 
-                var els = parser.parseFromString(
+                // If no HTML was returned from the XHR request, we can
+                // return. Usually, events will return HTML, however it
+                // possible that in some cases they will choose not to.
+                if(!xhr.responseText){
+                    return
+                }
+
+                // Parse the HTML we received into a DOM object.
+                els = parser.parseFromString(
                     xhr.responseText, "text/html"
                 )
 
                 // Get the direct children under the <body> tag of the
                 // HTML. These are the HTML fragments that will replace
-                // current HTML fragments.
+                // current HTML fragments. Note that the HTML we
+                // received probably does not contain an <html> or
+                // <body> tag; `parser.parseFromString` adds these tags
+                // to the DOM it creates so we have to account for that
+                // when we extract the elements we are interested in.
                 els = els.querySelectorAll('html>body>*')
 
-                if(inspa){
+                // If a <main> tag was returned, we are doing an SPA
+                // page load.
+                if(els[0].tagName == 'MAIN'){
+                    // Get the new <main> element
                     let new_ = els[0]
-                    let url = new_.getAttribute('data-path')
 
+                    // Make sure event handler are hooked up to new
+                    // <main> HTML.
+                    add_listeners(new_);
+
+                    // Replace the current <main> element with the new_
+                    // one received from the AJAX call.
                     main.parentNode.replaceChild(new_, main)
+
+                    // Push the HTML of the new <main> object on to the
+                    // history stack so users can get to it by clicking
+                    // the browser's back button.
                     window.history.pushState(
                         new_.outerHTML, null, pg
                     )
-                }else{ // Not inspa
-
+                // If the element is not a <main>, we are doing a
+                // regular AJAX call, i.e., we are not loading a new
+                // <main> as a SPA page.
+                }else{
                     // Iterate over each element and replace their
                     // client-side counterpart
                     for(el of els){
                         // Use the fragment's id to find and replace
-                        let old = document.querySelector('#' + el.id)
+                        exec(el)
+
+                        // Add event listeners to new HTML
+                        add_listeners(el);
+
+                        // Get the id of the element. `el.id` doesn't
+                        // work here.
+                        let id = el.getAttribute('id')
+
+                        let old = document.querySelector('#' + id)
                         old.parentNode.replaceChild(el, old)
                     }
                 }
             }else{ // If there was an error...
                 // Remove any elements with a class of 'exception'
-                let els = document.querySelectorAll('.exception')
-                els.forEach(e => e.remove())
-
                 // Insert the response HTML making it the first element
                 // under <main>. The response HTML will have a parent
                 // element with an "exception" class.
@@ -859,26 +896,14 @@ function ajax(e){
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.send(JSON.stringify(d))
 }
+'''
+        r += f'const TRIGGERS = {list(dom.element.Triggers)}'
 
+        r += '''
 // Once content has been loaded (DOMContentLoaded), we can add listeners
 // to the controls.
 document.addEventListener("DOMContentLoaded", function(ev) {
-'''
-
-        r += f'    trigs = {list(dom.element.Triggers)}'
-
-        r += '''
-    // For each currently supported trigger (you may
-    // have to update Triggers if the event you want to
-    // support doesn't exist)
-    for (trig of trigs){
-        var els = document.querySelectorAll(
-            '[data-' + trig + '-handler]'
-        )
-
-        for(el of els)
-            el.addEventListener(trig, ajax)
-    }
+    add_listeners(document.documentElement);
 
     els = document.querySelectorAll(
         'header>section>nav>ul>li a'
@@ -888,6 +913,12 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         el.addEventListener('click', ajax)
 
     window.addEventListener('popstate', (e) => {
+        // If there is no state to pop (perhaps because nothing has been
+        // pushed yet), just force the browser back.
+        if (e.state === null){
+            history.back()
+        }
+
         // Parse the HTML response
         var parser = new DOMParser()
 
@@ -897,6 +928,9 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
         new_ = new_.querySelector('html>body>main')
 
+        // Make sure event handler are hooked up again
+        add_listeners(new_);
+
         var old = document.querySelector('main')
 
         old.parentNode.replaceChild(new_, old)
@@ -904,7 +938,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
     var main = document.querySelector('main')
     window.history.pushState(
-        main.outerHTML, null, window.location.pathname
+        main.outerHTML, null, window.location.href
     )
 
     // We default to non-SPA.
@@ -914,6 +948,113 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         inspa = false
     }
 });
+
+function add_listeners(el){
+    /* Takes an element `el` and examins it for any
+     * data-{trigger}-handler attributes. Uses this information to
+     * attach el to event the `ajax` event handler.
+    */
+    var rent
+    if(rent = el.parentElement){
+        el = rent
+    }
+
+    for (var trig of TRIGGERS){
+        var els = el.querySelectorAll(
+            '[data-' + trig + '-handler]'
+        )
+
+        for(var el1 of els){
+            el1.addEventListener(trig, ajax)
+        }
+    }
+}
+
+function wake(el){
+    /* Make the element (typically a <form>) fully aware of the values
+     * that the user has put in its form fields.
+     * 
+     * Wake solves sort of an odd problem. When user's enter data into
+     * form fields, that data is not immediatly accessable in the HTML
+     * returned by `el.outerHTML`. This function gets the data, and then
+     * assigns the data to the <form>'s elements. Once complete, the
+     * outerHTML will contain the values that the user has put into the
+     * form fields.
+    */
+
+    if (el.tagName != 'FORM'){
+        return
+    }
+
+    // Get all elements of the <form> with a `name` attribute
+    var els = el.querySelectorAll('[name]')
+
+    for (var el of els){
+        
+        // Append a text node to <textarea> elements containing the data
+        // in its .value property.
+        if (el.tagName == 'TEXTAREA'){
+            
+            // Create text node before.
+            // NOTE Do this first because removing the child nodes
+            // affects el.value in some cases.
+            var nd = document.createTextNode(el.value)
+
+            // Clear the current text nodes
+            while(el.firstChild){
+                el.removeChild(el.lastChild)
+            }
+
+            // Append
+            el.appendChild(nd)
+        }
+        if (el.tagName == 'INPUT'){
+            el.setAttribute('value', el.value)
+        }
+        // TODO Add support for other input elements like checkboxes,
+        // dropdown lists, etc.
+    }
+}
+
+function exec(el){
+    /* Read the <article> with an 'instructions' class
+    for `instruction` elements.
+
+    An example of an `instruction` set-url which is the way Python code
+    can cause JavaScript code running in the browser to set the
+    browser`s `window.location`.
+    */
+    var instrss = el.querySelectorAll('.instructions')
+
+    for (var instrs of instrss){
+        // Remove the <article class="instructions"> element from the
+        // DOM first.
+        instrs.remove()
+
+        // Get all the instruction elements (<meta class="instruction").
+        var instrs = instrs.querySelectorAll('.instruction')
+
+        // For each instruction
+        for (var instr of instrs){
+            
+            // If we have a `set` instruction
+            if (instr.classList.contains('set')){
+                
+                // If we are setting the "url"
+                if (instr.getAttribute('name') == 'url'){
+
+                    // Use pushState to change the url
+                    var main = document.querySelector('main')
+                    var url = instr.getAttribute('content')
+                    window.history.pushState(
+                        main.outerHTML, null, url
+                    )
+                }
+            }
+        }
+
+    }
+}
 
 '''
         #// Return the JavaScript
@@ -1438,7 +1579,7 @@ class pages(entities.entities):
         """ Create a new pages collection.
 
         :param: rent page|site: The parent page or site of this page
-        colection.
+        collections.
         """
         super().__init__(*args, **kwargs)
         self.parent = rent
@@ -1533,6 +1674,8 @@ class page(dom.html):
         """ Create a web page.
 
         :param: name str: The name of the page.
+
+        TODO Comment on pgs
         """
         super().__init__(*args, **kwargs)
 
@@ -1914,7 +2057,7 @@ class page(dom.html):
 
     def clear(self):
         """ Used to initialize the page's <main> element and set it's
-        data-path attribute to the path of the page. Also is used to
+        ata-path attribute to the path of the page. Also is used to
         clear any state data that may continue to exist between calls to
         the same page.
         """
@@ -2007,7 +2150,7 @@ class page(dom.html):
                     if eargs.handler:
                         meth(src=eargs.src, eargs=eargs)
                     else:
-                        meth()
+                        meth(**self._arguments)
                 else:
                     try:
                         main = self._mainfunc
@@ -2234,7 +2377,7 @@ class header(dom.header):
     def menu(self, v):
         for i, mnu in self.menus.enumerate():
             if mnu.ismain:
-                self.menus[i] = mnu
+                self.menus[i] = v
                 break
         else:
             v.name = 'main'
@@ -2302,16 +2445,17 @@ class input(dom.div):
 
         # TODO Ensure that 'type' is valid. In addition to text and
         # email, type can also be textarea and datalist.
-        self.classes += 'form-group'
 
         els = super().elements
 
+        lbl = None
         if self.label:
-            # TODO Add the 'for' attribute to <label>
-            els += dom.label(self.label)
+            lbl = dom.label(self.label)
+            els += lbl
 
         if type == 'textarea':
             inp = dom.textarea(name=self.name)
+
         elif type == 'select':
             inp = dom.select(name=self.name)
             for opt in options:
@@ -2319,8 +2463,12 @@ class input(dom.div):
                 if opt[0] in selected:
                     inp.last.selected = True
         else:
-            inp = dom.input(name=self.name)
+            inp = dom.input(name=self.name, type=type)
 
+        if lbl:
+            inp.identify()
+            lbl.for_ = inp.id
+            
         els += inp
 
         if self.placeholder:
@@ -2328,6 +2476,18 @@ class input(dom.div):
 
         if self.help:
             els += dom.small(self.help)
+
+    @property
+    def input(self):
+        """ Return the underlying dom.input/dom.textarea element for
+        this `input` object.
+
+        This may be a little confusing since this object is called
+        pom.input. `pom.input` is actmualy a <div>. It will contain
+        either one <input> or one <textarea> as a child object. That
+        child object is returned by this property.
+        """
+        return self['input, textarea'].only
 
 class error(page):
     """ A page intended to show an error message. 
@@ -2487,3 +2647,362 @@ class _404(page):
         """
         return type(self).__name__.replace('_', '')
 
+class card(dom.article):
+    """ A `card` is an <article> that contains the data for an entity,
+    typically an `orm.entity`. 
+
+    Refer to the `orm.card` @property to see how a `card` is created to
+    represent an ORM entity.
+    """
+    def __init__(self, *args, **kwargs):
+        self.classes += 'card'
+        super().__init__(*args, **kwargs)
+
+    @property
+    def btnedit(self):
+        return self['button.edit'].first
+
+    @btnedit.setter
+    def btnedit(self, v):
+        self.remove('button.edit')
+        v.classes += 'edit'
+        self += v
+
+class instructions(dom.article):
+    """ A collection of `instruction` objects.
+    """
+    def __init__(self, *args, **kwargs):
+        self.classes += 'instructions'
+
+class instruction(dom.meta):
+    """ Represents an instruction meant to be carried out by JavaScript
+    in the browser.
+
+    The instruction are smuggled into the browse by appending an
+    `instructions` collection (a subclass of dom.article) to some HTML
+    which is sent to the browser as a response to an XHR request. The
+    JavaScript examins the HTML for these instruction and executes them
+    on arrival.
+
+    This class represents an abstract instruction. Subclasses of this
+    class are intended to represent concrete instructions.
+
+    See the `exec()` function in eventjs for implementation details.
+    Also see the `element_event` method in tester.py for the "tester"
+    version of this function.
+    """
+    def __init__(self, *args, **kwargs):
+        """ Create an instruction object.
+        """
+        self.classes += 'instruction'
+
+class set(instruction):
+    """ Represents an instruction to set an arbitrary object's value in
+    the browser tab.
+
+    Currently, the only thing this `instruction` can set is the URL in
+    the browser's location bar.  See the `exec()` function in eventjs
+    for details.
+    """
+    def __init__(self, lhs, rhs, *args, **kwargs):
+        """ Create a `set` instruction.
+
+        :param: lhs str: The left-hand side of the assignment, i.e, the
+        name of the object being assigned the value.
+
+        :param: lhs str: The right-hand side of the assignment, i.e, the
+        value being assigned.
+        """
+        self.lhs = lhs
+        self.rhs = rhs
+
+        self.name = lhs
+        self.content = rhs
+
+        self.classes += 'set'
+
+        super().__init__(*args, **kwargs)
+
+class crud(page):
+    """ A class to implement the display logic to create, retrieve,
+    update and delete an given `orm.entity`.
+    """
+    def __init__(self, e, name=None, pgs=None, *args, **kwargs):
+        """ Create a `crud` page object. 
+
+        :param: e orm.entitymeta: An `orm.entity` class reference an
+        instance of which will be used by this page to perform CRUD
+        operations on.
+
+        :param: name str: The name of the page.
+        """
+        self.entity     =  e
+        self._instance  =  None
+        self._form      =  None
+        super().__init__(name=name, pgs=None, *args, **kwargs)
+
+    @property
+    def instance(self):
+        """ Return the instance of `self.entity`, i.e., the `orm.entity`
+        that this `crud` page uses to perform CRUD operations on.
+        """
+        return self._instance
+
+    @instance.setter
+    def instance(self, v):
+        """ Set the `orm.entity` object reference for this `crud` page.
+        """
+        self._instance = v
+        
+    @property
+    def entity(self):
+        """ Returns the class reference to the `orm.entity` class that
+        this `crud` page operates on.
+        """
+        # Import the module that the `orm.entity` was defined in. This
+        # way, whenever a caller needs to access the class, its module
+        # will have been imported and the class will be ready to be
+        # instantiated.
+        import importlib
+        importlib.import_module(self._entity.__module__)
+
+        return self._entity
+
+    @entity.setter
+    def entity(self, v):
+        """ Set the class reference to the `orm.entity` this `crud` page
+        will operate on.
+        """
+        self._entity = v
+
+    def btnedit_onclick(self, src, eargs):
+        """ An event handler to capture the `click` event triggered by
+        the `card`'s edit button.
+
+        When the user clicks the edit <button>, they will want their
+        browsers to convert the `card` into a `form` so they can edit
+        the entity's values. This handler gives them that form.
+        """
+
+        # Get the card and the entity's id
+        card = eargs.html.only
+        id = card.getattr('data-entity-id')
+
+        # Instantiate the orm.entity and store a reference to the
+        # instance
+        e = self.entity(id)
+        self.instance = e
+
+        # Create a form and assign it to the eags.html so the browser
+        # receives it
+        frm = e.orm.form
+        eargs.html = frm
+
+        # Subscribe the form's <button type="submit> to self.frm_onsubmit
+        frm.onsubmit += self.frm_onsubmit, frm
+
+        # Create a Cancel button
+        btncancel = dom.button('Cancel')
+
+        # Subscribe the button to btncancel_onclick which will discard
+        # the `form` and return a `card`.
+        btncancel.onclick += self.btncancel_onclick, frm
+
+        # Add button to `form`
+        frm += btncancel
+
+        ''' Add crud=edit to url '''
+
+        # Get the url that the request was made to
+        url = www.application.current.request.url
+
+        # Set the id and crud parameters in the queny sting to
+        # appropriate values
+        # TODO: 872fd252
+        qs = url.qs
+        qs['id'] = e.id.hex
+        qs['crud'] = 'update'
+        url.qs = qs
+
+        instrs = instructions()
+        # Create a `set` instruction for the JavaScript in the browser
+        # to carry out. This instructs the browse to replace the URL in
+        # the URL bar with `url`.
+        instrs += set('url', str(url))
+
+        # Add the instructions collection to the <form> element.
+        frm += instrs
+
+    def btncancel_onclick(self, src, eargs):
+        """ An event handler to capture the user clicking the Cancel
+        button.
+        """
+        # Get the <form> that was canceled.
+        frm = eargs.html.only
+
+        # Get the entity's hex id from the form 
+        # (<input hidden name="id" # value="A1B2C3...")
+        id = frm['input[name=id]'].only.value
+
+        # Load the orm.entity given the id from the <form>
+        e = self.entity(id)
+
+        # Create a card article to return to the browser
+        card = e.orm.card
+
+        # Return card article to browser
+        eargs.html = card
+
+        # Subscribet the card's Edit button's onclick event to
+        # self.btnedit
+        card.btnedit.onclick += self.btnedit_onclick, card
+
+        ''' Add crud=retrieve to url '''
+
+        # Get the requested url
+        url = www.application.current.request.url
+
+        # Change its query string params setting `id` and `crud`
+        # TODO: 872fd252
+        qs = url.qs
+        qs['id'] = e.id.hex
+        qs['crud'] = 'retrieve'
+        url.qs = qs
+
+        # Instruct the browser to set the URL bar to `url`
+        instrs = instructions()
+        instrs += set('url', str(url))
+
+        # Add `instructions` to `card`
+        card += instrs
+
+    def frm_onsubmit(self, src, eargs):
+        """ An event handler to capture the submission of the <form> for
+        this `crud` page.
+        """
+        # Get the <form> that was submitted
+        frm = eargs.html.only
+
+        # Get the input values
+
+        inps = frm['input, textarea']
+
+        # Use the id input (<input name=id>) to get the entity's id. Use
+        # that id to try to load the entity.
+        e = None
+        id = inps['[name=id]'].only.value
+        if id:
+            try:
+                e = self.entity(id)
+            except db.RecordNotFoundError:
+                pass
+
+        # If `entity` with `id` was not found above, create a new one
+        if not e:
+            e = self.entity()
+
+        # Assig values from the <form>'s <input>s to the enity's
+        # attributes
+        for inp in inps:
+            if isinstance(inp, dom.textarea):
+                v = inp.text
+
+            elif isinstance(inp, dom.input):
+                v = inp.value
+
+            if v == '':
+                v = None
+
+            if inp.name == 'id':
+                v = UUID(v)
+
+            setattr(e, inp.name, v)
+
+        # Save entity to database
+        e.save()
+
+        # Create a `card` to return to the browser
+        card = e.orm.card
+
+        eargs.html = card
+
+        # Subscribe the onclick event of the card's edit button to
+        # self.btnedit_onclick
+        card.btnedit.onclick += self.btnedit_onclick, card
+
+        # Get the requested url
+        url = www.application.current.request.url
+
+        # Update the id and crud parameters in the browse to the
+        # appropriate values.
+        # TODO: 872fd252
+        qs = url.qs
+        if qs.get('id') != e.id.hex:
+            qs['id'] = e.id.hex
+            qs['crud'] = 'retrieve'
+            url.qs = qs
+
+            # Instruct the browser to update the URL bar to `url`.
+            instrs = instructions()
+            instrs += set('url', str(url))
+
+            card += instrs
+
+    def main(self, id:str=None, crud:str='retrieve'):
+        """ The main handler for this `crud` page.
+        """
+        # Instantiate the entity that this crud page operates on
+        e = self.entity(id)
+        self.instance = e
+
+        # Don't create and return a <form> by default
+        frm = False
+        if id:
+            if crud == 'create':
+                raise ValueError(
+                    'Cannot create when given an id'
+                )
+
+            elif crud == 'retrieve':
+                frm = False
+
+            elif crud == 'update':
+                # If CRUD is 'update' and we have an id, we want to send
+                # back a form so user can update an entity object.
+                frm = True
+        else:
+            if crud == 'create':
+                # If CRUD is 'create' and we have no id, we want to send
+                # back a blank form so user can create an entity object.
+                frm = True
+
+            elif crud == 'retrieve':
+                raise ValueError(
+                    'Cannot retrieve without id'
+                )
+                
+            elif crud == 'update':
+                raise ValueError(
+                    'Cannot create when given an id'
+                )
+
+        if frm:
+            # If frm is True, add a <form> for the entity to the page's
+            # <main>
+            el = e.orm.form
+
+            # Captur form submission
+            el.onsubmit += self.frm_onsubmit, el
+        else:
+            # If frm is None, add a card to the page so user is able to
+            # read entity values.
+            el = e.orm.card
+            card = el
+
+            # Subscribe the Edit button to self.btnedit_onclick. This
+            # allows user to get a <form> version of the card so the
+            # entity can be updated.
+            if btnedit := card.btnedit:
+                el.btnedit.onclick += self.btnedit_onclick, card
+
+        self.main += el

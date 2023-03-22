@@ -30,6 +30,38 @@ import pytz
 import tester
 import www
 
+# TODO We should get datetime and date from `primative`
+
+class persons(orm.entities):
+    pass
+
+class person(orm.entity):
+    name = str
+    born = date
+    bio  = orm.text
+
+    @classmethod
+    def getvalid(cls):
+        e = cls()
+        e.name = 'Jesse'
+        e.born = '1976-04-15'
+        e.bio = (
+            "Hello. I'm a professional programmer"
+        )
+        return e
+
+    @property
+    def creatability(self):
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        return orm.violations.empty
+
+    @property
+    def updatability(self):
+        return orm.violations.empty
+
 class foonets(pom.sites):
     pass
 
@@ -50,6 +82,7 @@ class foonet(pom.site):
 
         ''' Pages '''
         self.pages += home()
+        self.pages += profile()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
@@ -531,7 +564,7 @@ class site(tester.tester):
 
     def it_calls__init__(self):
         ws = foonet()
-        self.seven(ws.pages)
+        self.eight(ws.pages)
 
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
@@ -640,18 +673,18 @@ class site(tester.tester):
         ws = foonet()
         mnu = ws.header.makemain()
 
-        self.six(mnu.items.elements)
+        self.seven(mnu.items.elements)
 
         self.eq(
             [
-                '/index', '/about', '/contact-us', 
+                '/index', '/profile', '/about', '/contact-us', 
                 '/blogs', '/admin', '/spa'
             ],
             mnu.items.pluck('page.path')
         )
 
         self.eq(
-            [home, about, contact_us, blogs, admin, spa],
+            [home, profile, about, contact_us, blogs, admin, spa],
             [type(x) for x in  mnu.items.pluck('page')]
         )
 
@@ -697,10 +730,10 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.six(mnu.items.elements)
+        self.seven(mnu.items.elements)
 
         # Blogs item
-        itm = mnu.items.fourth
+        itm = mnu.items.fifth
 
         ''' It updates a menu item '''
         sels = dom.selectors('li > a[href="%s"]' % '/blogs/categories')
@@ -726,7 +759,7 @@ class site(tester.tester):
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
 
-        self.seven(mnu.items.elements)
+        self.eight(mnu.items.elements)
 
         sels = dom.selectors('li')
 
@@ -739,7 +772,8 @@ class site(tester.tester):
         self.one(mnu[sels])
 
         # Remove the blog menu
-        itms = mnu.items.remove(mnu.items.fourth)
+
+        itms = mnu.items.remove(mnu.items.fifth)
         self.one(itms)
         self.type(pom.menu.item, itms.first)
         self.eq('blogs', itms.first.text)
@@ -3099,6 +3133,10 @@ class home(pom.page):
     def name(self):
         return 'index'
 
+class profile(pom.crud):
+    def __init__(self, *args, **kwargs):
+        super().__init__(e=person, *args, **kwargs)
+
 class spa(pom.spa):
     ''' Inner classes of spa '''
     class subpage(pom.page):
@@ -3113,10 +3151,18 @@ class spa(pom.spa):
     def main(self):
         if not self.header.menu:
             self.header.makemain()
+
         self.main += dom.p('Welcome to the SPA')
 
-        ''' SPA Menu '''
+        ''' Create all menu '''
         self.header.menus += pom.menu.make(self.pages, 'spa')
+
+        mnuspa = self.header.menus['nav[aria-label=Spa]'].only
+
+        prof = profile()
+        mnuspa.items += pom.menu.item(
+            'New profile', f'{prof.path}?crud=create'
+        )
 
 class google(pom.page):
     def main(self, **kwargs):
@@ -3226,6 +3272,335 @@ class cpu_page(tester.benchmark):
                                      2    0.000    0.000  www.py:555(page)
                                      2    0.000    2.938  www.py:649(log)
         '''
+
+class card(tester.tester):
+    def it_calls__init__(self):
+        card = pom.card()
+        self.true('card' in card.classes)
+
+    def it_calls_btnedit(self):
+        # Defaults to none
+        card = pom.card()
+        self.none(card.btnedit)
+
+        # Set
+        btn = dom.button('Edit me')
+        card.btnedit = btn
+
+        self.true('edit' in btn.classes)
+
+        # Get
+        self.is_(btn, card.btnedit)
+
+        # Make sure there's only one edit button
+        self.one(card['button.edit'])
+
+        # Reset with new button and test
+        btn1 = dom.button('Another Edit me')
+        card.btnedit = btn1
+        self.is_(btn1, card.btnedit)
+
+        # Make sure there's only one edit button
+        self.one(card['button.edit'])
+
+class crud(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = foonet.Proprietor
+        super().__init__(propr=propr, *args, **kwargs)
+        if self.rebuildtables:
+            orm.orm.recreate(
+                person,
+            )
+
+    def it_GETs_form(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate('/en/profile?crud=create', ws)
+
+        frm = tab['form'].only
+
+        ''' Default str '''
+        '''
+        <div data-entity-attribute="name">
+          <label for="x_oH0njadTO2QpsceA2s3vw">
+            Name
+          </label>
+          <input 
+            name="name" 
+            type="text" 
+            id="x_oH0njadTO2QpsceA2s3vw" 
+            minlength="1" 
+            maxlength="255" 
+            value=""
+          >
+        </div>
+        '''
+
+        div = frm['[data-entity-attribute=name]'].only
+        lbl = div['label'].only
+        inp = div['input'].only
+
+        self.eq('name', inp.name)
+        self.eq('text', inp.type)
+        self.eq(lbl.for_, inp.id)
+        self.eq('1', inp.minlength)
+        self.eq('255', inp.maxlength)
+
+        # Default date
+        '''
+          <div data-entity-attribute="born">
+            <label for="xuPaeyvPXRt6loWYwjjX_lw">
+              Born
+            </label>
+            <input name="born" type="date" id="xuPaeyvPXRt6loWYwjjX_lw" value="">
+          </div>
+        '''
+
+        div = frm['[data-entity-attribute=born]'].only
+        lbl = div['label'].only
+        inp = div['input'].only
+
+        self.eq('born', inp.name)
+        self.eq('date', inp.type)
+        self.eq(lbl.for_, inp.id)
+        self.eq(str(), inp.value)
+
+        # Default text
+        '''
+          <div data-entity-attribute="bio">
+            <label for="xmubrEcPVTs2M6nLoAV_Ldw">
+              Bio
+            </label>
+            <textarea name="bio" id="xmubrEcPVTs2M6nLoAV_Ldw" minlength="1" maxlength="65535">
+            </textarea>
+          </div>
+        '''
+        div = frm['[data-entity-attribute=bio]'].only
+        lbl = div['label'].only
+        inp = div['textarea'].only
+
+        self.eq('bio', inp.name)
+        self.eq(lbl.for_, inp.id)
+        self.eq(str(), inp.text)
+        self.eq('1', inp.minlength)
+        self.eq('65535', inp.maxlength)
+
+        # TODO Continue these tests for <select>'s, 
+        # <input type=checkbox>, <input type=radio>. Test for different
+        # data types as well such as `text` (blob), floats, decimal,
+        # booleans, etc.
+
+    def it_gets_from_spa(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        tab.navigate('/en/spa', ws)
+        mnuspa = tab['nav[aria-label=Spa]'].only
+
+        aprofile = mnuspa['a[href$="/profile?crud=create"]'].only
+
+        res = self.click(aprofile, tab)
+        self.h200(res)
+
+        # TODO We should also test different crud operations here. At
+        # the moment, only 'create' makes sense for a menu. We would
+        # want hyperlinks for things like 'retrieve', 'update', ande
+        # 'delete'.
+
+    def it_creates(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        per = person.getvalid()
+
+        # Get form
+        tab.navigate('/en/profile?crud=create', ws)
+
+        frm = tab['form']
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            div = frm[f'[data-entity-attribute={map.name}]']
+            el = div['input, textarea'].only
+
+            if isinstance(el, dom.input):
+                el.value = getattr(per, map.name)
+            elif isinstance(el, dom.textarea):
+                el.text =  getattr(per, map.name)
+
+        btnsubmit = frm['button[type=submit]'].only
+
+        btnsubmit.click()
+
+        card = tab['article.card'].only
+
+        id = card['[data-entity-attribute=id] span'].only.text
+
+        per1 = self.expect(None, lambda: person(id))
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            v1 = getattr(per1, map.name)
+
+            self.eq(v, v1)
+
+    def it_retrieves(self):
+        per = person.getvalid()
+        per.save()
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=retrieve', ws)
+
+        card = tab['article.card'].only
+
+        '''
+          <button class="edit" data-click-handler="btnedit_onclick" data-click-fragments="#xelp1mJ-MQBu0znR0o_E0Lg">
+            Edit
+          </button>
+        '''
+
+        btn = card['button.edit'].only
+
+        self.eq('btnedit_onclick', btn.getattr('data-click-handler'))
+        self.eq(card.id, btn.getattr('data-click-fragments')[1:])
+        self.eq('Edit', btn.text)
+
+        '''
+          <div data-entity-attribute="name">
+            <label for="xHth2cToUSfaODKVsoIDKlw">
+              Name
+            </label>
+            <span id="xHth2cToUSfaODKVsoIDKlw">
+              Jesse
+            </span>
+          </div>
+        '''
+
+        # Get elements
+        div = card['[data-entity-attribute=name]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Name', lbl.text)
+
+        # Span
+        self.eq(per.name, span.text)
+        self.eq(lbl.for_, span.id)
+
+        '''
+          <div data-entity-attribute="born">
+            <label for="x25v_AqZbSiSyYu99lc1KRQ">
+              Born
+            </label>
+            <span id="x25v_AqZbSiSyYu99lc1KRQ">
+              1976-04-15
+            </span>
+          </div>
+        '''
+
+        # Get elements
+        div = card['[data-entity-attribute=born]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Born', lbl.text)
+
+        # Span
+        self.eq(per.born, primative.date(span.text))
+        self.eq(lbl.for_, span.id)
+
+        '''
+          <div data-entity-attribute="bio">
+            <label for="xLDT9TgHfTOKPgQyuwx1HrQ">
+              Bio
+            </label>
+            <span id="xLDT9TgHfTOKPgQyuwx1HrQ">
+              Hello. I&#x27;m a professional programmer
+            </span>
+          </div>
+        '''
+
+        # Get elements
+        div = card['[data-entity-attribute=bio]'].only
+        lbl = div['label'].only
+        span = div['span'].only
+
+        # Label
+        self.eq('Bio', lbl.text)
+
+        # Span
+        self.eq(per.bio, span.text)
+        self.eq(lbl.for_, span.id)
+
+    def it_updates(self):
+        ''' Happy path '''
+        per = person.getvalid()
+        per.save()
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=update', ws)
+
+        frm = tab['form'].only
+
+        name = uuid4().hex
+        bio = uuid4().hex
+        born = primative.date('1413-03-04')
+
+        frm['[data-entity-attribute=name] input'].only.value = name
+        frm['[data-entity-attribute=born] input'].only.value = str(born)
+        frm['[data-entity-attribute=bio] textarea'].only.text = bio
+
+        frm['button[type=submit]'].only.click()
+
+        per1 = per.orm.reloaded()
+
+        self.eq(name, per1.name)
+        self.eq(born, per1.born)
+        self.eq(bio,  per1.bio)
+
+        ''' Update with bad id '''
+        # Get form
+        tab.navigate(f'/en/profile?id={per.id}&crud=update', ws)
+        frm = tab['form'].only
+
+        name = uuid4().hex
+
+        inp = frm['[data-entity-attribute=id] input'].only
+        inp.value = 'not-a-uuid'
+        frm['[data-entity-attribute=name] input'].only.value = name
+
+        btn = frm['button[type=submit]'].only
+        
+        res = self.click(btn, tab)
+
+        # NOTE Maybe this should be h422. For browsers it probably
+        # doesn't matter that much, but for RPC it may.
+        self.h500(res)
+
+        type = tab['.exception span.type'].only.text
+        self.eq('ValueError', type)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA

@@ -1807,12 +1807,11 @@ class entities_(tester.tester):
 
         preantepenultimate = the4.preantepenultimate
         the4.preantepenultimate = the4.first
-        self.assertCount(1, addsnare)
 
-        # Nothing will have been removed because the4.preantepenultimate
-        # was identical to the4.first.
+        # Nothing will have been added or removed because
+        # the4.preantepenultimate was identical to the4.first.
         self.zero(rmsnare)
-        self.assertIs(the4.preantepenultimate, addsnare.first)
+        self.zero(addsnare)
 
     def it_uses_identityindex(self):
         ks = knights.createthe4()

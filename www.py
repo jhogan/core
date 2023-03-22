@@ -44,6 +44,7 @@ import html
 import json
 import logs
 import orm
+import os
 import party
 import pdb
 import pom
@@ -82,6 +83,7 @@ class application:
         self._response = None
 
     _current = None
+
     @classmethod
     def _set_current(cls, v):
         cls._current = v
@@ -344,7 +346,7 @@ class application:
 # WSGI request class at the same time. We may want to add a new subclass
 # of request call `wsgirequest` that would encapsulate the WSGI logic so
 # we can get it out of the regular `request` class.
-class request:
+class request(entities.entity):
     """ Represents an HTTP request.
 
     The class is designed represent any HTTP request. However, there a
@@ -360,9 +362,15 @@ class request:
         :param: app application: The WSGI application object for this
         request.
 
-        :param: url ecommerce.url: The URL object containing the URL
-        being accessed.
+        :param: url www.url: The URL object representing the URL being
+        requested.
         """
+
+        if url and not isinstance(url, sys.modules['www'].url):
+            raise TypeError(
+                'Invalid url type'
+            )
+
         self.app           =  app
         if app:
             self.app._request  =  self
@@ -677,8 +685,7 @@ class request:
         if self.iswsgi:
             return self.environment['SERVER_NAME']
 
-        import urllib
-        return urllib.parse.urlparse(self._url).hostname
+        return self._url.host
 
     @property
     def arguments(self):
@@ -704,8 +711,7 @@ class request:
 
             return qs
 
-        import urllib
-        return urllib.parse.urlparse(self._url).query
+        return self._url.query
 
     @property
     def site(self):
@@ -824,8 +830,8 @@ class request:
         return 'en'
 
     def __call__(self):
-        """ Makes the HTTP request which this `request` object was created to
-        make.
+        """ Makes the HTTP request which this `request` object was
+        created to make.
 
         When the request is for a WSGI app, a determination is made as
         to whether the request is for a web page (`pom.page`) or for a
@@ -956,10 +962,10 @@ class request:
             elif self.forfile:
                 # ... if the request is for a file from the framework's
                 # file system.
-
                 path = None
                 path = self.path
                 pub = self.site.public
+
                 try:
                     # Try to get the file from the website's public
                     # directory
@@ -993,6 +999,7 @@ class request:
                 res.body = pg.main.html
             else:
                 raise
+
         finally:
             # Finish of the hit log
             self.log()
@@ -1166,6 +1173,9 @@ class request:
                 path = '/en/index'
             return path
 
+        return self._url.path
+
+
     def getpath(self, lang=False):
         """ Get the path. By default get the path with the language code
         removed.
@@ -1299,7 +1309,7 @@ class request:
             return self.environment['wsgi.url_scheme'].lower()
 
         import urllib
-        return urllib.parse.urlparse(self._url).scheme
+        return urllib.parse.urlparse(str(self._url)).scheme
 
     @property
     def port(self):
@@ -1308,34 +1318,24 @@ class request:
         if self.iswsgi:
             return int(self.environment['SERVER_PORT'])
 
-        import urllib
-        return urllib.parse.urlparse(self._url).port
+        return self._url.port
 
     @property
     def url(self):
-        """ Return the URL for the request, for example::
-            
-            https://foo.net:8000/en/my/page
+        """ Return a www.url object representing the target URL of the
+        this `request`.
         """
-        # TODO Ensure this always returns a ecommerce.url
-        if self._url:
-            return self._url
 
-        scheme = self.scheme
-        servername = self.servername
-        if self.port:
-            servername += ':' + str(self.port)
+        if not self._url:
+            self._url = url()
 
-        qs = self.qs
-        path = self.path
+        self._url.scheme = self.scheme
+        self._url.host = self.servername
+        self._url.port = self.port
+        self._url.path = self.path
+        self._url.query = self.qs
 
-        if qs:
-            path += "?{qs}"
-
-        import urllib
-        return urllib.parse.urlunparse([
-            scheme, servername, path, None, None, None
-        ])
+        return self._url
 
     @property
     def isget(self):
@@ -1480,7 +1480,7 @@ class request:
                 'Method "%s" is never allowed' % self.method
             )
 
-class response():
+class response(entities.entity):
     Messages = {
         200: 'OK',
 		201: 'Created',
@@ -2612,7 +2612,7 @@ class browser(entities.entity):
 
             import urllib.request
             req1 = urllib.request.Request(
-                url, body, hdrs, method=meth
+                str(url), body, hdrs, method=meth
             )
 
             req1.add_header('Content-Length', req.size)
@@ -2716,3 +2716,333 @@ class browser(entities.entity):
         collection, and return the new tab.
         """
         return self.tabs.tab()
+
+class urls(entities.entities):
+    """ A collection of `url` objects.
+    """
+
+class url(entities.entity):
+    """ Represents a URL.
+
+    This class can be used to parse a URL string and easily parse out
+    parts of the URL:
+
+        >>> url = www.url('https://www.google.com?s=Test')
+        >>> assert url.scheme == 'https'
+        >>> assert url.host == 'www.google.com'
+        >>> assert url.query == 's=Test'
+
+    We can alse use the object's setters to build or mutate an `url`
+    object.
+
+        >>> url = www.url()
+        >>> url.scheme = 'https'
+        >>> url.host = 'www.google.com'
+        >>> url.query = 's=Test'
+        >>> assert str(url) == 'https://www.google.com?s=Test'
+        
+    """
+    def __init__(self, name=None, *args, **kwargs):
+        """ Create a URL object.
+
+        :param: name str: The URL string.
+        """
+        self._scheme    =  None
+        self._host      =  None
+        self._path      =  None
+        self._query     =  None
+        self._fragment  =  None
+        self._username  =  None
+        self._password  =  None
+        self._port      =  None
+        self.name       =  name
+        super().__init__(*args, **kwargs)
+
+    @property
+    def name(self):
+        """ Return the URL string.
+        """
+        from urllib.parse import urlunparse
+
+        scheme = self.scheme
+        if not scheme:
+            raise ValueError('Must provide scheme')
+
+        if not self.host:
+            raise ValueError('Must provide host')
+
+        if self.query:
+            if not self.path:
+                raise ValueError('Must provide path')
+
+        host = self.host
+
+        if uid := self.username:
+            if pwd := self.password:
+                host = f'{uid}:{pwd}@{host}'
+            else:
+                host = f'{uid}@{host}'
+
+        if port := self.port:
+            if scheme == 'http':
+                if port != 80:
+                    host += f':{port}'
+            elif scheme == 'https':
+                if port != 443:
+                    host += f':{port}'
+
+        tup = (
+            scheme,
+            host,
+            self.path or '',
+            '',
+            self.query,
+            self.fragment,
+        )
+        r = urlunparse(tup)
+        return  r
+
+    @name.setter
+    def name(self, v):
+        """ Set the URL string.
+        """
+        import urllib.parse
+        prs = urllib.parse.urlparse(v)
+        self.scheme = prs.scheme
+        self.host = prs.hostname
+        self.path = prs.path
+        self.query = prs.query
+        self.fragment = prs.fragment
+        self.username = prs.username
+        self.password = prs.password
+        self.port = prs.port
+        
+    def __truediv__(self, other):
+        """ Overrides the / operator to allow for path joining
+
+            wiki = url(name='https://www.wikipedia.org/') 
+            py = wiki / 'wiki/Python'
+
+            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+        """
+        # TODO Add tests
+        name = os.path.join(str(self), other)
+
+        return url(name)
+
+    @property
+    def scheme(self):
+        """ Returns the scheme (sometimes refered to as the protocol)
+        portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "scheme" would be returned.
+        """
+        if not self._scheme:
+            return None
+
+        return self._scheme
+
+    @scheme.setter
+    def scheme(self, v):
+        """ Set the scheme.
+        """
+        self._scheme = v
+
+    @property
+    def host(self):
+        """ Returns the hostname portion of the URL. 
+
+        Given the URL "scheme://netloc/path;parameters?query#fragment",
+        "netloc" would be returned.
+        """
+        return self._host
+
+    @host.setter
+    def host(self, v):
+        """ Set the host.
+        """
+        self._host = v
+
+    @property
+    def path(self):
+        """ Returns the path portion of the URL.
+
+        Given the URL:
+            scheme://netloc:1234/path/to/resource;parameters?query#fragment
+
+        returns: '/path/to/resource;parameters'
+        """
+        if not self._path:
+            return None
+
+        return self._path
+
+    @path.setter
+    def path(self, v):
+        """ Set the path.
+        """
+        self._path = v
+
+    @property
+    def query(self):
+        """ Returns a string representation of the query string in the
+        URL (if there is one).
+
+        See also the `qs` attribute.
+        """
+        if not self._query:
+            return None
+
+        return self._query
+
+    @query.setter
+    def query(self, v):
+        """ Set the query string.
+        """
+        self._query = v
+
+    @property
+    def fragment(self):
+        """ Return the fragment portion (the part after the #) of the
+        URL. 
+        """
+        if not self._fragment:
+            return None
+
+        return self._fragment
+
+    @fragment.setter
+    def fragment(self, v):
+        self._fragment = v
+
+    @property
+    def username(self):
+        """ Return the username portion of the URL.
+        """
+        if not self._username:
+            return None
+
+        return self._username
+
+    @username.setter
+    def username(self, v):
+        """ Set the username portion of the URL.
+        """
+        self._username = v
+
+    @property
+    def password(self):
+        """ Return the password portion of the URL.
+        """
+        if not self._password:
+            return None
+
+        return self._password
+
+    @password.setter
+    def password(self, v):
+        """ Set the password portion of the URL.
+        """
+        self._password = v
+
+    @property
+    def port(self):
+        """ Returns the port portion of the URL as an int.
+
+        Given the URL "scheme://netloc:1234/path;parameters?query#fragment",
+        1234 would be returned.
+        """
+        if not self._port:
+            if self.scheme == 'http':
+                return 80
+            if self.scheme == 'https':
+                return 443
+
+        return self._port
+
+    @port.setter
+    def port(self, v):
+        """ Set the port portion of the url.
+        """
+        self._port = v
+
+    @property
+    def paths(self):
+        """ Returns a list of path elements in the URL.
+
+        Given the URL:
+        
+             scheme://netloc:1234/path/to/resource?query#fragment
+        
+        The return would be:
+       
+            ['path', 'to', 'resource']
+        """
+        # TODO Write tests
+
+        return [x for x in self.path.split(os.sep) if x]
+
+    @property
+    def qs(self):
+        """ Return a dict containing the keys and values in the URL's
+        query sting (if there is one).
+
+            >>> url(address='https://google.com?s=test').qs
+            {'s': ['test']}
+
+        """
+        # TODO:872fd252 Ideally, we should be able to use the qs
+        # property in a way that is similar to a dict:
+        #
+        #     id = url.qs['id']
+        #     del url.qs['id'[
+        #     url.qs['search'] = 'Men's shoes'
+        #
+        # This could be done by having this method return an object that
+        # overrides __getitem__ and __setitem__ and keeps the parameters
+        # in an internal data structure. We should be able to make it
+        # backwords compatible with the current inteface if done
+        # correctly.
+        import urllib.parse
+        return urllib.parse.parse_qs(self.query)
+
+    @qs.setter
+    def qs(self, v):
+        """ Set the qs attribute to `v`.
+        """
+        from urllib.parse import urlencode as enc
+        self.query = enc(v, doseq=True)
+
+    def __str__(self):
+        """ Return the URL string.
+        """
+        return self.name
+
+    def __repr__(self):
+        """ Return a programmer-friendly representation of this URL
+        object.
+        """
+        r = type(self).__name__ 
+
+        attrs = (
+            'scheme',  'username',  'password',  'host',
+            'port',    'path',      'query',     'fragment',
+        )
+
+        r += '('
+
+        for attr in attrs:
+            v = getattr(self, attr)
+            r += f'{attr}='
+            if isinstance(v, str):
+                r += f'"{v}"'
+            else:
+                r += f'{v}'
+
+            r += ', '
+        
+        r = r.rstrip(', ')
+        r += ')'
+        return r
+

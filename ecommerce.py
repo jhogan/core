@@ -464,6 +464,9 @@ class url(orm.entity):
     "The Data Model Resource Book Volume 2".
     """
 
+    # TODO Use a private www.url object to return parts of the URL in
+    # properties such as `scheme`, `host`, `port`, etc.
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -559,6 +562,28 @@ class url(orm.entity):
         """
         import urllib.parse
         return urllib.parse.urlparse(self.address).path
+
+    @property
+    def query(self):
+        """ Returns a string representation of the query string in the
+        URL (if there is one).
+
+        See also the `qs` attribute.
+        """
+        import urllib.parse
+        return urllib.parse.urlparse(self.address).query
+
+    @property
+    def qs(self):
+        """ Return a dict containing the keys and values in the URL's
+        query sting (if there is one).
+
+            >>> url(address='https://google.com?s=test').qs
+            {'s': ['test']}
+
+        """
+        import urllib.parse
+        return urllib.parse.parse_qs(self.query)
 
     @property
     def creatability(self):

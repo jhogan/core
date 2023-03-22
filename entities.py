@@ -1410,7 +1410,7 @@ class entities:
 
     def __add__(self, es):
         """ Implements the + operator. This operator combines two
-        colections together and returns a new collection with the
+        collections together and returns a new collection with the
         elements from the first two::
 
             # e is in es; e1 is in es1
@@ -1639,17 +1639,16 @@ class entities:
 
         return r
 
-    # TODO Rename 'item' to 'v'
     # TODO __setitem__ should be similar to __getitem__ in that it
     # should be able to except a key of type that uses the `id`
     # attribute then the `name` attribute of `entity` objects.
-    def __setitem__(self, key, item):
+    def __setitem__(self, key, v, collectivize=None):
         """ Implements an indexer that can be assigned an element.
 
             es[0] = e
             assert es.first is e
 
-        The ``key`` can be a slice and the ``item`` can be an iterable::
+        The ``key`` can be a slice and the ``v`` can be an iterable::
 
             # Create a collection and add a couple of elements to it
             es = entities()
@@ -1662,26 +1661,61 @@ class entities:
 
             assert es1.first is es.first
             assert es1.second is es.second
+
+        :param: key int|slice: The index used to set the v.
+
+        :param: v entitiy: The entity or subclass thereof that is
+        being set.
+
+        :param: collectivize callable: A method used to ensure the
+        current v at the index, as well as the new v(s), are
+        iterables.
         """
+
+        # Get the current v at the index location
         e = self[key]
-        self._ls[key]=item
+
+        # Set the new v to the index location
+        self._ls[key] = v
+
+        # If we were not given a collectivize function
+        if not collectivize:
+            
+            # Define the collectivize function
+            def collectivize(e):
+                """ Convert e into a list if it is not already an
+                iterable.
+
+                :param: e entity: The entity or entities to convert.
+                """
+
+                # If is iterable just return
+                if hasattr(e, '__iter__'):
+                    return e
+
+                # If not iterable, return inside a list
+                return [e]
 
         # If key is a slice. then what was removed and what was added
         # could have been an iterable. Therefore, we need to convert
         # them to iterables then raise the onadd and onremove events for
         # each entity that had been removed and added.
-        items  =  item  if  hasattr(item,  '__iter__')  else  [item]
-        es     =  e     if  hasattr(e,     '__iter__')  else  [e]
+        items = collectivize(v)
+        es = collectivize(e)
             
-        for e, item in zip(es, items):
-            if item is e:
+        # Raise onremove for any v replace by the new v
+        for e, v in zip(es, items):
+            if v is e:
                 continue
+
             self.onremove(self, entityremoveeventargs(e))
 
-        # TODO: Don't raise onadd unless `item is in es`. See the
-        # onremove logic below.
-        for item in items:
-            self.onadd(self, entityaddeventargs(item))
+        # Raise onadd for any v added by the assignment
+        for v in items:
+            if v in es:
+                continue
+
+            self.onadd(self, entityaddeventargs(v))
 
     def __getitem__(self, key):
         """ Implements an indexer for the collection::
