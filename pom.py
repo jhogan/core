@@ -849,6 +849,7 @@ function ajax(e){
     var xhr = new XMLHttpRequest()
     xhr.onreadystatechange = function() {
         if (this.readyState == 4){
+            console.group('readyState 4; status ' + this.status)
 
             var els = document.querySelectorAll('.exception')
             els.forEach(e => e.remove())
@@ -859,6 +860,7 @@ function ajax(e){
                 // return. Usually, events will return HTML, however it
                 // possible that in some cases they will choose not to.
                 if(!xhr.responseText){
+                    console.info('No response')
                     return
                 }
 
@@ -885,6 +887,9 @@ function ajax(e){
                     // Push the HTML of the new <main> object on to the
                     // history stack so users can get to it by clicking
                     // the browser's back button.
+
+                    console.debug('<MAIN> pushState')
+
                     window.history.pushState(
                         new_.outerHTML, null, pg
                     )
@@ -924,6 +929,7 @@ function ajax(e){
                 )
             }
         }
+        console.groupEnd()
     }
 
     // POST to the current URL
@@ -950,7 +956,11 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     window.addEventListener('popstate', (e) => {
         // If there is no state to pop (perhaps because nothing has been
         // pushed yet), just force the browser back.
+
+        console.group('popstate')
+
         if (e.state === null){
+            console.debug('history.back()')
             history.back()
         }
 
@@ -968,7 +978,10 @@ document.addEventListener("DOMContentLoaded", function(ev) {
 
         var old = document.querySelector('main')
 
+        console.debug('replaceChild')
         old.parentNode.replaceChild(new_, old)
+
+        console.groupEnd()
     });
 
     var main = document.querySelector('main')
@@ -1089,6 +1102,7 @@ function exec(els){
     */
 
     // For each element in the `els` sequence
+    console.group('exec')
     for (el of els){
         
         // Get all <article class='instructions'>
@@ -1116,6 +1130,9 @@ function exec(els){
                         // Use pushState to change the url
                         var main = document.querySelector('main')
                         var url = instr.getAttribute('content')
+
+                        console.debug('pushState to ' + url)
+
                         window.history.pushState(
                             main.outerHTML, null, url
                         )
@@ -1124,6 +1141,7 @@ function exec(els){
             }
         }
     }
+    console.groupEnd()
 }
 
 '''
