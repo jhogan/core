@@ -3333,7 +3333,7 @@ class crud(page):
                     id = UUID(hex=id)
 
                     for tr in el['tbody>tr']:
-                        attrid = tr.getattr('data-entity-id'):
+                        attrid = tr.getattr('data-entity-id')
 
                         if not attrid:
                             continue
