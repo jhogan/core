@@ -1010,10 +1010,6 @@ function listen(el){
 
     // XXX Explain/comment
     console.group('listen')
-    var rent
-    if(rent = el.parentElement){
-        el = rent
-    }
 
     for(var trig of TRIGGERS){
         
