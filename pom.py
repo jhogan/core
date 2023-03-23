@@ -889,8 +889,10 @@ function ajax(e){
 
                     console.debug('<MAIN> pushState')
 
+                    var url = new_.getAttribute('data-url')
+
                     window.history.pushState(
-                        new_.outerHTML, null, pg
+                        new_.outerHTML, null, url ?? pg
                     )
 
                     exec([new_])
@@ -2978,45 +2980,8 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
-        # XXX Centralize oncomplete logic
-        # Get the oncomplete path. This represents the page to return to
-        # when the submit or cancel button is clicked.
-        oncompletes = el['[data-oncomplete]']
-        if oncompletes.issingular:
-
-            # Read path
-            path = oncompletes.only.text
-
-            # For each page in the spa application
-            for pg in self.spa.pages:
-                
-                # If we found a matching page
-                if pg.path == path:
-                    # Run the page
-                    pg()
-
-                    # Get the requested url and remove its query string
-                    # parameters
-                    qs = url.qs
-
-                    for k in ('id', 'crud', 'oncomplete'):
-                        with suppress(KeyError):
-                            del qs[k]
-                    url.qs = qs
-
-                    # Set the URL object path proprety to the oncomplete
-                    # page's path and instruct the browser to set the
-                    # URL bar to this path.
-                    url.path = req.language + pg.path
-
-                    instrs = instructions()
-                    instrs += set('url', str(url))
-                    pg.main += instrs
-
-                    eargs.html = pg.main
-                    return
-            else:
-                raise www.NotFoundError('Oncomplete not found')
+        if self._oncomplete(el, eargs):
+            return
 
         # Get the entity's hex id from the form 
         # (<input hidden name="id" # value="A1B2C3...")
@@ -3165,32 +3130,8 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
-        # XXX Explain
-        oncompletes = el['[data-oncomplete]']
-        if oncompletes.issingular:
-            path = oncompletes.only.text
-
-            for pg in self.spa.pages:
-                if pg.path == path:
-                    pg()
-
-                    qs = url.qs
-
-                    for k in ('id', 'crud', 'oncomplete'):
-                        with suppress(KeyError):
-                            del qs[k]
-                    url.qs = qs
-
-                    url.path = req.language + pg.path
-
-                    instrs = instructions()
-                    instrs += set('url', str(url))
-                    pg.main += instrs
-
-                    eargs.html = pg.main
-                    return
-            else:
-                raise www.NotFoundError('Oncomplete not found')
+        if self._oncomplete(el, eargs):
+            return
 
         # If the browser sent a <tr>
         if tr:
@@ -3259,6 +3200,58 @@ class crud(page):
                 instrs += set('url', str(url))
 
                 card += instrs
+
+    def _oncomplete(self, el, eargs):
+        """ XXX
+        """
+        oncompletes = el['[data-oncomplete]']
+        if oncompletes.issingular:
+
+            # Read path
+            path = oncompletes.only.text
+
+            # For each page in the spa application
+            for pg in self.spa.pages:
+                
+                # If we found a matching page
+                if pg.path == path:
+                    # Run the page
+                    pg()
+
+                    req = www.application.current.request
+                    url = req.url
+
+                    # Get the requested url and remove its query string
+                    # parameters
+                    qs = url.qs
+
+                    for k in ('id', 'crud', 'oncomplete'):
+                        with suppress(KeyError):
+                            del qs[k]
+                    url.qs = qs
+
+                    # Set the URL object path proprety to the oncomplete
+                    # page's path and instruct the browser to set the
+                    # URL bar to this path.
+                    url.path = req.language + pg.path
+
+                    # XXX Explain
+                    # Set data-url
+                    pg.main.setattr('data-url', url)
+
+                    # XXX Explain
+                    # Set data-spa-path
+                    path = self.spa.path
+                    path = f'/{req.language}{path}'
+                    pg.main.setattr('spa-data-path', path)
+
+                    eargs.html = pg.main
+
+                    return True
+            else:
+                raise www.NotFoundError('Oncomplete not found')
+
+        return False
 
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
