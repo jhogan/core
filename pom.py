@@ -881,7 +881,7 @@ function ajax(e){
 
                     // Make sure event handler are hooked up to new
                     // <main> HTML.
-                    add_listeners(new_);
+                    listen(new_);
 
                     // Push the HTML of the new <main> object on to the
                     // history stack so users can get to it by clicking
@@ -902,7 +902,7 @@ function ajax(e){
                     // client-side counterpart
                     for(el of els){
                         // Add event listeners to new HTML
-                        add_listeners(el);
+                        listen(el);
 
                         // Get the id of the element. `el.id` doesn't
                         // work here.
@@ -943,7 +943,7 @@ function ajax(e){
 // Once content has been loaded (DOMContentLoaded), we can add listeners
 // to the controls.
 document.addEventListener("DOMContentLoaded", function(ev) {
-    add_listeners(document.documentElement);
+    listen(document.documentElement);
 
     els = document.querySelectorAll(
         'header>section>nav>ul>li a'
@@ -973,7 +973,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
         new_ = new_.querySelector('html>body>main')
 
         // Make sure event handler are hooked up again
-        add_listeners(new_);
+        listen(new_);
 
         var old = document.querySelector('main')
 
@@ -996,7 +996,7 @@ document.addEventListener("DOMContentLoaded", function(ev) {
     }
 });
 
-function add_listeners(el){
+function listen(el){
     /* Takes an element `el` and examins it for any
      * data-{trigger}-handler attributes. Uses this information to
      * attach el to event the `ajax` event handler. Additionally, if
