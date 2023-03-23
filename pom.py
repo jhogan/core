@@ -1008,20 +1008,29 @@ function listen(el){
      * `click` events are subscribed to the the `ajax` handler.
     */
 
-    // XXX Explain/comment
     console.group('listen')
 
+    // For each of the standard triggers (click, blur, submit, etc.)
     for(var trig of TRIGGERS){
         
+        // Create a CSS selector to find elements that have the
+        // data-<trigger>-handler. These will be are subjects of the
+        // event.
         sels = '[data-' + trig + '-handler]'
+
+        // Search for the elements that match the selector
         var els = el.querySelectorAll(sels)
 
+        // Convert the elements to an array
         els = [...els]
 
+        // If el matches the selector, add it to the array
         if(el.matches(sels)){
             els.push(el)
         }
 
+        // Subscribe the event trig to the ajax() function for each of
+        // the elements found above
         for(var el1 of els){
             el1.addEventListener(trig, ajax)
         }
@@ -2987,6 +2996,7 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
+        # Process completion. Return early if completion is processed.
         if self._oncomplete(el, eargs):
             return
 
@@ -3137,6 +3147,7 @@ class crud(page):
         req = www.application.current.request
         url = req.url
 
+        # Process completion. Return early if completion is processed.
         if self._oncomplete(el, eargs):
             return
 
@@ -3209,9 +3220,25 @@ class crud(page):
                 card += instrs
 
     def _oncomplete(self, el, eargs):
-        """ XXX
+        """ Processes the oncomplete query string parameter. Returns
+        True if the parameters was found and processed, False otherwise.
+
+        The `oncomplete` query string parameters is an optional
+        parameter that contains a path a page. This method loads that
+        pages and returns it to the browser. The intent is to return the
+        user to a page when the trigger a completion event such as
+        clicking a form's submit or cancel button.
+
+        :param: el dom.element: Typicaly a dom.form which has a hidden
+        element within it which contains the path to the page that the
+        application wants to return to after the form has been submitted
+        or canceld.
         """
+
+        # Search for elements with the data-complete atttribute
         oncompletes = el['[data-oncomplete]']
+
+        # There should be zero or one
         if oncompletes.issingular:
 
             # Read path
@@ -3225,6 +3252,7 @@ class crud(page):
                     # Run the page
                     pg()
 
+                    # Get requested url
                     req = www.application.current.request
                     url = req.url
 
@@ -3242,11 +3270,11 @@ class crud(page):
                     # URL bar to this path.
                     url.path = req.language + pg.path
 
-                    # XXX Explain
-                    # Set data-url
+                    # Set data-url. This will be used by the JavaScript
+                    # to set the URL in the browser's location bar when
+                    # it performs a history.pushState
                     pg.main.setattr('data-url', url)
 
-                    # XXX Explain
                     # Set data-spa-path
                     path = self.spa.path
                     path = f'/{req.language}{path}'
@@ -3254,10 +3282,13 @@ class crud(page):
 
                     eargs.html = pg.main
 
+                    # Return True because we successfully processed the
+                    # completion
                     return True
             else:
                 raise www.NotFoundError('Oncomplete not found')
 
+        # No completion was found so return False
         return False
 
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
@@ -3330,7 +3361,7 @@ class crud(page):
                             # subscriptions below
                             target = tr
 
-                            # XXX Explain
+                            # Get the entity's <form> representation
                             frm = e[id].orm.form
 
                             # Subscribe the form's <button type="submit>
