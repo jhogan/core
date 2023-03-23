@@ -1015,10 +1015,16 @@ function listen(el){
         el = rent
     }
 
-    for (var trig of TRIGGERS){
-        var els = el.querySelectorAll(
-            '[data-' + trig + '-handler]'
-        )
+    for(var trig of TRIGGERS){
+        
+        sels = '[data-' + trig + '-handler]'
+        var els = el.querySelectorAll(sels)
+
+        els = [...els]
+
+        if(el.matches(sels)){
+            els.push(el)
+        }
 
         for(var el1 of els){
             el1.addEventListener(trig, ajax)
