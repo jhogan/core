@@ -1049,6 +1049,7 @@ function listen(el){
             a.addEventListener('click', ajax)
         }
     }
+    console.groupEnd()
 }
 
 function wake(els){
