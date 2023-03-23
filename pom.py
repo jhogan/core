@@ -896,6 +896,8 @@ function ajax(e){
                     )
 
                     exec([new_])
+
+
                 // If the element is not a <main>, we are doing a
                 // regular AJAX call, i.e., we are not loading a new
                 // <main> as a SPA page.
@@ -1006,6 +1008,8 @@ function listen(el){
      * `click` events are subscribed to the the `ajax` handler.
     */
 
+    // XXX Explain/comment
+    console.group('listen')
     var rent
     if(rent = el.parentElement){
         el = rent
@@ -3256,14 +3260,13 @@ class crud(page):
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
         """
-        # Instantiate the entity that this crud page operates on
-
         frm = False
 
         # If the entity we are working with is a collection, load the
         # collection then return it as a <table>.
         if isinstance(self.entity, orm.entitiesmeta):
             # XXX Replace `all` with an instantiation with arguments
+            # XXX s/e/es/
             e = self.entity.orm.all
 
             # XXX:76756507 s/table1/table
