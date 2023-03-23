@@ -3292,6 +3292,66 @@ class crud(page):
 
                 td += menu
 
+            # XXX Can this logic be centralized since there is very
+            # similar code in btnedit_onclick which does similar things.
+
+            # If a browser is doing a tradtional (non-XHR) GET on the
+            # the page, and the query string parameter crud is 'update',
+            # use the id from the query string to add <form> to the
+            # table. This will produce a Quick Edit <form> in the page.
+            # This is equivelent to clicking the Quick Edit button but
+            # does not involve XHR requests.
+            if crud == 'update':
+                if id:
+                    id = UUID(hex=id)
+
+                    for tr in el['tbody>tr']:
+                        attrid = tr.getattr('data-entity-id'):
+
+                        if not attrid:
+                            continue
+
+                        attrid = UUID(hex=attrid)
+
+                        if attrid == id:
+                            # Remove the <td>'s are in the the <tr>
+                            tds = tr.remove('td')
+
+                            # Create a colspan so the new form will span
+                            # the length of the <tr>
+                            colspan = max(tds.count - 1, 1)
+
+                            # Create new <td>
+                            td = dom.td(colspan=colspan)
+
+                            # Add <form> to <td>
+                            td += frm
+
+                            # Add <td> to <tr>
+                            tr += td
+                                            
+                            # Make the <tr> the target of event
+                            # subscriptions below
+                            target = tr
+
+                            # XXX Explain
+                            frm = e[id].orm.form
+
+                            # Subscribe the form's <button type="submit>
+                            # to self.frm_onsubmit
+                            frm.onsubmit += self.frm_onsubmit, target
+
+                            # Create a Cancel button
+                            btncancel = dom.button('Cancel')
+
+                            # Subscribe the button to btncancel_onclick
+                            # which will discard the `form` and return a
+                            # `card`.
+                            btncancel.onclick += self.btncancel_onclick, target
+
+                            # Add button to `form`
+                            frm += btncancel
+
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
         # entity's contents.
