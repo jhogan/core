@@ -11994,7 +11994,14 @@ class orm:
         orm's entities collection.
         """
         import dom
+
         tbl    =  dom.table()
+
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+
+        tbl.setattr('data-entity', e)
+
         thead  =  dom.thead()
         tr     =  dom.tr()
 
