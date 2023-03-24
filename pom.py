@@ -2883,7 +2883,14 @@ class crud(page):
         self._entity = v
 
     def _formalize(self, tr, frm):
-        """ XXX
+        """ Add a new <td> with a <form> in it to a <tr>.
+
+        This is a private method that captures a routine task. It is
+        used to replace the contents of the current `tr` with a new `td`
+        that has a <form> in it. The form allows the user to edit the
+        values that were in the (by definition read-only) <tr>. This
+        logic is used when the user clicks Quick Edit and when the user
+        does a traditional GET on the URL that Quick Edit navigates to.
         """
         # Remove the <td>'s are in the the <tr>
         tds = tr.remove('td')
@@ -2935,7 +2942,7 @@ class crud(page):
             # Assign to tr for clarity
             tr = el
 
-            # Add frm to tr
+            # Replace contents of tr with frm
             self._formalize(tr, frm)
 
             # Make the <tr> the target of event subscriptions below
@@ -3361,6 +3368,7 @@ class crud(page):
                                     'Cannot find entity {id}'
                                 )
 
+                            # Replace contents of tr with frm
                             self._formalize(tr, frm)
 
                             # Make the <tr> the target of event
