@@ -2882,6 +2882,25 @@ class crud(page):
         """
         self._entity = v
 
+    def _formalize(self, tr, frm):
+        """ XXX
+        """
+        # Remove the <td>'s are in the the <tr>
+        tds = tr.remove('td')
+
+        # Create a colspan so the new form will span the length of
+        # the <tr>
+        colspan = max(tds.count - 1, 1)
+
+        # Create new <td>
+        td = dom.td(colspan=colspan)
+
+        # Add <form> to <td>
+        td += frm
+
+        # Add <td> to <tr>
+        tr += td
+
     def btnedit_onclick(self, src, eargs):
         """ An event handler to capture the `click` event triggered by
         the `card`'s edit button.
@@ -2916,21 +2935,8 @@ class crud(page):
             # Assign to tr for clarity
             tr = el
 
-            # Remove the <td>'s are in the the <tr>
-            tds = tr.remove('td')
-
-            # Create a colspan so the new form will span the length of
-            # the <tr>
-            colspan = max(tds.count - 1, 1)
-
-            # Create new <td>
-            td = dom.td(colspan=colspan)
-
-            # Add <form> to <td>
-            td += frm
-
-            # Add <td> to <tr>
-            tr += td
+            # Add frm to tr
+            self._formalize(tr, frm)
 
             # Make the <tr> the target of event subscriptions below
             target = tr
@@ -3341,28 +3347,24 @@ class crud(page):
                         attrid = UUID(hex=attrid)
 
                         if attrid == id:
-                            # Remove the <td>'s are in the the <tr>
-                            tds = tr.remove('td')
+                            # Get the entity's <form> representation
+                            # XXX It should be easy to update
+                            # orm.entities.__getitem__ to index off UUID
+                            # when streaming.
+                            for e1 in e:
+                                if e1.id == id:
+                                    frm = e1.orm.form
+                                    break
+                            else:
+                                raise IndexError(
+                                    'Cannot find entity {id}'
+                                )
 
-                            # Create a colspan so the new form will span
-                            # the length of the <tr>
-                            colspan = max(tds.count - 1, 1)
+                            self._formalize(tr, frm)
 
-                            # Create new <td>
-                            td = dom.td(colspan=colspan)
-
-                            # Add <form> to <td>
-                            td += frm
-
-                            # Add <td> to <tr>
-                            tr += td
-                                            
                             # Make the <tr> the target of event
                             # subscriptions below
                             target = tr
-
-                            # Get the entity's <form> representation
-                            frm = e[id].orm.form
 
                             # Subscribe the form's <button type="submit>
                             # to self.frm_onsubmit
