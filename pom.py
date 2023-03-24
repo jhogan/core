@@ -3335,6 +3335,7 @@ class crud(page):
             # This is equivelent to clicking the Quick Edit button but
             # does not involve XHR requests.
             if crud == 'update':
+                # If and id was passed in the query strting
                 if id:
                     id = UUID(hex=id)
 
