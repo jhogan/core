@@ -3382,6 +3382,8 @@ class crud(page):
                             # Add button to `form`
                             frm += btncancel
 
+                            break
+
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
         # entity's contents.
