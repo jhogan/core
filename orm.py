@@ -863,7 +863,7 @@ class joins(entitiesmod.entities):
     def table(self):
         """ Return the table name for this ``joins`` collection. 
         """
-        return self.entities.orm.table
+        return self.entities.orm.tablename
 
     @property
     def abbreviation(self):
@@ -924,7 +924,7 @@ class join(entitiesmod.entity):
         """ Returns the table name for this `join`. This is the same as
         the table name for the entities' table.
         """
-        return self.entities.orm.table
+        return self.entities.orm.tablename
 
     @property
     def keywords(self):
@@ -2740,7 +2740,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # TODO Subscribe to executor's on*connect events
             self = cls
             if self.orm.isstreaming:
-                sql = 'SELECT COUNT(*) FROM ' + self.orm.table
+                sql = 'SELECT COUNT(*) FROM ' + self.orm.tablename
                 if self.orm.where:
                     sql += '\nWHERE ' + str(self.orm.where.predicate)
 
@@ -3528,7 +3528,7 @@ class entitymeta(type):
         # If a class wants to define a custom table name, assign it to
         # the `orm` here and remove it from this entity class's
         # namespace. 
-        orm_.table = body.pop('table', None)
+        orm_.tablename = body.pop('table', None)
 
         # Create standard field names in the `body` list. They will
         # later be converted to mapping objects which are added to the
@@ -6096,7 +6096,7 @@ class mappings(entitiesmod.entities):
         """
 
         # Get the table name
-        tbl = self.orm.table
+        tbl = self.orm.tablename
 
         # Get a list() of fieldmapping objects for the entity
         maps = [x for x in self if isinstance(x, fieldmapping)]
@@ -6146,7 +6146,7 @@ class mappings(entitiesmod.entities):
         sql = """UPDATE {}
 SET {}
 WHERE id = %s;
-        """.format(self.orm.table, set)
+        """.format(self.orm.tablename, set)
 
         # Get the args. These will be values from the entity's
         # attributes.
@@ -6171,7 +6171,7 @@ WHERE id = %s;
         it simply returns the DELETE statement and arguments, so
         it is safe to call for debugging or other, similar purposes.
         """
-        sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.table)
+        sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.tablename)
 
         args = self['id'].value.bytes,
 
@@ -6289,7 +6289,7 @@ class mapping(entitiesmod.entity):
     def fullname(self):
         """ The fully qualified name of the mapping.
         """
-        return '%s.%s' % (self.orm.table, self.name)
+        return '%s.%s' % (self.orm.tablename, self.name)
 
     @property
     def value(self):
@@ -8561,7 +8561,7 @@ class orm:
         self._ismarkedfordeletion  =  False
         self._entities             =  None
         self.entity                =  None
-        self._table                =  None
+        self._tablename                =  None
         self.composite             =  None   #  For association
         self._composits            =  None
         self._constituents         =  None
@@ -9128,11 +9128,11 @@ class orm:
         setattr(self.instance, attr, v)
             
     @property
-    def table(self):
+    def tablename(self):
         """ Returns the name of the database table name corresponding to
         the entity::
 
-            >>> party.person.orm.table
+            >>> party.person.orm.tablename
             'party_persons'
 
         Note that table names consist of the module ('party') proceeded
@@ -9154,26 +9154,26 @@ class orm:
         else:
             mod = mod.__name__
 
-        if self._table:
-            tbl = self._table
+        if self._tablename:
+            tbl = self._tablename
         else:
             tbl = self.entities.__name__
 
         return '%s_%s' % (mod, tbl)
 
-    @table.setter
-    def table(self, v):
+    @tablename.setter
+    def tablename(self, v):
         """ Sets the name of the database table corresponding to the
         entity.
 
         Note that this want include the module name. The getter prepends
         the module name automatially::
 
-            >>> party.person.orm.table = 'somename'
-            >>> party.person.orm.table
+            >>> party.person.orm.tablename = 'somename'
+            >>> party.person.orm.tablename
             'party_somename'
         """
-        self._table = v
+        self._tablename = v
         
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
@@ -9461,7 +9461,7 @@ class orm:
 
         props = (
             'isnew',       '_isdirty',     'ismarkedfordeletion',
-            'entity',      'entities',     '_table'
+            'entity',      'entities',     '_tablename'
         )
 
         for prop in props: 
@@ -9652,7 +9652,7 @@ class orm:
         entity.
         """
         # TODO Use executor
-        sql = 'TRUNCATE TABLE %s;' % self.table
+        sql = 'TRUNCATE TABLE %s;' % self.tablename
 
         if cur:
             cur.execute(sql)
@@ -9791,7 +9791,7 @@ class orm:
         """
         # TODO Use executor
         # TODO UPPER CASE 'drop table'
-        sql = 'drop table `%s`;' % self.table
+        sql = 'drop table `%s`;' % self.tablename
 
         try:
             if cur:
@@ -9942,7 +9942,7 @@ class orm:
 
         I = ' ' * 4
         at1 = str()
-        hdr = f'ALTER TABLE `{self.table}`\n'
+        hdr = f'ALTER TABLE `{self.tablename}`\n'
         if isdiff:
 
             for tag, i1, i2, j1, j2, *after in  opcodes:
@@ -10031,7 +10031,7 @@ class orm:
             at2 += f'{I}MODIFY COLUMN `{col.name}` {map.definition}';
 
         if at2:
-            at2 = f'ALTER TABLE `{self.table}`\n{at2};'
+            at2 = f'ALTER TABLE `{self.tablename}`\n{at2};'
 
         r = str()
         if at1:
@@ -10049,7 +10049,7 @@ class orm:
         database, would create the entity's underlying table (assuming
         the table didn't already exist).
         """
-        r = 'CREATE TABLE `%s`(\n' % self.table 
+        r = 'CREATE TABLE `%s`(\n' % self.tablename 
 
         for i, map in enumerate(self.mappings):
             if not isinstance(map, fieldmapping):
@@ -10120,7 +10120,7 @@ class orm:
         underlying database table.
         """
         try:
-            return db.table(self.table)
+            return db.table(self.tablename)
         except MySQLdb._exceptions.OperationalError as ex:
             if ex.args[0] == BAD_TABLE_ERROR:
                 return None
@@ -10135,7 +10135,7 @@ class orm:
         # Create the basic SELECT query.
         sql = textwrap.dedent(f'''
             SELECT * 
-            FROM {self.table} 
+            FROM {self.tablename} 
             WHERE id = _binary %s 
         ''')
 
@@ -10412,7 +10412,7 @@ class orm:
         """
         if not orm._ent2abbr:
             def generator():
-                tblelements = e.orm.table.split('_')
+                tblelements = e.orm.tablename.split('_')
                 if len(tblelements) > 1:
                     # Use underscores to abbreviate, e.g.:
                     # artist_artifacts => a_a 
@@ -10427,7 +10427,7 @@ class orm:
                 else:
                     # If no underscores were found, just yield each
                     # character.
-                    for c in e.orm.table:
+                    for c in e.orm.tablename:
                         yield c
 
             # Get all entity classes sorted by name
@@ -11037,7 +11037,7 @@ class orm:
             joins += '%s' % join.keywords
 
             # Concatenate the join table name
-            joins += ' ' + join.entities.orm.table
+            joins += ' ' + join.entities.orm.tablename
 
             # Concatenate the table alias
             joins += ' AS `%s`' % graph
@@ -11108,7 +11108,7 @@ class orm:
             # Concatenate the select, join, and where elements
             sql = 'SELECT\n%s\nFROM %s AS `%s` \n%s' 
             sql %= (textwrap.indent(strselect, ' ' * 4), 
-                    self.table, 
+                    self.tablename, 
                     self.abbreviation, 
                     joins)
 
@@ -12408,14 +12408,14 @@ class migration:
         tbls = db.catelog().tables
 
         for e in es:
-            if not tbls(e.orm.table):
+            if not tbls(e.orm.tablename):
                 # The model `e` has no corresponding table, so it should
                 # probably be CREATEd
                 r += ormclasswrapper(e)
 
         for tbl in tbls:
             for e in es:
-                if e.orm.table == tbl.name:
+                if e.orm.tablename == tbl.name:
                     break
             else:
                 # `tbl` exist in database but not in model, so should
@@ -12452,7 +12452,7 @@ class migration:
 
         row.newfields(
             f'Model: {e.__module__}.{e.__name__}', str(), 
-            f'Table: {e.orm.table}', str()
+            f'Table: {e.orm.tablename}', str()
         )
 
         for i in range(cnt):
@@ -12491,7 +12491,7 @@ class migration:
 
         row.newfields(
             f'Model: {e.__module__}.{e.__name__}', str(), 
-            f'Table: {e.orm.table}', str()
+            f'Table: {e.orm.tablename}', str()
         )
 
         mapdefs = [f'{x.name} {x.definition}' for x in maps]
