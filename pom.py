@@ -3275,9 +3275,9 @@ class crud(page):
         # If the entity we are working with is a collection, load the
         # collection then return it as a <table>.
         if isinstance(self.entity, orm.entitiesmeta):
-            # XXX Replace `all` with an instantiation with arguments
-            # XXX s/e/es/
-            e = self.entity.orm.all
+            # TODO Replace `all` with an instantiation with arguments
+            es = self.entity.orm.all
+            self.instance = es
 
             el = es.orm.table
 
@@ -3378,6 +3378,7 @@ class crud(page):
 
             # Load entity
             e = self.entity(id)
+            self.instance = e
 
             if frm:
                 # If frm is True, add a <form> for the entity to the
@@ -3411,7 +3412,6 @@ class crud(page):
                 if btnedit := card.btnedit:
                     el.btnedit.onclick += self.btnedit_onclick, card
 
-        self.instance = e
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
