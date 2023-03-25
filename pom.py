@@ -3316,8 +3316,7 @@ class crud(page):
             # XXX s/e/es/
             e = self.entity.orm.all
 
-            # XXX:76756507 s/table1/table
-            el = e.orm.table1
+            el = es.orm.table
 
             tds = el['td[data-entity-attribute=id]']
 

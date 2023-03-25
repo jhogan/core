@@ -11997,7 +11997,7 @@ class orm:
         return frm
 
     @property
-    def table1(self):
+    def table(self):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
         """
