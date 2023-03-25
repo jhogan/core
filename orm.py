@@ -2768,9 +2768,22 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 yield e
 
     def __getitem__(self, key):
+        """ XXX
+        """
+        def get_by_id(id):
+            for e in self:
+                if e.id == key:
+                    return e
+            else:
+                raise IndexError('Entity id not found: ' + key.hex)
+
         if self.orm.isstreaming:
             # TODO Add indexing using a UUID. See alternative block for
             # how this is done on non-streaming entities collections.
+
+            if isinstance(key, UUID):
+                return get_by_id(key)
+
             cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
@@ -2780,12 +2793,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             return es
                 
         else:
-            if type(key) is UUID:
-                for e in self:
-                    if e.id == key:
-                        return e
-                else:
-                    raise IndexError('Entity id not found: ' + key.hex)
+            if isinstance(key, UUID):
+                return get_by_id(key)
+
             elif isinstance(key, entity):
                 return self[key.id]
 

@@ -3876,6 +3876,11 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                     # not implemented.
                     self.expect(NotImplementedError, lambda: arts1[i:j])
 
+            # Test indexing using UUID
+            for i in range(10):
+                id = arts[i].id
+                self.eq(id,arts1[id].id)
+
             # Ensure that __getitem__ raises IndexError if the index is out of
             # range
             self.expect(IndexError, lambda: arts1[cnt + 1])

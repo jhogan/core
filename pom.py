@@ -3356,17 +3356,7 @@ class crud(page):
 
                         if attrid == id:
                             # Get the entity's <form> representation
-                            # XXX It should be easy to update
-                            # orm.entities.__getitem__ to index off UUID
-                            # when streaming.
-                            for e1 in e:
-                                if e1.id == id:
-                                    frm = e1.orm.form
-                                    break
-                            else:
-                                raise IndexError(
-                                    'Cannot find entity {id}'
-                                )
+                            frm = es[id].orm.form
 
                             # Replace contents of tr with frm
                             self._formalize(tr, frm)
