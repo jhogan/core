@@ -1804,38 +1804,6 @@ class page(dom.html):
 
         self.clear()
 
-    def _lingualize(self, lang):
-        """ Iterate over the each anchor tag in this `page` and ensure
-        that `lang` is prepended to each anchor's HREF.
-
-            # Assuming `lang` is 'en'
-            assert lang == 'en'
-
-            # Before lingualization
-            <a href="/some/path">link</a>
-
-            # After lingualization
-            <a href="/en/some/path">link</a>
-
-        Note that this method is idempotent, i.e., calling it multiple
-        times has the same effect on the `page` object as calling it
-        once.
-        """
-        # XXX Remove
-        #mnus = self.header.menus
-        #for a in mnus['a']:
-        for a in self['a']:
-
-            # If the anchor has already been lingualized
-            if a.href.startswith(f'/{lang}/'):
-                continue
-
-            href  =  a.href
-            sep   =  os.path.sep
-            a.href = os.path.join(
-                sep, lang, href.lstrip(sep)
-            )
-
     @property
     def spa(self):
         """ If this `page` object is a subpage of a SPA, return its SPA

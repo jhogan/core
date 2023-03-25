@@ -268,7 +268,7 @@ class application:
                             # Currently it returns None because we don't
                             # use the /files/ prefix to distinguish
                             # between files and pages.
-                            pg._lingualize('en')
+                            request.lingualize('en', pg)
 
                         # Else if no page was provided by the site
                         else:
@@ -953,7 +953,7 @@ class request(entities.entity):
 
                 # Add the language code to any anchors, i.e., add
                 # the 'en' to /en/path/to/page.
-                pg._lingualize(lang)
+                self.lingualize(lang, pg)
 
                 if not self.ishead:
                     # If we are processing an event
