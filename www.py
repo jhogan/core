@@ -1046,11 +1046,7 @@ class request(entities.entity):
 
         :param: e dom.element: The element to lingualize.
         """
-        # XXX Remove
-        #mnus = self.header.menus
-        #for a in mnus['a']:
         for a in e['a']:
-
             # If the anchor has already been lingualized
             if a.href.startswith(f'/{lang}/'):
                 continue

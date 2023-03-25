@@ -3888,12 +3888,6 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             # Ensure that __call__ returns None if the index is out of range
             self.none(arts1(cnt + 1))
 
-            # NOTE that UUID indexing on streams has not been
-            # implemented yet.
-
-            # TODO Test indexing by UUID, i.e.,
-            # arts[id]
-
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
         nonos = (

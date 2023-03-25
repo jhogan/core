@@ -8738,8 +8738,8 @@ class orm:
         # orm.entitymeta.__new__. The downside would be an increase in
         # startup time (not sure how much).
         # 
-        # Note that this tends not to be an issue because orm.table gets
-        # called on startup for each entity. orm.table calls
+        # Note that this tends not to be an issue because orm.tablename gets
+        # called on startup for each entity. orm.tablename calls
         # `self.entities` thus causing this property to be run for each
         # entity on startup.
 
@@ -11996,9 +11996,6 @@ class orm:
 
         return frm
 
-    # XXX:76756507 Looks like we need to change the existing orm.table
-    # to orm.tablename so we can claim the name `table` for the below
-    # property.
     @property
     def table1(self):
         """ Return an HTML table (dom.table) that represents this

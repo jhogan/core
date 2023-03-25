@@ -3332,9 +3332,6 @@ class crud(page):
 
                 td += menu
 
-            # XXX Can this logic be centralized since there is very
-            # similar code in btnedit_onclick which does similar things.
-
             # If a browser is doing a tradtional (non-XHR) GET on the
             # the page, and the query string parameter crud is 'update',
             # use the id from the query string to add <form> to the
@@ -3476,9 +3473,6 @@ class crud(page):
         "Edit', 'Quick Edit', 'Preview', 'Delete', etc. This <menu>
         provides those function for the entity represented by the <tr>.
         """
-
-        # XXX Replace td parameter with tr
-
         # Create the menu to return
         menu = dom.menu()
 
