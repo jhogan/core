@@ -2768,7 +2768,26 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 yield e
 
     def __getitem__(self, key):
-        """ XXX
+        """ Return an item form this orm.entities collection based on a
+        key. Works in strteaming and non-streaming mode.
+
+        The an entry isn't found, an IndexError is raised.
+
+        :param: key UUID|orm.entity|str|int:
+            
+            if UUID:
+                Searches the collection for an entity whose `id`
+                attribute matches the key and returns that entity.
+
+            if int:
+                Returns the entry from the collection at index `key`.
+                This is equivalent to using an index to get an element
+                from a list.
+
+            if str:
+                Returns the entry from the collection where key equals
+                the `name` attribute of the entity (assuming there is
+                one).
         """
         def get_by_id(id):
             for e in self:
@@ -2778,7 +2797,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 raise IndexError('Entity id not found: ' + key.hex)
 
         if self.orm.isstreaming:
-            # TODO Add indexing using a UUID. See alternative block for
+            # TODO Add indexing using a str. See alternative block for
             # how this is done on non-streaming entities collections.
 
             if isinstance(key, UUID):
@@ -2788,11 +2807,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             es = cur.advance(key)
             if isinstance(key, int):
                 if es.issingular:
-                    
                     return es.only
                 raise IndexError('Entities index out of range')
             return es
-                
         else:
             if isinstance(key, UUID):
                 return get_by_id(key)
@@ -2819,7 +2836,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # for performance sake, it was tweaked to not do that. `e`
             # should only be e or a list. However, this may not always
             # be the case, so a modification here will be necessary if
-            # another type received.
+            # another type is received.
             if isinstance(e, entity):
                 return e
             elif type(e) is list:

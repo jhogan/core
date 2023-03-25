@@ -920,9 +920,10 @@ class request(entities.entity):
 
                 # Get the main SPA application page for the page if
                 # there is one.
+
                 # XXX Change to 
                 #
-                #     if not pg.isevent and spa := pg.spa:
+                #     if not self.isevent and spa := pg.spa:
                 #
                 #
                 # If this is just an event, I don't think there is a
