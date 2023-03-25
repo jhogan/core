@@ -3427,7 +3427,7 @@ class crud(page):
 
         self.main += el
 
-    def _menu(self, td):
+    def _menu(self, tr):
         """ Create a new <menu> object that acts as a context menu for
         the given <tr>.
 
@@ -3445,7 +3445,7 @@ class crud(page):
             li = dom.li()
 
             # Get entity's UUID
-            id = td.parent.getattr('data-entity-id')
+            id = tr.parent.getattr('data-entity-id')
 
             # Create a path string to the details page
             path = f'{det.path}?id={id}&crud=update'
