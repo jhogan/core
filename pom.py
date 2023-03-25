@@ -692,16 +692,11 @@ function is_nav_link(e){
     /* Returns true if the element `e` is a "nav link",
     i.e., it is an anchor tag nested within a <nav>.
     */
+    var rent = e.parentNode
 
-    // XXX Use var/let
-
-
-    rent = e.parentNode
-
-    found = false
+    var found = false
     while (rent){
         if (rent.tagName == 'NAV'){
-            nav = rent
             found = true
             break
         }
@@ -716,7 +711,7 @@ function is_nav_link(e){
 '''
 
         r += '''
-        for(a of as){
+        for(var a of as){
             if (a === e){
                 return true
             }
