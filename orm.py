@@ -2842,7 +2842,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             elif isinstance(e, entities):
                 return e
             else:
-                raise ValueError()
+                raise TypeError('Invalid entry found')
     
     def __getattribute__(self, attr):
         """ Returns the value of an attribute of this entities
