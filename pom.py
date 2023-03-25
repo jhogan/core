@@ -1811,7 +1811,7 @@ class page(dom.html):
         """
         pg = self.page
         while pg:
-            if isinstance(pg, spa):
+            if pg.isspa:
                 return pg
 
             pg = pg.page
