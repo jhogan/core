@@ -2788,7 +2788,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             es = cur.advance(key)
             if isinstance(key, int):
                 if es.issingular:
-                    return es.first
+                    
+                    return es.only
                 raise IndexError('Entities index out of range')
             return es
                 
