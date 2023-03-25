@@ -2839,10 +2839,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # another type is received.
             if isinstance(e, entity):
                 return e
-            elif type(e) is list:
-                # TODO I don't think we ever get here any more so remove
-                # this block and its conditional.
-                return type(self)(initial=e)
             elif isinstance(e, entities):
                 return e
             else:
