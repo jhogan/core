@@ -3612,6 +3612,89 @@ class crud(tester.tester):
         type = tab['.exception span.type'].only.text
         self.eq('ValueError', type)
 
+    def it_navigates_to_entities_page(self):
+        Count = 10
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        pers = persons()
+        for i in range(Count):
+            per = person.getvalid()
+
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+        print(tab)
+
+        trs = tab['main table tbody tr']
+
+        # We should have a <tr> for each of the persons created above
+        self.ge(Count, trs.count)
+
+        # Make sure there is a <tr> for each person
+        ids = list()
+        for tr in trs:
+            ids.append(UUID(tr.getattr('data-entity-id')))
+
+        ids.sort()
+        pers.sort()
+
+        self.eq(pers.pluck('id'), ids)
+
+        for tr, per in zip(trs, pers):
+            for attr in ('name', 'bio'):
+                td = tr[f'td[data-entity-attribute={attr}]'].only
+                self.eq(str(getattr(per, attr)), td.text)
+
+            td = tr['td[data-entity-attribute=id]'].only
+
+            a = td['menu li a'].only
+
+            self.eq('Quick Edit', a.text)
+
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            div = frm[f'[data-entity-attribute={map.name}]']
+            el = div['input, textarea'].only
+
+            if isinstance(el, dom.input):
+                el.value = getattr(per, map.name)
+            elif isinstance(el, dom.textarea):
+                el.text =  getattr(per, map.name)
+
+        btnsubmit = frm['button[type=submit]'].only
+
+        btnsubmit.click()
+
+        card = tab['article.card'].only
+
+        id = card['[data-entity-attribute=id] span'].only.text
+
+        per1 = self.expect(None, lambda: person(id))
+
+        for map in person.orm.mappings.fieldmappings:
+            if map.name == 'createdat':
+                continue
+
+            if map.name == 'updatedat':
+                continue
+
+            v = getattr(per, map.name)
+            v1 = getattr(per1, map.name)
+
+            self.eq(v, v1)
+
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA
