@@ -908,28 +908,9 @@ class request(entities.entity):
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
-                # If the page is a SPA page, get the <main> tag add add
-                # the `spa-data-path` attribute to it.
-                # TODO:2ef451ff We may only need to do this in the 
-                # after the following conditional since this logic is
-                # here twice.
-                if pg.isspa:
-                    main = pg['html>body>main'].only
-                    path = f'/{self.language}{pg.path}'
-                    main.attributes += 'spa-data-path', path
-
                 # Get the main SPA application page for the page if
                 # there is one.
-
-                # XXX Change to 
-                #
-                #     if not self.isevent and spa := pg.spa:
-                #
-                #
-                # If this is just an event, I don't think there is a
-                # need to embed the pg into its spa.
                 if spa := pg.spa:
-                    
                     # Clear page. See the comment above on why we clear.
                     spa.clear()
 
@@ -945,9 +926,20 @@ class request(entities.entity):
                     # code below.
                     pg = spa
 
-                    # TODO:2ef451ff
+                    # Get the spa pages's path
+                    path = spa.path
+                elif pg.isspa:
+                    # Get the requested page's path
+                    path = pg.path
+                else:
+                    # No data-spa-path because we aren't dealing with a
+                    # spa page.
+                    path = None
+
+                if path:
+                    # Add a data-spa-path to the <main> element
+                    path = f'/{self.language}{path}'
                     main = pg['html>body>main'].only
-                    path = f'/{self.language}{pg.path}'
                     main.attributes += 'spa-data-path', path
 
                 lang = self.language
