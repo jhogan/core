@@ -83,6 +83,7 @@ class foonet(pom.site):
         ''' Pages '''
         self.pages += home()
         self.pages += profile()
+        self.pages += profiles()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
@@ -3133,6 +3134,10 @@ class home(pom.page):
     def name(self):
         return 'index'
 
+class profiles(pom.crud):
+    def __init__(self, *args, **kwargs):
+        super().__init__(e=persons, *args, **kwargs)
+
 class profile(pom.crud):
     def __init__(self, *args, **kwargs):
         super().__init__(e=person, *args, **kwargs)
@@ -3162,6 +3167,11 @@ class spa(pom.spa):
         prof = profile()
         mnuspa.items += pom.menu.item(
             'New profile', f'{prof.path}?crud=create'
+        )
+
+        profs = profiles()
+        mnuspa.items += pom.menu.item(
+            'Profiles', f'{profs.path}'
         )
 
 class google(pom.page):
