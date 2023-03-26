@@ -3416,7 +3416,7 @@ class crud(tester.tester):
 
         # TODO We should also test different crud operations here. At
         # the moment, only 'create' makes sense for a menu. We would
-        # want hyperlinks for things like 'retrieve', 'update', ande
+        # want hyperlinks for things like 'retrieve', 'update', and
         # 'delete'.
 
     def it_creates(self):
