@@ -3359,8 +3359,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 
             # TODO If an ORM users creates a brokenrules property and
             # forgets to return anything, it will lead to a strange
-            # error message here. Instead, we should chek the return
-            # value of e.brokenrules and, if its None, raise a more
+            # error message here. Instead, we should check the return
+            # value of e.brokenrules and, if it's None, raise a more
             # informative error message.
             brs += e.getbrokenrules(gb=gb)
 
@@ -4565,7 +4565,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # Don't save the entity if it doesn't pass its validation
             # rules (not self.isvalid). If we are simply deleting the
-            # entity, the the validation rules don't matter.
+            # entity, then the validation rules don't matter.
             if not self.orm.ismarkedfordeletion and not isvalid:
                 raise entitiesmod.BrokenRulesError(
                     "Can't save invalid object", self
@@ -4875,7 +4875,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # up to and including orm.entity.getbrokenrules.
                     brs = super().getbrokenrules(*args, **kwargs)
 
-                    # Add our on validation: ensure emails have @ signs
+                    # Add our own validation: ensure emails have @ signs
                     # in them.
                     if '@' not in self.email:
                         brs += brokenrule(
@@ -4887,7 +4887,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Return the brokenrules collection
                     return brs
 
-        Given the above, we can expect the followiwng::
+        Given the above, we can expect the followiwng:
             
             per = person()
 
@@ -4959,10 +4959,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         :param: ascend bool: If True, self's `orm.brokenrules` will be
         added to the collection of brokenrules. This will recurse until
-        we reach the orm.entity. Usually, we want an object to report
-        all of its broken rules, including its supers'. But when saving,
-        we want to evaluate only the entity's broken rules for
-        performance reasons. See orm.entity._save.
+        we reach the orm.entity base class. Usually, we want an object
+        to report all of its broken rules, including its supers'. But
+        when saving, we want to evaluate only the entity's broken rules
+        for performance reasons. See orm.entity._save.
 
         :param: recurse bool: Indicates we want to recurse into the
         object's graph to collect their brokenrules. These would include
@@ -5001,7 +5001,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # A brokenrules property exists on self so call it directly
             brs += prop.fget(self)
             
+        # Iterate over the entity's mapping collection to detect broken
+        # rules...
         for map in self.orm.mappings:
+            
+            # If map is a fieldmapping, search for primative broken
+            # rules such an int field contating a string, or a str field
+            # containing more characters that it is allowed to have in
+            # accordance with its declaration.
             if type(map) is fieldmapping:
                 t = map.type
                 if t == types.str:
