@@ -2808,8 +2808,23 @@ class crud(page):
         """
         self.entity     =  e
         self._instance  =  None
+        self._detail    =  None
         self._form      =  None
         super().__init__(name=name, pgs=None, *args, **kwargs)
+
+    @property
+    def detail(self):
+        """ Returns a class reference to the pom.page that contains the
+        details for an entity (usually contained in a table row)
+        presented on this pom.crud page..
+        """
+        return self._detail
+
+    @detail.setter
+    def detail(self, v):
+        """ Sets the detail class reference for this pom.crud page.
+        """
+        self._detail = v
 
     @property
     def instance(self):
