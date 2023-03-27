@@ -499,6 +499,16 @@ class tester(entities.entity):
                 self.request = req
                 self.response = res
 
+            def __repr__(self):
+                res = self.response
+                req = self.request
+                r = type(self).__name__ + '('
+                r += 'status=' + str(res.status) if res else str(None) 
+                r += ', method=' + req.method
+                r += ', url=' + str(req.url)
+                r += ')'
+                return r
+
         class _tabs(www.browser._tabs):
             """ A collection of test browser tabs.
 
