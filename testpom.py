@@ -3613,6 +3613,10 @@ class crud(tester.tester):
         self.eq('ValueError', type)
 
     def it_navigates_to_entities_page(self):
+        """ Test loading a pom.page with an entities collection. We
+        should get a <table> with each entity represented as <tr>s
+        within the collection.
+        """
         Count = 10
 
         ws = foonet()
@@ -3679,7 +3683,8 @@ class crud(tester.tester):
             # attributes.
 
     def it_navigates_to_entities_clicks_quick_edit(self):
-        """ XXX
+        """ Use the Quick Edit feature of a pom.crud page to get a form.
+        Test the form's values.
         """
         ws = foonet()
         tab = self.browser().tab()
@@ -3789,6 +3794,11 @@ class crud(tester.tester):
         # changesd to meta.content.
         self.eq(meta.content, str(tab.url))
 
+    def it_navigates_to_entities_clicks_quick_edit_and_submits(self):
+        """ Use the Quick Edit feature of a pom.crud page to get a form.
+        Test submitting the form.
+        """
+        # XXX
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA

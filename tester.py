@@ -500,6 +500,8 @@ class tester(entities.entity):
                 self.response = res
 
             def __repr__(self):
+                """ Return a representation of this `message` object.
+                """
                 res = self.response
                 req = self.request
                 r = type(self).__name__ + '('
