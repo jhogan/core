@@ -3628,9 +3628,12 @@ class crud(tester.tester):
 
         # Get form
         tab.navigate('/en/profiles', ws)
-        print(tab)
 
-        trs = tab['main table tbody tr']
+        tbl = tab['main table'].only
+
+        self.endswith('.person', tbl.getattr('data-entity'))
+
+        trs = tbl['tbody tr']
 
         # We should have a <tr> for each of the persons created above
         self.ge(Count, trs.count)
@@ -3646,54 +3649,145 @@ class crud(tester.tester):
         self.eq(pers.pluck('id'), ids)
 
         for tr, per in zip(trs, pers):
+            # Compare the values from the <tr>s with the values in the
+            # person objects.
             for attr in ('name', 'bio'):
                 td = tr[f'td[data-entity-attribute={attr}]'].only
                 self.eq(str(getattr(per, attr)), td.text)
 
             td = tr['td[data-entity-attribute=id]'].only
 
+            # Ensure that there is a <menu> in each of the tr's
             a = td['menu li a'].only
 
+            # We should have a Quick Edit button. There is no detail
+            # page for /profiles so we wouldn't expect a regular Edit
+            # button.
             self.eq('Quick Edit', a.text)
 
+            # We expect the rel attribute for the quick edit anchor to
+            # have 'edit' and 'preview'
+            rels = a.getattr('rel').split()
+            self.in_(rels, 'edit')
+            self.in_(rels, 'preview')
 
-        for map in person.orm.mappings.fieldmappings:
-            if map.name == 'createdat':
-                continue
+            self.eq('/en/profiles', a.href)
+            print(tr)
 
-            if map.name == 'updatedat':
-                continue
+            # TODO Test the anchor's data-click-handler and
+            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
+            # attributes.
 
-            v = getattr(per, map.name)
-            div = frm[f'[data-entity-attribute={map.name}]']
-            el = div['input, textarea'].only
+    def it_navigates_to_entities_clicks_quick_edit(self):
+        """ XXX
+        """
+        ws = foonet()
+        tab = self.browser().tab()
 
-            if isinstance(el, dom.input):
-                el.value = getattr(per, map.name)
-            elif isinstance(el, dom.textarea):
-                el.text =  getattr(per, map.name)
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
 
-        btnsubmit = frm['button[type=submit]'].only
+        pers.save()
 
-        btnsubmit.click()
+        # Get form
+        tab.navigate('/en/profiles', ws)
 
-        card = tab['article.card'].only
+        tbl = tab['main table'].only
 
-        id = card['[data-entity-attribute=id] span'].only.text
+        # Get a random person
+        per = pers.getrandom()
 
-        per1 = self.expect(None, lambda: person(id))
+        # Get the <tr> from the first person created above
+        sels = f'tr[data-entity-id="{per.id.hex}"]'
+        tr = tbl[sels].only
 
-        for map in person.orm.mappings.fieldmappings:
-            if map.name == 'createdat':
-                continue
+        # Get Quick Preview anchor
+        a = tr['a[rel~=edit][rel~=preview]'].only
 
-            if map.name == 'updatedat':
-                continue
+        # Before the click, the table will have no <form>
+        self.zero(tab['table form'])
 
-            v = getattr(per, map.name)
-            v1 = getattr(per1, map.name)
+        # Nonmally we would use self.click() but we want make user the
+        # test browser is issuing the correct HTTP requests because of
+        # the SPA and traditional orientations of pom.crud.
+        with tab.capture() as msgs:
+            a.click()
 
-            self.eq(v, v1)
+        # We should only have one
+        msg = msgs.only
+
+        # Ensure we POSTed to http://foo.net:8000/en/profiles'
+        self.eq('POST', msg.request.method)
+        self.eq('http://foo.net:8000/en/profiles', str(msg.request.url))
+
+        # Ensure 200 response
+        self.h200(msgs.only.response)
+
+        # Obtain the <tr> again
+        tr1 = tbl[sels].only
+
+        # This time it will be different because the click will have
+        # caused the server to replace it with a new <tr> which contains
+        # a <form>.
+        self.isnot(tr, tr1)
+
+        # Let's use `tr` instead of `tr1` for the tests below
+        tr = tr1
+
+        self.endswith('.person', tr.getattr('data-entity'))
+        self.eq(per.id.hex, tr.getattr('data-entity-id'))
+
+        # Get the <td> in the <tr> that contains the <form>
+        td = tr['td:first-child'].only
+
+        # Test <td colspan="3">
+        self.eq(3, int(td.getattr('colspan')))
+
+        # Get <form>
+        frm = td['form'].only
+
+        self.endswith('.person', frm.getattr('data-entity'))
+
+        # Get form's labels
+        lbls = frm['div[data-entity-attribute] label']
+
+        # Test them
+        expect = ['Name', 'Born', 'Bio']
+        self.eq(expect, lbls.pluck('text'))
+
+        # Test the hidden id <input>
+        inp = frm['div[data-entity-attribute=id] input'].only
+        self.eq(per.id, UUID(inp.value))
+        self.eq('hidden', inp.type)
+        self.eq('id', inp.name)
+
+        # TODO Test the rest of the attributes
+
+        # Make sure there is one submit <button> in the form
+        self.one(frm['button[type=submit]'])
+
+        # Test the <article class="instructions>
+        art = frm['article.instructions'].only
+
+        # We should have a <meta> to set the browser's URL.
+        meta = art['meta'].only
+
+        expect = (
+            'http://foo.net:8000/en/profiles'
+            f'?id={per.id.hex}&crud=update'
+        )
+
+        self.eq(expect, meta.content)
+
+        self.true('set' in meta.classes)
+        self.true('instruction' in meta.classes)
+
+        # While we are here, make sure the test browser tab's URL wach
+        # changesd to meta.content.
+        self.eq(meta.content, str(tab.url))
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
