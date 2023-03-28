@@ -3315,8 +3315,11 @@ class card(tester.tester):
 
 class crud(tester.tester):
     def __init__(self, *args, **kwargs):
+        # We will be testing with foonet so set it as the ORM's
+        # proprietor
         propr = foonet.Proprietor
         super().__init__(propr=propr, *args, **kwargs)
+
         if self.rebuildtables:
             orm.orm.recreate(
                 person,
@@ -3676,7 +3679,6 @@ class crud(tester.tester):
             self.in_(rels, 'preview')
 
             self.eq('/en/profiles', a.href)
-            print(tr)
 
             # TODO Test the anchor's data-click-handler and
             # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"

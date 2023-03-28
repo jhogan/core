@@ -431,7 +431,7 @@ class tester(entities.entity):
                     propr.save()
                 else:
                     # If it already exists in database, ensure that the
-                    # persistencestate refrects this.
+                    # persistencestate reflects this.
                     sup = propr
                     while sup:
                         sup.orm.persistencestate = False, False, False

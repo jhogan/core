@@ -13,6 +13,7 @@ from dbg import B
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
+from uuid import UUID
 import entities
 import file
 import operator
