@@ -3318,6 +3318,14 @@ class crud(tester.tester):
         # We will be testing with foonet so set it as the ORM's
         # proprietor
         propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            # Assign the proprietor's owner. We need to manually ascend
+            # due to TODO:6b455db7
+            sup = propr
+            while sup:
+                sup.owner = ecommerce.users.root
+                sup = sup.orm._super
+
         super().__init__(propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
