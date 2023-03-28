@@ -1742,6 +1742,12 @@ class tester(entities.entity):
         with tab.capture() as msgs:
             trig()
 
+        if msgs.count != count:
+            raise ValueError(
+                'Incorrect HTTP messages count. '
+                f'Expected: {count} Actual: {msgs.count}'
+            )
+
         if last := msgs.last:
             return last.response
 
