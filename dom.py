@@ -3046,6 +3046,34 @@ class form(element):
         """
         self._trigger('submit')()
 
+    def getvalue(self, name):
+        """ XXX
+        """
+        e = self.getattr('data-entity')
+        mod, e = e.split('.')
+        mod = sys.modules[mod]
+        e = getattr(mod, e)
+
+        map = e.orm.mappings[name]
+        v = self[f'input[name={name}]'].only.value
+
+        if isinstance(map, orm.primarykeyfieldmapping):
+            return UUID(v)
+
+        return str(v)
+
+    def setvalue(self, name, v):
+        """ XXX
+        """
+        inp = self[f'input[name={name}]'].only
+
+        if isinstance(inp, input):
+            inp.value = str(v)
+        elif isinstance(inp, textarea):
+            inp.text = str(v)
+        else:
+            raise TypeError('Invalid input type')
+
 class links(elements):
     """ A class used to contain a collection of ``link`` elements.
     """
