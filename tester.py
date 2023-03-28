@@ -1734,14 +1734,10 @@ class tester(entities.entity):
             
             self._failures += failure()
 
-    def click(self, e, tab):
-        """ Call the click() trigger method on `e`. Return the last
-        response the browser recorded.
-
-        Testing the return value is important for tests to ensure that
-        dom.events were successful.
+    def _trigger(self, trig, e, tab, count):
+        """ XXX
         """
-        trig = getattr(e, 'click')
+        trig = getattr(e, trig)
 
         with tab.capture() as msgs:
             trig()
@@ -1750,6 +1746,27 @@ class tester(entities.entity):
             return last.response
 
         return None
+
+    def submit(self, e, tab, count=1):
+        """ XXX
+        """
+        if isinstance(e, dom.form):
+            e = e['button[type=submit]'].only
+            B()
+            self.click(e, tab, count)
+            
+        return self._trigger('submit', e, tab, count)
+
+    def click(self, e, tab, count=1):
+        """ Call the click() trigger method on `e`. Return the last
+        response the browser recorded.
+
+        Testing the return value is important for tests to ensure that
+        dom.events were successful.
+
+        :param: count int: XXX
+        """
+        return self._trigger('click', e, tab, count)
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
