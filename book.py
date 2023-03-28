@@ -7713,7 +7713,30 @@ with book('Hacking Carapacian Core'):
               self.expect(db.RecordNotFoundError, lambda: fb.orm.reloaded))
 
     with section('Validation', id='012b0632'):
-      ...
+      print('''
+        Since `orm.entity` inherits from `entities.entities`, it
+        contains the validation properties called `isvalid` and
+        `brokenrules` (see [Validation](#4210bceb] in the [Entity and
+        entities objects][64baaf7a] chapter). As you may remimber, the
+        `brokenrules` property of an entity returns a collection of any
+        broken validations rules detected by the entity itself. The
+        `isvalid` property simply returns `True` if any broken validations
+        rules were detected and `False`` otherwise.
+
+        As with the `brokenrules` property in regular entity classes,
+        the author of `orm.entity` subclasses is expected to override
+        the `brokenrules` property to examin the current state of the
+        entity and report back any broken rules.Invalid objects are
+        permitted to exist in memory without complaint but the ORM will
+        never allow an invalid entity to be persisted to the database.
+
+        Be will do that later in this section. However, many broken
+        rules are detected by the ORM automatically for you. Since ORM
+        entity class are defined by their attributes, and these
+        attributes contain type information (such as `str`, `int`,
+        etc.), the ORM is able to generate broken rules collections to
+        indicate when these type restrictions have been violated.
+      ''')
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
