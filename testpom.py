@@ -3808,7 +3808,50 @@ class crud(tester.tester):
         """ Use the Quick Edit feature of a pom.crud page to get a form.
         Test submitting the form.
         """
-        # XXX
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        # Get a random person
+        per = pers.getrandom()
+
+        # Get the <tr> from the first person created above
+        sels = f'tr[data-entity-id="{per.id.hex}"]'
+        tr = tbl[sels].only
+
+        # Get Quick Preview anchor
+        a = tr['a[rel~=edit][rel~=preview]'].only
+
+        # Click "Quick Edit" to get <form>
+        B()
+        res = self.click(a, tab)
+        self.h200(res)
+
+        # Obtain the <tr> again
+        tr = tbl[sels].only
+
+        # Get <form>
+        frm = tr['td form'].only
+        id = frm.getvalue('id')
+
+        name = uuid4().hex
+        frm.setvalue('name', name)
+
+        print(tab)
+        res = self.submit(frm, tab)
+
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA
