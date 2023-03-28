@@ -5588,7 +5588,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.eq(loc2.presentation.name, name)
         self.eq(loc2.presentation.artist.presentations.first.name, name)
 
-    def entity_constituents_break_entity(self):
+    def it_breaks_when_constituent_is_broken(self):
         pres = presentation.getvalid()
         pres.artist = artist.getvalid()
 
