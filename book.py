@@ -7412,7 +7412,7 @@ with book('Hacking Carapacian Core'):
             A login form can be written to use this information to
             generate a JWT for the user and be set as a cookie in the
             user's browser. The `pom.page.it_authenticates`
-            testillustrates how to do this.
+            test illustrates how to do this.
 
             Once the user has been authenticated, the `user` object is set
             to `orm.security().user`. The ORM will use this object to
@@ -7717,26 +7717,55 @@ with book('Hacking Carapacian Core'):
         Since `orm.entity` inherits from `entities.entities`, it
         contains the validation properties called `isvalid` and
         `brokenrules` (see [Validation](#4210bceb] in the [Entity and
-        entities objects][64baaf7a] chapter). As you may remimber, the
+        entities objects][#64baaf7a] chapter). As you may remimber, the
         `brokenrules` property of an entity returns a collection of any
         broken validations rules detected by the entity itself. The
         `isvalid` property simply returns `True` if any broken validations
         rules were detected and `False`` otherwise.
 
         As with the `brokenrules` property in regular entity classes,
-        the author of `orm.entity` subclasses is expected to override
+        the author of an `orm.entity` subclass is expected to override
         the `brokenrules` property to examin the current state of the
-        entity and report back any broken rules.Invalid objects are
+        entity and report back any broken rules. Invalid objects are
         permitted to exist in memory without complaint but the ORM will
         never allow an invalid entity to be persisted to the database.
 
-        Be will do that later in this section. However, many broken
-        rules are detected by the ORM automatically for you. Since ORM
-        entity class are defined by their attributes, and these
-        attributes contain type information (such as `str`, `int`,
+        Later in this chapter, we will override the `brokenrules`
+        property to provide our own custom validation.  However, many
+        broken rules are detected by the ORM automatically for you.
+        Since ORM entity class are defined by their attributes, and
+        these attributes contain type information (such as `str`, `int`,
         etc.), the ORM is able to generate broken rules collections to
         indicate when these type restrictions have been violated.
       ''')
+
+      with listing('Taking advantage of builtin validation'):
+        class books(orm.entities):
+          pass
+
+        class book(orm.entity):
+          # The title of the book
+          name = str
+
+          # The author of the book
+          author = str
+
+          # The number of pages in the book
+          pages = int
+
+        b = book()
+        b.name = 1984
+        b.author = 'George Orwell'
+        b.pages = 'three hundred and twenty eight'
+
+        one(b.brokenrules)
+        br = b.brokenrules.only
+
+        eq('valid', br.type)
+        eq('pages', br.property)
+        false(b.isvalid)
+
+        self.expect(entities.BrokenRulesError, b.save)
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
