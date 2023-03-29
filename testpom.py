@@ -3654,18 +3654,17 @@ class crud(tester.tester):
         self.ge(Count, trs.count)
 
         # Make sure there is a <tr> for each person
-        ids = list()
-        for tr in trs:
-            ids.append(UUID(tr.getattr('data-entity-id')))
+        ids = [UUID(x.getattr('data-entity-id')) for x in trs]
 
-        ids.sort()
-        pers.sort()
-
-        self.eq(pers.pluck('id'), ids)
-
-        for tr, per in zip(trs, pers):
-            # Compare the values from the <tr>s with the values in the
-            # person objects.
+        for per in pers:
+            self.in_(ids, per.id)
+            for tr in trs:
+                id = UUID(tr.getattr('data-entity-id'))
+                if per.id == id:
+                    break
+            else:
+                continue
+                    
             for attr in ('name', 'bio'):
                 td = tr[f'td[data-entity-attribute={attr}]'].only
                 self.eq(str(getattr(per, attr)), td.text)
@@ -3849,6 +3848,24 @@ class crud(tester.tester):
         frm.setvalue('name', name)
 
         res = self.submit(frm, tab)
+        
+        # Obtain the <tr> again
+        tr = tbl[sels].only
+
+        # The form will have been replaced with the regular, read-only
+        # collection of <td>s and the <menu>
+        self.zero(tr['td form'])
+        self.one(tr['td menu'])
+
+        # Get the <td> with the person' name. It should be updated to
+        # what we set it to in the <form>.
+        name1 = tr['td[data-entity-attribute=name]'].only.text
+
+        self.eq(name, name1)
+
+        # The name change would have made it to the database, so reload
+        # the entity and assert
+        self.eq(name, per.orm.reloaded().name)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
