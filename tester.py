@@ -1773,7 +1773,7 @@ class tester(entities.entity):
         """
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
-            self.click(e, tab, count)
+            return self.click(e, tab, count)
             
         return self._trigger('submit', e, tab, count)
 
