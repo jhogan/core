@@ -573,6 +573,8 @@ class tester(entities.entity):
                 # request/responses that the `tab` makes.
                 self.messages = tester._browser.messages()
 
+                self.onafterload += self.self_onafterload
+
             def default_event(self, src, eargs):
                 """ This is the default event handler for all supported
                 browser events.
@@ -780,6 +782,48 @@ class tester(entities.entity):
                         exec(el)
                         replace(id, res.html[i])
 
+                    self.listen(res.html)
+
+            def listen(self, el):
+                """XXX
+                """
+                sels = ', '.join(
+                    [
+                        f'[data-{x}-handler]' 
+                        for x in dom.element.Triggers
+                    ]
+                )
+                    
+                targets = el[sels]
+
+                # We need to remove the duplicates because of the bug
+                # 9aec36b4
+                targets = set(targets)
+
+                for target in targets:
+                    for attr in target.attributes:
+                        matches = re.match(
+                            'data-([a-z]+)-handler',
+                            attr.name
+                        )
+                        if matches:
+                            ev = 'on' + matches[1]
+                            ev = getattr(target, ev)
+                            ev.append(obj=self.element_event)
+
+                # Subscribe to element_event for each anchor tag's click
+                # event.
+                as_ = el[pom.page.IsNavSelector]
+                for a in as_:
+                    ev = a.onclick
+                    ev.append(obj=self.element_event)
+                    ev.append(obj=self.default_event)
+
+            def self_onafterload(self, src, eargs):
+                """ XXX
+                """
+                self.listen(self.html)
+
             # TODO The ability for a tab to maintain its own internal
             # DOM should exist in the browser.tab base class in `www.py`
             # as well as here.
@@ -805,38 +849,6 @@ class tester(entities.entity):
                 testing support for SPA navigation.
                 """
                 self._html = v
-
-                sels = ', '.join(
-                    [
-                        f'[data-{x}-handler]' 
-                        for x in dom.element.Triggers
-                    ]
-                )
-                    
-                targets = v[sels]
-
-                # We need to remove the duplicates because of the bug
-                # 9aec36b4
-                targets = set(targets)
-
-                for target in targets:
-                    for attr in target.attributes:
-                        matches = re.match(
-                            'data-([a-z]+)-handler',
-                            attr.name
-                        )
-                        if matches:
-                            ev = 'on' + matches[1]
-                            ev = getattr(target, ev)
-                            ev.append(obj=self.element_event)
-
-                # Subscribe to element_event for each anchor tag's click
-                # event.
-                as_ = v[pom.page.IsNavSelector]
-                for a in as_:
-                    ev = a.onclick
-                    ev.append(obj=self.element_event)
-                    ev.append(obj=self.default_event)
 
                 main = v['main'].only
                 self.inspa = main.hasattr('spa-data-path')
