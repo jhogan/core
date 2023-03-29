@@ -768,6 +768,9 @@ class tester(entities.entity):
                     # (res.html)
                     main = res.html.only
                     replace(this='main', that=main)
+
+                    # XXX Why don't we need to call self.listen(main)
+                    # here?
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
@@ -797,7 +800,7 @@ class tester(entities.entity):
                 targets = el[sels]
 
                 # We need to remove the duplicates because of the bug
-                # 9aec36b4
+                # FIXME:9aec36b4
                 targets = set(targets)
 
                 for target in targets:
@@ -1770,7 +1773,6 @@ class tester(entities.entity):
         """
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
-            B()
             self.click(e, tab, count)
             
         return self._trigger('submit', e, tab, count)

@@ -3835,7 +3835,6 @@ class crud(tester.tester):
         a = tr['a[rel~=edit][rel~=preview]'].only
 
         # Click "Quick Edit" to get <form>
-        B()
         res = self.click(a, tab)
         self.h200(res)
 
@@ -3849,7 +3848,6 @@ class crud(tester.tester):
         name = uuid4().hex
         frm.setvalue('name', name)
 
-        print(tab)
         res = self.submit(frm, tab)
 
 Favicon = '''
