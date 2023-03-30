@@ -3273,9 +3273,10 @@ class crud(page):
                     pg.main.setattr('data-url', url)
 
                     # Set data-spa-path
-                    path = self.spa.path
-                    path = f'/{req.language}{path}'
-                    pg.main.setattr('spa-data-path', path)
+                    if self.spa:
+                        path = self.spa.path
+                        path = f'/{req.language}{path}'
+                        pg.main.setattr('spa-data-path', path)
 
                     eargs.html = pg.main
 
