@@ -820,6 +820,12 @@ class tester(entities.entity):
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.element_event)
+
+                # Subscribe to default_event for each anchor tag's click
+                # event.
+                as_ = el['a']
+                for a in as_:
+                    ev = a.onclick
                     ev.append(obj=self.default_event)
 
             def self_onafterload(self, src, eargs):
