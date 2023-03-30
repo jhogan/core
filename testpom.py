@@ -3674,12 +3674,9 @@ class crud(tester.tester):
             # Ensure that there is a <menu> in each of the tr's
             a = td['menu li a'].only
 
-            # We should have a Quick Edit button. There is no detail
-            # page for /profiles so we wouldn't expect a regular Edit
-            # button.
             self.eq('Quick Edit', a.text)
 
-            # We expect the rel attribute for the quick edit anchor to
+            # We expect the rel attribute for the Quick Edit anchor to
             # have 'edit' and 'preview'
             rels = a.getattr('rel').split()
             self.in_(rels, 'edit')
@@ -3718,7 +3715,7 @@ class crud(tester.tester):
         sels = f'tr[data-entity-id="{per.id.hex}"]'
         tr = tbl[sels].only
 
-        # Get Quick Preview anchor
+        # Get Quick Edit anchor
         a = tr['a[rel~=edit][rel~=preview]'].only
 
         # Before the click, the table will have no <form>
@@ -3830,7 +3827,7 @@ class crud(tester.tester):
         sels = f'tr[data-entity-id="{per.id.hex}"]'
         tr = tbl[sels].only
 
-        # Get Quick Preview anchor
+        # Get Quick Edit anchor
         a = tr['a[rel~=edit][rel~=preview]'].only
 
         # Click "Quick Edit" to get <form>

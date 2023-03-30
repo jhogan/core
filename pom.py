@@ -726,14 +726,14 @@ function is_page_link(e){
 
     A page link as an anchor that links to another, internal page in the
     SPA application. The intention of clicking one in to navigate to the
-    the page through an xhr call. The page's HTML is put into the
-    existing <main> tag replacing <main>'s existing content.
+    page through an XHR call. The page's HTML is put into the existing
+    <main> tag, replacing <main>'s existing content.
     */
     var main = document.querySelector('main')
     var spa_path = main.getAttribute('spa-data-path')
     var href = e.getAttribute('href')
 
-    // if href is null, it's not a page link
+    // If href is null, it's not a page link
     if (href == null){
         return false
     }

@@ -814,8 +814,8 @@ class tester(entities.entity):
                             ev = getattr(target, ev)
                             ev.append(obj=self.element_event)
 
-                # Subscribe to element_event for each anchor tag's click
-                # event.
+                # Subscribe to element_event for each <nav> anchor tag's
+                # click event.
                 as_ = el[pom.page.IsNavSelector]
                 for a in as_:
                     ev = a.onclick
