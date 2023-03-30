@@ -3675,8 +3675,8 @@ class crud(tester.tester):
 
             td = tr['td[data-entity-attribute=id]'].only
 
-            # Ensure that there is a <menu> in each of the tr's
-            a = td['menu li a'].only
+            # Get the Quick Edit anchor
+            a = td['menu li a[rel~=edit][rel~=preview]'].only
 
             self.eq('Quick Edit', a.text)
 
@@ -3687,6 +3687,21 @@ class crud(tester.tester):
             self.in_(rels, 'preview')
 
             self.eq('/en/profiles', a.href)
+
+            # Get the Edit anchor
+            a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
+
+            self.eq('Edit', a.text)
+
+            # We expect the rel attribute for the Edit anchor to
+            # only have 'edit'
+            self.eq('edit', a.getattr('rel'))
+
+            expect = (
+                f'/en/profile?id={per.id.hex}'
+                '&crud=update&oncomplete=/profiles'
+            )
+            self.eq(expect, a.href)
 
             # TODO Test the anchor's data-click-handler and
             # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
@@ -3866,6 +3881,118 @@ class crud(tester.tester):
 
         # The name change would have made it to the database, so reload
         # the entity and assert
+        self.eq(name, per.orm.reloaded().name)
+
+    def it_navigates_to_entities_clicks_edit_and_submits(self):
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        # Get a random person
+        per = pers.getrandom()
+
+        # Get the <tr> from the first person created above
+        sels = f'tr[data-entity-id="{per.id.hex}"]'
+        tr = tbl[sels].only
+
+        # Get Edit anchor
+        a = tr['a[rel~=edit]:not([rel~=preview])'].only
+
+        # Click "Edit" go to the detail page
+        res = self.click(a, tab)
+        self.h200(res)
+
+        # Get <main> from the detail page
+        main = tab['main'].only
+
+        # Assert its attributes
+        self.eq('/profile', main.getattr('data-path'))
+        self.none(main.getattr('spa-data-path'))
+
+        # Assert the <form>'s attributes
+        frm = main['form'].only
+        self.endswith('.person', frm.getattr('data-entity'))
+        self.eq('#' + frm.id, frm.getattr('data-submit-fragments'))
+
+        # Set the name <input> in the <form> to a random value
+        name = uuid4().hex
+        frm.setvalue('name', name)
+
+        # Submit the <form>. This will "redirect" us (so to speak) back
+        # to the main, tabular pagen /profiles.
+        res = self.submit(frm, tab)
+
+        # Get the main page's <main> element
+        main = tab['main'].only
+
+        # Assert it's attributes
+        self.eq('/profiles', main.getattr('data-path'))
+        self.none(main.getattr('spa-data-path'))
+
+        # Assert the tables's attributes
+        tbl = main['table'].only
+        self.endswith('.person', tbl.getattr('data-entity'))
+
+        # Test the <tr> related to the name we updated
+        for tr in tbl['tbody tr']:
+            if tr.getattr('data-entity-id') != per.id.hex:
+                continue
+
+            # Get the "id" <td> to make sure all of its attributes are
+            # correct
+            td = tr['td[data-entity-attribute=id]'].only
+
+            # Get the Quick Edit anchor
+            a = td['menu li a[rel~=edit][rel~=preview]'].only
+            self.eq('Quick Edit', a.text)
+
+            # We expect the rel attribute for the Quick Edit anchor to
+            # have 'edit' and 'preview'
+            rels = a.getattr('rel').split()
+            self.two(rels)
+            self.in_(rels, 'edit')
+            self.in_(rels, 'preview')
+
+            self.eq('/en/profiles', a.href)
+
+            # Get the Edit anchor
+            a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
+
+            self.eq('Edit', a.text)
+
+            # We expect the rel attribute for the Edit anchor to
+            # only have 'edit'
+            self.eq('edit', a.getattr('rel'))
+
+            expect = (
+                f'/en/profile?id={per.id.hex}'
+                '&crud=update&oncomplete=/profiles'
+            )
+            self.eq(expect, a.href)
+
+            # Get the "name" <td>
+            td = tr['td[data-entity-attribute=name]'].only
+
+            # Finally, make sure the new name value is in the <tr>
+            self.eq(name, td.text)
+
+            # TODO Test the anchor's data-click-handler and
+            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
+            # attributes.
+
+        # Make sure the name was updated in the database
         self.eq(name, per.orm.reloaded().name)
 
 Favicon = '''
