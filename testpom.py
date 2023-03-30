@@ -3138,6 +3138,10 @@ class profiles(pom.crud):
     def __init__(self, *args, **kwargs):
         super().__init__(e=persons, *args, **kwargs)
 
+    @property
+    def detail(self):
+        return self.site.pages['profile']
+
 class profile(pom.crud):
     def __init__(self, *args, **kwargs):
         super().__init__(e=person, *args, **kwargs)
