@@ -3243,6 +3243,9 @@ class crud(page):
                 
                 # If we found a matching page
                 if pg.path == path:
+                    # XXX Explain
+                    pg.clear()
+
                     # Run the page
                     pg()
 
