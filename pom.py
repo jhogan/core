@@ -3235,8 +3235,11 @@ class crud(page):
             # Read path
             path = oncompletes.only.text
 
+            # XXX Explain
+            base = self.spa or self.site
+
             # For each page in the spa application
-            for pg in self.spa.pages:
+            for pg in base.pages:
                 
                 # If we found a matching page
                 if pg.path == path:
