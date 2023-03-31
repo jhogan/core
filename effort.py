@@ -77,6 +77,9 @@ class breakdowns(type_types):                                  pass
 class dependencies(type_types):                                pass
 class deliverable_efforts(orm.associations):                   pass
 class effort_product_items(orm.associations):                  pass
+class backlogs(orm.entities):                                 pass
+class stories(orm.entity):                              pass
+class backlog_stories(orm.associations):                              pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -809,4 +812,24 @@ class breakdown(type_type):
 class dependency(type_type):
     """
     """
+
+class backlog(orm.entity):
+    """ XXX
+    """
+    name = str
+    description = text
+    span = datespan
+    goal = str
+
+class story(orm.requirement):
+    """ XXX
+    """
+    name = str
+    points = str
+
+class backlog_story(orm.association):
+    """ XXX
+    """
+    ordinal = int
+    statuses = statuses
 
