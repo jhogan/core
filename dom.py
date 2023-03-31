@@ -1664,7 +1664,7 @@ class element(entities.entity):
     @property
     def fifth(self):
         """ Returns the fifth child element under this `element` object.
-        If the collection has fewer than 4 elements underneath, None is
+        If the collection has fewer than 5 elements underneath, None is
         returned.
         """
         return self.elements.fifth
@@ -3047,8 +3047,26 @@ class form(element):
         self._trigger('submit')()
 
     def getvalue(self, name):
-        """ XXX
+        """ Return the value of <input> and <textarea> elements with the
+        form. If the form specifies a `data-entity` attribute that
+        corresponds to an orm.entity class, appropriate type conversion
+        will be perform. For example, if name is 'id', a UUID value will
+        be returned. If a `data-entity` attribute isn't specified or
+        can't be resolved, the string version of the value found in the
+        DOM would be returned.
+
+        :param: name str: The name of the <input> or <textarea> element
+        to set the value to. The name of these element is that of the
+        element's `name` attribute, e.g.,:
+
+            <input name="id">
+            <input name="firstname">
+            <input name="birthdate">
         """
+
+        # TODO Handle situation where data-entity doesn't exist.
+        # TODO Handle situation where data-entity doesn't resolve to an
+        # orm.entity class.
         e = self.getattr('data-entity')
         mod, e = e.split('.')
         mod = sys.modules[mod]
@@ -3057,13 +3075,32 @@ class form(element):
         map = e.orm.mappings[name]
         v = self[f'input[name={name}]'].only.value
 
+        # TODO Handle other data types such as ints, floats, decimals,
+        # bytes, bools, date, datetimes and foreign keys UUID's.
+        # Actually, we could probably do this easily by instantiating the
+        # entity, assigning the appropriate attribute the value, the
+        # using that attribute to get the coerced value.
         if isinstance(map, orm.primarykeyfieldmapping):
             return UUID(v)
 
         return str(v)
 
     def setvalue(self, name, v):
-        """ XXX
+        """ Set the value of the specified <imput> or <textarea> element
+        within this form. For <input> elements, the `value` attribute is
+        set to v. For <textarea> elements, the text node is set to v.
+
+        :param: name str: The name of the <input> or <textarea> element
+        to set the value to. The name of these element is that of the
+        element's `name` attribute, e.g.,:
+            
+            <input name="id">
+            <input name="firstname">
+            <input name="birthdate">
+
+        :param: v Object: 
+            The value to set the element to. `v` is stringified (run
+            through str()) before being set.
         """
         inp = self[f'input[name={name}]'].only
 

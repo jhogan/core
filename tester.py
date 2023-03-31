@@ -788,7 +788,19 @@ class tester(entities.entity):
                     self.listen(res.html)
 
             def listen(self, el):
-                """XXX
+                """ Takes an element `el` and examins it for any
+                data-{trigger}-handler attributes. Uses this information
+                to subscribe el to this tab's event handlers
+                self.element_event and self.default_event.These handlers
+                will route the element's event to the appropriate
+                handler.
+
+                Note that this is analogous to the `listen()` function
+                in the eventjs JavaScript.
+
+                :param: el dom.element: The root of the DOM tree that
+                will be examined for elements whose events will be
+                subscribed to handlers.
                 """
                 sels = ', '.join(
                     [
@@ -829,8 +841,11 @@ class tester(entities.entity):
                     ev.append(obj=self.default_event)
 
             def self_onafterload(self, src, eargs):
-                """ XXX
+                """ The event handler that is invoked after the browser
+                tab has loaded a new document.
                 """
+
+                # Add event handlers to elements in the tab's DOM.
                 self.listen(self.html)
 
             # TODO The ability for a tab to maintain its own internal

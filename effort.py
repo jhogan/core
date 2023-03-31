@@ -391,7 +391,6 @@ class effort_product_item(orm.association):
     Note that this entity was originally called WORK EFFORT INVENTORY
     PRODUCED in "The Data Model Resource Book".
     """
-
     # The work ``effort`` side of the association.
     effort = effort
     
@@ -804,7 +803,8 @@ class type_type(orm.association):
     object = type
 
 class breakdown(type_type):
-    """"""
+    """
+    """
 
 class dependency(type_type):
     """

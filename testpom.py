@@ -3884,6 +3884,10 @@ class crud(tester.tester):
         self.eq(name, per.orm.reloaded().name)
 
     def it_navigates_to_entities_clicks_edit_and_submits(self):
+        """ Use the Edit feature of a pom.crud page goto the detail
+        page. Test submitting the form on the detail page. Test editing
+        form and clicking the Cancel button as well.
+        """
         ws = foonet()
         tab = self.browser().tab()
 
