@@ -1769,7 +1769,21 @@ class tester(entities.entity):
             self._failures += failure()
 
     def _trigger(self, trig, e, tab, count):
-        """ XXX
+        """ A private method to call the `trig` trigger method on `e`.
+        Return the last response the browser recorded.
+
+        Testing the return value is important for tests to ensure that
+        dom.events were successful.
+
+        :param: trig str: The name of the trigger, e.g., 'click',
+        'submit', 'blur', etc.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause.
+
         """
         trig = getattr(e, trig)
 
@@ -1788,7 +1802,17 @@ class tester(entities.entity):
         return None
 
     def submit(self, e, tab, count=1):
-        """ XXX
+        """ Call the click() trigger method on a form (`e`). Return the
+        last response the browser recorded.
+
+        :param: e dom.form|dom.button: The `form` element or submit
+        button of a form.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause.
         """
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
@@ -1803,7 +1827,14 @@ class tester(entities.entity):
         Testing the return value is important for tests to ensure that
         dom.events were successful.
 
-        :param: count int: XXX
+        :param: e dom.form|dom.button: The element on which to invoke
+        the trigger.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause.
         """
         return self._trigger('click', e, tab, count)
 

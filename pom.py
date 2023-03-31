@@ -3235,15 +3235,16 @@ class crud(page):
             # Read path
             path = oncompletes.only.text
 
-            # XXX Explain
+            # Get the base, i.e., the object with the pages collection
+            # where we can find the oncomplete page.
             base = self.spa or self.site
 
-            # For each page in the spa application
+            # For each page in the spa or site 
             for pg in base.pages:
                 
                 # If we found a matching page
                 if pg.path == path:
-                    # XXX Explain
+                    # Clear and invoke the page
                     pg.clear()
 
                     # Run the page
