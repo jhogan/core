@@ -724,7 +724,6 @@ class tester(entities.entity):
                         if not isspanav:
                             return
 
-                        eargs.preventDefault()
                     else:
                         # If the user clicked a nav link, but we aren't
                         # in SPA mode, allow the browser to navigate to
@@ -739,6 +738,8 @@ class tester(entities.entity):
                     # sent by the browser.
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
+
+                eargs.preventDefault()
 
                 # Create a JSON object to send in the XHR request
                 body = {
