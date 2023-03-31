@@ -3910,52 +3910,63 @@ class crud(tester.tester):
         # Get a random person
         per = pers.getrandom()
 
-        # Get the <tr> from the first person created above
-        sels = f'tr[data-entity-id="{per.id.hex}"]'
-        tr = tbl[sels].only
+        for btn in ('submit', 'cancel'):
 
-        # Get Edit anchor
-        a = tr['a[rel~=edit]:not([rel~=preview])'].only
+            # Get the <tr> for the random person
+            sels = f'tr[data-entity-id="{per.id.hex}"]'
+            tr = tbl[sels].only
 
-        # Click "Edit" go to the detail page
-        res = self.click(a, tab)
-        self.h200(res)
+            # Get Edit anchor
+            a = tr['a[rel~=edit]:not([rel~=preview])'].only
 
-        # Get <main> from the detail page
-        main = tab['main'].only
+            # Click "Edit" go to the detail page
+            res = self.click(a, tab)
+            self.h200(res)
 
-        # Assert its attributes
-        self.eq('/profile', main.getattr('data-path'))
-        self.none(main.getattr('spa-data-path'))
+            # Get <main> from the detail page
+            main = tab['main'].only
 
-        # Assert the <form>'s attributes
-        frm = main['form'].only
-        self.endswith('.person', frm.getattr('data-entity'))
-        self.eq('#' + frm.id, frm.getattr('data-submit-fragments'))
+            # Assert its attributes
+            self.eq('/profile', main.getattr('data-path'))
+            self.none(main.getattr('spa-data-path'))
 
-        # Set the name <input> in the <form> to a random value
-        name = uuid4().hex
-        frm.setvalue('name', name)
+            # Assert the <form>'s attributes
+            frm = main['form'].only
+            self.endswith('.person', frm.getattr('data-entity'))
+            self.eq('#' + frm.id, frm.getattr('data-submit-fragments'))
 
-        # Submit the <form>. This will "redirect" us (so to speak) back
-        # to the main, tabular pagen /profiles.
-        res = self.submit(frm, tab)
+            # Set the name <input> in the <form> to a random value
+            name = uuid4().hex
+            frm.setvalue('name', name)
 
-        # Get the main page's <main> element
-        main = tab['main'].only
+            if btn == 'submit':
+                # Submit the <form>. This will "redirect" us (so to
+                # speak) back to the main, tabular pagen /profiles.
+                res = self.submit(frm, tab)
+            elif btn == 'cancel':
+                btns = tab['main form button:not([type=submit])']
+                btncancel = btns.only
+                res = self.click(btncancel, tab)
 
-        # Assert it's attributes
-        self.eq('/profiles', main.getattr('data-path'))
-        self.none(main.getattr('spa-data-path'))
+            self.h200(res)
+                
+            # Get the main page's <main> element
+            main = tab['main'].only
 
-        # Assert the tables's attributes
-        tbl = main['table'].only
-        self.endswith('.person', tbl.getattr('data-entity'))
+            # Assert its attributes
+            self.eq('/profiles', main.getattr('data-path'))
+            self.none(main.getattr('spa-data-path'))
 
-        # Test the <tr> related to the name we updated
-        for tr in tbl['tbody tr']:
-            if tr.getattr('data-entity-id') != per.id.hex:
-                continue
+            # Assert the table's attributes
+            tbl = main['table'].only
+            self.endswith('.person', tbl.getattr('data-entity'))
+
+            # Test the <tr> related to the name we updated
+            for tr in tbl['tbody tr']:
+                if tr.getattr('data-entity-id') == per.id.hex:
+                    break
+            else:
+                raise ValueError('Cannot find tr')
 
             # Get the "id" <td> to make sure all of its attributes are
             # correct
@@ -3993,14 +4004,22 @@ class crud(tester.tester):
             td = tr['td[data-entity-attribute=name]'].only
 
             # Finally, make sure the new name value is in the <tr>
-            self.eq(name, td.text)
+            if btn == 'submit':
+                self.eq(name, td.text)
+            elif btn == 'cancel':
+                self.eq(per1.name, td.text)
 
             # TODO Test the anchor's data-click-handler and
             # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
             # attributes.
 
-        # Make sure the name was updated in the database
-        self.eq(name, per.orm.reloaded().name)
+            if btn == 'submit':
+                # Make sure the name was updated in the database
+                per1 = per.orm.reloaded()
+                self.eq(name, per1.name)
+            elif btn == 'cancel':
+                # Make sure the name was not changed
+                self.eq(per1.name, per.orm.reloaded().name)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
