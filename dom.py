@@ -1670,6 +1670,14 @@ class element(entities.entity):
         return self.elements.fifth
 
     @property
+    def sixth(self):
+        """ Returns the sixth child element under this `element` object.
+        If the collection has fewer than 6 elements underneath, None is
+        returned.
+        """
+        return self.elements.sixth
+
+    @property
     def seventh(self):
         """ Returns the seventh child element under this `element` object.
         If the collection has fewer than 7 elements underneath, None is
