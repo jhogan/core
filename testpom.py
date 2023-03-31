@@ -83,6 +83,7 @@ class foonet(pom.site):
         ''' Pages '''
         self.pages += home()
         self.pages += profile()
+        self.pages += profiles()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
@@ -564,7 +565,7 @@ class site(tester.tester):
 
     def it_calls__init__(self):
         ws = foonet()
-        self.eight(ws.pages)
+        self.nine(ws.pages)
 
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
@@ -673,18 +674,21 @@ class site(tester.tester):
         ws = foonet()
         mnu = ws.header.makemain()
 
-        self.seven(mnu.items.elements)
+        self.eight(mnu.items.elements)
 
         self.eq(
             [
-                '/index', '/profile', '/about', '/contact-us', 
-                '/blogs', '/admin', '/spa'
+                '/index', '/profile', '/profiles', '/about', 
+                '/contact-us', '/blogs', '/admin', '/spa'
             ],
             mnu.items.pluck('page.path')
         )
 
         self.eq(
-            [home, profile, about, contact_us, blogs, admin, spa],
+            [
+                home,        profile,  profiles,  about,
+                contact_us,  blogs,    admin,     spa
+            ],
             [type(x) for x in  mnu.items.pluck('page')]
         )
 
@@ -730,10 +734,10 @@ class site(tester.tester):
     def it_mutates_main_menu(self):
         ws = foonet()
         mnu = ws.header.makemain()
-        self.seven(mnu.items.elements)
+        self.eight(mnu.items.elements)
 
         # Blogs item
-        itm = mnu.items.fifth
+        itm = mnu.items.sixth
 
         ''' It updates a menu item '''
         sels = dom.selectors('li > a[href="%s"]' % '/blogs/categories')
@@ -759,7 +763,7 @@ class site(tester.tester):
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
 
-        self.eight(mnu.items.elements)
+        self.nine(mnu.items.elements)
 
         sels = dom.selectors('li')
 
@@ -773,7 +777,7 @@ class site(tester.tester):
 
         # Remove the blog menu
 
-        itms = mnu.items.remove(mnu.items.fifth)
+        itms = mnu.items.remove(mnu.items.sixth)
         self.one(itms)
         self.type(pom.menu.item, itms.first)
         self.eq('blogs', itms.first.text)
@@ -3133,6 +3137,14 @@ class home(pom.page):
     def name(self):
         return 'index'
 
+class profiles(pom.crud):
+    def __init__(self, *args, **kwargs):
+        super().__init__(e=persons, *args, **kwargs)
+
+    @property
+    def detail(self):
+        return self.site.pages['profile']
+
 class profile(pom.crud):
     def __init__(self, *args, **kwargs):
         super().__init__(e=person, *args, **kwargs)
@@ -3162,6 +3174,11 @@ class spa(pom.spa):
         prof = profile()
         mnuspa.items += pom.menu.item(
             'New profile', f'{prof.path}?crud=create'
+        )
+
+        profs = profiles()
+        mnuspa.items += pom.menu.item(
+            'Profiles', f'{profs.path}'
         )
 
 class google(pom.page):
@@ -3305,8 +3322,19 @@ class card(tester.tester):
 
 class crud(tester.tester):
     def __init__(self, *args, **kwargs):
+        # We will be testing with foonet so set it as the ORM's
+        # proprietor
         propr = foonet.Proprietor
+        with orm.sudo(), orm.proprietor(propr):
+            # Assign the proprietor's owner. We need to manually ascend
+            # due to TODO:6b455db7
+            sup = propr
+            while sup:
+                sup.owner = ecommerce.users.root
+                sup = sup.orm._super
+
         super().__init__(propr=propr, *args, **kwargs)
+
         if self.rebuildtables:
             orm.orm.recreate(
                 person,
@@ -3406,7 +3434,7 @@ class crud(tester.tester):
 
         # TODO We should also test different crud operations here. At
         # the moment, only 'create' makes sense for a menu. We would
-        # want hyperlinks for things like 'retrieve', 'update', ande
+        # want hyperlinks for things like 'retrieve', 'update', and
         # 'delete'.
 
     def it_creates(self):
@@ -3601,6 +3629,397 @@ class crud(tester.tester):
 
         type = tab['.exception span.type'].only.text
         self.eq('ValueError', type)
+
+    def it_navigates_to_entities_page(self):
+        """ Test loading a pom.page with an entities collection. We
+        should get a <table> with each entity represented as <tr>s
+        within the collection.
+        """
+        Count = 10
+
+        ws = foonet()
+        tab = self.browser().tab()
+
+        pers = persons()
+        for i in range(Count):
+            per = person.getvalid()
+
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        self.endswith('.person', tbl.getattr('data-entity'))
+
+        trs = tbl['tbody tr']
+
+        # We should have a <tr> for each of the persons created above
+        self.ge(Count, trs.count)
+
+        # Make sure there is a <tr> for each person
+        ids = [UUID(x.getattr('data-entity-id')) for x in trs]
+
+        for per in pers:
+            self.in_(ids, per.id)
+            for tr in trs:
+                id = UUID(tr.getattr('data-entity-id'))
+                if per.id == id:
+                    break
+            else:
+                continue
+                    
+            for attr in ('name', 'bio'):
+                td = tr[f'td[data-entity-attribute={attr}]'].only
+                self.eq(str(getattr(per, attr)), td.text)
+
+            td = tr['td[data-entity-attribute=id]'].only
+
+            # Get the Quick Edit anchor
+            a = td['menu li a[rel~=edit][rel~=preview]'].only
+
+            self.eq('Quick Edit', a.text)
+
+            # We expect the rel attribute for the Quick Edit anchor to
+            # have 'edit' and 'preview'
+            rels = a.getattr('rel').split()
+            self.in_(rels, 'edit')
+            self.in_(rels, 'preview')
+
+            self.eq('/en/profiles', a.href)
+
+            # Get the Edit anchor
+            a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
+
+            self.eq('Edit', a.text)
+
+            # We expect the rel attribute for the Edit anchor to
+            # only have 'edit'
+            self.eq('edit', a.getattr('rel'))
+
+            expect = (
+                f'/en/profile?id={per.id.hex}'
+                '&crud=update&oncomplete=/profiles'
+            )
+            self.eq(expect, a.href)
+
+            # TODO Test the anchor's data-click-handler and
+            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
+            # attributes.
+
+    def it_navigates_to_entities_clicks_quick_edit(self):
+        """ Use the Quick Edit feature of a pom.crud page to get a form.
+        Test the form's values.
+        """
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        # Get a random person
+        per = pers.getrandom()
+
+        # Get the <tr> from the first person created above
+        sels = f'tr[data-entity-id="{per.id.hex}"]'
+        tr = tbl[sels].only
+
+        # Get Quick Edit anchor
+        a = tr['a[rel~=edit][rel~=preview]'].only
+
+        # Before the click, the table will have no <form>
+        self.zero(tab['table form'])
+
+        # Nonmally we would use self.click() but we want make user the
+        # test browser is issuing the correct HTTP requests because of
+        # the SPA and traditional orientations of pom.crud.
+        with tab.capture() as msgs:
+            a.click()
+
+        # We should only have one
+        msg = msgs.only
+
+        # Ensure we POSTed to http://foo.net:8000/en/profiles'
+        self.eq('POST', msg.request.method)
+        self.eq('http://foo.net:8000/en/profiles', str(msg.request.url))
+
+        # Ensure 200 response
+        self.h200(msgs.only.response)
+
+        # Obtain the <tr> again
+        tr1 = tbl[sels].only
+
+        # This time it will be different because the click will have
+        # caused the server to replace it with a new <tr> which contains
+        # a <form>.
+        self.isnot(tr, tr1)
+
+        # Let's use `tr` instead of `tr1` for the tests below
+        tr = tr1
+
+        self.endswith('.person', tr.getattr('data-entity'))
+        self.eq(per.id.hex, tr.getattr('data-entity-id'))
+
+        # Get the <td> in the <tr> that contains the <form>
+        td = tr['td:first-child'].only
+
+        # Test <td colspan="3">
+        self.eq(3, int(td.getattr('colspan')))
+
+        # Get <form>
+        frm = td['form'].only
+
+        self.endswith('.person', frm.getattr('data-entity'))
+
+        # Get form's labels
+        lbls = frm['div[data-entity-attribute] label']
+
+        # Test them
+        expect = ['Name', 'Born', 'Bio']
+        self.eq(expect, lbls.pluck('text'))
+
+        # Test the hidden id <input>
+        inp = frm['div[data-entity-attribute=id] input'].only
+        self.eq(per.id, UUID(inp.value))
+        self.eq('hidden', inp.type)
+        self.eq('id', inp.name)
+
+        # TODO Test the rest of the attributes
+
+        # Make sure there is one submit <button> in the form
+        self.one(frm['button[type=submit]'])
+
+        # Test the <article class="instructions>
+        art = frm['article.instructions'].only
+
+        # We should have a <meta> to set the browser's URL.
+        meta = art['meta'].only
+
+        expect = (
+            'http://foo.net:8000/en/profiles'
+            f'?id={per.id.hex}&crud=update'
+        )
+
+        self.eq(expect, meta.content)
+
+        self.true('set' in meta.classes)
+        self.true('instruction' in meta.classes)
+
+        # While we are here, make sure the test browser tab's URL wach
+        # changesd to meta.content.
+        self.eq(meta.content, str(tab.url))
+
+    def it_navigates_to_entities_clicks_quick_edit_and_submits(self):
+        """ Use the Quick Edit feature of a pom.crud page to get a form.
+        Test submitting the form.
+        """
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        # Get a random person
+        per = pers.getrandom()
+
+        # Get the <tr> from the first person created above
+        sels = f'tr[data-entity-id="{per.id.hex}"]'
+        tr = tbl[sels].only
+
+        # Get Quick Edit anchor
+        a = tr['a[rel~=edit][rel~=preview]'].only
+
+        # Click "Quick Edit" to get <form>
+        res = self.click(a, tab)
+        self.h200(res)
+
+        # Obtain the <tr> again
+        tr = tbl[sels].only
+
+        # Get <form>
+        frm = tr['td form'].only
+        id = frm.getvalue('id')
+
+        name = uuid4().hex
+        frm.setvalue('name', name)
+
+        res = self.submit(frm, tab)
+        
+        # Obtain the <tr> again
+        tr = tbl[sels].only
+
+        # The form will have been replaced with the regular, read-only
+        # collection of <td>s and the <menu>
+        self.zero(tr['td form'])
+        self.one(tr['td menu'])
+
+        # Get the <td> with the person' name. It should be updated to
+        # what we set it to in the <form>.
+        name1 = tr['td[data-entity-attribute=name]'].only.text
+
+        self.eq(name, name1)
+
+        # The name change would have made it to the database, so reload
+        # the entity and assert
+        self.eq(name, per.orm.reloaded().name)
+
+    def it_navigates_to_entities_clicks_edit_and_submits(self):
+        """ Use the Edit feature of a pom.crud page goto the detail
+        page. Test submitting the form on the detail page. Test editing
+        form and clicking the Cancel button as well.
+        """
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Add some persons
+        pers = persons()
+        for i in range(3):
+            per = person.getvalid()
+            pers += per
+
+        pers.save()
+
+        # Get form
+        tab.navigate('/en/profiles', ws)
+
+        tbl = tab['main table'].only
+
+        # Get a random person
+        per = pers.getrandom()
+
+        for btn in ('submit', 'cancel'):
+
+            # Get the <tr> for the random person
+            sels = f'tr[data-entity-id="{per.id.hex}"]'
+            tr = tbl[sels].only
+
+            # Get Edit anchor
+            a = tr['a[rel~=edit]:not([rel~=preview])'].only
+
+            # Click "Edit" go to the detail page
+            res = self.click(a, tab)
+            self.h200(res)
+
+            # Get <main> from the detail page
+            main = tab['main'].only
+
+            # Assert its attributes
+            self.eq('/profile', main.getattr('data-path'))
+            self.none(main.getattr('spa-data-path'))
+
+            # Assert the <form>'s attributes
+            frm = main['form'].only
+            self.endswith('.person', frm.getattr('data-entity'))
+            self.eq('#' + frm.id, frm.getattr('data-submit-fragments'))
+
+            # Set the name <input> in the <form> to a random value
+            name = uuid4().hex
+            frm.setvalue('name', name)
+
+            if btn == 'submit':
+                # Submit the <form>. This will "redirect" us (so to
+                # speak) back to the main, tabular pagen /profiles.
+                res = self.submit(frm, tab)
+            elif btn == 'cancel':
+                btns = tab['main form button:not([type=submit])']
+                btncancel = btns.only
+                res = self.click(btncancel, tab)
+
+            self.h200(res)
+                
+            # Get the main page's <main> element
+            main = tab['main'].only
+
+            # Assert its attributes
+            self.eq('/profiles', main.getattr('data-path'))
+            self.none(main.getattr('spa-data-path'))
+
+            # Assert the table's attributes
+            tbl = main['table'].only
+            self.endswith('.person', tbl.getattr('data-entity'))
+
+            # Test the <tr> related to the name we updated
+            for tr in tbl['tbody tr']:
+                if tr.getattr('data-entity-id') == per.id.hex:
+                    break
+            else:
+                raise ValueError('Cannot find tr')
+
+            # Get the "id" <td> to make sure all of its attributes are
+            # correct
+            td = tr['td[data-entity-attribute=id]'].only
+
+            # Get the Quick Edit anchor
+            a = td['menu li a[rel~=edit][rel~=preview]'].only
+            self.eq('Quick Edit', a.text)
+
+            # We expect the rel attribute for the Quick Edit anchor to
+            # have 'edit' and 'preview'
+            rels = a.getattr('rel').split()
+            self.two(rels)
+            self.in_(rels, 'edit')
+            self.in_(rels, 'preview')
+
+            self.eq('/en/profiles', a.href)
+
+            # Get the Edit anchor
+            a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
+
+            self.eq('Edit', a.text)
+
+            # We expect the rel attribute for the Edit anchor to
+            # only have 'edit'
+            self.eq('edit', a.getattr('rel'))
+
+            expect = (
+                f'/en/profile?id={per.id.hex}'
+                '&crud=update&oncomplete=/profiles'
+            )
+            self.eq(expect, a.href)
+
+            # Get the "name" <td>
+            td = tr['td[data-entity-attribute=name]'].only
+
+            # Finally, make sure the new name value is in the <tr>
+            if btn == 'submit':
+                self.eq(name, td.text)
+            elif btn == 'cancel':
+                self.eq(per1.name, td.text)
+
+            # TODO Test the anchor's data-click-handler and
+            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
+            # attributes.
+
+            if btn == 'submit':
+                # Make sure the name was updated in the database
+                per1 = per.orm.reloaded()
+                self.eq(name, per1.name)
+            elif btn == 'cancel':
+                # Make sure the name was not changed
+                self.eq(per1.name, per.orm.reloaded().name)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA

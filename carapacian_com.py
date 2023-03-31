@@ -348,8 +348,8 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(effort.requirement, *args, **kwargs)
 
-        def main(self, id:str=None, crud:str='retrieve'):
-            super().main(id=id, crud=crud)
+        def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
 
             if self.instance.orm.isnew:
                 self.main << dom.h1('Create a ticket')
@@ -456,9 +456,13 @@ class ticketsspa(pom.spa):
             </table>
             ''')
 
-    class backlog(pom.page):
-        def main(self):
-            self.main += dom.p('Backlog')
+    class backlog(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(e=effort.requirements, *args, **kwargs)
+
+        @property
+        def detail(self):
+            return self.spa.pages['ticket']
 
     class search(pom.page):
         def main(self):

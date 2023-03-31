@@ -431,7 +431,7 @@ class tester(entities.entity):
                     propr.save()
                 else:
                     # If it already exists in database, ensure that the
-                    # persistencestate refrects this.
+                    # persistencestate reflects this.
                     sup = propr
                     while sup:
                         sup.orm.persistencestate = False, False, False
@@ -499,6 +499,18 @@ class tester(entities.entity):
                 self.request = req
                 self.response = res
 
+            def __repr__(self):
+                """ Return a representation of this `message` object.
+                """
+                res = self.response
+                req = self.request
+                r = type(self).__name__ + '('
+                r += 'status=' + str(res.status) if res else str(None) 
+                r += ', method=' + req.method
+                r += ', url=' + str(req.url)
+                r += ')'
+                return r
+
         class _tabs(www.browser._tabs):
             """ A collection of test browser tabs.
 
@@ -560,6 +572,8 @@ class tester(entities.entity):
                 # Create a `messages` collection to captures the
                 # request/responses that the `tab` makes.
                 self.messages = tester._browser.messages()
+
+                self.onafterload += self.self_onafterload
 
             def default_event(self, src, eargs):
                 """ This is the default event handler for all supported
@@ -710,7 +724,6 @@ class tester(entities.entity):
                         if not isspanav:
                             return
 
-                        eargs.preventDefault()
                     else:
                         # If the user clicked a nav link, but we aren't
                         # in SPA mode, allow the browser to navigate to
@@ -725,6 +738,8 @@ class tester(entities.entity):
                     # sent by the browser.
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
+
+                eargs.preventDefault()
 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -747,13 +762,13 @@ class tester(entities.entity):
                     self.html['main'].only += (mod := dom.div())
                     mod.classes += 'error-modal'
                     mod += res.html.only
-                    return
 
-                if isinstance(res.html.first, dom.main):
+                elif isinstance(res.html.first, dom.main):
                     # Replace the <main> element with the response
                     # (res.html)
                     main = res.html.only
                     replace(this='main', that=main)
+                    self.listen(res.html)
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
@@ -767,6 +782,69 @@ class tester(entities.entity):
                         el = res.html[i]
                         exec(el)
                         replace(id, res.html[i])
+
+                    self.listen(res.html)
+
+            def listen(self, el):
+                """ Takes an element `el` and examins it for any
+                data-{trigger}-handler attributes. Uses this information
+                to subscribe el to this tab's event handlers
+                self.element_event and self.default_event.These handlers
+                will route the element's event to the appropriate
+                handler.
+
+                Note that this is analogous to the `listen()` function
+                in the eventjs JavaScript.
+
+                :param: el dom.element: The root of the DOM tree that
+                will be examined for elements whose events will be
+                subscribed to handlers.
+                """
+                sels = ', '.join(
+                    [
+                        f'[data-{x}-handler]' 
+                        for x in dom.element.Triggers
+                    ]
+                )
+                    
+                targets = el[sels]
+
+                # We need to remove the duplicates because of the bug
+                # FIXME:9aec36b4
+                targets = set(targets)
+
+                for target in targets:
+                    for attr in target.attributes:
+                        matches = re.match(
+                            'data-([a-z]+)-handler',
+                            attr.name
+                        )
+                        if matches:
+                            ev = 'on' + matches[1]
+                            ev = getattr(target, ev)
+                            ev.append(obj=self.element_event)
+
+                # Subscribe to element_event for each <nav> anchor tag's
+                # click event.
+                as_ = el[pom.page.IsNavSelector]
+                for a in as_:
+                    ev = a.onclick
+                    ev.append(obj=self.element_event)
+
+                # Subscribe to default_event for each anchor tag's click
+                # event.
+                as_ = el['a']
+                for a in as_:
+                    ev = a.onclick
+                    ev.append(obj=self.default_event)
+
+            def self_onafterload(self, src, eargs):
+                """ The event handler that is invoked after the browser
+                tab has loaded a new document.
+                """
+
+                # Add event handlers to elements in the tab's DOM.
+                self.listen(self.html)
 
             # TODO The ability for a tab to maintain its own internal
             # DOM should exist in the browser.tab base class in `www.py`
@@ -793,38 +871,6 @@ class tester(entities.entity):
                 testing support for SPA navigation.
                 """
                 self._html = v
-
-                sels = ', '.join(
-                    [
-                        f'[data-{x}-handler]' 
-                        for x in dom.element.Triggers
-                    ]
-                )
-                    
-                targets = v[sels]
-
-                # We need to remove the duplicates because of the bug
-                # 9aec36b4
-                targets = set(targets)
-
-                for target in targets:
-                    for attr in target.attributes:
-                        matches = re.match(
-                            'data-([a-z]+)-handler',
-                            attr.name
-                        )
-                        if matches:
-                            ev = 'on' + matches[1]
-                            ev = getattr(target, ev)
-                            ev.append(obj=self.element_event)
-
-                # Subscribe to element_event for each anchor tag's click
-                # event.
-                as_ = v[pom.page.IsNavSelector]
-                for a in as_:
-                    ev = a.onclick
-                    ev.append(obj=self.element_event)
-                    ev.append(obj=self.default_event)
 
                 main = v['main'].only
                 self.inspa = main.hasattr('spa-data-path')
@@ -1722,22 +1768,44 @@ class tester(entities.entity):
             
             self._failures += failure()
 
-    def click(self, e, tab):
-        """ Call the click() trigger method on `e`. Return the last
-        response the browser recorded.
-
-        Testing the return value is important for tests to ensure that
-        dom.events were successful.
+    def _trigger(self, trig, e, tab, count):
+        """ XXX
         """
-        trig = getattr(e, 'click')
+        trig = getattr(e, trig)
 
         with tab.capture() as msgs:
             trig()
+
+        if msgs.count != count:
+            raise ValueError(
+                'Incorrect HTTP messages count. '
+                f'Expected: {count} Actual: {msgs.count}'
+            )
 
         if last := msgs.last:
             return last.response
 
         return None
+
+    def submit(self, e, tab, count=1):
+        """ XXX
+        """
+        if isinstance(e, dom.form):
+            e = e['button[type=submit]'].only
+            return self.click(e, tab, count)
+            
+        return self._trigger('submit', e, tab, count)
+
+    def click(self, e, tab, count=1):
+        """ Call the click() trigger method on `e`. Return the last
+        response the browser recorded.
+
+        Testing the return value is important for tests to ensure that
+        dom.events were successful.
+
+        :param: count int: XXX
+        """
+        return self._trigger('click', e, tab, count)
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance

@@ -3876,18 +3876,17 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                     # not implemented.
                     self.expect(NotImplementedError, lambda: arts1[i:j])
 
+            # Test indexing using UUID
+            for i in range(10):
+                id = arts[i].id
+                self.eq(id,arts1[id].id)
+
             # Ensure that __getitem__ raises IndexError if the index is out of
             # range
             self.expect(IndexError, lambda: arts1[cnt + 1])
 
             # Ensure that __call__ returns None if the index is out of range
             self.none(arts1(cnt + 1))
-
-            # NOTE that UUID indexing on streams has not been
-            # implemented yet.
-
-            # TODO Test indexing by UUID, i.e.,
-            # arts[id]
 
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
@@ -5684,18 +5683,18 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
-        self.eq('main_bacteria', b.orm.table)
+        self.eq('main_bacteria', b.orm.tablename)
 
         # Test implicit entities detection based on pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
-        self.eq('main_artists', art.orm.table)
+        self.eq('main_artists', art.orm.tablename)
 
         # Test implicit entities detection of entities subclass based on
         # naive pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
-        self.eq('main_singers', s.orm.table)
+        self.eq('main_singers', s.orm.tablename)
 
     def it_calls_id_on_entity(self):
         art = artist.getvalid()

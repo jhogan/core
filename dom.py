@@ -13,6 +13,7 @@ from dbg import B
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
+from uuid import UUID
 import entities
 import file
 import operator
@@ -1663,10 +1664,18 @@ class element(entities.entity):
     @property
     def fifth(self):
         """ Returns the fifth child element under this `element` object.
-        If the collection has fewer than 4 elements underneath, None is
+        If the collection has fewer than 5 elements underneath, None is
         returned.
         """
         return self.elements.fifth
+
+    @property
+    def sixth(self):
+        """ Returns the sixth child element under this `element` object.
+        If the collection has fewer than 6 elements underneath, None is
+        returned.
+        """
+        return self.elements.sixth
 
     @property
     def seventh(self):
@@ -2303,12 +2312,38 @@ class element(entities.entity):
         alone without a value), True is returned. If the attribute does
         not exist, None is returned.
 
-        This is a convenience methed since using the regurlar
+        This is a convenience methed since using the regular
         `attributes` collection tends to be too verbose.
 
-        :param: str attr: The name of the attribute to get.
+        :param: attr str: The name of the attribute to get.
         """
         return self.attributes[attr].value
+
+    def setattr(self, attr, v):
+        """ Set the value of an element's attribute.
+
+        This is a convenience methed since using the regular
+        `attributes` collection tends to be too verbose.
+
+        :param: attr str: The name of the attribute to set.
+
+        :param v str: The value to set the attribute to.
+
+        Example
+        -------
+
+            # Create an anchor
+            a = dom.a('Google')
+
+            # You can use the `href` attribute since it is a standard
+            # HTML attribute
+            a.herf = 'https://www.google.com'
+
+            # Add a data-external. This is non-standard so we have to
+            # use set attr.
+            a.setattr('data-external', True)
+        """
+        self.attributes[attr].value = v
 
     def hasattr(self, attr):
         """ Returns True if this `element` has the attribute `attr` in
@@ -2507,6 +2542,10 @@ class element(entities.entity):
     @property
     def last(self):
         return self.elements.last
+
+    @property
+    def isplurality(self):
+        return self.elements.isplurality
 
     def __str__(self):
         return self.pretty
@@ -3014,6 +3053,71 @@ class form(element):
         """ Triggers the `submit` event for this form.
         """
         self._trigger('submit')()
+
+    def getvalue(self, name):
+        """ Return the value of <input> and <textarea> elements with the
+        form. If the form specifies a `data-entity` attribute that
+        corresponds to an orm.entity class, appropriate type conversion
+        will be perform. For example, if name is 'id', a UUID value will
+        be returned. If a `data-entity` attribute isn't specified or
+        can't be resolved, the string version of the value found in the
+        DOM would be returned.
+
+        :param: name str: The name of the <input> or <textarea> element
+        to set the value to. The name of these element is that of the
+        element's `name` attribute, e.g.,:
+
+            <input name="id">
+            <input name="firstname">
+            <input name="birthdate">
+        """
+
+        # TODO Handle situation where data-entity doesn't exist.
+        # TODO Handle situation where data-entity doesn't resolve to an
+        # orm.entity class.
+        e = self.getattr('data-entity')
+        mod, e = e.split('.')
+        mod = sys.modules[mod]
+        e = getattr(mod, e)
+
+        map = e.orm.mappings[name]
+        v = self[f'input[name={name}]'].only.value
+
+        # TODO Handle other data types such as ints, floats, decimals,
+        # bytes, bools, date, datetimes and foreign keys UUID's.
+        # Actually, we could probably do this easily by instantiating the
+        # entity, assigning the appropriate attribute the value, the
+        # using that attribute to get the coerced value.
+        if isinstance(map, orm.primarykeyfieldmapping):
+            return UUID(v)
+
+        return str(v)
+
+    def setvalue(self, name, v):
+        """ Set the value of the specified <imput> or <textarea> element
+        within this form. For <input> elements, the `value` attribute is
+        set to v. For <textarea> elements, the text node is set to v.
+
+        :param: name str: The name of the <input> or <textarea> element
+        to set the value to. The name of these element is that of the
+        element's `name` attribute, e.g.,:
+            
+            <input name="id">
+            <input name="firstname">
+            <input name="birthdate">
+
+        :param: v Object: 
+            The value to set the element to. `v` is stringified (run
+            through str()) before being set.
+        """
+        inp = self[f'input[name={name}]'].only
+
+        if isinstance(inp, input):
+            inp.value = str(v)
+        elif isinstance(inp, textarea):
+            inp.text = str(v)
+        else:
+            raise TypeError('Invalid input type')
 
 class links(elements):
     """ A class used to contain a collection of ``link`` elements.
@@ -4153,6 +4257,25 @@ class embed(element):
     @width.setter
     def width(self, v):
         self.attributes['width'].value = v
+
+class menus(elements):
+    """ A class used to contain a collection of ``menu`` elements.
+    """
+
+class menu(element):
+    """ The <menu> HTML element is described in the HTML specification
+    as a semantic alternative to <ul>, but treated by browsers (and
+    exposed through the accessibility tree) as no different than <ul>.
+    It represents an unordered list of items (which are represented by
+    <li> elements).
+
+    Usage notes
+    -----------
+    The <menu> and <ul> elements both represent an unordered list of
+    items. The key difference is that <ul> primarily contains items for
+    display, while <menu> was intended for interactive items. The
+    related <menuitem> element has been deprecated.
+    """
 
 class meters(elements):
     """ A class used to contain a collection of ``embed`` elements.

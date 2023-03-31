@@ -268,7 +268,7 @@ class application:
                             # Currently it returns None because we don't
                             # use the /files/ prefix to distinguish
                             # between files and pages.
-                            pg._lingualize('en')
+                            request.lingualize('en', pg)
 
                         # Else if no page was provided by the site
                         else:
@@ -908,14 +908,9 @@ class request(entities.entity):
                 # the arguments for the page.
                 pg(eargs=eargs, **self.arguments)
 
-                if pg.isspa:
-                    main = pg['html>body>main'].only
-                    path = f'/{self.language}{pg.path}'
-                    main.attributes += 'spa-data-path', path
-
-                # Get the main SPA application page for the page.
+                # Get the main SPA application page for the page if
+                # there is one.
                 if spa := pg.spa:
-                    
                     # Clear page. See the comment above on why we clear.
                     spa.clear()
 
@@ -927,17 +922,31 @@ class request(entities.entity):
                     spa.main = pg.main
 
                     # We want to return the SPA page, so make it the
-                    # `pg` so it's contents will be returned by the
-                    # following code.
+                    # `pg` so its contents will be returned by the
+                    # code below.
                     pg = spa
 
-                    main = pg['html>body>main'].only
-                    path = f'/{self.language}{pg.path}'
+                    # Get the spa pages's path
+                    path = spa.path
+                elif pg.isspa:
+                    # Get the requested page's path
+                    path = pg.path
+                else:
+                    # No data-spa-path because we aren't dealing with a
+                    # spa page.
+                    path = None
 
+                if path:
+                    # Add a data-spa-path to the <main> element
+                    path = f'/{self.language}{path}'
+                    main = pg['html>body>main'].only
                     main.attributes += 'spa-data-path', path
 
-                if not self.isevent:
-                    pg._lingualize(self.language)
+                lang = self.language
+
+                # Add the language code to any anchors, i.e., add
+                # the 'en' to /en/path/to/page.
+                self.lingualize(lang, pg)
 
                 if not self.ishead:
                     # If we are processing an event
@@ -953,6 +962,7 @@ class request(entities.entity):
                             # Presumably, this eventarg was modified by
                             # the above call to pg.
                             if eargs.html:
+                                self.lingualize(lang, eargs.html)
                                 res.body = eargs.html.html
                     else:
                         # HACK:10d9a676 We shoudn't have to prepend
@@ -1006,6 +1016,39 @@ class request(entities.entity):
 
         # Return the response object
         return res
+
+    @staticmethod
+    def lingualize(lang, e):
+        """ Iterate over the each anchor tag under `e` and ensure
+        that `lang` is prepended to each anchor's HREF.
+
+            # Assuming `lang` is 'en'
+            assert lang == 'en'
+
+            # An anchor befor lingualization
+            <a href="/some/path">link</a>
+
+            # An anchor after lingualization
+            <a href="/en/some/path">link</a>
+
+        Note that this method is idempotent, i.e., calling it multiple
+        times has the same effect on the `page` object as calling it
+        once.
+
+        :param: lang str: The two character language code to use.
+
+        :param: e dom.element: The element to lingualize.
+        """
+        for a in e['a']:
+            # If the anchor has already been lingualized
+            if a.href.startswith(f'/{lang}/'):
+                continue
+
+            href  =  a.href
+            sep   =  os.path.sep
+            a.href = os.path.join(
+                sep, lang, href.lstrip(sep)
+            )
 
     @property
     def hit(self):

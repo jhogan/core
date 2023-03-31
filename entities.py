@@ -636,8 +636,20 @@ class entities:
         return ls
 
     def getrandom(self, returnIndex=False):
-        if self.isempty: return None
+        """ Return a random entity in this collection. If no entities
+        are in this collection, None is returned. If returnIndex is
+        supplied, a tuple is returned where the first element is the
+        entity and the second element is the index of the entity within
+        the collection.
+
+        :param: returnIndex bool: If True, return a tuple with the
+        entity as the first element and its index as the second.
+        """
+        if self.isempty:
+            return None
+
         ix = randint(0, self.ubound)
+
         if returnIndex:
             return self[ix], ix
         else:
