@@ -762,16 +762,13 @@ class tester(entities.entity):
                     self.html['main'].only += (mod := dom.div())
                     mod.classes += 'error-modal'
                     mod += res.html.only
-                    return
 
-                if isinstance(res.html.first, dom.main):
+                elif isinstance(res.html.first, dom.main):
                     # Replace the <main> element with the response
                     # (res.html)
                     main = res.html.only
                     replace(this='main', that=main)
-
-                    # XXX Why don't we need to call self.listen(main)
-                    # here?
+                    self.listen(res.html)
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
