@@ -81,7 +81,7 @@ class dependencies(type_types):                                pass
 class deliverable_efforts(orm.associations):                   pass
 class effort_product_items(orm.associations):                  pass
 class backlogs(orm.entities):                                 pass
-class stories(orm.entity):                              pass
+class stories(requirements):                              pass
 class backlog_stories(orm.associations):                              pass
 
 class requirement(apriori.requirement):
@@ -824,7 +824,7 @@ class backlog(orm.entity):
     span = datespan
     goal = str
 
-class story(orm.requirement):
+class story(requirement):
     """ XXX
     """
     name = str
