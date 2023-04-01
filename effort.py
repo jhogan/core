@@ -17,6 +17,9 @@ Examples:
 
 """
 
+"The best way to predict the future is to invent it." 
+# Alan Kay
+
 from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
