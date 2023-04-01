@@ -7714,14 +7714,14 @@ with book('Hacking Carapacian Core'):
 
     with section('Validation', id='012b0632'):
       print('''
-        Since `orm.entity` inherits from `entities.entities`, it
+        Since `orm.entity` inherits from `entities.entities`, they
         contains the validation properties called `isvalid` and
         `brokenrules` (see [Validation](#4210bceb] in the [Entity and
-        entities objects][#64baaf7a] chapter). As you may remimber, the
+        entities objects][#64baaf7a] chapter). As you may remember, the
         `brokenrules` property of an entity returns a collection of any
         broken validations rules detected by the entity itself. The
         `isvalid` property simply returns `True` if any broken validations
-        rules were detected and `False`` otherwise.
+        rules were detected; otherwise `False` is returned.
 
         As with the `brokenrules` property in regular entity classes,
         the author of an `orm.entity` subclass is expected to override
@@ -7737,13 +7737,22 @@ with book('Hacking Carapacian Core'):
         these attributes contain type information (such as `str`, `int`,
         etc.), the ORM is able to generate broken rules collections to
         indicate when these type restrictions have been violated.
+
+        Below is an example of a broken rule being reported by the ORM
+        due to the fact that an integer attribute was assigned a string
+        value.  This example will serve as a reminder of how broken
+        rules work in entity objects. It also provides an introduction
+        to how broken rules are reported by `orm.entity` objects.
       ''')
 
       with listing('Taking advantage of builtin validation'):
         class books(orm.entities):
-          pass
+          """ A collection of books.
+          """
 
         class book(orm.entity):
+          """ Represents a book.
+          """
           # The title of the book
           name = str
 
@@ -7753,19 +7762,65 @@ with book('Hacking Carapacian Core'):
           # The number of pages in the book
           pages = int
 
+        # Create a book assign valid values to the name and author
+        # attributes
         b = book()
         b.name = 1984
         b.author = 'George Orwell'
+
+        # Assign an invalid value to `pages`. It should be an int, but
+        # we are assigning a str.
         b.pages = 'three hundred and twenty eight'
 
+        # The invalid assignment will result in one broken rule
         one(b.brokenrules)
+
+        # Get the broken rule
         br = b.brokenrules.only
 
+        # The type of broken rule is 'valid', i.e., it broke the
+        # *validity* rule.
         eq('valid', br.type)
+
+        # Assert that the attribute (property) that broke the the entity
+        # was `pages`.
         eq('pages', br.property)
+
+        # Since there was more than zero broken rules, `b.isvalid` will
+        # be False.
         false(b.isvalid)
 
+        # Persisting the entity to the database fails because of the
+        # broken rule.
         self.expect(entities.BrokenRulesError, b.save)
+
+      print('''
+        As you can see in this example, we did not have to add any
+        validation logic ourselves to ensure that assigning a string
+        value to the `book`'s `pages` attribute resulted in a broken
+        rule that reported the type error.
+
+        The ORM works hard to check the values assigned to entity
+        attributes against the metadata it has about the entity. In
+        addition to type checking, it will also check the size of
+        string, the valid range of numeric and data types, the precision
+        and scale of floats, and so on. These error would typically be
+        caught by the database. However, it is the intention of the ORM
+        to never rely on the RDBMS to perform these types of checks. The
+        reason for this is that there needs to be only be one source
+        that can be refered to in order for computer logic to determine
+        whether or not an entity is valid. We can always consult the
+        `brokenrules` property of an entity. If we relied on exception
+        being raised by the RDBMS, that would be an additional source of
+        validation error reporting. This would be problematic because
+        computer logic, such as that which is used to provide a user
+        interface, would be burdened with two sources of validation
+        information. Additionally, the exceptions that MySQL raise
+        provide very high-level, cryptic error messages that are not
+        friendly to the end user. The `brokenrules` property contains
+        the information necessary to report back to the end user exactly
+        what data is wrong why it's wrong.
+      ''')
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
