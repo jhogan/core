@@ -5608,7 +5608,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 if v is not None:
                     if map.isstr or map.isdatetime or map.isdate:
-                        v = f"'{v}'"
+                        v = f"{v!r}"
 
                 kvps.append(f'{name}={v}')
 
