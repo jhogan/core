@@ -819,12 +819,35 @@ class dependency(type_type):
     """
 
 class backlog(orm.entity):
-    """ XXX
+    """ Represents a agile backlog.
+
+    A backlog is a fundamental component of the Agile development
+    methodology. It is used to manage the work that needs to be done in
+    a `project`, and it serves as the central repository for all the
+    `stories` that need to be completed. In Agile, the backlog is
+    constantly updated and prioritized based on the needs of the project
+    and the feedback from stakeholders.
+
+    The backlog is a living document that is updated regularly
+    throughout the project's lifecycle. It is used to plan and execute
+    sprints, which are short, focused periods of work during which a
+    team completes a set of tasks from the backlog. By working through
+    the backlog in a structured and prioritized manner, Agile teams can
+    deliver high-quality software and meet the needs of their
+    stakeholders.
+
+    A backlog can have zero or more `stories` within it. This is
+    achieved through the `backlog_story` association. Use the `insert`
+    and `remove` methods to correctly add and remove `stories` to and
+    from a `backlog`.
+
+    Note that this is part of the Agile object model extention to the
+    original UDM.
     """
-    name = str
-    description = text
-    span = datespan
-    goal = str
+    name         =  str
+    description  =  text
+    span         =  datespan
+    goal         =  str
 
     def insert(self, ord, st=None):
         """ XXX
@@ -849,9 +872,58 @@ class backlog(orm.entity):
         """
 
 class story(requirement):
-    """ XXX
+    """ A class representing a user story in an Agile development
+    environment. 
+
+    A story can be placed in a product or sprint `backlog` (see the
+    `backlog` class on how this is done). `stories` are related to
+    `backlogs` through the `backlog_story` association. Note, however,
+    there is a one-to-many relationship between `backlogs` and
+    `stories`. The associations entity is necessary for ranking the
+    stories within the `backlog` through the association's `ordinal`
+    attribute.
+
+    Stories in Agile
+    ================
+    In Agile software development, a "story" refers to a small, discrete
+    unit of work that represents a specific feature or functionality to
+    be developed. Stories are a fundamental part of Agile methodology,
+    and they help teams to plan, prioritize, and track their work in a
+    structured way.
+
+    Typically, a story is written in a specific format called a user
+    story, which is a concise description of a feature or requirement
+    from the perspective of the end user. A user story typically follows
+    the format of "As a [type of user], I want [a feature] so that [a
+    benefit or outcome]". The user story format is designed to capture
+    the essential details of a feature or requirement in a way that is
+    easy to understand and prioritize.
+
+    Stories are usually written by product owners or stakeholders, and
+    they are added to a `backlog` of work to be completed by the
+    development team. The `backlog` is a prioritized list of stories that
+    the team will work on, with the most important stories at the top of
+    the list. When a story is selected for development, it is broken
+    down into smaller tasks or sub-tasks that can be completed in a
+    single sprint, which is a short period of time during which the team
+    works to complete a set of tasks or stories.
+
+    As the team works on each story, they update the story's status in
+    the project management tool, which helps to track progress and
+    identify any issues or roadblocks that need to be addressed. Once a
+    story is completed, it is tested and reviewed before being marked as
+    "done" and moved to the next stage of development. The process of
+    working through the backlog of stories and completing them in
+    sprints is repeated until all of the required features and
+    functionality have been developed and the product is ready for
+    release.
     """
+
+    # A short title for the story
     name = str
+
+    # XXX I think we should change points from str to int.
+    # The number of points for the story.
     points = str
 
     # TODO Add a priorities collection and an attribute that returns
@@ -863,12 +935,24 @@ class story(requirement):
     # def priority(self):
     #    # return latest from self.priorities
 
-
 class backlog_story(orm.association):
-    """ XXX
+    """ Assoicates a `backlog` with a `story`.
     """
+    # The story
     story = story
+
+    # Th backlog
     backlog = backlog
+
+    # The ranking of the `story` within the `backlog`. An ordinal of 0
+    # ranks the story as the lowest in the backlog, an ordinal of 1
+    # ranks the story one higher than the lowest in the backlog, and so
+    # on. 
     ordinal = int
+
+    # A collection of statuses that a story goes through within a
+    # backlog. For example, in a sprint backlog, a story would go
+    # through statuses such as TODO, IN-PROGRESS, QA, TESTING, STAGING
+    # and finally DONE.
     statuses = statuses
 
