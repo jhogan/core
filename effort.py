@@ -826,6 +826,28 @@ class backlog(orm.entity):
     span = datespan
     goal = str
 
+    def insert(self, ord, st=None):
+        """ XXX
+        """
+        if not st:
+            st = ord
+            return self.insert(ord=0, st=st)
+
+        bss = self.backlog_stories
+        B(bss.count)
+        bss.sort('ordinal')
+
+        for bs in bss:
+            if ord >= bs.ordinal:
+                bs.ordinal += 1
+
+        bs = backlog_story(story=st, ordinal=ord)
+        bss += bs
+
+    def remove(self, st):
+        """ XXX
+        """
+
 class story(requirement):
     """ XXX
     """
