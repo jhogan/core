@@ -572,6 +572,8 @@ class status(orm.entity):
 
     Note that this entity was originally called WORK EFFORT STATUS in
     "The Data Model Resource Book".
+
+    XXX Note that `backlog` uses this as well
     """
 
     begin = datetime
@@ -829,6 +831,16 @@ class story(requirement):
     """
     name = str
     points = str
+
+    # TODO Add a priorities collection and an attribute that returns
+    # the. This should be like a statuses collection in that it can
+    # reference a priority type entity.
+    # latest priorty assigned by a user.
+    # priorities = priorities
+    # @orm.attr(int)
+    # def priority(self):
+    #    # return latest from self.priorities
+
 
 class backlog_story(orm.association):
     """ XXX

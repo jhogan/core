@@ -19,7 +19,7 @@ may depend on.
 """
 
 import orm
-from orm import text, date
+from orm import text, date, datetime
 from decimal import Decimal as dec
 from dbg import B
 
