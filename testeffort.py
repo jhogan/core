@@ -823,7 +823,8 @@ class backlog(tester.tester):
         # implemented.
         orm.security().owner = ecommerce.users.root
 
-    def it_creates(self):
+    @staticmethod
+    def getvalid():
         bl = effort.backlog()
         bl.name = 'Maintenance Backlog'
         bl.description = 'A backlog of maintenance and tech debt items'
@@ -833,6 +834,11 @@ class backlog(tester.tester):
             'Identify and resolve technical debt and maintenance items'
             'that are not urgent but need attention.'
         )
+
+        return bl
+
+    def it_creates(self):
+        bl = self.getvalid()
 
         bl.save()
 
@@ -844,16 +850,7 @@ class backlog(tester.tester):
             self.eq(getattr(bl, attr), getattr(bl1, attr))
 
     def it_updates(self):
-        bl = effort.backlog()
-        bl.name = 'Maintenance Backlog'
-        bl.description = 'A backlog of maintenance and tech debt items'
-        bl.begin = '2020-01-01'
-        bl.end = '2020-02-01'
-        bl.goal = (
-            'Identify and resolve technical debt and maintenance items'
-            'that are not urgent but need attention.'
-        )
-
+        bl = self.getvalid()
         bl.save()
 
         bl1 = bl.orm.reloaded()
@@ -872,21 +869,69 @@ class backlog(tester.tester):
             self.eq(getattr(bl, attr), getattr(bl1, attr))
 
     def it_has_correct_types(self):
-        bl = effort.backlog()
-        bl.name = 'Maintenance Backlog'
-        bl.description = 'A backlog of maintenance and tech debt items'
-        bl.begin = '2020-01-01'
-        bl.end = '2020-02-01'
-        bl.goal = (
-            'Identify and resolve technical debt and maintenance items'
-            'that are not urgent but need attention.'
-        )
+        bl = self.getvalid()
 
-        self.type(str, bl.name)
-        self.type(str, bl.description)
-        self.type(date, bl.begin)
-        self.type(date, bl.end)
-        self.type(str, bl.goal)
+        self.type(str,   bl.name)
+        self.type(str,   bl.description)
+        self.type(date,  bl.begin)
+        self.type(date,  bl.end)
+        self.type(str,   bl.goal)
+
+    def it_adds_a_story(self):
+        bl = self.getvalid()
+        st = story.getvalid()
+        bl.insert(st)
+
+        bss = bl.backlog_stories
+
+        self.one(bss)
+        bs = bss.only
+        self.is_(st, bs.story)
+        self.eq(0, bs.ordinal)
+
+        bl.save()
+
+        bl1 = bl.orm.reloaded()
+
+        bss = bl1.backlog_stories
+
+        self.one(bss)
+        bs = bss.only
+        self.eq(st.id, bs.story.id)
+        self.eq(0, bs.ordinal)
+
+    def it_adds_multiple_stories(self):
+        bl = self.getvalid()
+        st1 = story.getvalid()
+        st2 = story.getvalid()
+        bl.insert(st1)
+        bl.insert(st2)
+
+        bss = bl.backlog_stories
+        self.two(bss)
+
+        bss.sort('ordinal')
+
+        self.eq([0, 1], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st1, st2]):
+            B()
+            self.is_(st, bs.story)
+
+        bl.save()
+
+        bl1 = bl.orm.reloaded()
+
+        bss = bl1.backlog_stories
+        bss.sort('ordinal')
+
+        self.two(bss)
+
+        self.eq([0, 1], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st1, st2]):
+            self.eq(st.id, bs.story.id)
+
 
 class story(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -897,22 +942,57 @@ class story(tester.tester):
         # implemented.
         orm.security().owner = ecommerce.users.root
 
+    @staticmethod
+    def getvalid():
+        st = effort.story()
+        st.name = 'Radical site redesign'
+        st.description =  (
+            'As a user,'
+            "I want the site's design to be radically different,"
+            "So I can have more things to complain about."
+        )
+        st.points = 64
+        return st
+
     def it_creates(self):
-        sprint = effort.sprint()
-        sprint.name = ''
-        sprint.description =  ''
-        sprint.points = 12
-        sprint.begin = '2020-01-01'
-        sprint.end = '2020-02-01'
+        st = self.getvalid()
 
-        sprint.save()
+        st.save()
 
-        sprint1 = sprint.orm.reloaded()
+        st1 = st.orm.reloaded()
 
-        attrs = 'name', 'description', 'begin', 'end', 'goal'
+        attrs = 'name', 'description', 'points',
 
         for attr in attrs:
-            self.eq(getattr(sprint, attr), getattr(sprint1, attr))
+            self.eq(getattr(st, attr), getattr(st1, attr))
+
+    def it_updates(self):
+        st = self.getvalid()
+        st.save()
+        st1 = st.orm.reloaded()
+
+        st1.name += 'X'
+        st1.points = int(st1.points) * 4
+
+        st1.save()
+        st2 = st.orm.reloaded()
+
+        self.eq(st1.name, st2.name)
+        self.eq(int(st.points) * 4, int(st2.points))
+
+    def it_has_correct_types(self):
+        st = effort.story()
+        st.name = 'Site redesign'
+        st.description =  (
+            'As a user,'
+            "I want the site's design to be radically different,"
+            "So I can have more things to complain about."
+        )
+        st.points = 16
+
+        self.type(str,   st.name)
+        self.type(str,   st.description)
+        self.type(str,   st.points)
 
 if __name__ == '__main__':
     tester.cli().run()
