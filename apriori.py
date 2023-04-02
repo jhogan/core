@@ -90,7 +90,8 @@ class requirement(orm.entity):
     # Specifies when the requirement was first created (not to be
     # confused with ``createdat`` which is an implicit attribute
     # indicating the datetime the record was created)
-    created = date
+    # XXX Note the type's deviation from the UDM.
+    created = datetime
 
     # The date by which the requirement item is needed.
     required = date
