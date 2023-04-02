@@ -867,6 +867,8 @@ class story(requirement):
 class backlog_story(orm.association):
     """ XXX
     """
+    story = story
+    backlog = backlog
     ordinal = int
     statuses = statuses
 
