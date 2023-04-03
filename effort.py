@@ -865,7 +865,6 @@ class backlog(orm.entity):
             return self.insert(ord=0, st=st)
 
         bss = self.backlog_stories
-        B(bss.count)
         bss.sort('ordinal')
 
         for bs in bss:
