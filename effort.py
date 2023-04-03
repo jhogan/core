@@ -869,7 +869,7 @@ class backlog(orm.entity):
         bss.sort('ordinal')
 
         for bs in bss:
-            if ord >= bs.ordinal:
+            if ord == bs.ordinal:
                 bs.ordinal += 1
 
         bs = backlog_story(story=st, ordinal=ord)
