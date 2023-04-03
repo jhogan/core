@@ -7762,7 +7762,7 @@ with book('Hacking Carapacian Core'):
           # The number of pages in the book
           pages = int
 
-        # Create a book assign valid values to the name and author
+        # Create a book and assign valid values to the name and author
         # attributes
         b = book()
         b.name = 1984
@@ -7807,19 +7807,42 @@ with book('Hacking Carapacian Core'):
         and scale of floats, and so on. These error would typically be
         caught by the database. However, it is the intention of the ORM
         to never rely on the RDBMS to perform these types of checks. The
-        reason for this is that there needs to be only be one source
-        that can be refered to in order for computer logic to determine
-        whether or not an entity is valid. We can always consult the
-        `brokenrules` property of an entity. If we relied on exception
-        being raised by the RDBMS, that would be an additional source of
-        validation error reporting. This would be problematic because
-        computer logic, such as that which is used to provide a user
-        interface, would be burdened with two sources of validation
-        information. Additionally, the exceptions that MySQL raise
+        reason for this is that we only want one source that can be
+        refered to in order for computer logic to determine whether or
+        not an entity is valid. We can always consult the `brokenrules`
+        property of an entity. If we relied on exceptions being raised
+        by the RDBMS, that would be an additional source of validation
+        error reporting. This would be problematic because computer
+        logic, such as that which is used to provide a user interface,
+        would be burdened with two sources of information regarding
+        invalid data. Additionally, the exceptions that MySQL raise
         provide very high-level, cryptic error messages that are not
         friendly to the end user. The `brokenrules` property contains
         the information necessary to report back to the end user exactly
         what data is wrong why it's wrong.
+
+        You will note that each `brokenrule object has `type` attribute
+        as well as `property` attribute. The `type` property tells you
+        what rule was broken. In the above example, it was the general
+        rule of validity. Another broken rule `type` is "fits". The
+        "fits" broken rule is broken when a value does is to large or
+        small to fit in the allocated space of the data type. This can
+        happen if an integer is to larger or smaller than what was
+        specifed. Srings can break the "fits" rule when they are no long
+        or short according to the parameters of the attribute.
+        The "full' rule will be broken when a string is ought to be a
+        non-empty but is nevertheless empty.
+
+        The `property` attribute of the `brokenrule` object indicates
+        the name of the entity's attribute that cause the broken rule.
+        Using these attributes can help you write logic that reports
+        validation rules to the user. For example, you can use the
+        `property` attribute to highlight the input element of an HTML
+        form that cause a particular broken rule. You can the put the
+        contents of the `message` attribute under the input element so
+        the user knows exactly what's wrong. The `type` property may be
+        useful in styling the problematic element in a certain way
+        since it indicates the category of broken rule.
       ''')
 
     with section('Sorting'):
