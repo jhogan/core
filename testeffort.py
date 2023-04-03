@@ -933,8 +933,7 @@ class backlog(tester.tester):
 
         self.eq([0, 1], bss.pluck('ordinal'))
 
-        for bs, st in zip(bss, [st1, st2]):
-            B()
+        for bs, st in zip(bss, [st2, st1]):
             self.is_(st, bs.story)
 
         bl.save()
@@ -948,9 +947,143 @@ class backlog(tester.tester):
 
         self.eq([0, 1], bss.pluck('ordinal'))
 
-        for bs, st in zip(bss, [st1, st2]):
+        for bs, st in zip(bss, [st2, st1]):
             self.eq(st.id, bs.story.id)
 
+        ''' 
+            Insert a new story into the middle of the two existing
+            stories
+        '''
+
+        st3 = story.getvalid()
+
+        # Insert st3 befor st1
+        #
+        #     ordinal | story
+        #     ------- |------
+        #           0 | st2
+        #           1 | st3
+        #           2 | st1
+        #
+        bl1.insert(1, st3)
+        bss = bl1.backlog_stories
+        bss.sort('ordinal')
+
+        self.three(bss)
+
+        self.eq([0, 1, 2], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st2, st3, st1]):
+            self.eq(st.id, bs.story.id)
+
+        bl1.save()
+
+        bl1 = bl1.orm.reloaded()
+
+        bss = bl1.backlog_stories
+        bss.sort('ordinal')
+
+        self.three(bss)
+
+        self.eq([0, 1, 2], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st2, st3, st1]):
+            self.eq(st.id, bs.story.id)
+
+        ''' Insert the story at the end of the backlog '''
+
+        st4 = story.getvalid()
+
+        # Insert st3 befor st1
+        #
+        #     ordinal | story
+        #     ------- |------
+        #           0 | st2
+        #           1 | st3
+        #           2 | st1
+        #           3 | st4
+        #
+        bl1.insert(3, st4)
+        bss = bl1.backlog_stories
+        bss.sort('ordinal')
+
+        self.four(bss)
+
+        self.eq([0, 1, 2, 3], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st2, st3, st1, st4]):
+            self.eq(st.id, bs.story.id)
+
+        bl1.save()
+
+        bl1 = bl1.orm.reloaded()
+
+        bss = bl1.backlog_stories
+        bss.sort('ordinal')
+
+        self.four(bss)
+
+        self.eq([0, 1, 2, 3], bss.pluck('ordinal'))
+
+        for bs, st in zip(bss, [st2, st3, st1, st4]):
+            self.eq(st.id, bs.story.id)
+
+    def it_removes_stories(self):
+        ''' Add and remove one story '''
+        st = story.getvalid()
+        bl = self.getvalid()
+        bl.insert(st)
+        rms = bl.remove(st)
+
+        self.zero(bl.backlog_stories)
+        self.one(rms)
+        self.is_(st, rms.only)
+
+        ''' Add 2; remove first '''
+        sts = story.getvalid(n=2)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        # Obtain the stories ensuring that the are sorted by ordinal
+        sts = effort.stories(bss.pluck('story'))
+
+        rms = bl.remove(sts.first)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.one(bss)
+        self.one(rms)
+        self.is_(sts.first, rms.only)
+        self.is_(sts.second, bss.only.story)
+        self.eq(0, bss.only.ordinal)
+
+        ''' Add 2; remove second '''
+        sts = story.getvalid(n=2)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        # Obtain the stories ensuring that the are sorted by ordinal
+        sts = effort.stories(bss.pluck('story'))
+
+        rms = bl.remove(sts.second)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.one(bss)
+        self.one(rms)
+        self.is_(sts.second, rms.only)
+        self.is_(sts.first, bss.only.story)
+        self.eq(0, bss.only.ordinal)
 
 class story(tester.tester):
     def __init__(self, *args, **kwargs):
