@@ -1095,16 +1095,26 @@ class story(tester.tester):
         orm.security().owner = ecommerce.users.root
 
     @staticmethod
-    def getvalid():
-        st = effort.story()
-        st.name = 'Radical site redesign'
-        st.description =  (
-            'As a user,'
-            "I want the site's design to be radically different,"
-            "So I can have more things to complain about."
-        )
-        st.points = 64
-        return st
+    def getvalid(n=1):
+        def create():
+            st = effort.story()
+            st.name = 'Radical site redesign'
+            st.description =  (
+                'As a user,'
+                "I want the site's design to be radically different,"
+                "So I can have more things to complain about."
+            )
+            st.points = 64
+            return st
+
+        if n == 1:
+            return create()
+        else:
+            sts = effort.stories()
+            for i in range(n):
+                sts += create()
+
+            return sts
 
     def it_creates(self):
         st = self.getvalid()
