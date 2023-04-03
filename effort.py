@@ -877,6 +877,18 @@ class backlog(orm.entity):
     def remove(self, st):
         """ XXX
         """
+        rms = stories()
+
+        bss = self.backlog_stories
+        bss.sort('ordinal')
+        for bs in bss:
+            if st.id == bs.story.id:
+                bss.remove(bs)
+                rms += bs.story
+
+        bss.reordinate()
+
+        return rms
 
 class story(requirement):
     """ A class representing a user story in an Agile development
