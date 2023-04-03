@@ -901,10 +901,29 @@ class backlog(tester.tester):
         self.eq(0, bs.ordinal)
 
     def it_adds_multiple_stories(self):
+        ''' Insert multiple stories at the loweset ranking '''
         bl = self.getvalid()
         st1 = story.getvalid()
         st2 = story.getvalid()
+
+        # This will put st1 at ordinal 0
+        #
+        #     ordinal | story
+        #     ------- |------
+        #           0 | st1
+        #
         bl.insert(st1)
+
+        ''' Insert at the begining (lowest rank) '''
+        # Note that inserting st2 here ranks it lowest in the backlog
+        # because the `ord` param of `insert()` defaults to zero. This
+        # means st1's ordinal will be incremented from 0 to one.
+        #
+        #     ordinal | story
+        #     ------- |------
+        #           0 | st2
+        #           1 | st1
+        #
         bl.insert(st2)
 
         bss = bl.backlog_stories
