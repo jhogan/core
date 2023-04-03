@@ -83,6 +83,14 @@ class  effort_product_items(orm.associations):                   pass
 class  backlogs(orm.entities):                                   pass
 class  stories(requirements):                                    pass
 
+class backlog_stories(orm.associations):
+    """
+    """
+    def reordinate(self):
+        """ XXX
+        """
+        for i, bs in self.sorted('ordinal').enumerate():
+            bs.ordinal = i
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
