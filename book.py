@@ -7803,46 +7803,56 @@ with book('Hacking Carapacian Core'):
         The ORM works hard to check the values assigned to entity
         attributes against the metadata it has about the entity. In
         addition to type checking, it will also check the size of
-        string, the valid range of numeric and data types, the precision
-        and scale of floats, and so on. These error would typically be
-        caught by the database. However, it is the intention of the ORM
-        to never rely on the RDBMS to perform these types of checks. The
-        reason for this is that we only want one source that can be
-        refered to in order for computer logic to determine whether or
-        not an entity is valid. We can always consult the `brokenrules`
+        strings, the valid range of numeric and data types, the
+        precision and scale of floats, and so on. These error would
+        typically be caught by the database. However, it is the
+        intention of the ORM to never rely on the RDBMS to perform these
+        types of checks. The reason for this is that we only want one
+        source that can be refered to in order determine whether or not
+        an entity is valid. We can always consult the `brokenrules`
         property of an entity. If we relied on exceptions being raised
         by the RDBMS, that would be an additional source of validation
         error reporting. This would be problematic because computer
         logic, such as that which is used to provide a user interface,
         would be burdened with two sources of information regarding
-        invalid data. Additionally, the exceptions that MySQL raise
-        provide very high-level, cryptic error messages that are not
-        friendly to the end user. The `brokenrules` property contains
-        the information necessary to report back to the end user exactly
-        what data is wrong why it's wrong.
+        invalid data. The `brokenrules` property provides information in
+        a consistent format that MySQL exception don't. Additionally,
+        these exceptions are high-level, cryptic error messages that are
+        not friendly to the end user. The `brokenrules` property
+        contains the information necessary to report back to the end
+        user exactly what data is wrong and why it's wrong.
 
-        You will note that each `brokenrule object has `type` attribute
+        You will note that each `brokenrule` object has `type` attribute
         as well as `property` attribute. The `type` property tells you
         what rule was broken. In the above example, it was the general
-        rule of validity. Another broken rule `type` is "fits". The
-        "fits" broken rule is broken when a value does is to large or
-        small to fit in the allocated space of the data type. This can
-        happen if an integer is to larger or smaller than what was
-        specifed. Srings can break the "fits" rule when they are no long
-        or short according to the parameters of the attribute.
-        The "full' rule will be broken when a string is ought to be a
-        non-empty but is nevertheless empty.
+        rule of validity ("valid"). Another broken rule `type` is
+        "fits". The "fits" rule is broken when a value is to large or
+        small to fit in the allocated space of the data type.  This can
+        happen if an integer is larger or smaller than what was
+        specifed. Srings can break the "fits" rule when they are too
+        long or short according to the parameters of the attribute.  The
+        "full' rule will be broken when a string ought to be non-empty
+        but is nevertheless empty.
 
         The `property` attribute of the `brokenrule` object indicates
-        the name of the entity's attribute that cause the broken rule.
+        the name of the entity's attribute that caused the broken rule.
         Using these attributes can help you write logic that reports
         validation rules to the user. For example, you can use the
         `property` attribute to highlight the input element of an HTML
-        form that cause a particular broken rule. You can the put the
+        form that causeed a particular broken rule. You can then put the
         contents of the `message` attribute under the input element so
         the user knows exactly what's wrong. The `type` property may be
         useful in styling the problematic element in a certain way
-        since it indicates the category of broken rule.
+        since it indicates the category the broken rule falls into.
+
+        Another feature of the `brokenrules` collection is that it is
+        recursive. That is to say: in addition to collecting broken
+        rules for the given entity object, it will also look for broken
+        rules in constinuent entities, composite elements, associations
+        and so on. Let's update our `books` object model include an
+        `authors` collections so one or more persons can be assigned
+        authorship to a book. We will use this constituent to
+        demonstrate the recursive feature of the `brokenrules` property.
       ''')
 
     with section('Sorting'):
