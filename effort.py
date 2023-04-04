@@ -956,6 +956,14 @@ class story(requirement):
     # def priority(self):
     #    # return latest from self.priorities
 
+    @property
+    def backlog(self):
+        # XXX Test
+        for bss in self.backlog_stories:
+            if bl := bss.backlog:
+                return bl
+        return None
+
 class backlog_story(orm.association):
     """ Assoicates a `backlog` with a `story`.
     """
