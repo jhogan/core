@@ -944,9 +944,8 @@ class story(requirement):
     # A short title for the story
     name = str
 
-    # XXX I think we should change points from str to int.
     # The number of points for the story.
-    points = str
+    points = dec
 
     # TODO Add a priorities collection and an attribute that returns
     # the. This should be like a statuses collection in that it can

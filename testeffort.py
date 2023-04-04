@@ -15,6 +15,7 @@
 import apriori; apriori.model()
 
 from dbg import B, PM, PR
+from decimal import Decimal as dec
 from func import enumerate, getattr
 from pprint import pprint
 from primative import datetime, date
@@ -1158,13 +1159,13 @@ class story(tester.tester):
         st1 = st.orm.reloaded()
 
         st1.name += 'X'
-        st1.points = int(st1.points) * 4
+        st1.points = st1.points * 4
 
         st1.save()
         st2 = st.orm.reloaded()
 
         self.eq(st1.name, st2.name)
-        self.eq(int(st.points) * 4, int(st2.points))
+        self.eq(st.points * 4, st2.points)
 
     def it_has_correct_types(self):
         st = effort.story()
@@ -1178,7 +1179,7 @@ class story(tester.tester):
 
         self.type(str,   st.name)
         self.type(str,   st.description)
-        self.type(str,   st.points)
+        self.type(dec,   st.points)
 
 if __name__ == '__main__':
     tester.cli().run()
