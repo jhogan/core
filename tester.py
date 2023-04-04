@@ -1473,6 +1473,9 @@ class tester(entities.entity):
     def in_(self, expect, actual, msg=None):
         if actual not in expect: self._failures += failure()
 
+    def notin(self, expect, actual, msg=None):
+        if actual in expect: self._failures += failure()
+
     def isnot(self, expect, actual, msg=None):
         if expect is actual: self._failures += failure()
 
