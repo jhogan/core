@@ -864,6 +864,9 @@ class backlog(orm.entity):
             st = ord
             return self.insert(ord=0, st=st)
 
+        if bl := st.backlog:
+            bl.remove(st)
+
         bss = self.backlog_stories
         bss.sort('ordinal')
 

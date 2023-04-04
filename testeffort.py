@@ -1028,7 +1028,31 @@ class backlog(tester.tester):
         for bs, st in zip(bss, [st2, st3, st1, st4]):
             self.eq(st.id, bs.story.id)
 
-    def it_removes_stories(self):
+    def it_moves_a_story_between_backlogs(self):
+        bl1 = self.getvalid()
+        bl2 = self.getvalid()
+        st = story.getvalid()
+        bl1.insert(st)
+        bl1.save(bl2)
+
+        st = st.orm.reloaded()
+
+        bl2.insert(st)
+
+        bl2.save()
+
+        bl1 = bl1.orm.reloaded()
+
+        bss1 = bl1.backlog_stories
+        bss2 = bl2.backlog_stories
+        self.zero(bss1)
+        self.one(bss2)
+
+    def it_moves_a_story_within_a_backlog(self):
+        """ XXX
+        """
+
+    def it_removes_transient_stories(self):
         ''' Add and remove one story '''
         st = story.getvalid()
         bl = self.getvalid()
