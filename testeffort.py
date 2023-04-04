@@ -878,7 +878,7 @@ class backlog(tester.tester):
         self.type(date,  bl.end)
         self.type(str,   bl.goal)
 
-    def it_adds_a_story(self):
+    def it_inserts_a_story(self):
         bl = self.getvalid()
         st = story.getvalid()
         bl.insert(st)
@@ -901,7 +901,7 @@ class backlog(tester.tester):
         self.eq(st.id, bs.story.id)
         self.eq(0, bs.ordinal)
 
-    def it_adds_multiple_stories(self):
+    def it_inserts_multiple_stories(self):
         ''' Insert multiple stories at the loweset ranking '''
         bl = self.getvalid()
         st1 = story.getvalid()
@@ -1096,7 +1096,7 @@ class backlog(tester.tester):
         bss = bl.backlog_stories
         bss.sort('ordinal')
 
-        # Obtain the stories ensuring that the are sorted by ordinal
+        # Obtain the stories ensuring that they are sorted by ordinal
         sts = effort.stories(bss.pluck('story'))
 
         rms = bl.remove(sts.second)
