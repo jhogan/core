@@ -1110,6 +1110,200 @@ class backlog(tester.tester):
         self.is_(sts.first, bss.only.story)
         self.eq(0, bss.only.ordinal)
 
+        ''' Add 10; removes first, middle, last '''
+        sts = story.getvalid(n=10)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        sts = effort.stories(bss.pluck('story'))
+
+        # Remove first
+        rms = bl.remove(sts.first)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.nine(bss)
+        self.one(rms)
+        self.is_(sts.first, rms.only)
+        self.is_(sts.second, bss.first.story)
+        self.is_(sts.last, bss.last.story)
+        self.eq(list(range(9)), bss.pluck('ordinal'))
+
+        # Remove last
+        sts = effort.stories(bss.pluck('story'))
+
+        rms = bl.remove(sts.last)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.eight(bss)
+        self.one(rms)
+        self.is_(sts.last, rms.only)
+        self.is_(sts.first, bss.first.story)
+        self.is_(sts.penultimate, bss.last.story)
+        self.eq(list(range(8)), bss.pluck('ordinal'))
+
+        # Remove middle
+        sts = effort.stories(bss.pluck('story'))
+
+        rms = bl.remove(sts.fourth)
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.seven(bss)
+        self.one(rms)
+        self.is_(sts.fourth, rms.only)
+        self.is_(sts.first, bss.first.story)
+        self.is_(sts.last, bss.last.story)
+        self.eq(list(range(7)), bss.pluck('ordinal'))
+
+    def it_removes_persisted_stories(self):
+        ''' Add and remove one story '''
+        st = story.getvalid()
+        bl = self.getvalid()
+        bl.insert(st)
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        rms = bl.remove(st)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        self.zero(bl.backlog_stories)
+        self.one(rms)
+        self.eq(st.id, rms.only.id)
+
+        ''' Add 2; remove first '''
+        sts = story.getvalid(n=2)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        sts = effort.stories(bss.pluck('story'))
+        rms = bl.remove(sts.first)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.one(bss)
+        self.one(rms)
+        self.is_(sts.first, rms.only)
+        self.eq(sts.second.id, bss.only.story.id)
+        self.eq(0, bss.only.ordinal)
+
+        ''' Add 2; remove second '''
+        sts = story.getvalid(n=2)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        sts = effort.stories(bss.pluck('story'))
+        rms = bl.remove(sts.second)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.one(bss)
+        self.one(rms)
+        self.is_(sts.second, rms.only)
+        self.eq(sts.first.id, bss.only.story.id)
+        self.eq(0, bss.only.ordinal)
+
+        ''' Add 10; removes first, middle, last '''
+        sts = story.getvalid(n=10)
+        bl = self.getvalid()
+        for st in sts:
+            bl.insert(st)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+        sts = effort.stories(bss.pluck('story'))
+
+        # Remove first
+        rms = bl.remove(sts.first)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.nine(bss)
+        self.one(rms)
+        self.is_(sts.first, rms.only)
+        self.eq(sts.second.id, bss.first.story.id)
+        self.eq(sts.last.id, bss.last.story.id)
+        self.eq(list(range(9)), bss.pluck('ordinal'))
+
+        # Remove last
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+        sts = effort.stories(bss.pluck('story'))
+        rms = bl.remove(sts.last)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.eight(bss)
+        self.one(rms)
+        self.is_(sts.last, rms.only)
+        self.eq(sts.penultimate.id, bss.last.story.id)
+        self.eq(list(range(8)), bss.pluck('ordinal'))
+
+        # Remove middle
+        bss = bl.backlog_stories
+        sts = effort.stories(bss.pluck('story'))
+        bss.sort('ordinal')
+        sts = effort.stories(bss.pluck('story'))
+        rms = bl.remove(sts.fourth)
+
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
+
+        self.notin(bss.pluck('story'), rms.only)
+        self.seven(bss)
+        self.one(rms)
+        self.is_(sts.fourth, rms.only)
+        self.eq(sts.first.id, bss.first.story.id)
+        self.eq(sts.last.id, bss.last.story.id)
+        self.eq(list(range(7)), bss.pluck('ordinal'))
+
 class story(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'effort',
