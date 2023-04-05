@@ -1030,28 +1030,125 @@ class backlog(tester.tester):
             self.eq(st.id, bs.story.id)
 
     def it_moves_a_story_between_backlogs(self):
+        ''' Move one story from a backlog of one'''
         bl1 = self.getvalid()
         bl2 = self.getvalid()
         st = story.getvalid()
         bl1.insert(st)
+
+        st.move(bl1, bl2)
+
+        self.notin(bl1.stories, st)
+        self.in_(bl2.stories, st)
+
         bl1.save(bl2)
 
-        st = st.orm.reloaded()
+        bl1 = bl1.orm.reloaded()
+        bl2 = bl2.orm.reloaded()
 
-        bl2.insert(st)
+        self.notin(bl1.stories.pluck('id'), st.id)
+        self.in_(bl2.stories.pluck('id'), st.id)
+        self.eq([0], bl2.backlog_stories.pluck('ordinal'))
 
-        bl2.save()
+        st.move(bl2, bl1)
+
+        self.in_(bl1.stories.pluck('id'), st.id)
+        self.notin(bl2.stories.pluck('id'), st.id)
+        self.eq([0], bl1.backlog_stories.pluck('ordinal'))
+
+        bl1.save(bl2)
 
         bl1 = bl1.orm.reloaded()
+        bl2 = bl2.orm.reloaded()
 
-        bss1 = bl1.backlog_stories
-        bss2 = bl2.backlog_stories
-        self.zero(bss1)
-        self.one(bss2)
+        self.in_(bl1.stories.pluck('id'), st.id)
+        self.notin(bl2.stories.pluck('id'), st.id)
+        self.eq([0], bl1.backlog_stories.pluck('ordinal'))
+
+        ''' Move stories from a backlog of 5'''
+        bl1 = self.getvalid()
+        bl2 = self.getvalid()
+
+        for st in story.getvalid(5):
+            bl1.insert(st)
+
+        sts = bl1.stories
+        for i in range(sts.count):
+            st = bl1.stories.getrandom()
+            st.move(bl1, bl2)
+
+            self.count(sts.count - i - 1, bl1.stories)
+            self.count(i + 1, bl2.stories)
+
+            self.notin(bl1.stories.pluck('id'), st.id)
+            self.in_(bl2.stories.pluck('id'), st.id)
+
+            bss2 = bl2.backlog_stories.sorted('ordinal')
+            self.eq(list(range(i+1)), bss2.pluck('ordinal'))
+
+            bl2.save(bl1)
+            bl1 = bl1.orm.reloaded()
+            bl2 = bl2.orm.reloaded()
+
+            self.count(sts.count - i - 1, bl1.stories)
+            self.count(i + 1, bl2.stories)
+
+            self.notin(bl1.stories.pluck('id'), st.id)
+            self.in_(bl2.stories.pluck('id'), st.id)
+
+            bss2 = bl2.backlog_stories.sorted('ordinal')
+            self.eq(list(range(i+1)), bss2.pluck('ordinal'))
 
     def it_moves_a_story_within_a_backlog(self):
         """ XXX
         """
+        bl = self.getvalid()
+
+        st0, st1, st2, st3, st4, st5 = story.getvalid(6)
+
+        ''' Add two then switch their order '''
+
+        # Insert st0 at ordinal 0 
+        bl.insert(st0)
+
+        # Insert st1 at ordinal 0, moving st0 to ordinal 1
+        bl.insert(st1)
+
+        # Insert st0 back to ordinal 0 ; moving st1 to ordinal 1
+        bl.insert(st0)
+
+        bss = bl.backlog_stories.sorted('ordinal')
+        self.two(bss)
+
+        self.is_(st0, bss.first.story)
+        self.is_(st1, bss.second.story)
+
+        # Persist; reload and try again
+        bl.save()
+        bl = bl.orm.reloaded()
+
+        bss = bl.backlog_stories.sorted('ordinal')
+        self.two(bss)
+
+        self.eq(st0.id, bss.first.story.id)
+        self.eq(st1.id, bss.second.story.id)
+
+        # Add 3 more at the end
+        for i, st in enumerate((st2, st3, st4)):
+            bl.insert(i + 2, st)
+
+        # Move st5 from begining to end
+        for i in range(4):
+            bl.insert(ord=i, st=st5)
+            bss = bl.backlog_stories.sorted('ordinal')
+
+            sts = bss.pluck('story')
+            pprint(bss.pluck('story.id'))
+            pprint([x.id for x in (st0, st1, st2, st3, st4, st5)])
+            B()
+            self.is_(st5, sts[i])
+
+
 
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''

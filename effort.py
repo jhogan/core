@@ -864,18 +864,20 @@ class backlog(orm.entity):
             st = ord
             return self.insert(ord=0, st=st)
 
-        if bl := st.backlog:
-            bl.remove(st)
-
         bss = self.backlog_stories
         bss.sort('ordinal')
 
         for bs in bss:
-            if ord == bs.ordinal:
+            if ord <= bs.ordinal:
                 bs.ordinal += 1
 
-        bs = backlog_story(story=st, ordinal=ord)
-        bss += bs
+        for bs in bss:
+            if bs.story.id == st.id:
+                bs.ordinal = ord
+                break
+        else:
+            bs = backlog_story(story=st, ordinal=ord)
+            bss += bs
 
     def remove(self, st):
         """ XXX
@@ -963,6 +965,13 @@ class story(requirement):
             if bl := bss.backlog:
                 return bl
         return None
+
+    def move(self, from_, to):
+        for bss in from_.backlog_stories:
+            if bss.story.id == self.id:
+                from_.backlog_stories.remove(bss)
+
+        to.insert(self)
 
 class backlog_story(orm.association):
     """ Assoicates a `backlog` with a `story`.
