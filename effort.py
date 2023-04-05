@@ -895,6 +895,14 @@ class backlog(orm.entity):
 
         return rms
 
+    @property
+    def stories(self):
+        sts = stories()
+
+        for bss in self.backlog_stories:
+            sts += bss.story
+        return sts
+
 class story(requirement):
     """ A class representing a user story in an Agile development
     environment. 
