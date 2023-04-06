@@ -17,6 +17,9 @@ Examples:
 
 """
 
+"The best way to predict the future is to invent it." 
+# Alan Kay
+
 from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
@@ -31,52 +34,68 @@ import primative
 import product
 import shipment
 
-class requirements(apriori.requirements):                      pass
-class requirementtypes(order.requirementtypes):                pass
-class efforts(orm.entities):                                   pass
-class programs(efforts):                                       pass
-class projects(efforts):                                       pass
-class phases(efforts):                                         pass
-class tasks(efforts):                                          pass
-class jobs(efforts):                                           pass
-class activities(efforts):                                     pass
-class productionruns(efforts):                                 pass
-class maintenences(productionruns):                            pass
-class workflows(productionruns):                               pass
-class researches(productionruns):                              pass
-class deliverables(orm.entities):                              pass
-class deliverabletypes(apriori.types):                         pass
-class roles(party.roles):                                      pass
-class roletypes(party.roletypes):                              pass
-class items(order.items):                                      pass
-class item_requirements(orm.associations):                     pass
-class effort_items(orm.associations):                          pass
-class types(apriori.types):                                    pass
-class effortpurposetypes(apriori.types):                       pass
-class effort_requirements(orm.associations):                   pass
-class effort_efforts(orm.associations):                        pass
-class effort_effort_dependencies(effort_efforts):              pass
-class effort_effort_precedencies(effort_effort_dependencies):  pass
-class effort_effort_concurrencies(effort_effort_dependencies): pass
-class effort_parties(orm.associations):                        pass
-class effort_partytypes(party.roletypes):                      pass
-class statuses(orm.entities):                                  pass
-class statustypes(apriori.types):                              pass
-class times(orm.entities):                                     pass
-class timesheets(orm.entities):                                pass
-class timesheetroles(orm.entities):                            pass
-class timesheetroletypes(apriori.types):                       pass
-class effort_inventoryitems(orm.associations):                 pass
-class asset_efforts(orm.associations):                         pass
-class asset_effortstatuses(orm.entities):                      pass
-class skillstandards(orm.entities):                            pass
-class goodstandards(orm.entities):                             pass
-class assetstandards(orm.entities):                            pass
-class type_types(orm.associations):                            pass
-class breakdowns(type_types):                                  pass
-class dependencies(type_types):                                pass
-class deliverable_efforts(orm.associations):                   pass
-class effort_product_items(orm.associations):                  pass
+class  requirements(apriori.requirements):                       pass
+class  requirementtypes(order.requirementtypes):                 pass
+class  efforts(orm.entities):                                    pass
+class  programs(efforts):                                        pass
+class  projects(efforts):                                        pass
+class  phases(efforts):                                          pass
+class  tasks(efforts):                                           pass
+class  jobs(efforts):                                            pass
+class  activities(efforts):                                      pass
+class  productionruns(efforts):                                  pass
+class  maintenences(productionruns):                             pass
+class  workflows(productionruns):                                pass
+class  researches(productionruns):                               pass
+class  deliverables(orm.entities):                               pass
+class  deliverabletypes(apriori.types):                          pass
+class  roles(party.roles):                                       pass
+class  roletypes(party.roletypes):                               pass
+class  items(order.items):                                       pass
+class  item_requirements(orm.associations):                      pass
+class  effort_items(orm.associations):                           pass
+class  types(apriori.types):                                     pass
+class  effortpurposetypes(apriori.types):                        pass
+class  effort_requirements(orm.associations):                    pass
+class  effort_efforts(orm.associations):                         pass
+class  effort_effort_dependencies(effort_efforts):               pass
+class  effort_effort_precedencies(effort_effort_dependencies):   pass
+class  effort_effort_concurrencies(effort_effort_dependencies):  pass
+class  effort_parties(orm.associations):                         pass
+class  effort_partytypes(party.roletypes):                       pass
+class  statuses(orm.entities):                                   pass
+class  statustypes(apriori.types):                               pass
+class  times(orm.entities):                                      pass
+class  timesheets(orm.entities):                                 pass
+class  timesheetroles(orm.entities):                             pass
+class  timesheetroletypes(apriori.types):                        pass
+class  effort_inventoryitems(orm.associations):                  pass
+class  asset_efforts(orm.associations):                          pass
+class  asset_effortstatuses(orm.entities):                       pass
+class  skillstandards(orm.entities):                             pass
+class  goodstandards(orm.entities):                              pass
+class  assetstandards(orm.entities):                             pass
+class  type_types(orm.associations):                             pass
+class  breakdowns(type_types):                                   pass
+class  dependencies(type_types):                                 pass
+class  deliverable_efforts(orm.associations):                    pass
+class  effort_product_items(orm.associations):                   pass
+class  backlogs(orm.entities):                                   pass
+class  stories(requirements):                                    pass
+
+class backlog_stories(orm.associations):
+    """ A collection of `backlog_story` associations.
+
+    Note that this is part of the Agile object model extention to the
+    original UDM.
+    """
+    def _reordinate(self):
+        """ Ensure that the ordinal values of each entry in the
+        collection are sequential. Used to restore the order of the
+        elements after a removal. 
+        """
+        for i, bs in self.sorted('ordinal').enumerate():
+            bs.ordinal = i
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -553,21 +572,21 @@ class effort_partytype(party.roletype):
     effort_parties = effort_parties
 
 class status(orm.entity):
-    """ Maintains the status of a work ``effort``. Examples include, "In
-    progress", "Started", and "Pending".
+    """ Maintains the status of a work ``effort``. Also maintains the
+    status of a story within a `backlog` (see backlog_story`). Examples
+    include, "In progress", "Started", and "Pending".
 
     The status of the work ``effort`` may have an effect on the
     ``requrimentstatus``; however, they may also be independent of each
     other. For instance, a status of "completed" on the work efforts
-    required to implement a requirement ma lead to the requirement
+    required to implement a `requirement` my lead to the `requirement`
     having a status of "fulfilled". They, however, may have different
-    unrelated statuses, such as the requirement  have a status of
-    "approved" and the work effort having a status of "in progress".
+    unrelated statuses, such as the `requirement`  have a status of
+    "approved" and the work `effort` having a status of "in progress".
 
     Note that this entity was originally called WORK EFFORT STATUS in
     "The Data Model Resource Book".
     """
-
     begin = datetime
 
 class statustype(apriori.type):
@@ -810,3 +829,264 @@ class dependency(type_type):
     """
     """
 
+class backlog(orm.entity):
+    """ Represents a agile backlog.
+
+    A backlog is a fundamental component of the Agile development
+    methodology. It is used to manage the work that needs to be done in
+    a `project`, and it serves as the central repository for all the
+    `stories` that need to be completed. In Agile, the backlog is
+    constantly updated and prioritized based on the needs of the project
+    and the feedback from stakeholders.
+
+    The backlog is a living document that is updated regularly
+    throughout the project's lifecycle. It is used to plan and execute
+    sprints, which are short, focused periods of work during which a
+    team completes a set of tasks from the backlog. By working through
+    the backlog in a structured and prioritized manner, Agile teams can
+    deliver high-quality software and meet the needs of their
+    stakeholders.
+
+    A backlog can have zero or more `stories` within it. This is
+    achieved through the `backlog_story` association. Use the `insert`
+    and `remove` methods to correctly add and remove `stories` to and
+    from a `backlog`.
+
+    Note that this is part of the Agile object model extention to the
+    original UDM.
+    """
+    name         =  str
+    description  =  text
+    span         =  datespan
+    goal         =  str
+
+    def insert(self, ord, st=None):
+        """ Puts the story `st` into this `backlog`.
+
+        Note that this operation is transient. You will need to call the
+        `save()` method on this `backlog` in order to persist the changes
+        to the database.
+
+        The `ord` parameter contains the rank the story should have in
+        the backlog. For example, the following creates a backlog and
+        a story and inserts the story into the backlog at index 3:
+            
+            bl = backlog()
+            st = story()
+            bl.insert(3, st)
+
+        The method can be called with just the `st` argument and no
+        `ord` argument. In this case, `ord` defaults to 0.
+
+            # Insert at position 0
+            bl.insert(st)
+
+            #  Does the same as above.
+            bl.insert(0, st)
+
+        It's possible to change the rank of story within a backlog by
+        reinserting. 
+            
+            # Insert at position 0
+            bl.insert(0, st)
+
+            # Move the story to position 10 by reinsterting
+            bln.insert(10, st)
+
+        Note that `insert` should not be used to move a story from one
+        backlog to another. Use the `move` method for that.
+
+        :param: ord int: The position in the backlog to put the story.
+        If the story already exists in the backlog, this parameter can
+        change the position.
+
+        :param: st story: The story to add or move.
+        """
+
+        # Implement the single-argument behavior
+        if not st:
+            st = ord
+            # Recurse using a default ord of 0
+            return self.insert(ord=0, st=st)
+
+        # Get this backlogs collection of `backlog_stories 
+        bss = self.backlog_stories
+
+        # Sort by ordinal
+        bss.sort('ordinal')
+
+        # If the story exists in the collection, we are doing a
+        # replacement operation:
+        replacing = st.id in bss.pluck('story.id')
+
+        # If we are not replacing, we are adding the story to the
+        # collection.
+        adding = not replacing
+
+        # Iterate over the backlog_stories collection.
+        for bs in bss:
+            if replacing:
+                if bs.story.id == st.id:
+                    for bs1 in bss:
+                        if ord == bs1.ordinal:
+
+                            # Replace ordinal values
+                            bs1.ordinal, bs.ordinal = bs.ordinal, ord
+                            break
+            elif adding:
+                # Increment all ordinals greater than or equal to ord
+                if bs.ordinal >= ord:
+                    bs.ordinal += 1
+
+        # Add to the collection at `ord`
+        if adding:
+            bss += backlog_story(ordinal=ord, story=st)
+
+    def remove(self, st):
+        """ Remove the story from this backlog. Returns a collection of
+        stories that were successfully removed.
+
+        :param: st story: The story to remove from this backlog.
+        """
+        rms = stories()
+
+        # Get backlog_stories and sort by ordinal
+        bss = self.backlog_stories
+        bss.sort('ordinal')
+
+        # For each backlog_story
+        for bs in bss:
+            # If we find a match
+            if st.id == bs.story.id:
+                # Remove it
+                bss.remove(bs)
+                rms += bs.story
+
+        bss._reordinate()
+
+        return rms
+
+    @property
+    def stories(self):
+        """ Returns a collection of stories within this backlog.
+
+        Note that adding or removing this collection will not have an
+        impact on this backlog as an ORM entity model. To make changes
+        that can be persisted, you must use the `backlog_stories`
+        association collection. This property is intended for
+        convenient, read-only access.
+        """
+        sts = stories()
+
+        for bss in self.backlog_stories:
+            sts += bss.story
+        return sts
+
+class story(requirement):
+    """ A class representing a user story in an Agile development
+    environment. 
+
+    A story can be placed in a product or sprint `backlog` (see the
+    `backlog` class on how this is done). `stories` are related to
+    `backlogs` through the `backlog_story` association. Note, however,
+    there is a one-to-many relationship between `backlogs` and
+    `stories`. The associations entity is necessary for ranking the
+    stories within the `backlog` through the association's `ordinal`
+    attribute.
+
+    Stories in Agile
+    ================
+    In Agile software development, a "story" refers to a small, discrete
+    unit of work that represents a specific feature or functionality to
+    be developed. Stories are a fundamental part of Agile methodology,
+    and they help teams to plan, prioritize, and track their work in a
+    structured way.
+
+    Typically, a story is written in a specific format called a user
+    story, which is a concise description of a feature or requirement
+    from the perspective of the end user. A user story typically follows
+    the format of "As a [type of user], I want [a feature] so that [a
+    benefit or outcome]". The user story format is designed to capture
+    the essential details of a feature or requirement in a way that is
+    easy to understand and prioritize.
+
+    Stories are usually written by product owners or stakeholders, and
+    they are added to a `backlog` of work to be completed by the
+    development team. The `backlog` is a prioritized list of stories that
+    the team will work on, with the most important stories at the top of
+    the list. When a story is selected for development, it is broken
+    down into smaller tasks or sub-tasks that can be completed in a
+    single sprint, which is a short period of time during which the team
+    works to complete a set of tasks or stories.
+
+    As the team works on each story, they update the story's status in
+    the project management tool, which helps to track progress and
+    identify any issues or roadblocks that need to be addressed. Once a
+    story is completed, it is tested and reviewed before being marked as
+    "done" and moved to the next stage of development. The process of
+    working through the backlog of stories and completing them in
+    sprints is repeated until all of the required features and
+    functionality have been developed and the product is ready for
+    release.
+    """
+
+    # A short title for the story
+    name = str
+
+    # The number of points for the story.
+    points = dec
+
+    # TODO Add a priorities collection and an attribute that returns
+    # the. This should be like a statuses collection in that it can
+    # reference a priority type entity.
+    # latest priorty assigned by a user.
+    # priorities = priorities
+    # @orm.attr(int)
+    # def priority(self):
+    #    # return latest from self.priorities
+
+    @property
+    def backlog(self):
+        """ Returns the `backlog` object associated with this
+        `story`.
+        """
+        for bss in self.backlog_stories:
+            if bl := bss.backlog:
+                return bl
+
+        return None
+
+    def move(self, from_, to):
+        """ Move this `story` object from the `from_` backlog, to the
+        `to` backlog.
+
+        Note that this operation is transient. You will need to call the
+        `save()` method on this `story` in order to persist the changes
+        to the database.
+        """
+        for bss in from_.backlog_stories:
+            if bss.story.id == self.id:
+                from_.backlog_stories.remove(bss)
+
+        to.insert(self)
+
+class backlog_story(orm.association):
+    """ Assoicates a `backlog` with a `story`.
+    """
+    # The story
+    story = story
+
+    # Th backlog
+    backlog = backlog
+
+    # The ranking of the `story` within the `backlog`. An ordinal of 0
+    # ranks the story as the lowest in the backlog, an ordinal of 1
+    # ranks the story one higher than the lowest in the backlog, and so
+    # on. 
+    ordinal = int
+
+    # A collection of statuses that a story goes through within a
+    # backlog. For example, in a sprint backlog, a story would go
+    # through statuses such as TODO, IN-PROGRESS, QA, TESTING, STAGING
+    # and finally DONE.
+    statuses = statuses

@@ -18,6 +18,7 @@ mappings:      maps
 message:       msg
 object:        obj
 operation:     op
+ordinal:       ord
 owner:         own
 page:          pg
 parenthesis:   paren

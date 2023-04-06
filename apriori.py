@@ -19,7 +19,7 @@ may depend on.
 """
 
 import orm
-from orm import text, date
+from orm import text, date, datetime
 from decimal import Decimal as dec
 from dbg import B
 
@@ -90,7 +90,11 @@ class requirement(orm.entity):
     # Specifies when the requirement was first created (not to be
     # confused with ``createdat`` which is an implicit attribute
     # indicating the datetime the record was created)
-    created = date
+    # 
+    # Note the the data type in UDM was original `data`. However, to
+    # support certain `requirements`, such as `effort.stories`, we need
+    # more resolution in order to capture the time portion.
+    created = datetime
 
     # The date by which the requirement item is needed.
     required = date
