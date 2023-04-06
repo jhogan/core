@@ -89,9 +89,10 @@ class backlog_stories(orm.associations):
     Note that this is part of the Agile object model extention to the
     original UDM.
     """
-    """
-    def reordinate(self):
-        """ XXX
+    def _reordinate(self):
+        """ Ensure that the ordinal values of each entry in the
+        collection are sequential. Used to restore the order of the
+        elements after a removal. 
         """
         for i, bs in self.sorted('ordinal').enumerate():
             bs.ordinal = i
@@ -963,7 +964,7 @@ class backlog(orm.entity):
                 bss.remove(bs)
                 rms += bs.story
 
-        bss.reordinate()
+        bss._reordinate()
 
         return rms
 
