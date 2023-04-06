@@ -867,17 +867,27 @@ class backlog(orm.entity):
         bss = self.backlog_stories
         bss.sort('ordinal')
 
-        for bs in bss:
-            if ord <= bs.ordinal:
-                bs.ordinal += 1
+        replacing = st.id in bss.pluck('story.id')
+        adding = not replacing
 
         for bs in bss:
-            if bs.story.id == st.id:
-                bs.ordinal = ord
-                break
-        else:
-            bs = backlog_story(story=st, ordinal=ord)
-            bss += bs
+            if replacing:
+                if bs.story.id == st.id:
+                    tmp = bs.ordinal
+
+                    for bs1 in bss:
+                        if ord == bs1.ordinal:
+                            bs1.ordinal = tmp
+                            bs.ordinal = ord
+                            break
+
+            elif adding:
+                if bs.ordinal >= ord:
+                    bs.ordinal += 1
+
+        if adding:
+            bss += backlog_story(ordinal=ord, story=st)
+
 
     def remove(self, st):
         """ XXX

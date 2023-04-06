@@ -1117,7 +1117,8 @@ class backlog(tester.tester):
         # Insert st0 back to ordinal 0 ; moving st1 to ordinal 1
         bl.insert(st0)
 
-        bss = bl.backlog_stories.sorted('ordinal')
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
         self.two(bss)
 
         self.is_(st0, bss.first.story)
@@ -1127,28 +1128,38 @@ class backlog(tester.tester):
         bl.save()
         bl = bl.orm.reloaded()
 
-        bss = bl.backlog_stories.sorted('ordinal')
+        bss = bl.backlog_stories
+        bss.sort('ordinal')
         self.two(bss)
 
         self.eq(st0.id, bss.first.story.id)
         self.eq(st1.id, bss.second.story.id)
-
+        
         # Add 3 more at the end
         for i, st in enumerate((st2, st3, st4)):
             bl.insert(i + 2, st)
 
         # Move st5 from begining to end
-        for i in range(4):
-            bl.insert(ord=i, st=st5)
-            bss = bl.backlog_stories.sorted('ordinal')
+        for ord in ('asc', 'desc'):
+            if ord == 'asc':
+                seq = range(6)
+            elif ord == 'desc':
+                seq = range(4, -1, -1)
 
-            sts = bss.pluck('story')
-            pprint(bss.pluck('story.id'))
-            pprint([x.id for x in (st0, st1, st2, st3, st4, st5)])
-            B()
-            self.is_(st5, sts[i])
+            for i in seq:
+                bl.insert(ord=i, st=st5)
+                bss = bl.backlog_stories.sorted('ordinal')
 
+                sts = bss.pluck('story')
+                self.eq(st5.id, sts[i].id, str(i))
 
+                bl.save()
+                bl = bl.orm.reloaded()
+
+                bss = bl.backlog_stories.sorted('ordinal')
+
+                sts = bss.pluck('story')
+                self.eq(st5.id, sts[i].id, str(i))
 
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
