@@ -927,14 +927,12 @@ class backlog(orm.entity):
         for bs in bss:
             if replacing:
                 if bs.story.id == st.id:
-                    tmp = bs.ordinal
-
                     for bs1 in bss:
                         if ord == bs1.ordinal:
-                            bs1.ordinal = tmp
-                            bs.ordinal = ord
-                            break
 
+                            # Replace ordinal values
+                            bs1.ordinal, bs.ordinal = bs.ordinal, ord
+                            break
             elif adding:
                 # Increment all ordinals greater than or equal to ord
                 if bs.ordinal >= ord:
