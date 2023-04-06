@@ -84,6 +84,10 @@ class  backlogs(orm.entities):                                   pass
 class  stories(requirements):                                    pass
 
 class backlog_stories(orm.associations):
+    """ A collection of `backlog_story` associations.
+
+    Note that this is part of the Agile object model extention to the
+    original UDM.
     """
     """
     def reordinate(self):
@@ -567,23 +571,21 @@ class effort_partytype(party.roletype):
     effort_parties = effort_parties
 
 class status(orm.entity):
-    """ Maintains the status of a work ``effort``. Examples include, "In
-    progress", "Started", and "Pending".
+    """ Maintains the status of a work ``effort``. Also maintains the
+    status of a story within a `backlog` (see backlog_story`). Examples
+    include, "In progress", "Started", and "Pending".
 
     The status of the work ``effort`` may have an effect on the
     ``requrimentstatus``; however, they may also be independent of each
     other. For instance, a status of "completed" on the work efforts
-    required to implement a requirement ma lead to the requirement
+    required to implement a `requirement` my lead to the `requirement`
     having a status of "fulfilled". They, however, may have different
-    unrelated statuses, such as the requirement  have a status of
-    "approved" and the work effort having a status of "in progress".
+    unrelated statuses, such as the `requirement`  have a status of
+    "approved" and the work `effort` having a status of "in progress".
 
     Note that this entity was originally called WORK EFFORT STATUS in
     "The Data Model Resource Book".
-
-    XXX Note that `backlog` uses this as well
     """
-
     begin = datetime
 
 class statustype(apriori.type):
@@ -858,18 +860,69 @@ class backlog(orm.entity):
     goal         =  str
 
     def insert(self, ord, st=None):
-        """ XXX
+        """ Puts the story `st` into this `backlog`.
+
+        Note that this operation is transient. You will need to call the
+        `save()` method on this `backlog` in order to persist the changes
+        to the database.
+
+        The `ord` parameter contains the rank the story should have in
+        the backlog. For example, the following creates a backlog and
+        a story and inserts the story into the backlog at index 3:
+            
+            bl = backlog()
+            st = story()
+            bl.insert(3, st)
+
+        The method can be called with just the `st` argument and no
+        `ord` argument. In this case, `ord` defaults to 0.
+
+            # Insert at position 0
+            bl.insert(st)
+
+            #  Does the same as above.
+            bl.insert(0, st)
+
+        It's possible to change the rank of story within a backlog by
+        reinserting. 
+            
+            # Insert at position 0
+            bl.insert(0, st)
+
+            # Move the story to position 10 by reinsterting
+            bln.insert(10, st)
+
+        Note that `insert` should not be used to move a story from one
+        backlog to another. Use the `move` method for that.
+
+        :param: ord int: The position in the backlog to put the story.
+        If the story already exists in the backlog, this parameter can
+        change the position.
+
+        :param: st story: The story to add or move.
         """
+
+        # Implement the single-argument behavior
         if not st:
             st = ord
+            # Recurse using a default ord of 0
             return self.insert(ord=0, st=st)
 
+        # Get this backlogs collection of `backlog_stories 
         bss = self.backlog_stories
+
+        # Sort by ordinal
         bss.sort('ordinal')
 
+        # If the story exists in the collection, we are doing a
+        # replacement operation:
         replacing = st.id in bss.pluck('story.id')
+
+        # If we are not replacing, we are adding the story to the
+        # collection.
         adding = not replacing
 
+        # Iterate over the backlog_stories collection.
         for bs in bss:
             if replacing:
                 if bs.story.id == st.id:
@@ -882,22 +935,31 @@ class backlog(orm.entity):
                             break
 
             elif adding:
+                # Increment all ordinals greater than or equal to ord
                 if bs.ordinal >= ord:
                     bs.ordinal += 1
 
+        # Add to the collection at `ord`
         if adding:
             bss += backlog_story(ordinal=ord, story=st)
 
-
     def remove(self, st):
-        """ XXX
+        """ Remove the story from this backlog. Returns a collection of
+        stories that were successfully removed.
+
+        :param: st story: The story to remove from this backlog.
         """
         rms = stories()
 
+        # Get backlog_stories and sort by ordinal
         bss = self.backlog_stories
         bss.sort('ordinal')
+
+        # For each backlog_story
         for bs in bss:
+            # If we find a match
             if st.id == bs.story.id:
+                # Remove it
                 bss.remove(bs)
                 rms += bs.story
 
@@ -907,6 +969,14 @@ class backlog(orm.entity):
 
     @property
     def stories(self):
+        """ Returns a collection of stories within this backlog.
+
+        Note that adding or removing this collection will not have an
+        impact on this backlog as an ORM entity model. To make changes
+        that can be persisted, you must use the `backlog_stories`
+        association collection. This property is intended for
+        convenient, read-only access.
+        """
         sts = stories()
 
         for bss in self.backlog_stories:
@@ -978,13 +1048,23 @@ class story(requirement):
 
     @property
     def backlog(self):
-        # XXX Test
+        """ Returns the `backlog` object associated with this
+        `story`.
+        """
         for bss in self.backlog_stories:
             if bl := bss.backlog:
                 return bl
+
         return None
 
     def move(self, from_, to):
+        """ Move this `story` object from the `from_` backlog, to the
+        `to` backlog.
+
+        Note that this operation is transient. You will need to call the
+        `save()` method on this `story` in order to persist the changes
+        to the database.
+        """
         for bss in from_.backlog_stories:
             if bss.story.id == self.id:
                 from_.backlog_stories.remove(bss)
@@ -1011,4 +1091,3 @@ class backlog_story(orm.association):
     # through statuses such as TODO, IN-PROGRESS, QA, TESTING, STAGING
     # and finally DONE.
     statuses = statuses
-

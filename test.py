@@ -9,8 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022                 #
 ########################################################################
 
-"The bitterness of poor quality remains long after the sweetness of low
-price is forgotten." 
+"""The bitterness of poor quality remains long after the sweetness of low
+price is forgotten."""
 # Benjamin Franklin
 
 "I have not failed. I've just found 10,000 ways that won't work."

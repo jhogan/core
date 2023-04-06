@@ -1100,8 +1100,6 @@ class backlog(tester.tester):
             self.eq(list(range(i+1)), bss2.pluck('ordinal'))
 
     def it_moves_a_story_within_a_backlog(self):
-        """ XXX
-        """
         bl = self.getvalid()
 
         st0, st1, st2, st3, st4, st5 = story.getvalid(6)
