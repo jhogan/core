@@ -12,6 +12,7 @@ from contextlib import suppress
 from dbg import B, PM
 from uuid import UUID, uuid4
 from entities import classproperty
+from func import getattr
 import asset, ecommerce
 import datetime
 import db
@@ -3434,7 +3435,6 @@ class crud(page):
                 # so the entity can be updated.
                 if btnedit := card.btnedit:
                     el.btnedit.onclick += self.btnedit_onclick, card
-
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.

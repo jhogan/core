@@ -495,7 +495,6 @@ class ticketsspa(pom.spa):
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
 
-
 # The Css for the site. See site.styles
 Css = '''
 body{
