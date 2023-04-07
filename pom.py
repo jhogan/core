@@ -3307,20 +3307,21 @@ class crud(page):
             es = self.entity.orm.all
             self.instance = es
 
-            el = es.orm.table
+            el = getattr(es, 'orm.' + pres)
 
-            tds = el['td[data-entity-attribute=id]']
+            tds = el['[data-entity-attribute=id]']
 
             # For each <td> in the <table>, create a coresponding <menu>
             # to contain the "Edit", "Quick Edit", etc. links. Add the
             # <menu> to the <td>
-            for td in tds:
-                menu = self._menu(td)
-                # Get the "Quick Edit" anchor (<a rel="edit preview">)
-                a = menu['a[rel~=edit][rel~=preview]'].only
-                a.onclick += self.btnedit_onclick, td.closest('tr')
+            if pres == 'table':
+                for td in tds:
+                    menu = self._menu(td)
+                    # Get the "Quick Edit" anchor (<a rel="edit preview">)
+                    a = menu['a[rel~=edit][rel~=preview]'].only
+                    a.onclick += self.btnedit_onclick, td.closest('tr')
 
-                td += menu
+                    td += menu
 
             # If a browser is doing a tradtional (non-XHR) GET on the
             # the page, and the query string parameter crud is 'update',
