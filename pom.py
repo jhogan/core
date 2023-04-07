@@ -3370,6 +3370,19 @@ class crud(page):
 
                             break
 
+            # XXX This logic is redundant with logic in self._menu()
+            if det := self.detail:
+                # Create a path string to the details page
+                path = f'{det.path}?&crud=create'
+                path += f'&oncomplete={self.path}'
+
+                # Create the "Edit" link
+                a = dom.a(
+                    'Add New', class_="add-new", 
+                    href=path, rel='create-form'
+                )
+                el += a
+
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
         # entity's contents.
