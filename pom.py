@@ -3370,6 +3370,10 @@ class crud(page):
 
                             break
 
+            # Empty state
+            if tds.isempty:
+                el += dom.p('No items found.', class_="empty-state")
+
             # XXX This logic is redundant with logic in self._menu()
             if det := self.detail:
                 # Create a path string to the details page
