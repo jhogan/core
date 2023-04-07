@@ -12010,6 +12010,23 @@ class orm:
         return frm
 
     @property
+    def cards(self):
+        """ XXX
+        """
+        import dom
+
+        div = dom.div(class_ = 'cards')
+
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+        div.setattr('data-entity', e)
+
+        for e in self.instance:
+            div += e.orm.card
+
+        return div
+
+    @property
     def table(self):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
