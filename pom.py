@@ -3436,8 +3436,7 @@ class crud(page):
 
                 btncancel = dom.button('Cancel')
 
-                if crud == 'update':
-                    btncancel.onclick += self.btncancel_onclick, el
+                btncancel.onclick += self.btncancel_onclick, el
 
                 el += btncancel
 
