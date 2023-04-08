@@ -3309,13 +3309,14 @@ class crud(page):
 
             el = getattr(es, 'orm.' + pres)
 
-            tds = el['[data-entity-attribute=id]']
+
+            els = el['[data-entity-attribute=id]']
 
             # For each <td> in the <table>, create a coresponding <menu>
             # to contain the "Edit", "Quick Edit", etc. links. Add the
             # <menu> to the <td>
             if pres == 'table':
-                for td in tds:
+                for td in els:
                     menu = self._menu(td)
                     # Get the "Quick Edit" anchor (<a rel="edit preview">)
                     a = menu['a[rel~=edit][rel~=preview]'].only
@@ -3371,7 +3372,7 @@ class crud(page):
                             break
 
             # Empty state
-            if tds.isempty:
+            if els.isempty:
                 el += dom.p('No items found.', class_="empty-state")
 
             # XXX This logic is redundant with logic in self._menu()
