@@ -3380,12 +3380,16 @@ class crud(page):
                 path = f'{det.path}?&crud=create'
                 path += f'&oncomplete={self.path}'
 
-                # Create the "Edit" link
-                a = dom.a(
-                    'Add New', class_="add-new", 
-                    href=path, rel='create-form'
-                )
-                el += a
+                # Create the "Add New" link
+                el += dom.a('Add New', href=path, rel='create-form')
+
+                cards = el['article.card']
+                for card in cards:
+                    id = card.getattr('data-entity-id')
+                    path = f'{det.path}?id={id}&crud=update'
+                    path += f'&oncomplete={self.path}'
+                    # Create Edit link
+                    card += dom.a('Edit', href=path, rel='edit')
 
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
