@@ -456,13 +456,24 @@ class ticketsspa(pom.spa):
             </table>
             ''')
 
-    class backlog(pom.crud):
+    class backlogs(pom.crud):
         def __init__(self, *args, **kwargs):
-            super().__init__(e=effort.requirements, *args, **kwargs)
+            super().__init__(
+                e=effort.backlogs, presentation='cards', *args, **kwargs
+            )
 
         @property
         def detail(self):
-            return self.spa.pages['ticket']
+            return self.spa.pages['backlog']
+
+    class backlog(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(e=effort.backlog, *args, **kwargs)
+
+        @property
+        def detail(self):
+            return self.spa.pages['backlog']
+
 
     class search(pom.page):
         def main(self):
@@ -474,6 +485,7 @@ class ticketsspa(pom.spa):
         super().__init__(*args, **kwargs)
 
         # Main
+        self.pages += ticketsspa.backlogs()
         self.pages += ticketsspa.backlog()
         self.pages += ticketsspa.ticket()
         self.pages += ticketsspa.search()
@@ -491,10 +503,9 @@ class ticketsspa(pom.spa):
         mnu.items  +=  pom.menu.item(
             'New', 'ticketsspa/ticket?crud=create'
         )
-        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlog')
+        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlogs')
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
-
 
 # The Css for the site. See site.styles
 Css = '''

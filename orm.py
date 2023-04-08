@@ -12017,6 +12017,24 @@ class orm:
         return frm
 
     @property
+    def cards(self):
+        """ Returns a new dom.div which contains a collection  of entity
+        card.
+        """
+        import dom
+
+        div = dom.div(class_ = 'cards')
+
+        e = self.entity
+        e = f'{e.__module__}.{e.__name__}'
+        div.setattr('data-entity', e)
+
+        for e in self.instance:
+            div += e.orm.card
+
+        return div
+
+    @property
     def table(self):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
@@ -12154,8 +12172,6 @@ class orm:
 
         # Create the `card` object that we will build and return
         card = pom.card()
-
-        card.btnedit = dom.button('Edit')
 
         inst = self.instance
         rent = builtins.type(inst)

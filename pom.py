@@ -12,6 +12,7 @@ from contextlib import suppress
 from dbg import B, PM
 from uuid import UUID, uuid4
 from entities import classproperty
+from func import getattr
 import asset, ecommerce
 import datetime
 import db
@@ -2728,16 +2729,6 @@ class card(dom.article):
         self.classes += 'card'
         super().__init__(*args, **kwargs)
 
-    @property
-    def btnedit(self):
-        return self['button.edit'].first
-
-    @btnedit.setter
-    def btnedit(self, v):
-        self.remove('button.edit')
-        v.classes += 'edit'
-        self += v
-
 class instructions(dom.article):
     """ A collection of `instruction` objects.
     """
@@ -2797,7 +2788,9 @@ class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete an given `orm.entity`.
     """
-    def __init__(self, e, name=None, pgs=None, *args, **kwargs):
+    def __init__(self, 
+        e, name=None, pgs=None, presentation='table', *args, **kwargs
+    ):
         """ Create a `crud` page object. 
 
         :param: e orm.entitymeta: An `orm.entity` class reference an
@@ -2806,10 +2799,11 @@ class crud(page):
 
         :param: name str: The name of the page.
         """
-        self.entity     =  e
-        self._instance  =  None
-        self._detail    =  None
-        self._form      =  None
+        self.entity        =  e
+        self.presentation  =  presentation
+        self._instance     =  None
+        self._detail       =  None
+        self._form         =  None
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
     @property
@@ -3192,9 +3186,16 @@ class crud(page):
             # Return card to browser
             eargs.html = card
 
+            # Create Edit button
+            btnedit = dom.button('Edit', class_='edit')
+            card += btnedit
+
+            # NOTE It's unclear at the moment whether a card should have
+            # an Edit <anchor or an Edit <button>.
+
             # Subscribe the onclick event of the card's edit button to
             # self.btnedit_onclick
-            card.btnedit.onclick += self.btnedit_onclick, card
+            btnedit.onclick += self.btnedit_onclick, card
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.  TODO: 872fd252
@@ -3295,6 +3296,9 @@ class crud(page):
         """
         frm = False
 
+        # Get the presentation mode for display: 'table' or 'cards'
+        pres = self.presentation
+
         # If the entity we are working with is a collection, load the
         # collection then return it as a <table>.
         if isinstance(self.entity, orm.entitiesmeta):
@@ -3302,20 +3306,24 @@ class crud(page):
             es = self.entity.orm.all
             self.instance = es
 
-            el = es.orm.table
+            # Get the collections 'orm.table' or 'orm.cards'
+            el = getattr(es, 'orm.' + pres)
 
-            tds = el['td[data-entity-attribute=id]']
+            # Get the <div>s or <td>s that correespond to entity
+            # attributes within the element
+            els = el['[data-entity-attribute=id]']
 
-            # For each <td> in the <table>, create a coresponding <menu>
-            # to contain the "Edit", "Quick Edit", etc. links. Add the
-            # <menu> to the <td>
-            for td in tds:
-                menu = self._menu(td)
-                # Get the "Quick Edit" anchor (<a rel="edit preview">)
-                a = menu['a[rel~=edit][rel~=preview]'].only
-                a.onclick += self.btnedit_onclick, td.closest('tr')
+            if pres == 'table':
+                # For each <td> in the <table>, create a coresponding
+                # <menu> to contain the "Edit", "Quick Edit", etc.
+                # links. Add the <menu> to the <td>
+                for td in els:
+                    menu = self._menu(td)
+                    # Get the "Quick Edit" anchor (<a rel="edit preview">)
+                    a = menu['a[rel~=edit][rel~=preview]'].only
+                    a.onclick += self.btnedit_onclick, td.closest('tr')
 
-                td += menu
+                    td += menu
 
             # If a browser is doing a tradtional (non-XHR) GET on the
             # the page, and the query string parameter crud is 'update',
@@ -3324,11 +3332,12 @@ class crud(page):
             # This is equivelent to clicking the Quick Edit button but
             # does not involve XHR requests.
             if crud == 'update':
-                # If and id was passed in the query strting
+                # If an id was passed in the query strting
                 if id:
                     id = UUID(hex=id)
 
                     for tr in el['tbody>tr']:
+                        # Get the entity's id
                         attrid = tr.getattr('data-entity-id')
 
                         if not attrid:
@@ -3336,6 +3345,8 @@ class crud(page):
 
                         attrid = UUID(hex=attrid)
 
+                        # Does the attrid match the id passed in the
+                        # query string
                         if attrid == id:
                             # Get the entity's <form> representation
                             frm = es[id].orm.form
@@ -3363,6 +3374,31 @@ class crud(page):
                             frm += btncancel
 
                             break
+
+            # Empty state
+            if els.isempty:
+                el += dom.p('No items found.', class_="empty-state")
+
+            if det := self.detail:
+                # Create a path string to the details page
+                path = f'{det.path}?&crud=create'
+                path += f'&oncomplete={self.path}'
+
+                # Create the "Add New" link
+                el += dom.a('Add New', href=path, rel='create-form')
+
+                # Add an Edit button to each card in the collection
+                cards = el['article.card']
+                for card in cards:
+                    # Get the entity id in the card
+                    id = card.getattr('data-entity-id')
+
+                    # Build path
+                    path = f'{det.path}?id={id}&crud=update'
+                    path += f'&oncomplete={self.path}'
+
+                    # Create Edit link
+                    card += dom.a('Edit', href=path, rel='edit')
 
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
@@ -3413,8 +3449,7 @@ class crud(page):
 
                 btncancel = dom.button('Cancel')
 
-                if crud == 'update':
-                    btncancel.onclick += self.btncancel_onclick, el
+                btncancel.onclick += self.btncancel_onclick, el
 
                 el += btncancel
 
@@ -3422,19 +3457,23 @@ class crud(page):
                     span = dom.span(oncomplete, hidden=True)
                     span.setattr('data-oncomplete', oncomplete)
                     el += span
-
             else:
                 # If frm is None, add a card to the page so user is able
                 # to read entity values.
                 el = e.orm.card
                 card = el
 
+                # NOTE It's unclear at the moment whether a card should
+                # have an Edit <anchor or an Edit <button>.
+
+                # Create Edit button
+                btnedit = dom.button('Edit', class_='edit')
+                card += btnedit
+
                 # Subscribe the Edit button to self.btnedit_onclick.
                 # This allows user to get a <form> version of the card
                 # so the entity can be updated.
-                if btnedit := card.btnedit:
-                    el.btnedit.onclick += self.btnedit_onclick, card
-
+                btnedit.onclick += self.btnedit_onclick, card
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
@@ -3450,14 +3489,20 @@ class crud(page):
 
         self.main += el
 
-    def _menu(self, tr):
+    def _menu(self, td):
         """ Create a new <menu> object that acts as a context menu for
-        the given <tr>.
+        the <tr> of the given <td>.
 
         A table row <tr> for an entity can have several items such as
         "Edit', 'Quick Edit', 'Preview', 'Delete', etc. This <menu>
-        provides those function for the entity represented by the <tr>.
+        provides those function for the entity represented by the td's
+        parent <tr>.
+
+        :param: td dom.td: The <td> object the menu will created for.
         """
+        # TODO This can be enhanced by appending td to the menu it
+        # creates. The calling code does this itself.
+
         # Create the menu to return
         menu = dom.menu()
 
@@ -3468,7 +3513,7 @@ class crud(page):
             li = dom.li()
 
             # Get entity's UUID
-            id = tr.parent.getattr('data-entity-id')
+            id = td.parent.getattr('data-entity-id')
 
             # Create a path string to the details page
             path = f'{det.path}?id={id}&crud=update'
