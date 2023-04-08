@@ -3478,6 +3478,8 @@ class crud(page):
         A table row <tr> for an entity can have several items such as
         "Edit', 'Quick Edit', 'Preview', 'Delete', etc. This <menu>
         provides those function for the entity represented by the <tr>.
+
+        XXX `tr` can now be a <div>
         """
         # Create the menu to return
         menu = dom.menu()
