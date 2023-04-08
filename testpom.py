@@ -3295,31 +3295,6 @@ class card(tester.tester):
         card = pom.card()
         self.true('card' in card.classes)
 
-    def it_calls_btnedit(self):
-        # Defaults to none
-        card = pom.card()
-        self.none(card.btnedit)
-
-        # Set
-        btn = dom.button('Edit me')
-        card.btnedit = btn
-
-        self.true('edit' in btn.classes)
-
-        # Get
-        self.is_(btn, card.btnedit)
-
-        # Make sure there's only one edit button
-        self.one(card['button.edit'])
-
-        # Reset with new button and test
-        btn1 = dom.button('Another Edit me')
-        card.btnedit = btn1
-        self.is_(btn1, card.btnedit)
-
-        # Make sure there's only one edit button
-        self.one(card['button.edit'])
-
 class crud(tester.tester):
     def __init__(self, *args, **kwargs):
         # We will be testing with foonet so set it as the ORM's

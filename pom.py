@@ -2729,16 +2729,6 @@ class card(dom.article):
         self.classes += 'card'
         super().__init__(*args, **kwargs)
 
-    @property
-    def btnedit(self):
-        return self['button.edit'].first
-
-    @btnedit.setter
-    def btnedit(self, v):
-        self.remove('button.edit')
-        v.classes += 'edit'
-        self += v
-
 class instructions(dom.article):
     """ A collection of `instruction` objects.
     """
@@ -3196,9 +3186,16 @@ class crud(page):
             # Return card to browser
             eargs.html = card
 
+            # Create Edit button
+            btnedit = dom.button('Edit', class_='edit')
+            card += btnedit
+
+            # NOTE It's unclear at the moment whether a card should have
+            # an Edit <anchor or an Edit <button>.
+
             # Subscribe the onclick event of the card's edit button to
             # self.btnedit_onclick
-            card.btnedit.onclick += self.btnedit_onclick, card
+            btnedit.onclick += self.btnedit_onclick, card
 
             # Update the id and crud parameters in the browse to the
             # appropriate values.  TODO: 872fd252
@@ -3466,11 +3463,17 @@ class crud(page):
                 el = e.orm.card
                 card = el
 
+                # NOTE It's unclear at the moment whether a card should
+                # have an Edit <anchor or an Edit <button>.
+
+                # Create Edit button
+                btnedit = dom.button('Edit', class_='edit')
+                card += btnedit
+
                 # Subscribe the Edit button to self.btnedit_onclick.
                 # This allows user to get a <form> version of the card
                 # so the entity can be updated.
-                if btnedit := card.btnedit:
-                    el.btnedit.onclick += self.btnedit_onclick, card
+                btnedit.onclick += self.btnedit_onclick, card
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
