@@ -12011,7 +12011,8 @@ class orm:
 
     @property
     def cards(self):
-        """ XXX
+        """ Returns a new dom.div which contains a collection  of entity
+        card.
         """
         import dom
 

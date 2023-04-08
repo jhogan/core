@@ -3298,6 +3298,8 @@ class crud(page):
         """ The main handler for this `crud` page.
         """
         frm = False
+
+        # Get the presentation mode for display: 'table' or 'cards'
         pres = self.presentation
 
         # If the entity we are working with is a collection, load the
@@ -3307,15 +3309,17 @@ class crud(page):
             es = self.entity.orm.all
             self.instance = es
 
+            # Get the collections 'orm.table' or 'orm.cards'
             el = getattr(es, 'orm.' + pres)
 
-
+            # Get the <div>s or <td>s that correespond to entity
+            # attributes within the element
             els = el['[data-entity-attribute=id]']
 
-            # For each <td> in the <table>, create a coresponding <menu>
-            # to contain the "Edit", "Quick Edit", etc. links. Add the
-            # <menu> to the <td>
             if pres == 'table':
+                # For each <td> in the <table>, create a coresponding
+                # <menu> to contain the "Edit", "Quick Edit", etc.
+                # links. Add the <menu> to the <td>
                 for td in els:
                     menu = self._menu(td)
                     # Get the "Quick Edit" anchor (<a rel="edit preview">)
@@ -3331,11 +3335,12 @@ class crud(page):
             # This is equivelent to clicking the Quick Edit button but
             # does not involve XHR requests.
             if crud == 'update':
-                # If and id was passed in the query strting
+                # If an id was passed in the query strting
                 if id:
                     id = UUID(hex=id)
 
                     for tr in el['tbody>tr']:
+                        # Get the entity's id
                         attrid = tr.getattr('data-entity-id')
 
                         if not attrid:
@@ -3343,6 +3348,8 @@ class crud(page):
 
                         attrid = UUID(hex=attrid)
 
+                        # Does the attrid match the id passed in the
+                        # query string
                         if attrid == id:
                             # Get the entity's <form> representation
                             frm = es[id].orm.form
@@ -3375,7 +3382,6 @@ class crud(page):
             if els.isempty:
                 el += dom.p('No items found.', class_="empty-state")
 
-            # XXX This logic is redundant with logic in self._menu()
             if det := self.detail:
                 # Create a path string to the details page
                 path = f'{det.path}?&crud=create'
@@ -3384,11 +3390,16 @@ class crud(page):
                 # Create the "Add New" link
                 el += dom.a('Add New', href=path, rel='create-form')
 
+                # Add an Edit button to each card in the collection
                 cards = el['article.card']
                 for card in cards:
+                    # Get the entity id in the card
                     id = card.getattr('data-entity-id')
+
+                    # Build path
                     path = f'{det.path}?id={id}&crud=update'
                     path += f'&oncomplete={self.path}'
+
                     # Create Edit link
                     card += dom.a('Edit', href=path, rel='edit')
 
@@ -3449,7 +3460,6 @@ class crud(page):
                     span = dom.span(oncomplete, hidden=True)
                     span.setattr('data-oncomplete', oncomplete)
                     el += span
-
             else:
                 # If frm is None, add a card to the page so user is able
                 # to read entity values.
@@ -3476,16 +3486,20 @@ class crud(page):
 
         self.main += el
 
-    def _menu(self, tr):
+    def _menu(self, td):
         """ Create a new <menu> object that acts as a context menu for
-        the given <tr>.
+        the <tr> of the given <td>.
 
         A table row <tr> for an entity can have several items such as
         "Edit', 'Quick Edit', 'Preview', 'Delete', etc. This <menu>
-        provides those function for the entity represented by the <tr>.
+        provides those function for the entity represented by the td's
+        parent <tr>.
 
-        XXX `tr` can now be a <div>
+        :param: td dom.td: The <td> object the menu will created for.
         """
+        # TODO This can be enhanced by appending td to the menu it
+        # creates. The calling code does this itself.
+
         # Create the menu to return
         menu = dom.menu()
 
