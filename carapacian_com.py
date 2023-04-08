@@ -459,7 +459,7 @@ class ticketsspa(pom.spa):
     class backlogs(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(
-                e=effort.backlogs, presentation='table', *args, **kwargs
+                e=effort.backlogs, presentation='cards', *args, **kwargs
             )
 
         @property
