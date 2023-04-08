@@ -3513,7 +3513,7 @@ class crud(page):
             li = dom.li()
 
             # Get entity's UUID
-            id = tr.parent.getattr('data-entity-id')
+            id = td.parent.getattr('data-entity-id')
 
             # Create a path string to the details page
             path = f'{det.path}?id={id}&crud=update'
