@@ -3307,6 +3307,16 @@ class crud(page):
             # TODO Replace `all` with an instantiation with arguments
             es = self.entity.orm.all
             self.instance = es
+        elif isinstance(self.entity, orm.entitymeta):
+            # Load entity
+            e = self.entity(id)
+            self.instance = e
+
+        # If the entity we are working with is a collection, load the
+        # collection then return it as a <table>.
+        if isinstance(self.instance, orm.entites):
+            es = self.entity.orm.all
+            self.instance = es
 
             # Get the collections 'orm.table' or 'orm.cards'
             el = getattr(es, 'orm.' + pres)
@@ -3405,7 +3415,7 @@ class crud(page):
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
         # entity's contents.
-        elif isinstance(self.entity, orm.entitymeta):
+        elif isinstance(self.instance, orm.entity):
             if id:
                 if crud == 'create':
                     raise ValueError(
@@ -3436,10 +3446,6 @@ class crud(page):
                     raise ValueError(
                         'Cannot create when given an id'
                     )
-
-            # Load entity
-            e = self.entity(id)
-            self.instance = e
 
             if frm:
                 # If frm is True, add a <form> for the entity to the
