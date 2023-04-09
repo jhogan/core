@@ -2618,6 +2618,9 @@ class traceback(dom.article):
         ul = dom.ul()
         self += ul
 
+        # TODO A traceback would be better rendered as a <table> than a
+        # <ul>
+
         # Build the DOM
         for tb in exc.traces(ex):
             li = dom.li()
@@ -3294,13 +3297,12 @@ class crud(page):
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
         """
+        # XXX Recomment
         frm = False
 
         # Get the presentation mode for display: 'table' or 'cards'
         pres = self.presentation
 
-        # If the entity we are working with is a collection, load the
-        # collection then return it as a <table>.
         if isinstance(self.entity, orm.entitiesmeta):
             # TODO Replace `all` with an instantiation with arguments
             es = self.entity.orm.all
