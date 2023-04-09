@@ -462,6 +462,31 @@ class ticketsspa(pom.spa):
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
 
+
+        def main(self, 
+            id:str=None, crud:str='retrieve', oncomplete=None
+        ):
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+            es = self.instance
+
+            cards = self.main['article.card']
+
+            # For each backlog card in cards
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                id = UUID(id)
+
+                pg = self.spa.pages['stories']
+                pg.instance = es[id]
+
+                pg.clear()
+
+                B()
+                pg()
+                
+                card += pg['table'].only
+            
         @property
         def detail(self):
             return self.spa.pages['backlog']
