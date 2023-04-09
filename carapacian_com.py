@@ -495,10 +495,23 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
 
+    class stories(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                e=effort.stories, presentation='table', *args, **kwargs
+            )
+
         @property
         def detail(self):
-            return self.spa.pages['backlog']
+            return self.spa.pages['story']
 
+    class story(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(e=effort.story, *args, **kwargs)
+
+        @property
+        def detail(self):
+            return self.spa.pages['story']
 
     class search(pom.page):
         def main(self):
@@ -512,6 +525,10 @@ class ticketsspa(pom.spa):
         # Main
         self.pages += ticketsspa.backlogs()
         self.pages += ticketsspa.backlog()
+
+        self.pages += ticketsspa.stories()
+        self.pages += ticketsspa.story()
+
         self.pages += ticketsspa.ticket()
         self.pages += ticketsspa.search()
         self.pages += ticketsspa.people()
