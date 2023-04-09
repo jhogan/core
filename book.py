@@ -7803,7 +7803,7 @@ with book('Hacking Carapacian Core'):
         The ORM works hard to check the values assigned to entity
         attributes against the metadata it has about the entity. In
         addition to type checking, it will also check the size of
-        strings, the valid range of numeric and data types, the
+        strings, the valid range of numeric and date types, the
         precision and scale of floats, and so on. These error would
         typically be caught by the database. However, it is the
         intention of the ORM to never rely on the RDBMS to perform these
@@ -7814,7 +7814,7 @@ with book('Hacking Carapacian Core'):
         by the RDBMS, that would be an additional source of validation
         error reporting. This would be problematic because computer
         logic, such as that which is used to provide a user interface,
-        would be burdened with two sources of information regarding
+        would be burdened with consulting two sources of information regarding
         invalid data. The `brokenrules` property provides information in
         a consistent format that MySQL exception don't. Additionally,
         these exceptions are high-level, cryptic error messages that are
@@ -7826,7 +7826,7 @@ with book('Hacking Carapacian Core'):
         as well as `property` attribute. The `type` property tells you
         what rule was broken. In the above example, it was the general
         rule of validity ("valid"). Another broken rule `type` is
-        "fits". The "fits" rule is broken when a value is to large or
+        "fits". The "fits" rule is broken when a value is too large or
         small to fit in the allocated space of the data type.  This can
         happen if an integer is larger or smaller than what was
         specifed. Srings can break the "fits" rule when they are too
@@ -7846,14 +7846,70 @@ with book('Hacking Carapacian Core'):
         since it indicates the category the broken rule falls into.
 
         Another feature of the `brokenrules` collection is that it is
-        recursive. That is to say: in addition to collecting broken
-        rules for the given entity object, it will also look for broken
-        rules in constinuent entities, composite elements, associations
-        and so on. Let's update our `books` object model include an
-        `authors` collections so one or more persons can be assigned
-        authorship to a book. We will use this constituent to
-        demonstrate the recursive feature of the `brokenrules` property.
+        recursive. That is to say: in addition to collecting and
+        returning broken rules for the given entity object, it will also
+        look for broken rules in constinuent entities, composite
+        elements, associations and so on. Let's update our `books`
+        object model to include an `authors` collections so one or more
+        persons can be assigned authorship to a `book`. We will use this
+        constituent to demonstrate the recursive feature of the
+        `brokenrules` property.
       ''')
+
+      with listing('Getting broken rules from constituents'):
+        class authors(orm.entities):
+          """ A collection of `author` object.
+          """
+        class author(orm.entity):
+          """ Represents an author.
+          """
+          # The author's first and last name
+          name = str
+
+          # The name the author wrote under
+          penname = str
+
+        class books(orm.entities):
+          pass
+
+        class book(orm.entity):
+          # Add an authors constituent
+          author = authors
+
+          name = str
+          pages = int
+
+    # Create the book
+    b = book(name=1984, pages=328)
+
+    # Note the book is valid, i.e., its brokenrules collection is
+    # empty:
+    true(b.isvalid)
+
+    # Create an invalid author. The `name` attribute is required,
+    # though we've only given the `penname` of the author.
+    a = author(penname='George Orwell')
+    false(a.isvalid)
+
+    # Assign the broken author to the book's `authors` collection
+    b.authors += a
+
+    # Now the book is invalid because we added the broken author.
+    false(b.isvalid)
+
+    # Get the broken rule
+    br = b.brokenrules.only
+
+    # The author.name attributes needs to be either None or a non-empty
+    # string. Since strings default to '', the author's 'name' is
+    # invalid since we did not provide one (just a penname).
+    eq('fits', br.type)
+
+    # The attribute that broke the author was `name`.
+    eq('name', br.property)
+
+    # We can't save book because of its author
+    expect(entities.BrokenRulesError, lambda: b.save())
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
