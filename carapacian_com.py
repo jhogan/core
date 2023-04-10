@@ -791,6 +791,20 @@ body>footer p{
 body>footer p{
     color: #116a36;
 }
+
+article.card, form {
+    display: grid;
+    grid-template-columns: repeat(2, 30em);
+    gap: 1em 0em;
+}
+
+form {
+    grid-template-columns: repeat(1, 30em);
+}
+
+label{
+    margin-right: 1em;
+}
 '''
         
 Favicon = '''
