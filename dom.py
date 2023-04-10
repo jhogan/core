@@ -2043,6 +2043,12 @@ class element(entities.entity):
 
         return els
 
+    def orphan(self):
+        """ XXX
+        """
+
+        self._parent = None
+
     @property
     def parent(self):
         """ The parent element of this element.
