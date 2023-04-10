@@ -11885,6 +11885,9 @@ class orm:
 
     @property
     def form(self):
+        return getform()
+   
+    def getform(self, select=None):
         """ Return a <form> object for this `entity`. 
 
         The <form> object can be sent to a browser to accept input by a
@@ -11912,104 +11915,141 @@ class orm:
         # prevent access the same attribute twice.
         names = list()
 
-        # The ascendancy loop
-        while rent:
-            # For each map ...
-            for map in rent.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
+        class DuplicateError(Exception):
+            """ XXX
+            """
 
-                name = map.name
-                lbl = name.capitalize()
+        class UnsupportedTypeError(Exception):
+            """ XXX
+            """
 
-                # Don't revisit the same name
-                if name in names:
-                    continue
+        def create_input(map):
+            """ XXX
+            """
+            name = map.name
 
-                names.append(name)
+            lbl = name.capitalize()
 
-                # Skip fields the user should not be responsible for
-                if name == 'createdat':
-                    continue
+            # Don't revisit the same name
+            if name in names:
+                raise DuplicateError
 
-                if name == 'updatedat':
-                    continue
+            names.append(name)
 
-                # The `step` attribute of the <input> element
-                step = None
+            # The `step` attribute of the <input> element
+            step = None
 
-                # Hide the id field
-                if name == 'id':
-                    type = 'hidden'
-                    lbl = None
+            # Hide the id field
+            if name == 'id':
+                type = 'hidden'
+                lbl = None
 
-                elif map.isstr:
-                    if map.definition == 'longtext':
-                        type = 'textarea'
-                    else:
-                        type = 'text'
-                        
-                elif map.isdate:
-                    type = 'date'
-
-                elif map.isdatetime:
-                    type = 'datetime-local'
-
-                # TODO We should probably have a map.isnumeric here
-                elif map.isdecimal:
-                    type = 'number'
+            elif map.isstr:
+                if map.definition == 'longtext':
+                    type = 'textarea'
+                else:
+                    type = 'text'
                     
-                    # A `step` of "any" allows decimal values to be
-                    # entered
-                    step = 'any'
+            elif map.isdate:
+                type = 'date'
 
-                elif map.isnumeric:
-                    type = 'number'
+            elif map.isdatetime:
+                type = 'datetime-local'
 
-                else:
-                    continue
-
-                # Create a pom.input object to store the <label> with the
-                # <input> field.
-                inp = pom.input(name=name, type=type, label=lbl)
-
-                inp.attributes['data-entity-attribute'] = map.name
-
-                # Get the underlying <input>/<textaria> object
-                dominp = inp.input
-
-                # Set some browser validation attributes
-                if map.isstr:
-                    dominp.minlength = map.min
-                    dominp.maxlength = map.max
-
-                elif map.isnumeric:
-                    dominp.min = map.min
-                    dominp.max = map.max
-
-                # TODO Should we use <time> for datetimes? Are we doing
-                # that in orm.card?
-
-                if step:
-                    dominp.step = step
-
-                # Hexify the primary key
-                if name == 'id':
-                    inp.input.value = inst.id.hex
-
-                v = getattr(inst, name)
+            # TODO We should probably have a map.isnumeric here
+            elif map.isdecimal:
+                type = 'number'
                 
-                if v is None:
-                    v = str()
+                # A `step` of "any" allows decimal values to be
+                # entered
+                step = 'any'
 
-                if isinstance(dominp, dom.textarea):
-                    dominp += dom.text(v)
+            elif map.isnumeric:
+                type = 'number'
+
+            else:
+                raise UnsupportedTypeError
+
+            # Create a pom.input object to store the <label> with the
+            # <input> field.
+            inp = pom.input(name=name, type=type, label=lbl)
+
+            inp.attributes['data-entity-attribute'] = map.name
+
+            # Get the underlying <input>/<textaria> object
+            dominp = inp.input
+
+            # Set some browser validation attributes
+            if map.isstr:
+                dominp.minlength = map.min
+                dominp.maxlength = map.max
+
+            elif map.isnumeric:
+                dominp.min = map.min
+                dominp.max = map.max
+
+            # TODO Should we use <time> for datetimes? Are we doing
+            # that in orm.card?
+
+            if step:
+                dominp.step = step
+
+            # Hexify the primary key
+            if name == 'id':
+                inp.input.value = inst.id.hex
+
+            v = getattr(inst, name)
+            
+            if v is None:
+                v = str()
+
+            if isinstance(dominp, dom.textarea):
+                dominp += dom.text(v)
+            else:
+                dominp.value = v
+
+            return inp
+
+        if select:
+            attrs = select.split()
+            maps = self.mappings.all
+            for attr in attrs:
+                for map in maps:
+                    if map.name == col:
+                        try:
+                            frm += create_input(map)
+                        except (DuplicateError, UnsupportedTypeError):
+                            pass
+
+                        break
                 else:
-                    dominp.value = v
+                    raise IndexError(f'Cannot find {attr}')
+        else:
+            # The ascendancy loop
+            while rent:
+                # For each map ...
+                for map in rent.orm.mappings:
+                    if not isinstance(map, fieldmapping):
+                        continue
 
-                frm += inp
+                    # Skip fields the user should not be responsible for
+                    if map.name == 'createdat':
+                        continue
 
-            rent = rent.orm.super
+                    # TODO We will want to include this field but insure
+                    # the element`s `hidden` attribute is set. If the
+                    # browser sends the updatedat field, the
+                    # serever-side logic can guard against dirty reads.
+                    if map.name == 'updatedat':
+                        continue
+
+                    try:
+                        frm += create_input(map)
+                    except (DuplicateError, UnsupportedTypeError):
+                        pass
+
+
+                rent = rent.orm.super
 
         # Add a <button type="submit">
         frm += dom.button('Submit', type='submit')
