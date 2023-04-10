@@ -510,7 +510,7 @@ class ticketsspa(pom.spa):
     class stories(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(
-                e=effort.stories, presentation='table', *args, **kwargs
+                e=effort.backlog_stories, presentation='table', *args, **kwargs
             )
 
         @property
@@ -519,7 +519,7 @@ class ticketsspa(pom.spa):
 
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
-            super().__init__(e=effort.story, *args, **kwargs)
+            super().__init__(e=effort.backlog_story, *args, **kwargs)
 
         @property
         def detail(self):
