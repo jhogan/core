@@ -3312,6 +3312,45 @@ class crud(page):
         # No completion was found so return False
         return False
 
+    @property
+    def iscollection(self):
+        """ XXX
+        """
+        return isinstance(self.entity, orm.entitiesmeta)
+
+    @property
+    def isitem(self):
+        """ XXX
+        """
+        return isinstance(self.entity, orm.entitymeta)
+
+    @property
+    def entity(self):
+        return self._entity
+
+    @entity.setter
+    def entity(self, v):
+        self._entity = v
+
+    @property
+    def instance(self):
+        if not self._instance:
+            if self.iscollection:
+                # TODO Enable filtering of the stream
+                self._instance = self.entity.orm.all
+
+            elif self.isitem:
+                if id := self.getattr('data-entity-id'):
+                    self._instance = self.entity(id)
+                else:
+                    self._instance = self.entity()
+
+        return self._instance
+
+    @instance.setter
+    def instance(self, v):
+        self._instance = v
+
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
         """
