@@ -3357,23 +3357,18 @@ class crud(page):
         # XXX Recomment
         frm = False
 
+        if id:
+            self.setattr('data-entity-id', id)
+
+        self.oncomplete = oncomplete
+
         # Get the presentation mode for display: 'table' or 'cards'
         pres = self.presentation
 
-        if isinstance(self.entity, orm.entitiesmeta):
-            # TODO Replace `all` with an instantiation with arguments
-            es = self.entity.orm.all
-            self.instance = es
-        elif isinstance(self.entity, orm.entitymeta):
-            # Load entity
-            e = self.entity(id)
-            self.instance = e
-
         # If the entity we are working with is a collection, load the
         # collection then return it as a <table>.
-        if isinstance(self.instance, orm.entites):
-            es = self.entity.orm.all
-            self.instance = es
+        if self.iscollection:
+            es = self.instance
 
             # Get the collections 'orm.table' or 'orm.cards'
             el = getattr(es, 'orm.' + pres)
@@ -3472,7 +3467,9 @@ class crud(page):
         # If the entity we are working with is an individual, load the
         # entity by id then return a <form> or card (<article>) with the
         # entity's contents.
-        elif isinstance(self.instance, orm.entity):
+        elif self.isitem:
+            e = self.instance
+
             if id:
                 if crud == 'create':
                     raise ValueError(
@@ -3507,7 +3504,7 @@ class crud(page):
             if frm:
                 # If frm is True, add a <form> for the entity to the
                 # page's <main>
-                el = e.orm.form
+                el = e.orm.getform(select=self.select)
 
                 # Capture form submission
                 el.onsubmit += self.frm_onsubmit, el
