@@ -480,14 +480,24 @@ class ticketsspa(pom.spa):
                 id = UUID(id)
 
                 pg = self.spa.pages['stories']
-                pg.instance = es[id]
+                pg.instance = es[id].backlog_stories
 
                 pg.clear()
 
-                B()
-                pg()
+                pg.select = (
+                    'story.name story.description story.points'
+                )
+
+                pg(oncomplete=self.path)
+
                 
-                card += pg['table'].only
+                # TODO For some reason, calling `pg['table']` causes a
+                # dom.MoveError. Ideally, we would be able to do this.
+                tbl = pg.main['table'].only
+
+                tbl.orphan()
+
+                card += tbl
             
         @property
         def detail(self):
