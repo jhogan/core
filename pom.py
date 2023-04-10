@@ -2802,11 +2802,14 @@ class crud(page):
 
         :param: name str: The name of the page.
         """
-        self.entity        =  e
+        self._entity       =  e
         self.presentation  =  presentation
         self._instance     =  None
         self._detail       =  None
         self._form         =  None
+        self._oncomplete   =  None
+        self.select        =  None
+
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
     @property
@@ -2822,6 +2825,21 @@ class crud(page):
         """ Sets the detail class reference for this pom.crud page.
         """
         self._detail = v
+
+    @property
+    def oncomplete(self):
+        """ XXX
+        """
+        if not self._oncomplete:
+            return self.path
+
+        return self._oncomplete
+
+    @oncomplete.setter
+    def oncomplete(self, v):
+        """ XXX
+        """
+        self._oncomplete = v
 
     @property
     def instance(self):
@@ -2985,7 +3003,7 @@ class crud(page):
         url = req.url
 
         # Process completion. Return early if completion is processed.
-        if self._oncomplete(el, eargs):
+        if self.complete(el, eargs):
             return
 
         # Get the entity's hex id from the form 
@@ -3136,7 +3154,7 @@ class crud(page):
         url = req.url
 
         # Process completion. Return early if completion is processed.
-        if self._oncomplete(el, eargs):
+        if self.complete(el, eargs):
             return
 
         # If the browser sent a <tr>
@@ -3394,7 +3412,7 @@ class crud(page):
             if det := self.detail:
                 # Create a path string to the details page
                 path = f'{det.path}?&crud=create'
-                path += f'&oncomplete={self.path}'
+                path += f'&oncomplete={self.oncomplete}'
 
                 # Create the "Add New" link
                 el += dom.a('Add New', href=path, rel='create-form')
@@ -3407,7 +3425,7 @@ class crud(page):
 
                     # Build path
                     path = f'{det.path}?id={id}&crud=update'
-                    path += f'&oncomplete={self.path}'
+                    path += f'&oncomplete={self.oncomplete}'
 
                     # Create Edit link
                     card += dom.a('Edit', href=path, rel='edit')
