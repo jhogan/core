@@ -466,6 +466,8 @@ class ticketsspa(pom.spa):
         def main(self, 
             id:str=None, crud:str='retrieve', oncomplete=None
         ):
+            """ XXX
+            """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
             es = self.instance

@@ -11896,8 +11896,8 @@ class orm:
         frm = dom.form()
         inst = self.instance
 
-        # Get a referece to self's class. We will use it to ascend the
-        # inheritence hierarchy.
+        # Get a referece to self's class. We may use it later to ascend
+        # the inheritence hierarchy.
         rent = builtins.type(inst)
 
         # Assign the data-entity attribute of the <form>, e.g.:

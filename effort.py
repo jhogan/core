@@ -1125,6 +1125,7 @@ class backlog_story(orm.association):
     # Th backlog
     backlog = backlog
 
+    # XXX Rename to `rank`
     # The ranking of the `story` within the `backlog`. An ordinal of 0
     # ranks the story as the lowest in the backlog, an ordinal of 1
     # ranks the story one higher than the lowest in the backlog, and so
