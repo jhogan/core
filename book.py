@@ -7866,7 +7866,7 @@ with book('Hacking Carapacian Core'):
           # The author's first and last name
           name = str
 
-          # The name the author wrote under
+          # The name the author writes under
           penname = str
 
         class books(orm.entities):
@@ -7879,37 +7879,81 @@ with book('Hacking Carapacian Core'):
           name = str
           pages = int
 
-    # Create the book
-    b = book(name=1984, pages=328)
+        # Create the book
+        b = book(name=1984, pages=328)
 
-    # Note the book is valid, i.e., its brokenrules collection is
-    # empty:
-    true(b.isvalid)
+        # Note the book is valid, i.e., its brokenrules collection is
+        # empty
+        true(b.isvalid)
 
-    # Create an invalid author. The `name` attribute is required,
-    # though we've only given the `penname` of the author.
-    a = author(penname='George Orwell')
-    false(a.isvalid)
+        # Create an invalid author. The `name` attribute is required,
+        # though we've only given the `penname` of the author.
+        a = author(penname='George Orwell')
+        false(a.isvalid)
 
-    # Assign the broken author to the book's `authors` collection
-    b.authors += a
+        # Assign the broken author to the book's `authors` collection
+        b.authors += a
 
-    # Now the book is invalid because we added the broken author.
-    false(b.isvalid)
+        # Now the book is invalid because we added the invalid author.
+        false(b.isvalid)
 
-    # Get the broken rule
-    br = b.brokenrules.only
+        # Get the broken rule
+        br = b.brokenrules.only
 
-    # The author.name attributes needs to be either None or a non-empty
-    # string. Since strings default to '', the author's 'name' is
-    # invalid since we did not provide one (just a penname).
-    eq('fits', br.type)
+        # The entity that was discoverd to be invalid was a
+        is_(a, br.entity)
 
-    # The attribute that broke the author was `name`.
-    eq('name', br.property)
+        # The author.name attributes needs to be either None or a non-empty
+        # string. Since strings default to '', the author's 'name' is
+        # invalid since we did not provide one (just a penname).
+        eq('fits', br.type)
 
-    # We can't save book because of its author
-    expect(entities.BrokenRulesError, lambda: b.save())
+        # The attribute that broke the author was `name`.
+        eq('name', br.property)
+
+        # We can't save book because of its author
+        expect(entities.BrokenRulesError, lambda: b.save())
+
+      print('''
+        As you can see in the above code, adding an invalid constituent
+        (`author`) to the `book` caused the book to be invalid. This
+        recursion is indefinate, so no matter how deep the tree of
+        constiuents we get, there validity will impact the `book` object
+        in the same way.
+
+        In addition, `composite` (parent) entity objects are also
+        ascended to discover their broken rules. For example, we could
+        have writte the above code to create a valid `author` then assign
+        it an invalid `book`
+      ''')
+
+      with listing('Getting broken rules from the composite'):
+        # Create a valid author
+        a = author(name='Eric Blair', penname='George Orwell')
+        true(a.isvalid)
+
+        # Create an invaild book (missing name)
+        b = book(pages=328)
+        false(b.isvalid)
+
+        # Assign the book composite to the author
+        a.book = b
+
+        # Get the broken rule
+        br = a.brokenrules.only
+
+        # The invaild object is b
+        is_(b, br.entity)
+
+        # The 'fits' rule was broken
+        eq('fits', br.type)
+
+        # The book.name attribute broke the 'fits' rule
+        eq('name', br.property)
+
+        # Persisting the author to the database fails because of the
+        # broken rule.
+        expect(entities.BrokenRulesError, lambda: a.save())
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
