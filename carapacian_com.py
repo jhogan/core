@@ -528,7 +528,7 @@ class ticketsspa(pom.spa):
 
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
-            super().__init__(e=effort.backlog_story, *args, **kwargs)
+            super().__init__(e=effort.story, *args, **kwargs)
 
         @property
         def detail(self):
