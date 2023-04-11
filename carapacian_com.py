@@ -539,6 +539,30 @@ class ticketsspa(pom.spa):
             if not self._select:
                 return 'name points, description, created'
 
+        def main(self, 
+            id:str=None, crud:str='retrieve', oncomplete=None,
+            backlogid=None
+        ):
+
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+            frm = self.main['form'].only
+
+            if backlogid:
+                bl = effort.backlog(backlogid)
+
+                inp = pom.input(
+                    type = 'text',
+                    label = 'Backlog',
+                    name = 'backlog'
+                )
+
+                inp.input.value = bl.name
+                inp.input.setattr('data-id', bl.id.hex)
+                inp.input.disabled = True
+
+                frm << inp
+
     class search(pom.page):
         def main(self):
             self.main += dom.p('Search')
