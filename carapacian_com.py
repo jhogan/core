@@ -485,7 +485,6 @@ class ticketsspa(pom.spa):
                 pg.clear()
 
                 pg(oncomplete=self.path)
-
                 
                 # TODO For some reason, calling `pg['table']` causes a
                 # dom.MoveError. Ideally, we would be able to do this.
@@ -506,7 +505,8 @@ class ticketsspa(pom.spa):
     class stories(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(
-                e=effort.backlog_stories, presentation='table', *args, **kwargs
+                e=effort.backlog_stories, presentation='table', 
+                *args, **kwargs
             )
 
         @property

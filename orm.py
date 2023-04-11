@@ -12064,7 +12064,6 @@ class orm:
                     except (DuplicateError, UnsupportedTypeError):
                         pass
 
-
                 rent = rent.orm.super
 
         # Add a <button type="submit">
