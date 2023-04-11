@@ -2808,9 +2808,15 @@ class crud(page):
         self._detail       =  None
         self._form         =  None
         self._oncomplete   =  None
-        self.select        =  None
+        self._select        =  None
 
         super().__init__(name=name, pgs=None, *args, **kwargs)
+
+    @property
+    def select(self):
+        """ XXX
+        """
+        return self._select
 
     @property
     def detail(self):
