@@ -12011,19 +12011,35 @@ class orm:
             return inp
 
         if select:
-            attrs = select.split()
-            maps = self.mappings.all
-            for attr in attrs:
-                for map in maps:
-                    if map.name == col:
-                        try:
-                            frm += create_input(map)
-                        except (DuplicateError, UnsupportedTypeError):
-                            pass
+            def process(e, path):
+                """ XXX
+                """
+                nonlocal frm
+                maps = e.orm.mappings.all
+                if len(path) == 1:
+                    for map in maps:
+                        attr = path[0]
+                        if map.name == attr:
+                            try:
+                                frm += create_input(map)
+                            except DuplicateError:
+                                pass
+                            except UnsupportedTypeError:
+                                pass
+                            else:
+                                break
+                    else:
+                        raise IndexError(
+                            f'Cannot find attribute "{attr}"'
+                        )
+                elif len(path) > 1:
+                    if v := getattr(e, path[0]):
+                        process(e=v, path=path[1:])
 
-                        break
-                else:
-                    raise IndexError(f'Cannot find {attr}')
+            attrs = re.split('\W+', select)
+
+            for attr in attrs:
+                process(e=self.instance, path=attr.split('.'))
         else:
             # The ascendancy loop
             while rent:
