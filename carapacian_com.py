@@ -490,6 +490,19 @@ class ticketsspa(pom.spa):
                 # dom.MoveError. Ideally, we would be able to do this.
                 tbl = pg.main['table'].only
 
+                a = tbl['[rel=create-form]'].only
+                a.href += '&backlogid=' + card.getattr('data-entity-id')
+
+                '''
+                XXX
+                href = www.url(a.href)
+                qs = href.qs
+                qs['backlogid'] = card.getattr('data-entity-id')
+                href.qs = qs
+                a.href = str(href)
+                '''
+
+
                 tbl.orphan()
 
                 card += tbl
