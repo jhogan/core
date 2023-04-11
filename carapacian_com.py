@@ -484,10 +484,6 @@ class ticketsspa(pom.spa):
 
                 pg.clear()
 
-                pg.select = (
-                    'story.name story.description story.points'
-                )
-
                 pg(oncomplete=self.path)
 
                 
@@ -524,6 +520,11 @@ class ticketsspa(pom.spa):
         @property
         def detail(self):
             return self.spa.pages['story']
+
+        @property
+        def select(self):
+            if not self._select:
+                return 'name points, description, created'
 
     class search(pom.page):
         def main(self):
