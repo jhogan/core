@@ -526,6 +526,15 @@ class ticketsspa(pom.spa):
         def detail(self):
             return self.spa.pages['story']
 
+        @property
+        def select(self):
+            if not self._select:
+                return (
+                    'story.name story.points'
+                    'story.description story.created'
+                )
+            return self._select
+
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.story, *args, **kwargs)
