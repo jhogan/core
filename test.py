@@ -2401,8 +2401,8 @@ class orm_(tester.tester):
         self.zero(bgs.brokenrules)
 
         # Give the first and last issue the same name. This shoud break
-        # the declaritive issues.brokenrules property isnec
-        # bugs.brokenrules accesses it.
+        # the declaritive issues.brokenrules property bugs.brokenrules
+        # accesses it.
         bgs.last.name = bgs.first.name
         self.one(bgs.brokenrules)
         self.is_(bgs, bgs.brokenrules.first.entity)

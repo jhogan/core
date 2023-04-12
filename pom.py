@@ -2802,12 +2802,12 @@ class crud(page):
 
         :param: name str: The name of the page.
         """
-        self._entity       =  e
-        self.presentation  =  presentation
-        self._instance     =  None
-        self._detail       =  None
-        self._form         =  None
-        self._oncomplete   =  None
+        self._entity        =  e
+        self.presentation   =  presentation
+        self._instance      =  None
+        self._detail        =  None
+        self._form          =  None
+        self._oncomplete    =  None
         self._select        =  None
         self._onbeforesave  =  None
 
@@ -3169,6 +3169,8 @@ class crud(page):
 
         # Save entity to database
         e.save()
+
+        # TODO Trigger onaftersave
 
         # Get the requested url
         req = www.application.current.request
