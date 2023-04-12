@@ -3256,7 +3256,7 @@ class crud(page):
 
                 card += instrs
 
-    def _oncomplete(self, el, eargs):
+    def complete(self, el, eargs):
         """ Processes the oncomplete query string parameter. Returns
         True if the parameters was found and processed, False otherwise.
 
