@@ -3169,7 +3169,7 @@ class crud(page):
         self.onbeforesave(self, eargs)
 
         # Save entity to database
-        e.save()
+        eargs.entity.save()
 
         # TODO Trigger onaftersave
 
