@@ -3162,7 +3162,8 @@ class crud(page):
             if inp.name == 'id':
                 v = UUID(v)
 
-            setattr(e, inp.name, v)
+            if hasattr(e, inp.name):
+                setattr(e, inp.name, v)
 
         eargs = crud.operationeventargs(e=e, html=eargs.html)
         self.onbeforesave(self, eargs)
