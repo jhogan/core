@@ -538,6 +538,7 @@ class ticketsspa(pom.spa):
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.story, *args, **kwargs)
+            self.onbeforesave += self.self_onbeforesave
 
         @property
         def detail(self):
@@ -571,6 +572,14 @@ class ticketsspa(pom.spa):
                 inp.input.disabled = True
 
                 frm << inp
+
+        def self_onbeforesave(self, src, eargs):
+            st = eargs.entity
+            inp = eargs.html['input[name="story.backlog"]'].only
+            id = inp.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            bl.insert(st)
+            eargs.entity = bl
 
     class search(pom.page):
         def main(self):

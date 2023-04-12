@@ -2809,8 +2809,20 @@ class crud(page):
         self._form         =  None
         self._oncomplete   =  None
         self._select        =  None
+        self._onbeforesave  =  None
 
         super().__init__(name=name, pgs=None, *args, **kwargs)
+
+    @property
+    def onbeforesave(self):
+        if not self._onbeforesave:
+            self._onbeforesave = entities.event()
+
+        return self._onbeforesave
+
+    @onbeforesave.setter
+    def onbeforesave(self, v):
+        self._onbeforesave = v
 
     @property
     def select(self):
@@ -3151,6 +3163,9 @@ class crud(page):
                 v = UUID(v)
 
             setattr(e, inp.name, v)
+
+        eargs = crud.operationeventargs(e=e, html=eargs.html)
+        self.onbeforesave(self, eargs)
 
         # Save entity to database
         e.save()
@@ -3600,4 +3615,14 @@ class crud(page):
         menu += li
 
         return menu
+
+    class operationeventargs(entities.eventargs):
+        """ XXX
+        """
+
+        def __init__(self, e, html):
+            self.entity = e
+            self.html = html
+            
+        
 
