@@ -3134,7 +3134,7 @@ class crud(page):
         e = None
 
         # Get the id from the the id <input>
-        id = inps['[name=id]'].only.value
+        id = frm.getattr('data-entity-id')
 
         if id:
             try:

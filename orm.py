@@ -12069,6 +12069,8 @@ class orm:
         # Add a <button type="submit">
         frm += dom.button('Submit', type='submit')
 
+        frm.setattr('data-entity-id', inst.id.hex)
+
         return frm
 
     @property

@@ -564,11 +564,12 @@ class ticketsspa(pom.spa):
                 inp = pom.input(
                     type = 'text',
                     label = 'Backlog',
-                    name = 'backlog'
+                    name = 'story.backlog'
                 )
 
+                inp.setattr('data-entity-attribute', 'backlog')
                 inp.input.value = bl.name
-                inp.input.setattr('data-id', bl.id.hex)
+                inp.input.setattr('data-entity-id', bl.id.hex)
                 inp.input.disabled = True
 
                 frm << inp
