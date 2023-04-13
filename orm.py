@@ -12156,14 +12156,15 @@ class orm:
 
         return div
 
-    @property
-    def table(self):
+    def gettable(self, select=None):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
         """
         import dom
 
-        tbl    =  dom.table()
+        # XXX Comment
+
+        tbl = dom.table()
 
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
@@ -12176,35 +12177,16 @@ class orm:
         tbl    +=  thead
         thead  +=  tr
 
-        rent = self.entity
+        maps = self.mappings.select(select=select)
 
-        names = list()
-        # The inheritance ascension loop
-        while rent:
-            
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                name = map.name
+        for map in maps:
+            tr += dom.th(map.name)
 
-                if not isinstance(map, fieldmapping):
-                    continue
+        tbody = dom.tbody()
+        tbl += tbody
 
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
-
-                if name in ('createdat', 'updatedat'):
-                    continue
-
-                if name in names:
-                    continue
-
-                names.append(name)
-
-
-                tr += dom.th(name)
-
-            # Ascend
-            rent = rent.orm.super
+        for e in self.instance:
+            tbody += e.orm.tr
 
         tbody = dom.tbody()
         tbl += tbody
@@ -12215,9 +12197,14 @@ class orm:
         return tbl
 
     @property
-    def tr(self):
+    def table(self):
+        return self.gettable()
+
+    def gettr(self, select=None):
         """ Returns a table row (dom.tr) representation of this `orm`'s
         entity.
+        
+        XXX Update comment
         """
         import dom
         inst = self.instance
@@ -12230,35 +12217,19 @@ class orm:
 
         rent = self.entity
         names = list()
-        # The inheritance ascension loop
-        while rent:
-            
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                name = map.name
 
-                if not isinstance(map, fieldmapping):
-                    continue
-
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
-
-                if name in ('createdat', 'updatedat'):
-                    continue
-
-                if name in names:
-                    continue
-
-                names.append(name)
-
-                td = dom.td(getattr(self.instance, name))
-                td.setattr('data-entity-attribute', name)
-                tr += td
-
-            # Ascend
-            rent = rent.orm.super
+        maps = self.mappings.select(select=select)
+        for map in maps:
+            name = map.name
+            td = dom.td(getattr(self.instance, name))
+            td.setattr('data-entity-attribute', name)
+            tr += td
 
         return tr
+
+    @property
+    def tr(self):
+        return self.gettr()
 
     @property
     def card(self):
