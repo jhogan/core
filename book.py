@@ -7874,7 +7874,7 @@ with book('Hacking Carapacian Core'):
 
         class book(orm.entity):
           # Add an authors constituent
-          author = authors
+          authors = authors
 
           name = str
           pages = int
@@ -7918,12 +7918,12 @@ with book('Hacking Carapacian Core'):
         As you can see in the above code, adding an invalid constituent
         (`author`) to the `book` caused the book to be invalid. This
         recursion is indefinate, so no matter how deep the tree of
-        constiuents we get, there validity will impact the `book` object
+        constiuents runs, their validity will impact the `book` object
         in the same way.
 
         In addition, `composite` (parent) entity objects are also
         ascended to discover their broken rules. For example, we could
-        have writte the above code to create a valid `author` then assign
+        have written the above code to create a valid `author` then assign
         it an invalid `book`
       ''')
 
@@ -7954,6 +7954,75 @@ with book('Hacking Carapacian Core'):
         # Persisting the author to the database fails because of the
         # broken rule.
         expect(entities.BrokenRulesError, lambda: a.save())
+
+      print('''
+        As you will remember from prior sections of this book, the ORM
+        tries to save any constiuents or composites a given entity has.
+        Thus, in order to determine whether or not a given entity is
+        valid, all constiuents and composite are interrogated to
+        determine an entity's validity &mdash; which is to say: its
+        ability to be saved.
+
+        The ORM's built in ability to provide validation logic based on
+        the metadata of the entity class's attributes is convenient for
+        many, if not most, validation needs. However, there are times
+        when you will want the full expressiveness of Python to validate
+        a given attribute. This is where **imperative validation** comes
+        in. With imperative validation, we can write our own validation
+        rules by addinga a `brokenrules` property to our entity classes.
+
+        Let's say we want to add a `genre` attribute to the book class
+        we defined above. Our application only supports a certain set of
+        genres such as fiction, non-fiction, science fiction, etc. We
+        want to make sure that a book can't be saved unless it its genre
+        is within a given set. Additionally, we want to make sure that,
+        before a book can be saved, it contains at list one `author` in
+        its collection. Let's write the business logic to support these
+        business rules.
+      ''')
+
+      with listing('Getting broken rules from constituents'):
+        class book(orm.entity):
+          # Add a genre attribute
+          genre = str
+
+          # Keep the authors constinuent
+          authors = authors
+          name = str
+          pages = int
+
+          @property
+          def brokenrules(self):
+            brs = entities.brokenrules()
+
+            ''' genre '''
+
+            genres= (
+              'Fiction',  'Non-fiction',  'Science     Fiction',
+              'Mystery',  'Romance',      'Thriller',  'Horror',
+            )
+
+            if genre not in genres:
+              brs += entities.brokenrule(
+                  f'Genre must be one of the following: {genre}'
+                  'genre', 'valid', self,
+              )
+
+            ''' authors '''
+
+            if not self.author.ispopulated:
+              brs += entities.brokenrule(
+                  'A book must have at least one author'
+                  'authors', 'fits', self
+                )
+
+        return brs
+
+
+
+
+        b = book(name=194
+
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
