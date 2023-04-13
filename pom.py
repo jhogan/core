@@ -3598,14 +3598,14 @@ class crud(page):
         # Create the menu to return
         menu = dom.menu()
 
+        # Get entity's UUID
+        id = td.parent.getattr('data-entity-id')
+
         # If there is a detail page...
         if det := self.detail:
 
             # Create an "Edit" link
             li = dom.li()
-
-            # Get entity's UUID
-            id = td.parent.getattr('data-entity-id')
 
             # Create a path string to the details page
             path = f'{det.path}?id={id}&crud=update'
@@ -3618,7 +3618,8 @@ class crud(page):
 
         # Create the Quick Edit link
         li = dom.li()
-        a = dom.a('Quick Edit', href=self.path, rel='edit preview')
+        path = f'{self.path}?id={id}&crud=update'
+        a = dom.a('Quick Edit', href=path, rel='edit preview')
 
         li += a
         menu += li
