@@ -6087,6 +6087,71 @@ class mappings(entitiesmod.entities):
 
         return self._supermappings
             
+    def select(self, select=None):
+        """ XXX
+        """
+        # XXX Raise on duplicate columnns in `select`
+        # XXX Test
+        maps = mappings()
+
+        if select:
+            def process(e, path):
+                """ XXX
+                """
+                nonlocal maps
+                if len(path) == 1:
+                    for map in e.orm.mappings.all:
+                        if map.name == path[0]:
+                            maps += map
+                            break
+                    else:
+                        raise IndexError(
+                            f'Cannot find attribute "{attr}"'
+                        )
+                elif len(path) > 1:
+                    try:
+                        map = e.orm.mappings[path[0]]
+                    except IndexError:
+                        raise IndexError(
+                            f'Cannot find attribute "{path[0]}"'
+                        )
+                    else:
+                        process(e=map.entity, path=path[1:])
+
+            attrs = re.split(r'[,\s]+', select)
+
+            for attr in attrs:
+                process(e=self.orm.entity, path=attr.split('.'))
+        else:
+            # Get a referece to self's class. 
+            rent = self.orm.entity
+
+            # The ascendancy loop
+            while rent:
+                # For each map ...
+                for map in rent.orm.mappings:
+                    if not isinstance(map, fieldmapping):
+                        continue
+
+                    if isinstance(map, foreignkeyfieldmapping):
+                        continue
+
+                    # Skip fields the user should not be responsible for
+                    if map.name == 'createdat':
+                        continue
+
+                    # TODO We will want to include this field but ensure
+                    # the element`s `hidden` attribute is set. If the
+                    # browser sends the updatedat field, the
+                    # serever-side logic can guard against dirty reads.
+                    if map.name == 'updatedat':
+                        continue
+
+                    maps += map
+
+                rent = rent.orm.super
+
+        return maps
     @property
     def orm(self):
         """ Returns the ``orm`` instance that this mappings collection
