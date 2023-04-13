@@ -3395,7 +3395,13 @@ class crud(page):
             es = self.instance
 
             # Get the collections 'orm.table' or 'orm.cards'
-            el = getattr(es, 'orm.' + pres)
+
+            if pres == 'cards':
+                el = es.orm.cards
+            elif pres == 'table':
+                f = getattr(es, 'orm.get' + pres)
+                el = f(select=self.select)
+
 
             # Get the <div>s or <td>s that correespond to entity
             # attributes within the element
