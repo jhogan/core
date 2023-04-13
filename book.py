@@ -7981,7 +7981,7 @@ with book('Hacking Carapacian Core'):
         business rules.
       ''')
 
-      with listing('Getting broken rules from constituents'):
+      with listing('Authoring imperative business logic'):
         class book(orm.entity):
           # Add a genre attribute
           genre = str
@@ -7993,10 +7993,13 @@ with book('Hacking Carapacian Core'):
 
           @property
           def brokenrules(self):
+            """ Returns a collection of broken rules for this book.
+            """
             brs = entities.brokenrules()
 
             ''' genre '''
 
+            # A tuple of vaild genres
             genres= (
               'Fiction',  'Non-fiction',  'Science     Fiction',
               'Mystery',  'Romance',      'Thriller',  'Horror',
@@ -8005,7 +8008,9 @@ with book('Hacking Carapacian Core'):
             if genre not in genres:
               brs += entities.brokenrule(
                   f'Genre must be one of the following: {genre}'
-                  'genre', 'valid', self,
+                  'valid',  # The rule broken
+                  'genre',  # The property that breaks the rule
+                  self,     # The entity that breaks the rule
               )
 
             ''' authors '''
@@ -8016,13 +8021,38 @@ with book('Hacking Carapacian Core'):
                   'authors', 'fits', self
                 )
 
-        return brs
+            return brs
 
+        # Create the book
+      b = book(pages=328)
+      false(b.isvalid)
 
+      brs = b.brokenrules
+      four(brs)
 
+      br = brs.first
+      eq('Genre is not in the list', br.message)
+      eq('genre', br.property)
+      eq('valid', br.type)
+      is_(b, br.entity)
 
-        b = book(name=194
+      br = brs.second
+      eq('A book must have at least one author', br.message)
+      eq('authors', br.property)
+      eq('fits', br.type)
+      is_(b, br.entity)
 
+      br = brs.third
+      eq('genre is too short', br.message)
+      eq('genre', br.property)
+      eq('fits', br.type)
+      is_(b, br.entity)
+
+      br = brs.fourth
+      eq('name is too short', br.message)
+      eq('name', br.property)
+      eq('fits', br.type)
+      is_(b, br.entity)
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
