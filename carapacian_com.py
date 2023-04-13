@@ -479,6 +479,12 @@ class ticketsspa(pom.spa):
                 id = card.getattr('data-entity-id')
                 id = UUID(id)
 
+                for bl in self.instance:
+                    if bl.id == id:
+                        break
+                else:
+                    raise ValueError('Cannot find backlog')
+
                 pg = self.spa.pages['stories']
                 pg.instance = es[id].backlog_stories
 
@@ -489,6 +495,14 @@ class ticketsspa(pom.spa):
                 # TODO For some reason, calling `pg['table']` causes a
                 # dom.MoveError. Ideally, we would be able to do this.
                 tbl = pg.main['table'].only
+
+                # Remove Quick Edit. Quick Edits are designed to use the
+                # current page (self), but since these Quick Edits are
+                # from a differnt page (pg), their href confuses the
+                # JavaScript.
+                as_ = tbl['menu a[rel~=edit][rel~=preview]']
+                for a in as_:
+                    a.closest('li').remove()
 
                 a = tbl['[rel=create-form]'].only
                 a.href += '&backlogid=' + card.getattr('data-entity-id')
@@ -501,6 +515,29 @@ class ticketsspa(pom.spa):
                 href.qs = qs
                 a.href = str(href)
                 '''
+
+                as_ = tbl['a[rel~=edit]']
+
+
+                for a in as_:
+                    href = www.url(f'http://example.com/{a.href}')
+                    qs = href.qs
+                    
+                    try:
+                        id = UUID(qs['id'][0])
+                    except KeyError:
+                        pass
+                    else:
+                        for bs in bl.backlog_stories:
+                            if bs.id == id:
+                                qs['id'] = bs.story.id
+                                qs['backlogid'] = bl.id.hex
+                                qs['oncomplete'] = self.path
+                                href.qs = qs
+                                a.href = href.path + '?' + href.query
+                                break
+                        else:
+                            raise ValueError('Cannot find story')
 
 
                 tbl.orphan()
@@ -530,7 +567,7 @@ class ticketsspa(pom.spa):
         def select(self):
             if not self._select:
                 return (
-                    'story.name story.points'
+                    'story.name story.points '
                     'story.description story.created'
                 )
             return self._select
@@ -547,7 +584,7 @@ class ticketsspa(pom.spa):
         @property
         def select(self):
             if not self._select:
-                return 'name points, description, created'
+                return 'name points description created'
 
         def main(self, 
             id:str=None, crud:str='retrieve', oncomplete=None,
