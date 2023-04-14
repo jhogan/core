@@ -3165,8 +3165,8 @@ class crud(page):
             if hasattr(e, inp.name):
                 setattr(e, inp.name, v)
 
-        eargs = crud.operationeventargs(e=e, html=eargs.html)
-        self.onbeforesave(self, eargs)
+        eargs1 = crud.operationeventargs(e=e, html=eargs.html)
+        self.onbeforesave(self, eargs1)
 
         # Save entity to database
         (eargs1.stead or e).save()
