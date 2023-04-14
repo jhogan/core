@@ -3409,7 +3409,7 @@ class crud(page):
                 # For each <td> in the <table>, create a coresponding
                 # <menu> to contain the "Edit", "Quick Edit", etc.
                 # links. Add the <menu> to the <td>
-                for td in els:
+                for td in el['td:first-child']:
                     menu = self._menu(td)
                     # Get the "Quick Edit" anchor (<a rel="edit preview">)
                     a = menu['a[rel~=edit][rel~=preview]'].only
