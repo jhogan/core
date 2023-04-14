@@ -892,6 +892,10 @@ article.card, form {
     gap: 1em 0em;
 }
 
+article.card table{
+    grid-column: 1 / span 2;
+}
+
 form {
     grid-template-columns: repeat(1, 30em);
 }
