@@ -617,7 +617,7 @@ class ticketsspa(pom.spa):
             id = inp.getattr('data-entity-id')
             bl = effort.backlog(id)
             bl.insert(st)
-            eargs.entity = bl
+            eargs.stead = bl
 
     class search(pom.page):
         def main(self):

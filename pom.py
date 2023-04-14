@@ -3169,7 +3169,7 @@ class crud(page):
         self.onbeforesave(self, eargs)
 
         # Save entity to database
-        eargs.entity.save()
+        (eargs1.stead or e).save()
 
         # TODO Trigger onaftersave
 
@@ -3633,6 +3633,7 @@ class crud(page):
         def __init__(self, e, html):
             self.entity = e
             self.html = html
+            self.stead = None
             
         
 
