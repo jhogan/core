@@ -6087,7 +6087,7 @@ class mappings(entitiesmod.entities):
 
         return self._supermappings
             
-    def select(self, select=None):
+    def select(self, select=None, f=None):
         """ XXX
         """
         # XXX Raise on duplicate columnns in `select`
@@ -6095,7 +6095,7 @@ class mappings(entitiesmod.entities):
         maps = mappings()
 
         if select:
-            def process(e, path):
+            def process(e, path, obj):
                 """ XXX
                 """
                 nonlocal maps
@@ -6103,6 +6103,9 @@ class mappings(entitiesmod.entities):
                     for map in e.orm.mappings.all:
                         if map.name == path[0]:
                             maps += map
+                            if f:
+                                f(e=obj, name=map.name)
+
                             break
                     else:
                         raise IndexError(
@@ -6116,12 +6119,20 @@ class mappings(entitiesmod.entities):
                             f'Cannot find attribute "{path[0]}"'
                         )
                     else:
-                        process(e=map.entity, path=path[1:])
+                        if f:
+                            obj = getattr(obj, map.name)
+                        else:
+                            obj = None
+                        process(e=map.entity, obj=obj, path=path[1:])
 
             attrs = re.split(r'[,\s]+', select)
 
             for attr in attrs:
-                process(e=self.orm.entity, path=attr.split('.'))
+                process(
+                    e     =  self.orm.entity,
+                    path  =  attr.split('.'),
+                    obj   =  self.orm.instance
+                )
         else:
             # Get a referece to self's class. 
             rent = self.orm.entity
