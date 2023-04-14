@@ -7963,7 +7963,7 @@ with book('Hacking Carapacian Core'):
         determine an entity's validity &mdash; which is to say: its
         ability to be saved.
 
-        The ORM's built in ability to provide validation logic based on
+        The ORM's built-in ability to provide validation logic based on
         the metadata of the entity class's attributes is convenient for
         many, if not most, validation needs. However, there are times
         when you will want the full expressiveness of Python to validate
@@ -7973,11 +7973,11 @@ with book('Hacking Carapacian Core'):
 
         Let's say we want to add a `genre` attribute to the book class
         we defined above. Our application only supports a certain set of
-        genres such as fiction, non-fiction, science fiction, etc. We
-        want to make sure that a book can't be saved unless it its genre
-        is within a given set. Additionally, we want to make sure that,
-        before a book can be saved, it contains at list one `author` in
-        its collection. Let's write the business logic to support these
+        genres such as mystery, romance, thriller, etc. We want to make
+        sure that a book can't be saved unless it its genre is within a
+        given set. Additionally, we want to make sure that, before a
+        book can be saved, it contains at list one `author` in its
+        collection. Let's write the business logic to support these
         business rules.
       ''')
 
@@ -7986,10 +7986,10 @@ with book('Hacking Carapacian Core'):
           # Add a genre attribute
           genre = str
 
-          # Keep the authors constinuent
-          authors = authors
-          name = str
-          pages = int
+          # Keep the authors constituent
+          authors  =  authors
+          name     =  str
+          pages    =  int
 
           @property
           def brokenrules(self):
@@ -8001,58 +8001,83 @@ with book('Hacking Carapacian Core'):
 
             # A tuple of vaild genres
             genres= (
-              'Fiction',  'Non-fiction',  'Science     Fiction',
-              'Mystery',  'Romance',      'Thriller',  'Horror',
+              'Mystery', 'Romance', 'Thriller',  'Horror',
             )
 
-            if genre not in genres:
+            if self.genre not in genres:
               brs += entities.brokenrule(
-                  f'Genre must be one of the following: {genre}'
-                  'valid',  # The rule broken
-                  'genre',  # The property that breaks the rule
-                  self,     # The entity that breaks the rule
+                  msg  = 'Genre is not in the list',
+                  prop = 'genre',  # The rule broken
+                  type = 'valid',  # The property that breaks the rule
+                  e    =  self,    # The entity that breaks the rule
               )
 
             ''' authors '''
 
-            if not self.author.ispopulated:
+            if self.authors.isempty:
               brs += entities.brokenrule(
-                  'A book must have at least one author'
-                  'authors', 'fits', self
+                  msg  = 'A book must have at least one author',
+                  prop = 'authors', 
+                  type = 'fits', 
+                  e    = self
                 )
 
             return brs
 
-        # Create the book
-      b = book(pages=328)
-      false(b.isvalid)
+          # Create a book with an invalid genre. Also, we deliberately
+          # leave the name attribute unset.
+          b = book(genre='sci-fi', pages=328)
+          false(b.isvalid)
 
-      brs = b.brokenrules
-      four(brs)
+          brs = b.brokenrules
+          three(brs)
 
-      br = brs.first
-      eq('Genre is not in the list', br.message)
-      eq('genre', br.property)
-      eq('valid', br.type)
-      is_(b, br.entity)
+          br = brs.first
+          eq('Genre is not in the list', br.message)
+          eq('genre', br.property)
+          eq('valid', br.type)
+          is_(b, br.entity)
 
-      br = brs.second
-      eq('A book must have at least one author', br.message)
-      eq('authors', br.property)
-      eq('fits', br.type)
-      is_(b, br.entity)
+          br = brs.second
+          eq('A book must have at least one author', br.message)
+          eq('authors', br.property)
+          eq('fits', br.type)
+          is_(b, br.entity)
 
-      br = brs.third
-      eq('genre is too short', br.message)
-      eq('genre', br.property)
-      eq('fits', br.type)
-      is_(b, br.entity)
+          br = brs.third
+          eq('name is too short', br.message)
+          eq('name', br.property)
+          eq('fits', br.type)
+          is_(b, br.entity)
 
-      br = brs.fourth
-      eq('name is too short', br.message)
-      eq('name', br.property)
-      eq('fits', br.type)
-      is_(b, br.entity)
+        print('''
+          Above, we have create a `brokenrules` property for the `book`
+          class to constrain the list of possible genre's the book can
+          have. We add another constaint that insists there must be at
+          least one author.
+
+          We break both of these imperative rules. Additionally, we
+          leave the `name` attribute unset. This was done to illustrate
+          that the imperative rules that are applied automatically are
+          included in the output of the `brokenrules` property. This may
+          seem impossible at first since there is no explicit logic in the
+          `brokenrules` property that would obtain the declarative broken
+          rules. However, behind the scenes, the ORM is providing this
+          functionality.
+
+          This brings us to an important topic about `brokenrules`
+          properties: they are fully self-contained. You start by
+          instantiating a `brokenrules` collection class, conditionally
+          add `brokenrule` objects to that collection, then return the
+          collection. There is no need to call the base `brokenrules`
+          property and adding it to the `brokenrules` collection using
+          an idiom such as:
+
+            brs += super().brokenrules
+
+          Doing so would would lead to results that you don't want so be
+          sure to never do this. 
+        ''')
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
