@@ -12197,13 +12197,7 @@ class orm:
         tbl += tbody
 
         for e in self.instance:
-            tbody += e.orm.tr
-
-        tbody = dom.tbody()
-        tbl += tbody
-
-        for e in self.instance:
-            tbody += e.orm.tr
+            tbody += e.orm.gettr(select=select)
 
         return tbl
 
@@ -12229,12 +12223,14 @@ class orm:
         rent = self.entity
         names = list()
 
-        maps = self.mappings.select(select=select)
-        for map in maps:
-            name = map.name
-            td = dom.td(getattr(self.instance, name))
+        def f(e, name):
+            nonlocal tr
+            v = getattr(e, name)
+            td = dom.td(v)
             td.setattr('data-entity-attribute', name)
             tr += td
+            
+        maps = self.mappings.select(select=select, f=f)
 
         return tr
 
