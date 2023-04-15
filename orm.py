@@ -6158,6 +6158,9 @@ class mappings(entitiesmod.entities):
                     if map.name == 'updatedat':
                         continue
 
+                    if f:
+                        f(e=self.orm.instance, name=map.name)
+
                     maps += map
 
                 rent = rent.orm.super
