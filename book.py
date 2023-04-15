@@ -8053,17 +8053,19 @@ with book('Hacking Carapacian Core'):
         print('''
           Above, we have create a `brokenrules` property for the `book`
           class to constrain the list of possible genre's the book can
-          have. We add another constaint that insists there must be at
-          least one author.
+          have. We added another constraint that insists a `book` must
+          have at least one author.
 
-          We break both of these imperative rules. Additionally, we
-          leave the `name` attribute unset. This was done to illustrate
-          that the imperative rules that are applied automatically are
-          included in the output of the `brokenrules` property. This may
-          seem impossible at first since there is no explicit logic in the
-          `brokenrules` property that would obtain the declarative broken
-          rules. However, behind the scenes, the ORM is providing this
-          functionality.
+          We proceed to create a `book` which break both of these
+          rules. Additionally, we leave the `name` attribute
+          unset. This was done to illustrate that the declarative rules,
+          which are applied automatically, are included in the output of
+          the `brokenrules` property. This may seem impossible at first
+          since there is no explicit logic in the `brokenrules` property
+          that would obtain the declarative broken rules. However,
+          behind the scenes, the ORM is providing this functionality,
+          and thus both the imperative and declarative rules are
+          returned by the property.
 
           This brings us to an important topic about `brokenrules`
           properties: they are fully self-contained. You start by
@@ -8075,9 +8077,76 @@ with book('Hacking Carapacian Core'):
 
             brs += super().brokenrules
 
-          Doing so would would lead to results that you don't want so be
-          sure to never do this. 
+          Doing so would lead to results that you don't want so be sure
+          to never do this. 
         ''')
+
+      with listing('Authoring imperative business logic'):
+        class audiobooks(books):
+            """ A collection of `audiobook` entity objects.
+            """
+
+        class audiobook(book):
+            """ Represents an audiobook.
+            """
+            # The file format of the audio book
+            format = str
+
+            # Duration of audiobook in minutes
+            length = int
+
+            @property
+            def brokenrules(self):
+              brs = entities.brokenrules()
+              # Valid file formats
+              formats = 'mp3', 'aax', 'aac', 'ogg'
+
+              if self.format not in formats:
+                brs += entities.brokenrule(
+                    msg  = f'{self.format} is invalid',
+                    prop = 'format', 
+                    type = 'valid', 
+                    e    = self
+                  )
+
+              return brs
+            # Create a broken audio book with an invalid format, genre and
+            # omitted name. 
+            ab = audiobook(format='wma', genre='sci-fi', length=300)
+            false(ab.isvalid)
+
+            brs = ab.brokenrules
+            four(brs)
+
+            # The first broken rule comes from the audiobook subentity
+            br = brs.first
+            eq('wma is invalid', br.message)
+            eq('format', br.property)
+            eq('valid', br.type)
+            is_(ab, br.entity)
+
+            # The second broken rules come from the audio book entity
+            br = brs.second
+            eq('Genre is not in the list', br.message)
+            eq('genre', br.property)
+            eq('valid', br.type)
+
+            # Notice that the entity reference by the remaining broken rules is
+            # the superentity of the audio book, i.e., its `book`.
+            is_(ab.orm.super, br.entity)
+
+            br = brs.third
+            eq('A book must have at least one author', br.message)
+            eq('authors', br.property)
+            eq('fits', br.type)
+            is_(ab.orm.super, br.entity)
+
+            br = brs.fourth
+            eq('name is too short', br.message)
+            eq('name', br.property)
+            eq('fits', br.type)
+            is_(ab.orm.super, br.entity)
+
 
     with section('Sorting'):
       # Go over the nested sorting capabilities of
