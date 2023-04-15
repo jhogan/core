@@ -15044,6 +15044,123 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
         self.eq(getattr(art, map.name), div['span'].text)
 
+    def it_calls_gettable(self):
+        isss = issues()
+
+        ''' Default call '''
+        n = randint(1, 10)
+        for i in range(n):
+            isss += issue.getvalid()
+
+        # orm.table and orm.gettable() should be the same
+        for getter in ('table', 'gettable'):
+            if getter == 'table':
+                tbl = isss.orm.table
+            elif getter == 'gettable':
+                tbl = isss.orm.gettable()
+            else:
+                assert False
+
+            attrs = ['id', 'name', 'assignee', 'raiseAttributeError']
+            ths = tbl['thead tr th']
+            self.eq(attrs, ths.pluck('text'))
+
+            trs = tbl['tbody tr']
+            self.count(n, tbl['tbody tr'])
+
+            for iss, tr in zip(isss, trs):
+                id = tr.getattr('data-entity-id')
+                self.eq(iss.id, UUID(id))
+
+                for td in tr['td']:
+                    attr = td.getattr('data-entity-attribute')
+                    v = td.text
+                    if attr == 'id':
+                        v = UUID(v)
+
+                    if v == '':
+                        v = None
+                        
+                    self.eq(getattr(iss, attr), v, attr)
+        
+        ''' Use select '''
+        isss = issues()
+
+        n = randint(1, 10)
+        for i in range(n):
+            isss += issue.getvalid()
+
+        # Columns in selects can be delaminated using a comma,
+        # whitespace or both
+        selects = (
+            'name, assignee'
+            'name assignee'
+            'name\t  assignee'
+        )
+
+        for select in selects:
+            tbl = isss.orm.gettable('name, assignee')
+            ths = tbl['thead tr th']
+
+            attrs = ['name', 'assignee']
+            ths = tbl['thead tr th']
+            self.eq(attrs, ths.pluck('text'))
+
+            trs = tbl['tbody tr']
+            self.count(n, tbl['tbody tr'])
+
+            for iss, tr in zip(isss, trs):
+                id = tr.getattr('data-entity-id')
+                self.eq(iss.id, UUID(id))
+
+                tds = tr['td']
+                self.two(tds)
+
+                self.eq(
+                    'name', 
+                    tds.first.getattr('data-entity-attribute')
+                )
+
+                self.eq(
+                    'assignee', 
+                    tds.second.getattr('data-entity-attribute')
+                )
+
+                self.eq(iss.name, tds.first.text)
+                self.eq(iss.assignee, tds.second.text)
+
+        ''' Use dot notation (i.e., 'artist.name', etc.) '''
+
+        art = artist.getvalid()
+        for i in range(10):
+            art.presentations += presentation.getvalid()
+
+        select = 'name description artist.firstname artist.lastname'
+        tbl = art.presentations.orm.gettable(select=select)
+
+        trs = tbl['tbody tr']
+        self.count(art.presentations.count, trs)
+        self.four(tbl['thead th'])
+
+        for tr, pres in zip(trs, art.presentations):
+            id = tr.getattr('data-entity-id')
+            self.eq(pres.id, UUID(id))
+
+            tds = tr['td']
+            self.four(tds)
+
+            for col, td in zip(select.split(), tds):
+                col = col.rpartition('artist.')[-1]
+                self.eq(col, td.getattr('data-entity-attribute'))
+
+            self.eq(pres.name, tds.first.text)
+            self.eq(pres.description, tds.second.text)
+            self.eq(pres.artist.firstname, tds.third.text)
+            self.eq(pres.artist.lastname, tds.fourth.text)
+
+
+
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
