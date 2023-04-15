@@ -30,7 +30,7 @@ from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
-from uuid import uuid4
+from uuid import uuid4, UUID
 import account
 import asset
 import auth

@@ -12173,6 +12173,8 @@ class orm:
     def gettable(self, select=None):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
+
+        # XXX Update comments
         """
         import dom
 
@@ -12206,6 +12208,8 @@ class orm:
 
     @property
     def table(self):
+        """ XXX
+        """
         return self.gettable()
 
     def gettr(self, select=None):
