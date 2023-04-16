@@ -565,8 +565,7 @@ class ticketsspa(pom.spa):
         def select(self):
             if not self._select:
                 return (
-                    'story.name story.points '
-                    'story.description story.created'
+                    'story.id story.name story.points story.created'
                 )
             return self._select
 
