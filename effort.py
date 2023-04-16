@@ -89,13 +89,13 @@ class backlog_stories(orm.associations):
     Note that this is part of the Agile object model extention to the
     original UDM.
     """
-    def _reordinate(self):
-        """ Ensure that the ordinal values of each entry in the
+    def _rerank(self):
+        """ Ensure that the rank values of each entry in the
         collection are sequential. Used to restore the order of the
         elements after a removal. 
         """
-        for i, bs in self.sorted('ordinal').enumerate():
-            bs.ordinal = i
+        for i, bs in self.sorted('rank').enumerate():
+            bs.rank = i
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -868,14 +868,14 @@ class backlog(orm.entity):
     span         =  datespan
     goal         =  str
 
-    def insert(self, ord, st=None):
+    def insert(self, rank, st=None):
         """ Puts the story `st` into this `backlog`.
 
         Note that this operation is transient. You will need to call the
         `save()` method on this `backlog` in order to persist the changes
         to the database.
 
-        The `ord` parameter contains the rank the story should have in
+        The `rank` parameter contains the rank the story should have in
         the backlog. For example, the following creates a backlog and
         a story and inserts the story into the backlog at index 3:
             
@@ -884,7 +884,7 @@ class backlog(orm.entity):
             bl.insert(3, st)
 
         The method can be called with just the `st` argument and no
-        `ord` argument. In this case, `ord` defaults to 0.
+        `rank` argument. In this case, `rank` defaults to 0.
 
             # Insert at position 0
             bl.insert(st)
@@ -904,7 +904,7 @@ class backlog(orm.entity):
         Note that `insert` should not be used to move a story from one
         backlog to another. Use the `move` method for that.
 
-        :param: ord int: The position in the backlog to put the story.
+        :param: rank int: The position in the backlog to put the story.
         If the story already exists in the backlog, this parameter can
         change the position.
 
@@ -913,15 +913,15 @@ class backlog(orm.entity):
 
         # Implement the single-argument behavior
         if not st:
-            st = ord
-            # Recurse using a default ord of 0
-            return self.insert(ord=0, st=st)
+            st = rank
+            # Recurse using a default rank of 0
+            return self.insert(rank=0, st=st)
 
         # Get this backlogs collection of `backlog_stories 
         bss = self.backlog_stories
 
-        # Sort by ordinal
-        bss.sort('ordinal')
+        # Sort by rank
+        bss.sort('rank')
 
         # If the story exists in the collection, we are doing a
         # replacement operation:
@@ -936,19 +936,19 @@ class backlog(orm.entity):
             if replacing:
                 if bs.story.id == st.id:
                     for bs1 in bss:
-                        if ord == bs1.ordinal:
+                        if rank == bs1.rank:
 
-                            # Replace ordinal values
-                            bs1.ordinal, bs.ordinal = bs.ordinal, ord
+                            # Replace rank values
+                            bs1.rank, bs.rank = bs.rank, rank
                             break
             elif adding:
-                # Increment all ordinals greater than or equal to ord
-                if bs.ordinal >= ord:
-                    bs.ordinal += 1
+                # Increment all rank greater than or equal to rank
+                if bs.rank >= rank:
+                    bs.rank += 1
 
-        # Add to the collection at `ord`
+        # Add to the collection at `rank`
         if adding:
-            bss += backlog_story(ordinal=ord, story=st)
+            bss += backlog_story(rank=rank, story=st)
 
     def remove(self, st):
         """ Remove the story from this backlog. Returns a collection of
@@ -958,9 +958,9 @@ class backlog(orm.entity):
         """
         rms = stories()
 
-        # Get backlog_stories and sort by ordinal
+        # Get backlog_stories and sort by rank
         bss = self.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         # For each backlog_story
         for bs in bss:
@@ -969,8 +969,9 @@ class backlog(orm.entity):
                 # Remove it
                 bss.remove(bs)
                 rms += bs.story
+                break
 
-        bss._reordinate()
+        bss._rerank()
 
         return rms
 
@@ -1037,7 +1038,7 @@ class story(requirement):
     `backlogs` through the `backlog_story` association. Note, however,
     there is a one-to-many relationship between `backlogs` and
     `stories`. The associations entity is necessary for ranking the
-    stories within the `backlog` through the association's `ordinal`
+    stories within the `backlog` through the association's `rank`
     attribute.
 
     Stories in Agile
@@ -1125,12 +1126,11 @@ class backlog_story(orm.association):
     # Th backlog
     backlog = backlog
 
-    # XXX Rename to `rank`
-    # The ranking of the `story` within the `backlog`. An ordinal of 0
-    # ranks the story as the lowest in the backlog, an ordinal of 1
+    # The ranking of the `story` within the `backlog`. A rank of 0
+    # ranks the story as the lowest in the backlog, a rank of 1
     # ranks the story one higher than the lowest in the backlog, and so
     # on. 
-    ordinal = int
+    rank = int
 
     # A collection of statuses that a story goes through within a
     # backlog. For example, in a sprint backlog, a story would go
