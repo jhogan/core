@@ -485,7 +485,7 @@ class ticketsspa(pom.spa):
                 else:
                     raise ValueError('Cannot find backlog')
 
-                pg = self.spa.pages['stories']
+                pg = self.spa.pages['backlog-stories']
                 pg.instance = es[id].backlog_stories
 
                 pg.clear()
@@ -552,7 +552,7 @@ class ticketsspa(pom.spa):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
 
-    class stories(pom.crud):
+    class backlog_stories(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(
                 e=effort.backlog_stories, presentation='table', 
@@ -632,7 +632,7 @@ class ticketsspa(pom.spa):
         self.pages += ticketsspa.backlogs()
         self.pages += ticketsspa.backlog()
 
-        self.pages += ticketsspa.stories()
+        self.pages += ticketsspa.backlog_stories()
         self.pages += ticketsspa.story()
 
         self.pages += ticketsspa.ticket()
