@@ -6090,8 +6090,6 @@ class mappings(entitiesmod.entities):
     def select(self, select=None, f=None):
         """ XXX
         """
-        # XXX Raise on duplicate columnns in `select`
-        # XXX Test
         maps = mappings()
 
         if select:
@@ -12274,6 +12272,8 @@ class orm:
             </article>
 
         `card` is the read-only counterpart to the orm.form attribute.
+
+        XXX Recomment
         """
         import dom, pom
 

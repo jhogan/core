@@ -518,7 +518,6 @@ class ticketsspa(pom.spa):
 
                 as_ = tbl['a[rel~=edit]']
 
-
                 for a in as_:
                     href = www.url(f'http://example.com/{a.href}')
                     qs = href.qs
@@ -538,7 +537,6 @@ class ticketsspa(pom.spa):
                                 break
                         else:
                             raise ValueError('Cannot find story')
-
 
                 tbl.orphan()
 
@@ -577,15 +575,6 @@ class ticketsspa(pom.spa):
             super().__init__(e=effort.story, *args, **kwargs)
             self.onbeforesave += self.self_onbeforesave
 
-        @property
-        def detail(self):
-            return self.spa.pages['story']
-
-        @property
-        def select(self):
-            if not self._select:
-                return 'name points description created'
-
         def main(self, 
             id:str=None, crud:str='retrieve', oncomplete=None,
             backlogid=None
@@ -610,6 +599,15 @@ class ticketsspa(pom.spa):
                 inp.input.disabled = True
 
                 frm << inp
+
+        @property
+        def detail(self):
+            return self.spa.pages['story']
+
+        @property
+        def select(self):
+            if not self._select:
+                return 'name points description'
 
         def self_onbeforesave(self, src, eargs):
             st = eargs.entity

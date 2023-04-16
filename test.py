@@ -15130,7 +15130,6 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 self.eq(iss.assignee, tds.second.text)
 
         ''' Use dot notation (i.e., 'artist.name', etc.) '''
-
         art = artist.getvalid()
         for i in range(10):
             art.presentations += presentation.getvalid()

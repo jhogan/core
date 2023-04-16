@@ -3864,7 +3864,7 @@ class crud(tester.tester):
         self.eq(name, per.orm.reloaded().name)
 
     def it_navigates_to_entities_clicks_edit_and_submits(self):
-        """ Use the Edit feature of a pom.crud page goto the detail
+        """ Use the Edit feature of a pom.crud page to go to the detail
         page. Test submitting the form on the detail page. Test editing
         form and clicking the Cancel button as well.
         """
@@ -3918,7 +3918,7 @@ class crud(tester.tester):
 
             if btn == 'submit':
                 # Submit the <form>. This will "redirect" us (so to
-                # speak) back to the main, tabular pagen /profiles.
+                # speak) back to the main, tabular page /profiles.
                 res = self.submit(frm, tab)
             elif btn == 'cancel':
                 btns = tab['main form button:not([type=submit])']

@@ -2127,8 +2127,8 @@ class page(dom.html):
         self._args = v
 
     def clear(self):
-        """ Used to initialize the page's <main> element and set it's
-        ata-path attribute to the path of the page. Also is used to
+        """ Used to initialize the page's <main> element and set its
+        data-path attribute to the path of the page. Also is used to
         clear any state data that may continue to exist between calls to
         the same page.
         """
