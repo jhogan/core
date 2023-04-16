@@ -3666,7 +3666,7 @@ class crud(tester.tester):
             self.in_(rels, 'edit')
             self.in_(rels, 'preview')
 
-            self.eq('/en/profiles', a.href)
+            self.eq(f'/en/profiles?id={per.id.hex}&crud=update', a.href)
 
             # Get the Edit anchor
             a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
@@ -3960,7 +3960,7 @@ class crud(tester.tester):
             self.in_(rels, 'edit')
             self.in_(rels, 'preview')
 
-            self.eq('/en/profiles', a.href)
+            self.eq(f'/en/profiles?id={per.id.hex}&crud=update', a.href)
 
             # Get the Edit anchor
             a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
