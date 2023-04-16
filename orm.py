@@ -11962,7 +11962,7 @@ class orm:
 
     @property
     def form(self):
-        return getform()
+        return self.getform()
    
     def getform(self, select=None):
         """ Return a <form> object for this `entity`. 
@@ -12243,8 +12243,7 @@ class orm:
     def tr(self):
         return self.gettr()
 
-    @property
-    def card(self):
+    def getcard(self, select=None):
         """ Returns a read-only HTML representation of the entity. 
 
         cards are <article>s that show the entity's attribute names
@@ -12343,6 +12342,10 @@ class orm:
             rent = rent.orm.super
 
         return card
+
+    @property
+    def card(self):
+        return self.getcard()
 
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
