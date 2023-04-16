@@ -610,6 +610,13 @@ class ticketsspa(pom.spa):
 
         def self_onbeforesave(self, src, eargs):
             st = eargs.entity
+
+            if st.orm.isnew:
+                st.created = datetime.utcnow()
+
+            if st.backlog:
+                return
+
             inp = eargs.html['input[name="story.backlog"]'].only
             id = inp.getattr('data-entity-id')
             bl = effort.backlog(id)
