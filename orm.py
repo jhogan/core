@@ -12280,6 +12280,10 @@ class orm:
         card = pom.card()
 
         inst = self.instance
+
+        if not isinstance(inst, entity):
+            raise TypeError('Instance must be an entity')
+
         rent = builtins.type(inst)
 
         # Set some attributes that store meta data
