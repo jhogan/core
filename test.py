@@ -15157,8 +15157,119 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(pres.artist.firstname, tds.third.text)
             self.eq(pres.artist.lastname, tds.fourth.text)
 
+    def it_calls_getcard(self):
+        ''' Default call '''
+        iss = issue.getvalid()
 
+        # orm.card and orm.getcard() should be the same
+        for getter in ('card', 'getcard'):
+            if getter == 'card':
+                card = iss.orm.card
+            elif getter == 'getcard':
+                card = iss.orm.getcard()
+            else:
+                assert False
 
+            self.true('card' in card.classes)
+            self.endswith('.issue', card.getattr('data-entity'))
+            self.eq(iss.id.hex, card.getattr('data-entity-id'))
+
+            attrs = ['id', 'name', 'assignee', 'raiseAttributeError']
+
+            divs = card['.card>div[data-entity-attribute]']
+
+            for attr, div in zip(attrs, divs):
+                lbl, span = div['div>label, div>span']
+
+                v = getattr(iss, attr)
+
+                if v is None:
+                    v = str()
+
+                v = str(v)
+
+                self.eq(v, span.text)
+                self.eq(attr, div.getattr('data-entity-attribute'))
+                self.eq(attr.capitalize(), lbl.text)
+                self.eq(lbl.for_, span.id)
+            '''
+            <article class="card" data-entity="__main__.issue" data-entity-id="21387ddd4dbe4b878287480135b4df08">
+              <div data-entity-attribute="id">
+                <label for="xzcQ1pNJFTwKCCYQ6LH6fiA">
+                  Id
+                </label>
+                <span id="xzcQ1pNJFTwKCCYQ6LH6fiA">
+                  21387ddd-4dbe-4b87-8287-480135b4df08
+                </span>
+            '''
+
+        ''' Use select '''
+        # Columns in selects can be delaminated using a comma,
+        # whitespace or both
+        selects = (
+            'name, assignee'
+            'name assignee'
+            'name\t  assignee'
+        )
+
+        for select in selects:
+            card = iss.orm.getcard('name, assignee')
+            ths = card['thead tr th']
+
+            attrs = ['name', 'assignee']
+            ths = card['thead tr th']
+            self.eq(attrs, ths.pluck('text'))
+
+            trs = card['tbody tr']
+            self.count(n, card['tbody tr'])
+
+            for iss, tr in zip(isss, trs):
+                id = tr.getattr('data-entity-id')
+                self.eq(iss.id, UUID(id))
+
+                tds = tr['td']
+                self.two(tds)
+
+                self.eq(
+                    'name', 
+                    tds.first.getattr('data-entity-attribute')
+                )
+
+                self.eq(
+                    'assignee', 
+                    tds.second.getattr('data-entity-attribute')
+                )
+
+                self.eq(iss.name, tds.first.text)
+                self.eq(iss.assignee, tds.second.text)
+
+        ''' Use dot notation (i.e., 'artist.name', etc.) '''
+        art = artist.getvalid()
+        for i in range(10):
+            art.presentations += presentation.getvalid()
+
+        select = 'name description artist.firstname artist.lastname'
+        card = art.presentations.orm.getcard(select=select)
+
+        trs = card['tbody tr']
+        self.count(art.presentations.count, trs)
+        self.four(card['thead th'])
+
+        for tr, pres in zip(trs, art.presentations):
+            id = tr.getattr('data-entity-id')
+            self.eq(pres.id, UUID(id))
+
+            tds = tr['td']
+            self.four(tds)
+
+            for col, td in zip(select.split(), tds):
+                col = col.rpartition('artist.')[-1]
+                self.eq(col, td.getattr('data-entity-attribute'))
+
+            self.eq(pres.name, tds.first.text)
+            self.eq(pres.description, tds.second.text)
+            self.eq(pres.artist.firstname, tds.third.text)
+            self.eq(pres.artist.lastname, tds.fourth.text)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
