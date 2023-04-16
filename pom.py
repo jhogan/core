@@ -2813,6 +2813,10 @@ class crud(page):
 
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
+    def clear(self):
+        self.instance = None
+        super().clear()
+
     @property
     def onbeforesave(self):
         if not self._onbeforesave:
