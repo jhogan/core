@@ -462,11 +462,10 @@ class ticketsspa(pom.spa):
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
 
-
         def main(self, 
             id:str=None, crud:str='retrieve', oncomplete=None
         ):
-            """ XXX
+            """ Override main to pull in a table of stories.
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
@@ -474,7 +473,7 @@ class ticketsspa(pom.spa):
 
             cards = self.main['article.card']
 
-            # For each backlog card in cards
+            # For each backlog card in cards, add a table of stories
             for card in cards:
                 id = card.getattr('data-entity-id')
                 id = UUID(id)
@@ -529,9 +528,9 @@ class ticketsspa(pom.spa):
                     else:
                         for bs in bl.backlog_stories:
                             if bs.id == id:
-                                qs['id'] = bs.story.id
-                                qs['backlogid'] = bl.id.hex
-                                qs['oncomplete'] = self.path
+                                qs['id']          =  bs.story.id
+                                qs['backlogid']   =  bl.id.hex
+                                qs['oncomplete']  =  self.path
                                 href.qs = qs
                                 a.href = href.path + '?' + href.query
                                 break

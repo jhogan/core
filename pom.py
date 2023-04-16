@@ -2830,7 +2830,34 @@ class crud(page):
 
     @property
     def select(self):
-        """ XXX
+        """ Returns a string of whitespace delemited fields to be added
+        to this `pom.crud` page's table or card.
+
+        By default, a None value is returned which means "select all".
+        Subclasses of `pom.crud` can return their own select string, or
+        they can set the property in their constructor or some other
+        place.
+
+        Select strings a similar to the list of columns in an SQL
+        SELECT caluse except that commas are optional:
+
+            'id, name, createdat'
+
+        This will cause the table or card to contain only the `id`,
+        `name` and `createdat` values from the pom.crud page's
+        `instance` entity.
+        
+        Dot notation can be used to access composites of the entity. For
+        example, if the table is showing a sales orders collection, we
+        can access the customer composite of each sales order using a
+        string like this:
+
+            'number created_at customer.firstname customer.lastname'
+
+        This will cause a table to be rendered containing the order'
+        numbers, the created_at date of the order, and the name of the
+        customer who placed the order.The dot notation can be of an
+        infinite depth.
         """
         return self._select
 
@@ -2850,7 +2877,8 @@ class crud(page):
 
     @property
     def oncomplete(self):
-        """ XXX
+        """ Returns the path of the page that the user should be
+        redirected to.
         """
         if not self._oncomplete:
             return self.path
@@ -2859,7 +2887,7 @@ class crud(page):
 
     @oncomplete.setter
     def oncomplete(self, v):
-        """ XXX
+        """ Sets the oncomplete property.
         """
         self._oncomplete = v
 
@@ -3342,18 +3370,23 @@ class crud(page):
 
     @property
     def iscollection(self):
-        """ XXX
+        """ Returns True if this pom.crud page is based on an entities
+        collect.
         """
         return isinstance(self.entity, orm.entitiesmeta)
 
     @property
     def isitem(self):
-        """ XXX
+        """ Returns True if this pom.crud page is based on an entity
+        object.
         """
         return isinstance(self.entity, orm.entitymeta)
 
     @property
     def entity(self):
+        """ The entity class or entities collection class that this
+        pom.crud page is based on.
+        """
         return self._entity
 
     @entity.setter
@@ -3362,6 +3395,9 @@ class crud(page):
 
     @property
     def instance(self):
+        """ Returns an instantiation of the entity that this pom.crud
+        page is based on.
+        """
         if not self._instance:
             if self.iscollection:
                 # TODO Enable filtering of the stream
@@ -3629,12 +3665,21 @@ class crud(page):
         return menu
 
     class operationeventargs(entities.eventargs):
-        """ XXX
+        """ An eventargs class that is used by this pom.crud class to
+        pass arguments for persistence operations.
         """
 
         def __init__(self, e, html):
+            """ Create a new `operationeventargs` object.
+            """
+            # The entity being saved
             self.entity = e
+
+            # The HTML of the event that caused the operation
             self.html = html
+
+            # The `stead` property can be used by the event handler to
+            # specify an object that should be saved instead of `e`.
             self.stead = None
             
         

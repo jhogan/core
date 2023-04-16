@@ -2044,7 +2044,10 @@ class element(entities.entity):
         return els
 
     def orphan(self):
-        """ XXX
+        """ Detach this `element` from its parent.
+
+        Moving an `element` from one parent to another requires that it
+        be orphan()ed first. Otherwise, a MoveError will be raised.
         """
 
         self._parent = None
