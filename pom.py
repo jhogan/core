@@ -1045,7 +1045,7 @@ function listen(el){
         sels += ':not([data-click-handler])'
         var as = el.querySelectorAll(sels)
 
-        // Subscribet
+        // Subscribe
         for (var a of as){
             a.addEventListener('click', ajax)
         }
@@ -2789,18 +2789,23 @@ class set(instruction):
 
 class crud(page):
     """ A class to implement the display logic to create, retrieve,
-    update and delete an given `orm.entity`.
+    update and delete a given `orm.entity` or `orm.entities` object.
     """
     def __init__(self, 
         e, name=None, pgs=None, presentation='table', *args, **kwargs
     ):
         """ Create a `crud` page object. 
 
-        :param: e orm.entitymeta: An `orm.entity` class reference an
+        :param: e orm.entitymeta|orm.entitiemeta: A class reference an
         instance of which will be used by this page to perform CRUD
         operations on.
 
         :param: name str: The name of the page.
+
+        :param: presentation str: The presentation of the mode of the
+        page, e.g., 'table' and 'cards'. Used when the `instance` is an
+        entities collection. It determines what HTML semantics will be
+        used to render the collection; <table> or <article> ('cards').
         """
         self._entity        =  e
         self.presentation   =  presentation
@@ -2814,11 +2819,17 @@ class crud(page):
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
     def clear(self):
+        """ Overrides `page.clear` to set the `instance` to None so it
+        is reloaded when necessary.
+        """
         self.instance = None
         super().clear()
 
     @property
     def onbeforesave(self):
+        """ An event that is triggered before this pom.crud page saves
+        the instance.
+        """
         if not self._onbeforesave:
             self._onbeforesave = entities.event()
 
@@ -2838,7 +2849,7 @@ class crud(page):
         they can set the property in their constructor or some other
         place.
 
-        Select strings a similar to the list of columns in an SQL
+        Select strings are similar to the list of columns in an SQL
         SELECT caluse except that commas are optional:
 
             'id, name, createdat'
@@ -2856,7 +2867,7 @@ class crud(page):
 
         This will cause a table to be rendered containing the order'
         numbers, the created_at date of the order, and the name of the
-        customer who placed the order.The dot notation can be of an
+        customer who placed the order. The dot notation can be of an
         infinite depth.
         """
         return self._select
@@ -2864,8 +2875,8 @@ class crud(page):
     @property
     def detail(self):
         """ Returns a class reference to the pom.page that contains the
-        details for an entity (usually contained in a table row)
-        presented on this pom.crud page..
+        details for an entity (which is usually contained in a table
+        row) presented on this pom.crud page..
         """
         return self._detail
 
@@ -2911,8 +2922,8 @@ class crud(page):
         """
         # Import the module that the `orm.entity` was defined in. This
         # way, whenever a caller needs to access the class, its module
-        # will have been imported and the class will be ready to be
-        # instantiated.
+        # will have been imported and the class will be ready for
+        # instantiation.
         import importlib
         importlib.import_module(self._entity.__module__)
 
@@ -2920,8 +2931,8 @@ class crud(page):
 
     @entity.setter
     def entity(self, v):
-        """ Set the class reference to the `orm.entity` this `crud` page
-        will operate on.
+        """ Set the class reference to the `orm.entity` that this `crud`
+        page will operate on.
         """
         self._entity = v
 
@@ -2931,11 +2942,12 @@ class crud(page):
         This is a private method that captures a routine task. It is
         used to replace the contents of the current `tr` with a new `td`
         that has a <form> in it. The form allows the user to edit the
-        values that were in the (by definition read-only) <tr>. This
+        values that were in the (by definition: read-only) <tr>. This
         logic is used when the user clicks Quick Edit and when the user
-        does a traditional GET on the URL that Quick Edit navigates to.
+        does a traditional GET on the URL that the Quick Edit links
+        navigates to.
         """
-        # Remove the <td>'s are in the the <tr>
+        # Remove the <td>'s that are in the <tr>
         tds = tr.remove('td')
 
         # Create a colspan so the new form will span the length of
@@ -2959,27 +2971,23 @@ class crud(page):
         browsers to convert the `card` into a `form` so they can edit
         the entity's values. This handler gives them that form.
         """
-
-        # Get the card or tr represeting the entity.
+        # Get the card or <tr> represeting the entity.
         el = eargs.html.only
 
         # Get the entity's id
         id = el.getattr('data-entity-id')
 
         # Instantiate the orm.entity and store a reference to the
-        # instance Use `orm.entity` to ensure we get the *singural*
+        # instance. Use `orm.entity` to ensure we get the *singural*
         # entity class which we will construct with the id.
         e = self.entity.orm.entity(id)
         self.instance = e
-
-        # Create a form and assign it to the eags.html so the browser
-        # receives it
 
         # Get the <form> representation of the entity
         frm = e.orm.form
 
         # If the browser sent us a <tr> add a new <td> to the <tr>. The
-        # <td> will contain the new <form>. This is the "quick edit"
+        # <td> will contain the new <form>. This is the "Quick Edit"
         # <form>.
         if isinstance(el, dom.tr):
             # Assign to tr for clarity
@@ -3026,7 +3034,7 @@ class crud(page):
 
         # Set the id and crud parameters in the query string to
         # appropriate values
-        # TODO: 872fd252
+        # XXX: 872fd252
         qs = url.qs
         qs['id'] = e.id.hex
         qs['crud'] = 'update'
@@ -3057,7 +3065,7 @@ class crud(page):
             return
 
         # Get the entity's hex id from the form 
-        # (<input hidden name="id" # value="A1B2C3...")
+        # (<input hidden name="id" value="A1B2C3...")
         id = el['input[name=id]'].only.value
 
         # Load the orm.entity given the id from the <form>
@@ -3075,6 +3083,7 @@ class crud(page):
             # to that <td>
             td = tr['td[data-entity-attribute=id]'].only
 
+            # Add the <menu> to the <td>
             menu = self._menu(td)
 
             # Get the "Quick Edit" anchor (<a rel="edit preview">)
@@ -3085,7 +3094,9 @@ class crud(page):
 
             # Update url by removing the id and crud parameters from the
             # query string. We are basically returning the crud page to
-            # its pain, tabular view.
+            # its plain, tabular view.
+
+            # XXX: 872fd252
             qs = url.qs
 
             for k in ('id', 'crud'):
@@ -3115,14 +3126,14 @@ class crud(page):
             # Return card article to browser
             eargs.html = card
 
-            # Subscribet the card's Edit button's onclick event to
+            # Subscribe the card's Edit button's onclick event to
             # self.btnedit
             card.btnedit.onclick += self.btnedit_onclick, card
 
             ''' Add crud=retrieve to url '''
 
             # Change its query string params setting `id` and `crud`
-            # TODO: 872fd252
+            # XXX: 872fd252
             qs = url.qs
             qs['id'] = e.id.hex
             qs['crud'] = 'retrieve'
@@ -3165,7 +3176,7 @@ class crud(page):
         # that id to try to load the entity.
         e = None
 
-        # Get the id from the the id <input>
+        # Get the id from the data-entity-id attribute of the <input>
         id = frm.getattr('data-entity-id')
 
         if id:
@@ -3200,7 +3211,9 @@ class crud(page):
         eargs1 = crud.operationeventargs(e=e, html=eargs.html)
         self.onbeforesave(self, eargs1)
 
-        # Save entity to database
+        # Save entity to database. If an event handler set the
+        # eargs1.stead attribute, save that object, otherwise just save
+        # `e`.
         (eargs1.stead or e).save()
 
         # TODO Trigger onaftersave
@@ -3215,7 +3228,6 @@ class crud(page):
 
         # If the browser sent a <tr>
         if tr:
-            
             # Get the <tr> representation of the entity
             tr = e.orm.tr
 
@@ -3235,7 +3247,9 @@ class crud(page):
 
             # Update url by removing the id and crud parameters from the
             # query string. We are basically returning the crud page to
-            # its pain, tabular view.
+            # its plain, tabular view.
+
+            # XXX: 872fd252
             qs = url.qs
             for k in ('id', 'crud'):
                 with suppress(KeyError):
@@ -3268,14 +3282,15 @@ class crud(page):
             card += btnedit
 
             # NOTE It's unclear at the moment whether a card should have
-            # an Edit <anchor or an Edit <button>.
+            # an Edit anchor or an Edit <button>.
 
             # Subscribe the onclick event of the card's edit button to
             # self.btnedit_onclick
             btnedit.onclick += self.btnedit_onclick, card
 
             # Update the id and crud parameters in the browse to the
-            # appropriate values.  TODO: 872fd252
+            # appropriate values.  
+            # XXX: 872fd252
             qs = url.qs
             if qs.get('id') != e.id.hex:
                 qs['id'] = e.id.hex
@@ -3293,17 +3308,16 @@ class crud(page):
         True if the parameters was found and processed, False otherwise.
 
         The `oncomplete` query string parameters is an optional
-        parameter that contains a path a page. This method loads that
-        pages and returns it to the browser. The intent is to return the
-        user to a page when the trigger a completion event such as
+        parameter that contains the path to a page. This method loads
+        that page and returns it to the browser. The intent is to return
+        the user to a page when they trigger a completion event such as
         clicking a form's submit or cancel button.
 
         :param: el dom.element: Typicaly a dom.form which has a hidden
         element within it which contains the path to the page that the
         application wants to return to after the form has been submitted
-        or canceld.
+        or canceled.
         """
-
         # Search for elements with the data-complete atttribute
         oncompletes = el['[data-oncomplete]']
 
@@ -3313,7 +3327,7 @@ class crud(page):
             # Read path
             path = oncompletes.only.text
 
-            # Get the base, i.e., the object with the pages collection
+            # Get the base, i.e., the object with the `pages` collection
             # where we can find the oncomplete page.
             base = self.spa or self.site
 
@@ -3322,7 +3336,8 @@ class crud(page):
                 
                 # If we found a matching page
                 if pg.path == path:
-                    # Clear and invoke the page
+
+                    # Clear page
                     pg.clear()
 
                     # Run the page
@@ -3334,6 +3349,7 @@ class crud(page):
 
                     # Get the requested url and remove its query string
                     # parameters
+                    # XXX: 872fd252
                     qs = url.qs
 
                     for k in ('id', 'crud', 'oncomplete'):
@@ -3341,7 +3357,7 @@ class crud(page):
                             del qs[k]
                     url.qs = qs
 
-                    # Set the URL object path proprety to the oncomplete
+                    # Set the URL object path property to the oncomplete
                     # page's path and instruct the browser to set the
                     # URL bar to this path.
                     url.path = req.language + pg.path
