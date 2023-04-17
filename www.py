@@ -3048,7 +3048,20 @@ class url(entities.entity):
         # backwords compatible with the current inteface if done
         # correctly.
         import urllib.parse
-        return urllib.parse.parse_qs(self.query)
+        kvps = entities.kvps()
+
+        qs = urllib.parse.parse_qs(self.query)
+        for k, v in qs.items():
+            if len(v) == 1:
+                v = v[0]
+            elif len(v) == 0:
+                v = None
+
+            kvps += entities.kvp(k=k, v=v)
+
+        kvps.onafterset += self._kvps_onafterset
+
+        return kvps
 
     @qs.setter
     def qs(self, v):
@@ -3056,6 +3069,9 @@ class url(entities.entity):
         """
         from urllib.parse import urlencode as enc
         self.query = enc(v, doseq=True)
+
+    def _kvps_onafterset(self, src, eargs):
+        self.qs = src.dict()
 
     def __str__(self):
         """ Return the URL string.

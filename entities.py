@@ -2312,6 +2312,66 @@ class entity:
         """
         return self.brokenrules.isempty
 
+class kvps(entities):
+    """ XXX
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self._onafterset = None
+
+    @property
+    def onafterset(self):
+        if not self._onafterset:
+            self._onafterset = event()
+        return self._onafterset
+
+    @onafterset.setter
+    def onafterset(self, v):
+        self._onafterset = v
+
+    def __getitem__(self, k):
+        """ XXX
+        """
+        for kvp in self:
+            if kvp.key == k:
+                return kvp.value
+        else:
+            raise IndexError(f'Key "{k}" not found')
+
+    def __setitem__(self, k, v):
+        """ XXX
+        """
+        try:
+            kvp1 = self[k]
+        except IndexError:
+            kvp1 = kvp(k, v)
+            self += kvp1
+
+        else:
+            kvp1.value = v
+
+        self.onafterset(self, settingeventargs())
+
+    def dict(self):
+        """ XXX
+        """
+        d = dict()
+        for kvp in self:
+            d[kvp.key] = kvp.value
+
+        return d
+        
+class kvp(entity):
+    """ XXX
+    """
+    def __init__(self, k, v):
+        """ XXX
+        """
+        self.key = k
+        self.value = v
+
+
 class BrokenRulesError(Exception):
     """ An exception that is raised when an attempt to use an invalid
     object is made at the wrong time. A typical example is trying to
@@ -2867,6 +2927,10 @@ class entityvaluechangeeventargs(eventargs):
 class appendeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
+
+class settingeventargs(eventargs):
+    def __init__(self):
+        pass
 
 class indexes(entities):
     """ A collection of index objects.
