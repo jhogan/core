@@ -12154,8 +12154,7 @@ class orm:
 
         return frm
 
-    @property
-    def cards(self):
+    def getcards(self, select=None):
         """ Returns a new dom.div which contains a collection  of entity
         card.
         """
@@ -12168,7 +12167,7 @@ class orm:
         div.setattr('data-entity', e)
 
         for e in self.instance:
-            div += e.orm.card
+            div += e.orm.getcard(select=select)
 
         return div
 
@@ -12229,9 +12228,6 @@ class orm:
         tr.setattr('data-entity', e)
         tr.setattr('data-entity-id', inst.id.hex)
 
-        rent = self.entity
-        names = list()
-
         def f(e, name):
             nonlocal tr
             v = getattr(e, name)
@@ -12285,71 +12281,55 @@ class orm:
         # Create the `card` object that we will build and return
         card = pom.card()
 
+        # Get the entity object
         inst = self.instance
 
+        # Demand instance be orm.entity, not orm.entities or something
+        # else.
         if not isinstance(inst, entity):
             raise TypeError('Instance must be an entity')
 
-        rent = builtins.type(inst)
 
-        # Set some attributes that store meta data
+        # Set card's metadata
+        rent = builtins.type(inst)
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
         card.attributes['data-entity'] = e
         card.attributes['data-entity-id'] = inst.id.hex
 
-        # Create a `names` list so we don't use the same attribute name
-        # twice.
-        names = list()
+        def f(e, name):
+            """ A function called by `mappings.select` (see below) which
+            allows us to capture each of the entity's attributes it has
+            seleted for us. We use that data to create a <div> for each
+            of the selected attributes and append them to the card.
+            """
+            nonlocal card
 
-        # The inheritance ascension loop
-        while rent:
-            
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
+            # Get the value of the entity 
+            v = getattr(e, name)
 
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
+            # Build the <div>
+            div = dom.div()
+            div.setattr('data-entity-attribute', name)
 
-                name = map.name
-                label = name.capitalize()
+            # Build the <label>
+            lbl = dom.label(name.capitalize())
+            div += lbl
 
-                # Prevent redundant use of a name
-                if name in names:
-                    continue
+            # Build the <span>
+            span = dom.span(v)
+            div += span
 
-                names.append(name)
+            # Link the <label> to th <span>
+            span.identify()
+            lbl.for_ = span.id
 
-                # Skip systemic attributes 
-                if name == 'createdat':
-                    continue
+            # Append to card
+            card += div
 
-                if name == 'updatedat':
-                    continue
-
-                # Create a <div> for each mapping
-                div = dom.div()
-                div.attributes['data-entity-attribute'] = name
-                card += div
-
-                # Add a <label> to the <div>
-
-                lbl = dom.label(name.capitalize())
-
-                div += lbl
-
-                # Create a <span> to hold the mapping's value
-                v = getattr(inst, name)
-                span = dom.span(v)
-                div += span
-
-                span.identify()
-                lbl.for_ = span.id
-
-            # Ascend
-            rent = rent.orm.super
+        # Call the select method passing in f() to collect the data and
+        # build the <article> (card).
+        self.mappings.select(select=select, f=f)
 
         return card
 

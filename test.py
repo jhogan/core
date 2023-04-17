@@ -15023,27 +15023,6 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # unusual/advanced types like "images", "file", "month",
         # "password", "range", "tel", "time", "url", "week", etc.
 
-    def it_gets_card(self):
-        art = artist.getvalid()
-        card = art.orm.card
-
-        # Test <card> element
-        cls = type(art)
-        name = f'{cls.__module__}.{cls.__name__}'
-        self.eq(name, card.getattr('data-entity'))
-
-        self.type(pom.card, card)
-
-        ''' Default str (lastname) '''
-        name = 'lastname'
-        map = art.orm.mappings[name]
-        div = card[f'[data-entity-attribute={name}]'].only
-        
-        # Test <label>
-        self.one(div['label'])
-
-        self.eq(getattr(art, map.name), div['span'].text)
-
     def it_calls_gettable(self):
         isss = issues()
 
@@ -15157,6 +15136,27 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(pres.artist.firstname, tds.third.text)
             self.eq(pres.artist.lastname, tds.fourth.text)
 
+    def it_gets_card(self):
+        art = artist.getvalid()
+        card = art.orm.card
+
+        # Test <card> element
+        cls = type(art)
+        name = f'{cls.__module__}.{cls.__name__}'
+        self.eq(name, card.getattr('data-entity'))
+
+        self.type(pom.card, card)
+
+        ''' Default str (lastname) '''
+        name = 'lastname'
+        map = art.orm.mappings[name]
+        div = card[f'[data-entity-attribute={name}]'].only
+        
+        # Test <label>
+        self.one(div['label'])
+
+        self.eq(getattr(art, map.name), div['span'].text)
+
     def it_calls_getcard(self):
         ''' Default call '''
         iss = issue.getvalid()
@@ -15177,6 +15177,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             attrs = ['id', 'name', 'assignee', 'raiseAttributeError']
 
             divs = card['.card>div[data-entity-attribute]']
+            self.count(4, divs)
 
             for attr, div in zip(attrs, divs):
                 lbl, span = div['div>label, div>span']
@@ -15192,84 +15193,86 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 self.eq(attr, div.getattr('data-entity-attribute'))
                 self.eq(attr.capitalize(), lbl.text)
                 self.eq(lbl.for_, span.id)
-            '''
-            <article class="card" data-entity="__main__.issue" data-entity-id="21387ddd4dbe4b878287480135b4df08">
-              <div data-entity-attribute="id">
-                <label for="xzcQ1pNJFTwKCCYQ6LH6fiA">
-                  Id
-                </label>
-                <span id="xzcQ1pNJFTwKCCYQ6LH6fiA">
-                  21387ddd-4dbe-4b87-8287-480135b4df08
-                </span>
-            '''
 
         ''' Use select '''
         # Columns in selects can be delaminated using a comma,
         # whitespace or both
         selects = (
-            'name, assignee'
-            'name assignee'
-            'name\t  assignee'
+            'name, assignee',
+            'name assignee',
+            'name\t  assignee',
+
+            'assignee, name',
+            'assignee name',
+            'assignee\t  name',
         )
 
         for select in selects:
-            card = iss.orm.getcard('name, assignee')
-            ths = card['thead tr th']
+            attrs = re.split(r'[,\s]+', select)
+            card = iss.orm.getcard(select=select)
 
-            attrs = ['name', 'assignee']
-            ths = card['thead tr th']
-            self.eq(attrs, ths.pluck('text'))
+            divs = card['.card>div[data-entity-attribute]']
 
-            trs = card['tbody tr']
-            self.count(n, card['tbody tr'])
+            self.count(2, divs)
 
-            for iss, tr in zip(isss, trs):
-                id = tr.getattr('data-entity-id')
-                self.eq(iss.id, UUID(id))
+            for attr, div in zip(attrs, divs):
+                lbl, span = div['div>label, div>span']
 
-                tds = tr['td']
-                self.two(tds)
+                v = getattr(iss, attr)
 
-                self.eq(
-                    'name', 
-                    tds.first.getattr('data-entity-attribute')
-                )
+                if v is None:
+                    v = str()
 
-                self.eq(
-                    'assignee', 
-                    tds.second.getattr('data-entity-attribute')
-                )
+                v = str(v)
 
-                self.eq(iss.name, tds.first.text)
-                self.eq(iss.assignee, tds.second.text)
+                self.eq(v, span.text)
+                self.eq(attr, div.getattr('data-entity-attribute'))
+                self.eq(attr.capitalize(), lbl.text)
+                self.eq(lbl.for_, span.id)
 
-        ''' Use dot notation (i.e., 'artist.name', etc.) '''
+        ''' Use dot notation (i.e., 'artist.firstname', etc.) '''
         art = artist.getvalid()
-        for i in range(10):
-            art.presentations += presentation.getvalid()
+        art.presentations += presentation.getvalid()
 
         select = 'name description artist.firstname artist.lastname'
-        card = art.presentations.orm.getcard(select=select)
+        pres = art.presentations.first
+        card = pres.orm.getcard(select=select)
 
-        trs = card['tbody tr']
-        self.count(art.presentations.count, trs)
-        self.four(card['thead th'])
+        id = card.getattr('data-entity-id')
+        self.eq(pres.id, UUID(id))
 
-        for tr, pres in zip(trs, art.presentations):
-            id = tr.getattr('data-entity-id')
-            self.eq(pres.id, UUID(id))
+        divs = card['.card>div[data-entity-attribute]']
 
-            tds = tr['td']
-            self.four(tds)
+        self.count(4, divs)
 
-            for col, td in zip(select.split(), tds):
-                col = col.rpartition('artist.')[-1]
-                self.eq(col, td.getattr('data-entity-attribute'))
+        for attr, div in zip(select.split(), divs):
+            lbl = div['label'].only
+            span = div['span'].only
+            self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)
+            self.eq(getattr(pres, attr), span.text)
+            self.eq(lbl.for_, span.id)
 
-            self.eq(pres.name, tds.first.text)
-            self.eq(pres.description, tds.second.text)
-            self.eq(pres.artist.firstname, tds.third.text)
-            self.eq(pres.artist.lastname, tds.fourth.text)
+        ''' Use dot notation but with a different order '''
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+
+        select = 'artist.firstname artist.lastname name description'
+        pres = art.presentations.first
+        card = pres.orm.getcard(select=select)
+
+        id = card.getattr('data-entity-id')
+        self.eq(pres.id, UUID(id))
+
+        divs = card['.card>div[data-entity-attribute]']
+
+        self.count(4, divs)
+
+        for attr, div in zip(select.split(), divs):
+            lbl = div['label'].only
+            span = div['span'].only
+            self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)
+            self.eq(getattr(pres, attr), span.text)
+            self.eq(lbl.for_, span.id)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
