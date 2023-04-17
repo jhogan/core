@@ -2814,10 +2814,6 @@ class url(entities.entity):
         if not self.host:
             raise ValueError('Must provide host')
 
-        if self.query:
-            if not self.path:
-                raise ValueError('Must provide path')
-
         host = self.host
 
         if uid := self.username:
