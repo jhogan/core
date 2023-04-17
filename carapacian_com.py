@@ -545,6 +545,14 @@ class ticketsspa(pom.spa):
         def detail(self):
             return self.spa.pages['backlog']
 
+        @property
+        def select(self):
+            if not self._select:
+                return (
+                    'name, description, goal, begin end'
+                )
+            return self._select
+
     class backlog(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
@@ -564,7 +572,7 @@ class ticketsspa(pom.spa):
         def select(self):
             if not self._select:
                 return (
-                    'story.id story.name story.points story.created'
+                    'story.name story.points story.created'
                 )
             return self._select
 
