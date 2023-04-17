@@ -6106,6 +6106,10 @@ class mappings(entitiesmod.entities):
 
                             break
                     else:
+                        # TODO We may want to reevaluate this. It's
+                        # possible that a user wants to `select` an
+                        # attribute that exists on the object but is not
+                        # part of the mappings collection.
                         raise IndexError(
                             f'Cannot find attribute "{attr}"'
                         )
@@ -12241,6 +12245,8 @@ class orm:
 
     @property
     def tr(self):
+        """ XXX
+        """
         return self.gettr()
 
     def getcard(self, select=None):

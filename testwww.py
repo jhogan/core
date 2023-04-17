@@ -312,6 +312,7 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}?key=value', url.name)
         self.eq(f'{scheme}://{host}/{path}?key=value', str(url))
 
+
         url.qs = dict()
 
         self.none(url.query)
