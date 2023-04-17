@@ -15072,16 +15072,19 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # Columns in selects can be delaminated using a comma,
         # whitespace or both
         selects = (
-            'name, assignee'
-            'name assignee'
-            'name\t  assignee'
+            'name, assignee',
+            'name assignee',
+            'name\t  assignee',
+
+            'assignee, name',
+            'assignee name',
+            'assignee\t  name',
         )
 
         for select in selects:
-            tbl = isss.orm.gettable('name, assignee')
-            ths = tbl['thead tr th']
+            attrs = re.split(r'[,\s]+', select)
+            tbl = isss.orm.gettable(select=select)
 
-            attrs = ['name', 'assignee']
             ths = tbl['thead tr th']
             self.eq(attrs, ths.pluck('text'))
 
@@ -15095,20 +15098,25 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
                 tds = tr['td']
                 self.two(tds)
 
+                desc =  attrs[0] == 'assignee'
+
+                attr = 'assignee' if desc else 'name'
                 self.eq(
-                    'name', 
-                    tds.first.getattr('data-entity-attribute')
+                    attr, tds.first.getattr('data-entity-attribute')
                 )
 
+                attr = 'name' if desc else 'assignee'
                 self.eq(
-                    'assignee', 
-                    tds.second.getattr('data-entity-attribute')
+                    attr, tds.second.getattr('data-entity-attribute')
                 )
 
-                self.eq(iss.name, tds.first.text)
-                self.eq(iss.assignee, tds.second.text)
+                expect = iss.assignee if desc else iss.name
+                self.eq(expect, tds.first.text)
 
-        ''' Use dot notation (i.e., 'artist.name', etc.) '''
+                expect = iss.name if desc else iss.assignee
+                self.eq(expect, tds.second.text)
+
+        ''' Use dot notation (i.e., 'artist.firstname', etc.) '''
         art = artist.getvalid()
         for i in range(10):
             art.presentations += presentation.getvalid()
