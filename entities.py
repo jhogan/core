@@ -2333,8 +2333,11 @@ class kvps(entities):
     def __getitem__(self, k):
         """ XXX
         """
+        if isinstance(k, int):
+            return super().__getitem__(k)
+
         for kvp in self:
-            if kvp.key == k:
+            if kvp.name == k:
                 return kvp.value
         else:
             raise IndexError(f'Key "{k}" not found')
@@ -2342,23 +2345,32 @@ class kvps(entities):
     def __setitem__(self, k, v):
         """ XXX
         """
-        try:
-            kvp1 = self[k]
-        except IndexError:
+        for kvp1 in self:
+            if kvp1.name == k:
+                kvp1.value = v
+                break
+        else:
             kvp1 = kvp(k, v)
             self += kvp1
 
-        else:
-            kvp1.value = v
-
         self.onafterset(self, settingeventargs())
+
+    def __delitem__(self, k):
+        """ XXX
+        """
+        for kvp in self:
+            if kvp.name == k:
+                super().remove(kvp)
+                break
+        else:
+            ...
 
     def dict(self):
         """ XXX
         """
         d = dict()
         for kvp in self:
-            d[kvp.key] = kvp.value
+            d[kvp.name] = kvp.value
 
         return d
         
@@ -2368,7 +2380,7 @@ class kvp(entity):
     def __init__(self, k, v):
         """ XXX
         """
-        self.key = k
+        self.name = k
         self.value = v
 
 

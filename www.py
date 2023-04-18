@@ -3056,6 +3056,7 @@ class url(entities.entity):
             kvps += entities.kvp(k=k, v=v)
 
         kvps.onafterset += self._kvps_onafterset
+        kvps.onremove += self._kvps_onremove
 
         return kvps
 
@@ -3067,6 +3068,13 @@ class url(entities.entity):
         self.query = enc(v, doseq=True)
 
     def _kvps_onafterset(self, src, eargs):
+        """ XXX
+        """
+        self.qs = src.dict()
+
+    def _kvps_onremove(self, src, eargs):
+        """ XXX
+        """
         self.qs = src.dict()
 
     def __str__(self):

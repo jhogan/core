@@ -277,8 +277,8 @@ class url(tester.tester):
         self.expect(ValueError, lambda: str(url))
 
         url.host = host
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{scheme}://{host}?{query}', url.name)
+        self.eq(f'{scheme}://{host}?{query}', str(url))
 
         url.path = path
         self.eq(scheme, url.scheme)
@@ -288,6 +288,7 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}?{query}', str(url))
 
     def it_sets_qs(self):
+        ''' Setup URL object '''
         scheme = 'http'
         host = 'www.google.com'
         path =  'this/is/the/path'
@@ -297,6 +298,7 @@ class url(tester.tester):
         url.host = host
         url.path = path
 
+        ''' Assign dict '''
         url.qs = {'key': 'value'}
 
         self.eq('key=value', url.query)
@@ -304,6 +306,7 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}?key=value', str(url))
 
 
+        ''' Assign empty dict '''
         url.qs = dict()
 
         self.none(url.query)
@@ -311,16 +314,15 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}', str(url))
 
 
+        ''' Assign param '''
         url.qs['key'] = 'value'
 
         self.eq('key=value', url.query)
         self.eq(f'{scheme}://{host}/{path}?key=value', url.name)
         self.eq(f'{scheme}://{host}/{path}?key=value', str(url))
-        return
 
-        qs = url.qs
-        qs['key1'] = 'value1'
-        url.qs = qs
+        ''' Assign new param '''
+        url.qs['key1'] = 'value1'
 
         expect = 'key=value&key1=value1'
         self.eq(expect, url.query)
@@ -329,9 +331,17 @@ class url(tester.tester):
         self.eq(expect, url.name)
         self.eq(expect, str(url))
 
-        qs = url.qs
-        qs['key1'] = ['value1', 'value2']
-        url.qs = qs
+        ''' Reassign new param '''
+        url.qs['key1'] = 'value2'
+
+        expect = 'key=value&key1=value2'
+        self.eq(expect, url.query)
+
+        expect = f'{scheme}://{host}/{path}?{expect}'
+        self.eq(expect, url.name)
+        self.eq(expect, str(url))
+
+        url.qs['key1'] = ['value1', 'value2']
 
         expect = 'key=value&key1=value1&key1=value2'
         self.eq(expect, url.query)
@@ -339,6 +349,51 @@ class url(tester.tester):
         expect = f'{scheme}://{host}/{path}?{expect}'
         self.eq(expect, url.name)
         self.eq(expect, str(url))
+
+    def it_dels_qs(self):
+        ''' Setup URL object '''
+        scheme = 'http'
+        host = 'www.google.com'
+        path =  'this/is/the/path'
+
+        url = www.url()
+        url.scheme = scheme
+        url.host = host
+        url.path = path
+
+        ''' Assign dict '''
+        url.qs['a'] = 1
+        url.qs['b'] = 2
+        url.qs['c'] = 3
+
+        self.eq(
+            'http://www.google.com/this/is/the/path?a=1&b=2&c=3',
+            str(url)
+        )
+
+        del url.qs['a']
+
+        self.eq(
+            'http://www.google.com/this/is/the/path?b=2&c=3',
+            str(url)
+        )
+
+        del url.qs['b']
+
+        self.eq(
+            'http://www.google.com/this/is/the/path?c=3',
+            str(url)
+        )
+
+        del url.qs['c']
+
+        self.eq(
+            'http://www.google.com/this/is/the/path',
+            str(url)
+        )
+
+
+        print(url)
 
     def it_sets_fragment(self):
         scheme = 'http'
