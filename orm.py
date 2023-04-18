@@ -11996,17 +11996,15 @@ class orm:
         # prevent access the same attribute twice.
         names = list()
 
+        # TODO Use orm.mappings.select
+
         class DuplicateError(Exception):
-            """ XXX
-            """
+            pass
 
         class UnsupportedTypeError(Exception):
-            """ XXX
-            """
+            pass
 
         def create_input(map):
-            """ XXX
-            """
             name = map.name
 
             lbl = name.capitalize()
@@ -12093,8 +12091,6 @@ class orm:
 
         if select:
             def process(e, path):
-                """ XXX
-                """
                 nonlocal frm
                 maps = e.orm.mappings.all
                 if len(path) == 1:

@@ -2313,15 +2313,20 @@ class entity:
         return self.brokenrules.isempty
 
 class kvps(entities):
-    """ XXX
+    """ A collection of `kvp` entity objects.
     """
     def __init__(self, *args, **kwargs):
+        """ Create a new `kvps` collection.
+        """
         super().__init__(*args, **kwargs)
         
         self._onafterset = None
 
     @property
     def onafterset(self):
+        """ Return the event object that is to be triggered whenever an
+        item in the collection is set or added.
+        """
         if not self._onafterset:
             self._onafterset = event()
         return self._onafterset
@@ -2331,7 +2336,10 @@ class kvps(entities):
         self._onafterset = v
 
     def __getitem__(self, k):
-        """ XXX
+        """ Return the value of the `kvp.value` attribute where k equals
+        the value of `kvp.name'.
+
+        :param: k str: The name of the `kvp`.
         """
         if isinstance(k, int):
             return super().__getitem__(k)
@@ -2343,7 +2351,12 @@ class kvps(entities):
             raise IndexError(f'Key "{k}" not found')
 
     def __setitem__(self, k, v):
-        """ XXX
+        """ Set the `kvp` object in the collection with a name of `k` to
+        `v`. If the kvp object does not exist, it is added.
+
+        :param: k str: The name of the `kvp`.
+
+        :param: v Object: The value of the `kvp`.
         """
         for kvp1 in self:
             if kvp1.name == k:
@@ -2356,17 +2369,20 @@ class kvps(entities):
         self.onafterset(self, settingeventargs())
 
     def __delitem__(self, k):
-        """ XXX
+        """ Remove the kvp in the collection whose `name` property
+        matches `k`.
         """
         for kvp in self:
             if kvp.name == k:
                 super().remove(kvp)
                 break
         else:
+            # TODO Raise KeyError
             ...
 
     def dict(self):
-        """ XXX
+        """ Creates a new `dict` representation of this kvps collection
+        and returns it.
         """
         d = dict()
         for kvp in self:
@@ -2375,14 +2391,20 @@ class kvps(entities):
         return d
         
 class kvp(entity):
-    """ XXX
+    """ A simple entity which contains a key-value-pair.
+
+    Each `kvp` object contains a `name` property which contains the key
+    and a `value` property that contains the value.
     """
     def __init__(self, k, v):
-        """ XXX
+        """ Create a new `kvp` object.
+
+        :param: k str: The name of the `kvp`.
+
+        :param: v Object: The value of the `kvp`.
         """
         self.name = k
         self.value = v
-
 
 class BrokenRulesError(Exception):
     """ An exception that is raised when an attempt to use an invalid
@@ -2941,8 +2963,11 @@ class appendeventargs(eventargs):
         self.entity = e
 
 class settingeventargs(eventargs):
+    """ Used when a property value is set.
+    """
     def __init__(self):
-        pass
+        """ Create a new settingeventargs object.
+        """
 
 class indexes(entities):
     """ A collection of index objects.

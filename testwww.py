@@ -392,9 +392,6 @@ class url(tester.tester):
             str(url)
         )
 
-
-        print(url)
-
     def it_sets_fragment(self):
         scheme = 'http'
         host = 'www.google.com'

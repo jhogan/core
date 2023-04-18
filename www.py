@@ -3068,13 +3068,20 @@ class url(entities.entity):
         self.query = enc(v, doseq=True)
 
     def _kvps_onafterset(self, src, eargs):
-        """ XXX
+        """ Handles the kvps' onafterset event.
         """
+
+        # Whenever an item is set or added to the kvps collection,
+        # convert the kvp (src) into a `dict` and assin it to this
+        # `url`'s qs property
         self.qs = src.dict()
 
     def _kvps_onremove(self, src, eargs):
-        """ XXX
+        """ Handles the kvps' onremove event.
         """
+        # Whenever an item is deleted from the kvps collection, convert
+        # the kvp (src) into a `dict` and assign it to this `url`'s qs
+        # property
         self.qs = src.dict()
 
     def __str__(self):
