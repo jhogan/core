@@ -3072,7 +3072,7 @@ class url(entities.entity):
         """
 
         # Whenever an item is set or added to the kvps collection,
-        # convert the kvp (src) into a `dict` and assin it to this
+        # convert the kvps (src) into a `dict` and assin it to this
         # `url`'s qs property
         self.qs = src.dict()
 
@@ -3080,7 +3080,7 @@ class url(entities.entity):
         """ Handles the kvps' onremove event.
         """
         # Whenever an item is deleted from the kvps collection, convert
-        # the kvp (src) into a `dict` and assign it to this `url`'s qs
+        # the kvps (src) into a `dict` and assign it to this `url`'s qs
         # property
         self.qs = src.dict()
 

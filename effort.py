@@ -967,6 +967,7 @@ class backlog(orm.entity):
             # If we find a match
             if st.id == bs.story.id:
                 # Remove it
+
                 bss.remove(bs)
                 rms += bs.story
                 break
