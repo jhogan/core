@@ -3034,11 +3034,8 @@ class crud(page):
 
         # Set the id and crud parameters in the query string to
         # appropriate values
-        # XXX: 872fd252
-        qs = url.qs
-        qs['id'] = e.id.hex
-        qs['crud'] = 'update'
-        url.qs = qs
+        url.qs['id'] = e.id.hex
+        url.qs['crud'] = 'update'
 
         instrs = instructions()
         # Create a `set` instruction for the JavaScript in the browser
@@ -3096,14 +3093,9 @@ class crud(page):
             # query string. We are basically returning the crud page to
             # its plain, tabular view.
 
-            # XXX: 872fd252
-            qs = url.qs
-
             for k in ('id', 'crud'):
                 with suppress(KeyError):
-                    del qs[k]
-
-            url.qs = qs
+                    del url.qs[k]
 
             # Instruct the browser to set the URL bar to `url`
             instrs = instructions()
@@ -3133,11 +3125,8 @@ class crud(page):
             ''' Add crud=retrieve to url '''
 
             # Change its query string params setting `id` and `crud`
-            # XXX: 872fd252
-            qs = url.qs
-            qs['id'] = e.id.hex
-            qs['crud'] = 'retrieve'
-            url.qs = qs
+            url.qs['id'] = e.id.hex
+            url.qs['crud'] = 'retrieve'
 
             # Instruct the browser to set the URL bar to `url`
             instrs = instructions()
@@ -3249,13 +3238,9 @@ class crud(page):
             # query string. We are basically returning the crud page to
             # its plain, tabular view.
 
-            # XXX: 872fd252
-            qs = url.qs
             for k in ('id', 'crud'):
                 with suppress(KeyError):
-                    del qs[k]
-
-            url.qs = qs
+                    url.qs[k]
 
             # Instruct the browser to set the URL bar to `url`
             instrs = instructions()
@@ -3288,14 +3273,11 @@ class crud(page):
             # self.btnedit_onclick
             btnedit.onclick += self.btnedit_onclick, card
 
-            # Update the id and crud parameters in the browse to the
+            # Update the id and crud parameters in the browser to the
             # appropriate values.  
-            # XXX: 872fd252
-            qs = url.qs
-            if qs.get('id') != e.id.hex:
-                qs['id'] = e.id.hex
-                qs['crud'] = 'retrieve'
-                url.qs = qs
+            if 'id' not in url.qs or url.qs['id'] != e.id.hex:
+                url.qs['id'] = e.id.hex
+                url.qs['crud'] = 'retrieve'
 
                 instrs = instructions()
                 # Instruct the browser to update the URL bar to `url`.
@@ -3347,15 +3329,10 @@ class crud(page):
                     req = www.application.current.request
                     url = req.url
 
-                    # Get the requested url and remove its query string
-                    # parameters
-                    # XXX: 872fd252
-                    qs = url.qs
-
+                    # Remove the url's query string parameters
                     for k in ('id', 'crud', 'oncomplete'):
                         with suppress(KeyError):
-                            del qs[k]
-                    url.qs = qs
+                            del url.qs[k]
 
                     # Set the URL object path property to the oncomplete
                     # page's path and instruct the browser to set the
