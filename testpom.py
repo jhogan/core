@@ -3310,9 +3310,12 @@ class crud(tester.tester):
                 sup.owner = ecommerce.users.root
                 sup = sup.orm._super
 
-        super().__init__(propr=propr, *args, **kwargs)
+        # Now we can call the constructor
+        mods = 'pom', 'asset',
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
+            foonet.orm.recreate()
             orm.orm.recreate(
                 person,
             )
