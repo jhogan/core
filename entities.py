@@ -2335,6 +2335,16 @@ class kvps(entities):
     def onafterset(self, v):
         self._onafterset = v
 
+    def __contains__(self, k):
+        """ XXX
+        """
+        try:
+            self[k]
+        except KeyError:
+            return False
+
+        return True
+        
     def __getitem__(self, k):
         """ Return the value of the `kvp.value` attribute where k equals
         the value of `kvp.name'.

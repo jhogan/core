@@ -350,6 +350,23 @@ class url(tester.tester):
         self.eq(expect, url.name)
         self.eq(expect, str(url))
 
+    def it_calls__contains_on__qs(self):
+        ''' Setup URL object '''
+        scheme = 'http'
+        host = 'www.google.com'
+        path = 'this/is/the/path'
+
+        url = www.url()
+        url.scheme = scheme
+        url.host = host
+        url.path = path
+
+        ''' Assign dict '''
+        url.qs = {'key': 'value'}
+
+        self.in_(url.qs, 'key')
+        self.notin(url.qs, 'not-in-qs')
+        
     def it_dels_qs(self):
         ''' Setup URL object '''
         scheme = 'http'
