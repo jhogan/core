@@ -2358,7 +2358,7 @@ class kvps(entities):
             if kvp.name == k:
                 return kvp.value
         else:
-            raise IndexError(f'Key "{k}" not found')
+            raise KeyError(f'Key "{k}" not found')
 
     def __setitem__(self, k, v):
         """ Set the `kvp` object in the collection with a name of `k` to
