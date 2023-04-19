@@ -3064,6 +3064,10 @@ class url(entities.entity):
     def qs(self, v):
         """ Set the qs attribute to `v`.
         """
+        if isinstance(v, entities.kvps):
+            self.qs = v.dict()
+            return
+                
         from urllib.parse import urlencode as enc
         self.query = enc(v, doseq=True)
 
