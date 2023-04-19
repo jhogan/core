@@ -2336,7 +2336,13 @@ class kvps(entities):
         self._onafterset = v
 
     def __contains__(self, k):
-        """ XXX
+        """ Return True if `k` is the name of any of the items in this
+        `kvps` collection, False otherwise:
+
+            >>> c = kvps()
+            c += kvp(name='my-key', value='some-vasue')
+            assert 'my-key' in c
+            assert 'not-my-key' not in c
         """
         try:
             self[k]
@@ -2387,8 +2393,7 @@ class kvps(entities):
                 super().remove(kvp)
                 break
         else:
-            # TODO Raise KeyError
-            ...
+            raise KeyError(f'Cannot remove; key "{k}" not found')
 
     def dict(self):
         """ Creates a new `dict` representation of this kvps collection

@@ -12171,18 +12171,34 @@ class orm:
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
 
-        # XXX Update comments
+        :param: select str: Similar to a SELECT clause, the `select`
+        string contains a list of entity attributes to be included in
+        the table. If `select` is None, all attributes all select.
+
+        For example, if the entity has an `id` and a `name` column,
+        specifying the below string for `select` would cause the `name`
+        attribute to be presented in the first column o the table and
+        the `id` attribute to be displayed in the second column:
+            
+            'name id`
+
+        Note tha you could use commas if you like the syntax to look
+        more like SQL:
+
+            'name, id'
         """
         import dom
 
-        # XXX Comment
-
+        # Create the table object to return
         tbl = dom.table()
 
+        # Set <table>'s  data-entity attribute to the fully qualified
+        # name of the entity's class.
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
-
         tbl.setattr('data-entity', e)
+
+        ''' Create table header '''
 
         thead  =  dom.thead()
         tr     =  dom.tr()
@@ -12190,17 +12206,23 @@ class orm:
         tbl    +=  thead
         thead  +=  tr
 
+        # Get the columns as a collection of mappings
         maps = self.mappings.select(select=select)
 
+        # Add the columns headers to the <table>
         for map in maps:
             tr += dom.th(map.name)
 
+        ''' Create table body '''
         tbody = dom.tbody()
         tbl += tbody
 
+        # Create a <tr> for each entity in the collection and add it to
+        # the <table>'s body
         for e in self.instance:
             tbody += e.orm.gettr(select=select)
 
+        # Return the table
         return tbl
 
     @property

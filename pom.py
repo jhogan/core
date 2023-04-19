@@ -3411,7 +3411,6 @@ class crud(page):
     def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
         """ The main handler for this `crud` page.
         """
-        # XXX Recomment
         frm = False
 
         if id:
@@ -3423,7 +3422,8 @@ class crud(page):
         pres = self.presentation
 
         # If the entity we are working with is a collection, load the
-        # collection then return it as a <table>.
+        # collection then return it as a <table> or a collection of
+        # cards (<article class="card">)
         if self.iscollection:
             es = self.instance
 
@@ -3431,7 +3431,7 @@ class crud(page):
             f = getattr(es, 'orm.get' + pres)
             el = f(select=self.select)
 
-            # Get the <div>s or <td>s that correespond to entity
+            # Get the <div>s or <td>s that correspond to entity
             # attributes within the element
             els = el['[data-entity-attribute=id]']
 
@@ -3441,6 +3441,7 @@ class crud(page):
                 # links. Add the <menu> to the <td>
                 for td in el['td:first-child']:
                     menu = self._menu(td)
+
                     # Get the "Quick Edit" anchor (<a rel="edit preview">)
                     a = menu['a[rel~=edit][rel~=preview]'].only
                     a.onclick += self.btnedit_onclick, td.closest('tr')
@@ -3449,10 +3450,10 @@ class crud(page):
 
             # If a browser is doing a tradtional (non-XHR) GET on the
             # the page, and the query string parameter crud is 'update',
-            # use the id from the query string to add <form> to the
-            # table. This will produce a Quick Edit <form> in the page.
-            # This is equivelent to clicking the Quick Edit button but
-            # does not involve XHR requests.
+            # use the id from the query string to add a <form> to the
+            # table. This will produce a Quick Edit <form> within the
+            # page.  This is equivelent to clicking the Quick Edit
+            # button but does not involve XHR requests.
             if crud == 'update':
                 # If an id was passed in the query strting
                 if id:
@@ -3522,9 +3523,10 @@ class crud(page):
                     # Create Edit link
                     card += dom.a('Edit', href=path, rel='edit')
 
-        # If the entity we are working with is an individual, load the
-        # entity by id then return a <form> or card (<article>) with the
-        # entity's contents.
+        # If the entity we are working with is an individual entity (as
+        # opposed to a collectio), get the instance then return a
+        # <form> or card (<article>) with the entity's contents
+        # depending on `crud`.
         elif self.isitem:
             e = self.instance
 
@@ -3567,13 +3569,14 @@ class crud(page):
                 # Capture form submission
                 el.onsubmit += self.frm_onsubmit, el
 
+                # Capture cacelation
                 btncancel = dom.button('Cancel')
-
                 btncancel.onclick += self.btncancel_onclick, el
-
                 el += btncancel
 
+                # If oncomplete path was passed in as a query parameter
                 if oncomplete:
+                    # Put the path in a hidden <span>
                     span = dom.span(oncomplete, hidden=True)
                     span.setattr('data-oncomplete', oncomplete)
                     el += span
@@ -3584,7 +3587,7 @@ class crud(page):
                 card = el
 
                 # NOTE It's unclear at the moment whether a card should
-                # have an Edit <anchor or an Edit <button>.
+                # have an Edit <a>nchor or an Edit <button>.
 
                 # Create Edit button
                 btnedit = dom.button('Edit', class_='edit')
@@ -3595,9 +3598,6 @@ class crud(page):
                 # so the entity can be updated.
                 btnedit.onclick += self.btnedit_onclick, card
 
-        # Add whichever element we created (<form>, <article>, <table>)
-        # to <main>.
-
         # If there is an oncomplete page to return to
         if oncomplete:
             # Find the page
@@ -3606,6 +3606,9 @@ class crud(page):
             # Add a "Back" button to that page
             a = dom.a('Back', href=pg.path)
             self.main += a
+
+        # Add whichever element we created (<form>, <article>, <table>)
+        # to <main>.
 
         self.main += el
 
