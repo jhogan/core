@@ -825,18 +825,25 @@ class backlog(tester.tester):
         orm.security().owner = ecommerce.users.root
 
     @staticmethod
-    def getvalid():
-        bl = effort.backlog()
-        bl.name = 'Maintenance Backlog'
-        bl.description = 'A backlog of maintenance and tech debt items'
-        bl.begin = '2020-01-01'
-        bl.end = '2020-02-01'
-        bl.goal = (
-            'Identify and resolve technical debt and maintenance items'
-            'that are not urgent but need attention.'
-        )
+    def getvalid(n=None):
+        if n is None:
+            bl = effort.backlog()
+            bl.name = 'Maintenance Backlog'
+            bl.description = 'A backlog of maintenance and tech debt items'
+            bl.begin = '2020-01-01'
+            bl.end = '2020-02-01'
+            bl.goal = (
+                'Identify and resolve technical debt and maintenance items'
+                'that are not urgent but need attention.'
+            )
 
-        return bl
+            return bl
+        else:
+            bls = effort.backlogs()
+            for i in range(n):
+                bls += backlog.getvalid()
+
+            return bls
 
     def it_creates(self):
         bl = self.getvalid()
