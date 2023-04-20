@@ -2807,6 +2807,10 @@ class crud(page):
         entities collection. It determines what HTML semantics will be
         used to render the collection; <table> or <article> ('cards').
         """
+
+        if presentation not in ('table', 'cards'):
+            raise ValueError('Invalid presentation mode')
+
         self._entity        =  e
         self.presentation   =  presentation
         self._instance      =  None

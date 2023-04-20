@@ -3320,6 +3320,26 @@ class crud(tester.tester):
                 person,
             )
 
+    def it_calls__init__(self):
+        crud = pom.crud(e=persons)
+
+        self.is_(persons, crud.entity)
+
+        # Defaults to 'table' presentation mode
+        self.eq('table', crud.presentation)
+
+        # Supports 'cards' presentation mode
+        crud = pom.crud(e=persons, presentation='cards')
+
+        # Defaults to 'table' presentation mode
+        self.eq('cards', crud.presentation)
+
+        # Supports 'cards' presentation mode
+        self.expect(
+            ValueError, 
+            lambda: pom.crud(e=persons, presentation='derp')
+        )
+
     def it_GETs_form(self):
         ws = foonet()
         tab = self.browser().tab()
