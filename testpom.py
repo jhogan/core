@@ -32,8 +32,6 @@ import www
 
 # TODO We should get datetime and date from `primative`
 
-# XXX Add tests for the work done in 'use-backlog-entity-in-carapacian'
-
 class persons(orm.entities):
     pass
 

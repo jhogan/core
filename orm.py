@@ -6088,19 +6088,59 @@ class mappings(entitiesmod.entities):
         return self._supermappings
             
     def select(self, select=None, f=None):
-        """ XXX
+        """ Return a collection of mappings for this `orm`'s entity
+        class as specified by `select`. If `f` is provided, it will be
+        called with each mappings name and object reference.
+
+        :param: select str: The select string. It contains a list of
+        whitespace or comma seperated attributes to be selected. For
+        example, to obtain the mappings for the orm's entity's `id`,
+        `name` and `createdat` attribute, in that order, you can pass in
+        the following string:
+            
+            'id name createdat'
+
+        You can use dot notation to obtain composite mappings of the
+        entity. For example, if the entity was a sales order, you could
+        get its `id` order `number`, and customer's (the order's
+        composite) name using the following:
+            
+            'id number custome.name'
+
+        :param: f callable: If a callable is passed in for `f`, it will
+        be called whenever a mappings is discoverd for selection. The
+        object, whether the orm's instance or a composite there of
+        (using dot notation (see above)) will be passed in as the first
+        argument. The name of the mapping will be passed in as the
+        second.
         """
+
+        # Create a mappings collection to return
         maps = mappings()
 
+        # If a select string was provided
         if select:
             def process(e, path, obj):
-                """ XXX
+                """ A recursive function to process an attribute.
+                Recursion is only necessary when dot notation is used.
                 """
+
+                # Get access to the outer method's `maps` collection
                 nonlocal maps
+
+                # If we are at the end of the dot notation
                 if len(path) == 1:
+
+                    # For all mappings including supers
                     for map in e.orm.mappings.all:
+                        
+                        # If a match was found
                         if map.name == path[0]:
+
+                            # Add to return collection
                             maps += map
+
+                            # Call f if provided
                             if f:
                                 f(e=obj, name=map.name)
 
@@ -6113,6 +6153,8 @@ class mappings(entitiesmod.entities):
                         raise IndexError(
                             f'Cannot find attribute "{attr}"'
                         )
+
+                # If there is more dot notation to resolve
                 elif len(path) > 1:
                     try:
                         map = e.orm.mappings[path[0]]
@@ -6121,22 +6163,30 @@ class mappings(entitiesmod.entities):
                             f'Cannot find attribute "{path[0]}"'
                         )
                     else:
+                        # If f is provided, we need to actually load teh
+                        # composite before recursing. 
                         if f:
                             obj = getattr(obj, map.name)
                         else:
                             obj = None
+
+                        # Recurse
                         process(e=map.entity, obj=obj, path=path[1:])
 
+            # Split select over whitespace/commas
             attrs = re.split(r'[,\s]+', select)
 
+            # For each attribute
             for attr in attrs:
                 process(
                     e     =  self.orm.entity,
                     path  =  attr.split('.'),
                     obj   =  self.orm.instance
                 )
+
+        # If select is None
         else:
-            # Get a referece to self's class. 
+            # Get a reference to self's class. 
             rent = self.orm.entity
 
             # The ascendancy loop
@@ -6168,6 +6218,7 @@ class mappings(entitiesmod.entities):
                 rent = rent.orm.super
 
         return maps
+
     @property
     def orm(self):
         """ Returns the ``orm`` instance that this mappings collection
@@ -12227,7 +12278,8 @@ class orm:
 
     @property
     def table(self):
-        """ XXX
+        """ Return an HTML table (dom.table) that represents this
+        orm's entities collection. For more details, see orm.gettable().
         """
         return self.gettable()
 
@@ -12235,7 +12287,8 @@ class orm:
         """ Returns a table row (dom.tr) representation of this `orm`'s
         entity.
         
-        XXX Update comment
+        :param: select str: The select string to pass to
+        orm.mappings.select(). See that method for more details.
         """
         import dom
         inst = self.instance
@@ -12259,7 +12312,8 @@ class orm:
 
     @property
     def tr(self):
-        """ XXX
+        """ Returns a table row (dom.tr) representation of this `orm`'s
+        entity.
         """
         return self.gettr()
 
@@ -12292,7 +12346,8 @@ class orm:
 
         `card` is the read-only counterpart to the orm.form attribute.
 
-        XXX Recomment
+        :param: select str: The select string to pass to
+        orm.mappings.select(). See that method for more details.
         """
         import dom, pom
 
@@ -12306,7 +12361,6 @@ class orm:
         # else.
         if not isinstance(inst, entity):
             raise TypeError('Instance must be an entity')
-
 
         # Set card's metadata
         rent = builtins.type(inst)
