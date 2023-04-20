@@ -15,6 +15,7 @@ from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort
+import testeffort
 import orm
 import party
 import pom
@@ -291,6 +292,68 @@ class ticketsspa_ticket(tester.tester):
         btnedit = res['button.edit'].only
 
         btnedit.click()
+
+class ticketsspa_backlogs(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = carapacian_com.site().Proprietor
+        mods = 'effort',
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(10)
+        bls.save()
+        
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(10, cards.count)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    break
+            else:
+                self.fail('backlog not found in cards collection')
+                break
+
+            # Edit
+            a = card['a[rel=edit]'].only
+            expect = (
+                '/en/ticketsspa/backlog'
+                f'?id={id}&crud=update&oncomplete=/ticketsspa/backlogs'
+            )
+            self.eq(expect, a.href)
+
+
+            tbl = card['table'].only
+
+            self.eq('effort.backlog_story', tbl.getattr('data-entity'))
+
+            ths = tbl['thead tr th']
+
+            hdrs = [x.text for x in ths]
+
+            self.in_(hdrs, 'name')
+            self.in_(hdrs, 'points')
+            self.in_(hdrs, 'created')
+
+            self.one(tbl['p.empty-state'])
+
+            # Add Nwe 
+            a = tbl['a[rel=create-form]'].only
+            expect = (
+                '/en/ticketsspa/story'
+                '?&crud=create'
+                '&oncomplete=/ticketsspa/backlogs'
+                f'&backlogid={bl.id.hex}'
+            )
+            self.eq(expect, a.href)
 
 if __name__ == '__main__':
     tester.cli().run()
