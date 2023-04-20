@@ -160,9 +160,6 @@ class url(tester.tester):
     def it_gets_qs(self):
         url = www.url('http://www.google.com')
 
-        ### XXX
-        #self.eq(dict(), url.qs)
-
         # Get a single qs params
         url = www.url('http://www.google.com?s=test')
         self.eq('test', url.qs['s'])
