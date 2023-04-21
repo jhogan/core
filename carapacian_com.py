@@ -518,21 +518,20 @@ class ticketsspa(pom.spa):
                 as_ = tbl['a[rel~=edit]']
 
                 for a in as_:
-                    href = www.url(f'http://example.com/{a.href}')
-                    qs = href.qs
-                    
+                    url = www.url(f'http://example.com/{a.href}')
+
                     try:
-                        id = UUID(qs['id'][0])
+                        id = UUID(url.qs['id'])
                     except KeyError:
                         pass
                     else:
                         for bs in bl.backlog_stories:
                             if bs.id == id:
-                                qs['id']          =  bs.story.id
-                                qs['backlogid']   =  bl.id.hex
-                                qs['oncomplete']  =  self.path
-                                href.qs = qs
-                                a.href = href.path + '?' + href.query
+                                url.qs['id']          =  bs.story.id
+                                url.qs['backlogid']   =  bl.id.hex
+                                url.qs['oncomplete']  =  self.path
+                                a.href = url.path + '?' + url.query
+
                                 break
                         else:
                             raise ValueError('Cannot find story')
