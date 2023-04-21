@@ -7822,13 +7822,13 @@ with book('Hacking Carapacian Core'):
         contains the information necessary to report back to the end
         user exactly what data is wrong and why it's wrong.
 
-        You will note that each `brokenrule` object has `type` attribute
-        as well as `property` attribute. The `type` property tells you
-        what rule was broken. In the above example, it was the general
-        rule of validity ("valid"). Another broken rule `type` is
-        "fits". The "fits" rule is broken when a value is too large or
-        small to fit in the allocated space of the data type.  This can
-        happen if an integer is larger or smaller than what was
+        You will note that each `brokenrule` object has a `type`
+        attribute as well as `property` attribute. The `type` attribute
+        tells you what rule was broken. In the above example, it was the
+        general rule of validity ("valid"). Another broken rule `type`
+        is "fits". The "fits" rule is broken when a value is too large
+        or small to fit in the allocated space of the data type.  This
+        can happen if an integer is larger or smaller than what was
         specifed. Srings can break the "fits" rule when they are too
         long or short according to the parameters of the attribute.  The
         "full' rule will be broken when a string ought to be non-empty
@@ -7838,7 +7838,7 @@ with book('Hacking Carapacian Core'):
         the name of the entity's attribute that caused the broken rule.
         Using these attributes can help you write logic that reports
         validation rules to the user. For example, you can use the
-        `property` attribute to highlight the input element of an HTML
+        `property` attribute to highlight the <input> element of an HTML
         form that causeed a particular broken rule. You can then put the
         contents of the `message` attribute under the input element so
         the user knows exactly what's wrong. The `type` property may be
@@ -8072,16 +8072,25 @@ with book('Hacking Carapacian Core'):
           instantiating a `brokenrules` collection class, conditionally
           add `brokenrule` objects to that collection, then return the
           collection. There is no need to call the base `brokenrules`
-          property and adding it to the `brokenrules` collection using
-          an idiom such as:
+          property add it to the `brokenrules` collection using an idiom
+          such as:
 
             brs += super().brokenrules
 
           Doing so would lead to results that you don't want so be sure
           to never do this. 
+
+          In the below listing, we further explore this self-containment
+          property of broken rules by creating a subentity of `book`
+          called `audiobook`. This `audiobook` will contain its on
+          `brokenrules` property. Note that this property returns the
+          broken rules of the `audiobook` superentity, and the
+          declarative broken rules. Again, note that this is implicitly,
+          i.e., the `brokenrules` contains no logic that does this. The
+          ORM does this automagically.
         ''')
 
-      with listing('Authoring imperative business logic'):
+      with listing('Adding imperative validation to subclasses'):
         class audiobooks(books):
             """ A collection of `audiobook` entity objects.
             """
@@ -8098,6 +8107,7 @@ with book('Hacking Carapacian Core'):
             @property
             def brokenrules(self):
               brs = entities.brokenrules()
+
               # Valid file formats
               formats = 'mp3', 'aax', 'aac', 'ogg'
 
@@ -8110,6 +8120,7 @@ with book('Hacking Carapacian Core'):
                   )
 
               return brs
+
             # Create a broken audio book with an invalid format, genre and
             # omitted name. 
             ab = audiobook(format='wma', genre='sci-fi', length=300)
