@@ -355,5 +355,51 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
+    def it_navigates_to_story(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(3)
+        bls.save()
+        
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+        card = cards.getrandom()
+        tbl = card['table[data-entity="effort.backlog_story"]'].only
+
+        a = tbl['a[rel=create-form]'].only
+
+        res = self.click(a, tab)
+        self.h200(res)
+
+        main = tab['main'].only
+        self.eq('/ticketsspa/story', main.getattr('data-path'))
+
+        frm = main['form'].only
+
+        inp = frm['[data-entity-attribute=name] input'].only
+
+        name = uuid4().hex
+        inp.value = name
+
+        B()
+        res = self.submit(frm, tab)
+        self.h200(res)
+
+        main = tab['main'].only
+        self.eq('/ticketsspa/backlogs', main.getattr('data-path'))
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     tester.cli().run()
