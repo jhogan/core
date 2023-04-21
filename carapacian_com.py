@@ -485,10 +485,10 @@ class ticketsspa(pom.spa):
                     raise ValueError('Cannot find backlog')
 
                 pg = self.spa.pages['backlog-stories']
-                pg.instance = es[id].backlog_stories
 
                 pg.clear()
 
+                pg.instance = es[id].backlog_stories
                 pg(oncomplete=self.path)
                 
                 # TODO For some reason, calling `pg['table']` causes a
