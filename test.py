@@ -5979,10 +5979,11 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.eq(actual, expected)
 
     def it_doesnt_raise_exception_on_invalid_attr_values(self):
-        # For each type of attribute, ensure that any invalid value can
-        # be given. The invalid value should cause a brokenrule but
-        # should never result in a type coercion exception on assignment
-        # or retrieval
+        """ For each type of attribute, ensure that any invalid value
+        can be given. The invalid value should cause a brokenrule but
+        should never result in a type coercion exception on assignment
+        or retrieval
+        """
 
         # datetime
         art = artist.getvalid()
