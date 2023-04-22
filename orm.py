@@ -12301,9 +12301,12 @@ class orm:
 
         def f(e, name):
             nonlocal tr
-            v = getattr(e, name)
-            td = dom.td(v)
+            td = dom.td()
             td.setattr('data-entity-attribute', name)
+
+            v = getattr(e, name)
+            span = dom.span(v, class_='value')
+            td += span
             tr += td
             
         maps = self.mappings.select(select=select, f=f)
