@@ -8158,16 +8158,21 @@ with book('Hacking Carapacian Core'):
             eq('fits', br.type)
             is_(ab.orm.super, br.entity)
 
-
-    with section('Sorting'):
-      # Go over the nested sorting capabilities of
-      # composite-constiuents:
-      #
-      #    custs.sort('orders.createdat')
-      ...
-
-
   with chapter('The General Entity Model') as sec:
+    print('''
+      Now that you've learned how to create and use ORM entity objects,
+      we can discuss the General Entity Model (GEM). The GEM is a
+      collection of several hundred prebuilt ORM entity classes that
+      come with the framework.They define the business objects for a
+      large number of domains such as persons and organizations, accounting
+      and budgeting, invoicing, order entry, products,
+      shipments and human resources. The GEM also provides object models
+      for industry-specific businssess object such as manufacturing,
+      telecommunications, health care, financial services, professional
+      services, travel and ecommerce &mdash; though these later object
+      models have not yet been implement in the source code as of the
+      time of this writing.
+    ''')
     with section('Using aprori.model()') as sec:
       ...
 
