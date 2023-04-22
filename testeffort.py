@@ -9,8 +9,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022                 #
 ########################################################################
 
-"I have not failed. I've just found 10,000 ways that won't work."
-# Thomas A. Edison
+""" We will encourage you to develop the three great virtues of a
+programmer: laziness, impatience, and hubris. """
+# Larry Wall
 
 import apriori; apriori.model()
 

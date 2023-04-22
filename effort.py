@@ -17,8 +17,9 @@ Examples:
 
 """
 
-"The best way to predict the future is to invent it." 
-# Alan Kay
+""" I choose a lazy person to do a hard job. Because a lazy person will
+find an easy way to do it. """
+# Bill Gates
 
 from datetime import datetime, date
 from dbg import B
