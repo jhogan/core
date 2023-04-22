@@ -1965,25 +1965,6 @@ class element(entities.entity):
         """
         return self is self.root
 
-    @property
-    def parent(self):
-        """ The parent element of this element.
-
-        When an element is append to another element, the first element
-        is considered the second element's parent::
-
-            p = dom.p('I am the parent')
-            span = dom.span('I am the child')
-
-            p += span
-
-            span.parent is p
-        """
-        if not hasattr(self, '_parent'):
-            self._parent = None
-
-        return self._parent
-
     def closest(self, sels):
         """ Asends the DOM tree and returns the first element that
         matches the `sels` CSS selectors.
@@ -2061,6 +2042,34 @@ class element(entities.entity):
             rent = rent.parent
 
         return els
+
+    def orphan(self):
+        """ Detach this `element` from its parent.
+
+        Moving an `element` from one parent to another requires that it
+        be orphan()ed first. Otherwise, a MoveError will be raised.
+        """
+
+        self._parent = None
+
+    @property
+    def parent(self):
+        """ The parent element of this element.
+
+        When an element is append to another element, the first element
+        is considered the second element's parent::
+
+            p = dom.p('I am the parent')
+            span = dom.span('I am the child')
+
+            p += span
+
+            span.parent is p
+        """
+        if not hasattr(self, '_parent'):
+            self._parent = None
+
+        return self._parent
 
     def getparent(self, num=0):
         """ Returns the the parent element of the object. If num is 0,

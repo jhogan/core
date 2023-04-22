@@ -5,6 +5,7 @@ entities:      es
 entity:        e
 field          fld
 fulltext:      ft
+function:      f
 handler:       hnd
 index:         ix
 input:         inp

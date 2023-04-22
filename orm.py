@@ -6087,6 +6087,138 @@ class mappings(entitiesmod.entities):
 
         return self._supermappings
             
+    def select(self, select=None, f=None):
+        """ Return a collection of mappings for this `orm`'s entity
+        class as specified by `select`. If `f` is provided, it will be
+        called with each mappings name and object reference.
+
+        :param: select str: The select string. It contains a list of
+        whitespace or comma seperated attributes to be selected. For
+        example, to obtain the mappings for the orm's entity's `id`,
+        `name` and `createdat` attribute, in that order, you can pass in
+        the following string:
+            
+            'id name createdat'
+
+        You can use dot notation to obtain composite mappings of the
+        entity. For example, if the entity was a sales order, you could
+        get its `id` order `number`, and customer's (the order's
+        composite) name using the following:
+            
+            'id number custome.name'
+
+        :param: f callable: If a callable is passed in for `f`, it will
+        be called whenever a mappings is discoverd for selection. The
+        object, whether the orm's instance or a composite there of
+        (using dot notation (see above)) will be passed in as the first
+        argument. The name of the mapping will be passed in as the
+        second.
+        """
+
+        # Create a mappings collection to return
+        maps = mappings()
+
+        # If a select string was provided
+        if select:
+            def process(e, path, obj):
+                """ A recursive function to process an attribute.
+                Recursion is only necessary when dot notation is used.
+                """
+
+                # Get access to the outer method's `maps` collection
+                nonlocal maps
+
+                # If we are at the end of the dot notation
+                if len(path) == 1:
+
+                    # For all mappings including supers
+                    for map in e.orm.mappings.all:
+                        
+                        # If a match was found
+                        if map.name == path[0]:
+
+                            # Add to return collection
+                            maps += map
+
+                            # Call f if provided
+                            if f:
+                                f(e=obj, name=map.name)
+
+                            break
+                    else:
+                        # TODO We may want to reevaluate this. It's
+                        # possible that a user wants to `select` an
+                        # attribute that exists on the object but is not
+                        # part of the mappings collection.
+                        raise IndexError(
+                            f'Cannot find attribute "{attr}"'
+                        )
+
+                # If there is more dot notation to resolve
+                elif len(path) > 1:
+                    try:
+                        map = e.orm.mappings[path[0]]
+                    except IndexError:
+                        raise IndexError(
+                            f'Cannot find attribute "{path[0]}"'
+                        )
+                    else:
+                        # If f is provided, we need to actually load teh
+                        # composite before recursing. 
+                        if f:
+                            obj = getattr(obj, map.name)
+                        else:
+                            obj = None
+
+                        # Recurse
+                        process(e=map.entity, obj=obj, path=path[1:])
+
+            # Split select over whitespace/commas
+            attrs = re.split(r'[,\s]+', select)
+
+            # For each attribute
+            for attr in attrs:
+                process(
+                    e     =  self.orm.entity,
+                    path  =  attr.split('.'),
+                    obj   =  self.orm.instance
+                )
+
+        # If select is None
+        else:
+            # Get a reference to self's class. 
+            rent = self.orm.entity
+
+            # The ascendancy loop
+            while rent:
+                # For each map ...
+                for map in rent.orm.mappings:
+                    if not isinstance(map, fieldmapping):
+                        continue
+
+                    if isinstance(map, foreignkeyfieldmapping):
+                        continue
+
+                    # Skip fields the user should not be responsible for
+                    if map.name == 'createdat':
+                        continue
+
+                    # TODO We will want to include this field but ensure
+                    # the element`s `hidden` attribute is set. If the
+                    # browser sends the updatedat field, the
+                    # serever-side logic can guard against dirty reads.
+                    if map.name == 'updatedat':
+                        continue
+
+                    if f:
+                        f(e=self.orm.instance, name=map.name)
+
+                    maps += map
+
+                rent = rent.orm.super
+
+        return maps
+
     @property
     def orm(self):
         """ Returns the ``orm`` instance that this mappings collection
@@ -11885,6 +12017,9 @@ class orm:
 
     @property
     def form(self):
+        return self.getform()
+   
+    def getform(self, select=None):
         """ Return a <form> object for this `entity`. 
 
         The <form> object can be sent to a browser to accept input by a
@@ -11896,8 +12031,8 @@ class orm:
         frm = dom.form()
         inst = self.instance
 
-        # Get a referece to self's class. We will use it to ascend the
-        # inheritence hierarchy.
+        # Get a referece to self's class. We may use it later to ascend
+        # the inheritence hierarchy.
         rent = builtins.type(inst)
 
         # Assign the data-entity attribute of the <form>, e.g.:
@@ -11912,112 +12047,161 @@ class orm:
         # prevent access the same attribute twice.
         names = list()
 
-        # The ascendancy loop
-        while rent:
-            # For each map ...
-            for map in rent.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
+        # TODO Use orm.mappings.select
 
-                name = map.name
-                lbl = name.capitalize()
+        class DuplicateError(Exception):
+            pass
 
-                # Don't revisit the same name
-                if name in names:
-                    continue
+        class UnsupportedTypeError(Exception):
+            pass
 
-                names.append(name)
+        def create_input(map):
+            name = map.name
 
-                # Skip fields the user should not be responsible for
-                if name == 'createdat':
-                    continue
+            lbl = name.capitalize()
 
-                if name == 'updatedat':
-                    continue
+            # Don't revisit the same name
+            if name in names:
+                raise DuplicateError
 
-                # The `step` attribute of the <input> element
-                step = None
+            names.append(name)
 
-                # Hide the id field
-                if name == 'id':
-                    type = 'hidden'
-                    lbl = None
+            # The `step` attribute of the <input> element
+            step = None
 
-                elif map.isstr:
-                    if map.definition == 'longtext':
-                        type = 'textarea'
-                    else:
-                        type = 'text'
-                        
-                elif map.isdate:
-                    type = 'date'
+            # Hide the id field
+            if name == 'id':
+                type = 'hidden'
+                lbl = None
 
-                elif map.isdatetime:
-                    type = 'datetime-local'
-
-                # TODO We should probably have a map.isnumeric here
-                elif map.isdecimal:
-                    type = 'number'
+            elif map.isstr:
+                if map.definition == 'longtext':
+                    type = 'textarea'
+                else:
+                    type = 'text'
                     
-                    # A `step` of "any" allows decimal values to be
-                    # entered
-                    step = 'any'
+            elif map.isdate:
+                type = 'date'
 
-                elif map.isnumeric:
-                    type = 'number'
+            elif map.isdatetime:
+                type = 'datetime-local'
 
-                else:
-                    continue
-
-                # Create a pom.input object to store the <label> with the
-                # <input> field.
-                inp = pom.input(name=name, type=type, label=lbl)
-
-                inp.attributes['data-entity-attribute'] = map.name
-
-                # Get the underlying <input>/<textaria> object
-                dominp = inp.input
-
-                # Set some browser validation attributes
-                if map.isstr:
-                    dominp.minlength = map.min
-                    dominp.maxlength = map.max
-
-                elif map.isnumeric:
-                    dominp.min = map.min
-                    dominp.max = map.max
-
-                # TODO Should we use <time> for datetimes? Are we doing
-                # that in orm.card?
-
-                if step:
-                    dominp.step = step
-
-                # Hexify the primary key
-                if name == 'id':
-                    inp.input.value = inst.id.hex
-
-                v = getattr(inst, name)
+            # TODO We should probably have a map.isnumeric here
+            elif map.isdecimal:
+                type = 'number'
                 
-                if v is None:
-                    v = str()
+                # A `step` of "any" allows decimal values to be
+                # entered
+                step = 'any'
 
-                if isinstance(dominp, dom.textarea):
-                    dominp += dom.text(v)
-                else:
-                    dominp.value = v
+            elif map.isnumeric:
+                type = 'number'
 
-                frm += inp
+            else:
+                raise UnsupportedTypeError
 
-            rent = rent.orm.super
+            # Create a pom.input object to store the <label> with the
+            # <input> field.
+            inp = pom.input(name=name, type=type, label=lbl)
+
+            inp.attributes['data-entity-attribute'] = map.name
+
+            # Get the underlying <input>/<textaria> object
+            dominp = inp.input
+
+            # Set some browser validation attributes
+            if map.isstr:
+                dominp.minlength = map.min
+                dominp.maxlength = map.max
+
+            elif map.isnumeric:
+                dominp.min = map.min
+                dominp.max = map.max
+
+            # TODO Should we use <time> for datetimes? Are we doing
+            # that in orm.card?
+
+            if step:
+                dominp.step = step
+
+            # Hexify the primary key
+            if name == 'id':
+                inp.input.value = inst.id.hex
+
+            v = getattr(inst, name)
+            
+            if v is None:
+                v = str()
+
+            if isinstance(dominp, dom.textarea):
+                dominp += dom.text(v)
+            else:
+                dominp.value = v
+
+            return inp
+
+        if select:
+            def process(e, path):
+                nonlocal frm
+                maps = e.orm.mappings.all
+                if len(path) == 1:
+                    for map in maps:
+                        attr = path[0]
+                        if map.name == attr:
+                            try:
+                                frm += create_input(map)
+                            except DuplicateError:
+                                pass
+                            except UnsupportedTypeError:
+                                pass
+                            else:
+                                break
+                    else:
+                        raise IndexError(
+                            f'Cannot find attribute "{attr}"'
+                        )
+                elif len(path) > 1:
+                    if v := getattr(e, path[0]):
+                        process(e=v, path=path[1:])
+
+            attrs = re.split('\W+', select)
+
+            for attr in attrs:
+                process(e=self.instance, path=attr.split('.'))
+        else:
+            # The ascendancy loop
+            while rent:
+                # For each map ...
+                for map in rent.orm.mappings:
+                    if not isinstance(map, fieldmapping):
+                        continue
+
+                    # Skip fields the user should not be responsible for
+                    if map.name == 'createdat':
+                        continue
+
+                    # TODO We will want to include this field but insure
+                    # the element`s `hidden` attribute is set. If the
+                    # browser sends the updatedat field, the
+                    # serever-side logic can guard against dirty reads.
+                    if map.name == 'updatedat':
+                        continue
+
+                    try:
+                        frm += create_input(map)
+                    except (DuplicateError, UnsupportedTypeError):
+                        pass
+
+                rent = rent.orm.super
 
         # Add a <button type="submit">
         frm += dom.button('Submit', type='submit')
 
+        frm.setattr('data-entity-id', inst.id.hex)
+
         return frm
 
-    @property
-    def cards(self):
+    def getcards(self, select=None):
         """ Returns a new dom.div which contains a collection  of entity
         card.
         """
@@ -12030,23 +12214,42 @@ class orm:
         div.setattr('data-entity', e)
 
         for e in self.instance:
-            div += e.orm.card
+            div += e.orm.getcard(select=select)
 
         return div
 
-    @property
-    def table(self):
+    def gettable(self, select=None):
         """ Return an HTML table (dom.table) that represents this
         orm's entities collection.
+
+        :param: select str: Similar to a SELECT clause, the `select`
+        string contains a list of entity attributes to be included in
+        the table. If `select` is None, all attributes all select.
+
+        For example, if the entity has an `id` and a `name` column,
+        specifying the below string for `select` would cause the `name`
+        attribute to be presented in the first column o the table and
+        the `id` attribute to be displayed in the second column:
+            
+            'name id`
+
+        Note tha you could use commas if you like the syntax to look
+        more like SQL:
+
+            'name, id'
         """
         import dom
 
-        tbl    =  dom.table()
+        # Create the table object to return
+        tbl = dom.table()
 
+        # Set <table>'s  data-entity attribute to the fully qualified
+        # name of the entity's class.
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
-
         tbl.setattr('data-entity', e)
+
+        ''' Create table header '''
 
         thead  =  dom.thead()
         tr     =  dom.tr()
@@ -12054,48 +12257,38 @@ class orm:
         tbl    +=  thead
         thead  +=  tr
 
-        rent = self.entity
+        # Get the columns as a collection of mappings
+        maps = self.mappings.select(select=select)
 
-        names = list()
-        # The inheritance ascension loop
-        while rent:
-            
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                name = map.name
+        # Add the columns headers to the <table>
+        for map in maps:
+            tr += dom.th(map.name)
 
-                if not isinstance(map, fieldmapping):
-                    continue
-
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
-
-                if name in ('createdat', 'updatedat'):
-                    continue
-
-                if name in names:
-                    continue
-
-                names.append(name)
-
-
-                tr += dom.th(name)
-
-            # Ascend
-            rent = rent.orm.super
-
+        ''' Create table body '''
         tbody = dom.tbody()
         tbl += tbody
 
+        # Create a <tr> for each entity in the collection and add it to
+        # the <table>'s body
         for e in self.instance:
-            tbody += e.orm.tr
+            tbody += e.orm.gettr(select=select)
 
+        # Return the table
         return tbl
 
     @property
-    def tr(self):
+    def table(self):
+        """ Return an HTML table (dom.table) that represents this
+        orm's entities collection. For more details, see orm.gettable().
+        """
+        return self.gettable()
+
+    def gettr(self, select=None):
         """ Returns a table row (dom.tr) representation of this `orm`'s
         entity.
+        
+        :param: select str: The select string to pass to
+        orm.mappings.select(). See that method for more details.
         """
         import dom
         inst = self.instance
@@ -12106,40 +12299,28 @@ class orm:
         tr.setattr('data-entity', e)
         tr.setattr('data-entity-id', inst.id.hex)
 
-        rent = self.entity
-        names = list()
-        # The inheritance ascension loop
-        while rent:
+        def f(e, name):
+            nonlocal tr
+            td = dom.td()
+            td.setattr('data-entity-attribute', name)
+
+            v = getattr(e, name)
+            span = dom.span(v, class_='value')
+            td += span
+            tr += td
             
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                name = map.name
-
-                if not isinstance(map, fieldmapping):
-                    continue
-
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
-
-                if name in ('createdat', 'updatedat'):
-                    continue
-
-                if name in names:
-                    continue
-
-                names.append(name)
-
-                td = dom.td(getattr(self.instance, name))
-                td.setattr('data-entity-attribute', name)
-                tr += td
-
-            # Ascend
-            rent = rent.orm.super
+        maps = self.mappings.select(select=select, f=f)
 
         return tr
 
     @property
-    def card(self):
+    def tr(self):
+        """ Returns a table row (dom.tr) representation of this `orm`'s
+        entity.
+        """
+        return self.gettr()
+
+    def getcard(self, select=None):
         """ Returns a read-only HTML representation of the entity. 
 
         cards are <article>s that show the entity's attribute names
@@ -12167,75 +12348,69 @@ class orm:
             </article>
 
         `card` is the read-only counterpart to the orm.form attribute.
+
+        :param: select str: The select string to pass to
+        orm.mappings.select(). See that method for more details.
         """
         import dom, pom
 
         # Create the `card` object that we will build and return
         card = pom.card()
 
+        # Get the entity object
         inst = self.instance
-        rent = builtins.type(inst)
 
-        # Set some attributes that store meta data
+        # Demand instance be orm.entity, not orm.entities or something
+        # else.
+        if not isinstance(inst, entity):
+            raise TypeError('Instance must be an entity')
+
+        # Set card's metadata
+        rent = builtins.type(inst)
         e = self.entity
         e = f'{e.__module__}.{e.__name__}'
         card.attributes['data-entity'] = e
         card.attributes['data-entity-id'] = inst.id.hex
 
-        # Create a `names` list so we don't use the same attribute name
-        # twice.
-        names = list()
+        def f(e, name):
+            """ A function called by `mappings.select` (see below) which
+            allows us to capture each of the entity's attributes it has
+            seleted for us. We use that data to create a <div> for each
+            of the selected attributes and append them to the card.
+            """
+            nonlocal card
 
-        # The inheritance ascension loop
-        while rent:
-            
-            # Iterate over the mappings
-            for map in rent.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
+            # Get the value of the entity 
+            v = getattr(e, name)
 
-                if isinstance(map, foreignkeyfieldmapping):
-                    continue
+            # Build the <div>
+            div = dom.div()
+            div.setattr('data-entity-attribute', name)
 
-                name = map.name
-                label = name.capitalize()
+            # Build the <label>
+            lbl = dom.label(name.capitalize())
+            div += lbl
 
-                # Prevent redundant use of a name
-                if name in names:
-                    continue
+            # Build the <span>
+            span = dom.span(v)
+            div += span
 
-                names.append(name)
+            # Link the <label> to th <span>
+            span.identify()
+            lbl.for_ = span.id
 
-                # Skip systemic attributes 
-                if name == 'createdat':
-                    continue
+            # Append to card
+            card += div
 
-                if name == 'updatedat':
-                    continue
-
-                # Create a <div> for each mapping
-                div = dom.div()
-                div.attributes['data-entity-attribute'] = name
-                card += div
-
-                # Add a <label> to the <div>
-
-                lbl = dom.label(name.capitalize())
-
-                div += lbl
-
-                # Create a <span> to hold the mapping's value
-                v = getattr(inst, name)
-                span = dom.span(v)
-                div += span
-
-                span.identify()
-                lbl.for_ = span.id
-
-            # Ascend
-            rent = rent.orm.super
+        # Call the select method passing in f() to collect the data and
+        # build the <article> (card).
+        self.mappings.select(select=select, f=f)
 
         return card
+
+    @property
+    def card(self):
+        return self.getcard()
 
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()

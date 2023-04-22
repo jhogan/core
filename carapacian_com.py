@@ -462,18 +462,186 @@ class ticketsspa(pom.spa):
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
 
+        def main(self, 
+            id:str=None, crud:str='retrieve', oncomplete=None
+        ):
+            """ Override main to pull in a table of stories.
+            """
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+            # Get instance
+            es = self.instance
+
+            # Get backlog articls
+            cards = self.main['article.card']
+
+            # For each backlog card in cards, add a table of stories
+            for card in cards:
+                # Get backlog id from card
+                id = card.getattr('data-entity-id')
+                id = UUID(id)
+
+                bl = self.instance[id]
+
+                # Get the backlog-to-stories association page
+                pg = self.spa.pages['backlog-stories']
+                pg.clear()
+
+                # Set its instance
+                pg.instance = bl.backlog_stories
+                pg(oncomplete=self.path)
+                
+                # TODO For some reason, calling `pg['table']` causes a
+                # dom.MoveError. Ideally, we would be able to do this.
+                tbl = pg.main['table'].only
+
+                # Remove Quick Edit. Quick Edits are designed to use the
+                # current page (self), but since these Quick Edits are
+                # from a differnt page (pg), their href confuses the
+                # JavaScript.
+                as_ = tbl['menu a[rel~=edit][rel~=preview]']
+                for a in as_:
+                    a.closest('li').remove()
+
+                # Get the Add New anchor
+                a = tbl['[rel=create-form]'].only
+
+                # Add a backlogid query string parameter
+
+                # TODO It would be nice if dom.a objects had a `url`
+                # property that returned a www.url that was bound to the
+                # anchor. That way, we could write the below statement
+                # as:
+                #
+                # a.url.qs['backlogid'] = card.getattr('data-entity-id')
+                #
+                # Event handlers within the dom.a would be responsible
+                # for updating the actual a.href property, thus the same
+                # results would be achieved. This would be better
+                # because the currently solution could potentially
+                # append multiple backlogid parameters to the query
+                # sting without knowing it. This approach would reequire
+                # that the www.url class can deal with URL path's
+                # without the need for a scheme or domain name.
+                a.href += '&backlogid=' + card.getattr('data-entity-id')
+
+                # Get each Edit element's href
+                as_ = tbl['a[rel~=edit]']
+
+                # Update each Edit elements href
+                for a in as_:
+                    url = www.url(f'http://example.com/{a.href}')
+
+                    try:
+                        id = UUID(url.qs['id'])
+                    except KeyError:
+                        pass
+                    else:
+                        for bs in bl.backlog_stories:
+                            if bs.id == id:
+                                url.qs['id']          =  bs.story.id
+                                url.qs['backlogid']   =  bl.id.hex
+                                url.qs['oncomplete']  =  self.path
+                                a.href = url.path + '?' + url.query
+
+                                break
+                        else:
+                            raise ValueError('Cannot find story')
+
+                # Remove the table's parent so we can make `card` its
+                # new parent
+                tbl.orphan()
+
+                card += tbl
+            
         @property
         def detail(self):
             return self.spa.pages['backlog']
+
+        @property
+        def select(self):
+            if not self._select:
+                return (
+                    'name, description, goal, begin end'
+                )
+            return self._select
 
     class backlog(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
 
+    class backlog_stories(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                e=effort.backlog_stories, presentation='table', 
+                *args, **kwargs
+            )
+
         @property
         def detail(self):
-            return self.spa.pages['backlog']
+            return self.spa.pages['story']
 
+        @property
+        def select(self):
+            if not self._select:
+                return (
+                    'story.name story.points story.created'
+                )
+            return self._select
+
+    class story(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(e=effort.story, *args, **kwargs)
+            self.onbeforesave += self.self_onbeforesave
+
+        def main(self, 
+            id:str=None, crud:str='retrieve', oncomplete=None,
+            backlogid=None
+        ):
+
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+            frm = self.main['form'].only
+
+            if backlogid:
+                bl = effort.backlog(backlogid)
+
+                inp = pom.input(
+                    type = 'text',
+                    label = 'Backlog',
+                    name = 'story.backlog'
+                )
+
+                inp.setattr('data-entity-attribute', 'backlog')
+                inp.input.value = bl.name
+                inp.input.setattr('data-entity-id', bl.id.hex)
+                inp.input.disabled = True
+
+                frm << inp
+
+        @property
+        def detail(self):
+            return self.spa.pages['story']
+
+        @property
+        def select(self):
+            if not self._select:
+                return 'name points description'
+
+        def self_onbeforesave(self, src, eargs):
+            st = eargs.entity
+
+            if st.orm.isnew:
+                st.created = datetime.utcnow()
+
+            if st.backlog:
+                return
+
+            inp = eargs.html['input[name="story.backlog"]'].only
+            id = inp.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            bl.insert(st)
+            eargs.stead = bl
 
     class search(pom.page):
         def main(self):
@@ -487,6 +655,10 @@ class ticketsspa(pom.spa):
         # Main
         self.pages += ticketsspa.backlogs()
         self.pages += ticketsspa.backlog()
+
+        self.pages += ticketsspa.backlog_stories()
+        self.pages += ticketsspa.story()
+
         self.pages += ticketsspa.ticket()
         self.pages += ticketsspa.search()
         self.pages += ticketsspa.people()
@@ -736,6 +908,24 @@ body>footer p{
 
 body>footer p{
     color: #116a36;
+}
+
+article.card, form {
+    display: grid;
+    grid-template-columns: repeat(2, 30em);
+    gap: 1em 0em;
+}
+
+article.card table{
+    grid-column: 1 / span 2;
+}
+
+form {
+    grid-template-columns: repeat(1, 30em);
+}
+
+label{
+    margin-right: 1em;
 }
 '''
         

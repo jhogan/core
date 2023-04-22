@@ -9,8 +9,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022                 #
 ########################################################################
 
-"I have not failed. I've just found 10,000 ways that won't work."
-# Thomas A. Edison
+""" We will encourage you to develop the three great virtues of a
+programmer: laziness, impatience, and hubris. """
+# Larry Wall
 
 import apriori; apriori.model()
 
@@ -825,18 +826,25 @@ class backlog(tester.tester):
         orm.security().owner = ecommerce.users.root
 
     @staticmethod
-    def getvalid():
-        bl = effort.backlog()
-        bl.name = 'Maintenance Backlog'
-        bl.description = 'A backlog of maintenance and tech debt items'
-        bl.begin = '2020-01-01'
-        bl.end = '2020-02-01'
-        bl.goal = (
-            'Identify and resolve technical debt and maintenance items'
-            'that are not urgent but need attention.'
-        )
+    def getvalid(n=None):
+        if n is None:
+            bl = effort.backlog()
+            bl.name = 'Maintenance Backlog'
+            bl.description = 'A backlog of maintenance and tech debt items'
+            bl.begin = '2020-01-01'
+            bl.end = '2020-02-01'
+            bl.goal = (
+                'Identify and resolve technical debt and maintenance items'
+                'that are not urgent but need attention.'
+            )
 
-        return bl
+            return bl
+        else:
+            bls = effort.backlogs()
+            for i in range(n):
+                bls += backlog.getvalid()
+
+            return bls
 
     def it_creates(self):
         bl = self.getvalid()
@@ -888,7 +896,7 @@ class backlog(tester.tester):
         self.one(bss)
         bs = bss.only
         self.is_(st, bs.story)
-        self.eq(0, bs.ordinal)
+        self.eq(0, bs.rank)
 
         bl.save()
 
@@ -899,7 +907,7 @@ class backlog(tester.tester):
         self.one(bss)
         bs = bss.only
         self.eq(st.id, bs.story.id)
-        self.eq(0, bs.ordinal)
+        self.eq(0, bs.rank)
 
     def it_inserts_multiple_stories(self):
         ''' Insert multiple stories at the loweset ranking '''
@@ -907,9 +915,9 @@ class backlog(tester.tester):
         st1 = story.getvalid()
         st2 = story.getvalid()
 
-        # This will put st1 at ordinal 0
+        # This will put st1 at rank 0
         #
-        #     ordinal | story
+        #     rank    | story
         #     ------- |------
         #           0 | st1
         #
@@ -917,11 +925,11 @@ class backlog(tester.tester):
 
         ''' Insert at the begining (lowest rank) '''
         # Note that inserting st2 here ranks it lowest in the backlog
-        # because the `ord` param of `insert()` defaults to zero. This
-        # means st1's ordinal will be incremented from 0 to one.
+        # because the `rank` param of `insert()` defaults to zero. This
+        # means st1's rank will be incremented from 0 to one.
         #
-        #     ordinal | story
-        #     ------- |------
+        #      rank   | story
+        #      -------|------
         #           0 | st2
         #           1 | st1
         #
@@ -930,9 +938,9 @@ class backlog(tester.tester):
         bss = bl.backlog_stories
         self.two(bss)
 
-        bss.sort('ordinal')
+        bss.sort('rank')
 
-        self.eq([0, 1], bss.pluck('ordinal'))
+        self.eq([0, 1], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st1]):
             self.is_(st, bs.story)
@@ -942,11 +950,11 @@ class backlog(tester.tester):
         bl1 = bl.orm.reloaded()
 
         bss = bl1.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.two(bss)
 
-        self.eq([0, 1], bss.pluck('ordinal'))
+        self.eq([0, 1], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st1]):
             self.eq(st.id, bs.story.id)
@@ -960,19 +968,19 @@ class backlog(tester.tester):
 
         # Insert st3 befor st1
         #
-        #     ordinal | story
-        #     ------- |------
+        #      rank   | story
+        #      -------|------
         #           0 | st2
         #           1 | st3
         #           2 | st1
         #
         bl1.insert(1, st3)
         bss = bl1.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.three(bss)
 
-        self.eq([0, 1, 2], bss.pluck('ordinal'))
+        self.eq([0, 1, 2], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st3, st1]):
             self.eq(st.id, bs.story.id)
@@ -982,11 +990,11 @@ class backlog(tester.tester):
         bl1 = bl1.orm.reloaded()
 
         bss = bl1.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.three(bss)
 
-        self.eq([0, 1, 2], bss.pluck('ordinal'))
+        self.eq([0, 1, 2], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st3, st1]):
             self.eq(st.id, bs.story.id)
@@ -997,8 +1005,8 @@ class backlog(tester.tester):
 
         # Insert st3 befor st1
         #
-        #     ordinal | story
-        #     ------- |------
+        #        rank | story
+        #      -------|------
         #           0 | st2
         #           1 | st3
         #           2 | st1
@@ -1006,11 +1014,11 @@ class backlog(tester.tester):
         #
         bl1.insert(3, st4)
         bss = bl1.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.four(bss)
 
-        self.eq([0, 1, 2, 3], bss.pluck('ordinal'))
+        self.eq([0, 1, 2, 3], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st3, st1, st4]):
             self.eq(st.id, bs.story.id)
@@ -1020,11 +1028,11 @@ class backlog(tester.tester):
         bl1 = bl1.orm.reloaded()
 
         bss = bl1.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.four(bss)
 
-        self.eq([0, 1, 2, 3], bss.pluck('ordinal'))
+        self.eq([0, 1, 2, 3], bss.pluck('rank'))
 
         for bs, st in zip(bss, [st2, st3, st1, st4]):
             self.eq(st.id, bs.story.id)
@@ -1048,13 +1056,13 @@ class backlog(tester.tester):
 
         self.notin(bl1.stories.pluck('id'), st.id)
         self.in_(bl2.stories.pluck('id'), st.id)
-        self.eq([0], bl2.backlog_stories.pluck('ordinal'))
+        self.eq([0], bl2.backlog_stories.pluck('rank'))
 
         st.move(bl2, bl1)
 
         self.in_(bl1.stories.pluck('id'), st.id)
         self.notin(bl2.stories.pluck('id'), st.id)
-        self.eq([0], bl1.backlog_stories.pluck('ordinal'))
+        self.eq([0], bl1.backlog_stories.pluck('rank'))
 
         bl1.save(bl2)
 
@@ -1063,7 +1071,7 @@ class backlog(tester.tester):
 
         self.in_(bl1.stories.pluck('id'), st.id)
         self.notin(bl2.stories.pluck('id'), st.id)
-        self.eq([0], bl1.backlog_stories.pluck('ordinal'))
+        self.eq([0], bl1.backlog_stories.pluck('rank'))
 
         ''' Move stories from a backlog of 5'''
         bl1 = self.getvalid()
@@ -1083,8 +1091,8 @@ class backlog(tester.tester):
             self.notin(bl1.stories.pluck('id'), st.id)
             self.in_(bl2.stories.pluck('id'), st.id)
 
-            bss2 = bl2.backlog_stories.sorted('ordinal')
-            self.eq(list(range(i+1)), bss2.pluck('ordinal'))
+            bss2 = bl2.backlog_stories.sorted('rank')
+            self.eq(list(range(i+1)), bss2.pluck('rank'))
 
             bl2.save(bl1)
             bl1 = bl1.orm.reloaded()
@@ -1096,8 +1104,8 @@ class backlog(tester.tester):
             self.notin(bl1.stories.pluck('id'), st.id)
             self.in_(bl2.stories.pluck('id'), st.id)
 
-            bss2 = bl2.backlog_stories.sorted('ordinal')
-            self.eq(list(range(i+1)), bss2.pluck('ordinal'))
+            bss2 = bl2.backlog_stories.sorted('rank')
+            self.eq(list(range(i+1)), bss2.pluck('rank'))
 
     def it_moves_a_story_within_a_backlog(self):
         bl = self.getvalid()
@@ -1106,17 +1114,17 @@ class backlog(tester.tester):
 
         ''' Add two then switch their order '''
 
-        # Insert st0 at ordinal 0 
+        # Insert st0 at rank 0 
         bl.insert(st0)
 
-        # Insert st1 at ordinal 0, moving st0 to ordinal 1
+        # Insert st1 at rank 0, moving st0 to rank 1
         bl.insert(st1)
 
-        # Insert st0 back to ordinal 0 ; moving st1 to ordinal 1
+        # Insert st0 back to rank 0 ; moving st1 to rank 1
         bl.insert(st0)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
         self.two(bss)
 
         self.is_(st0, bss.first.story)
@@ -1127,7 +1135,7 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
         self.two(bss)
 
         self.eq(st0.id, bss.first.story.id)
@@ -1145,8 +1153,8 @@ class backlog(tester.tester):
                 seq = range(4, -1, -1)
 
             for i in seq:
-                bl.insert(ord=i, st=st5)
-                bss = bl.backlog_stories.sorted('ordinal')
+                bl.insert(rank=i, st=st5)
+                bss = bl.backlog_stories.sorted('rank')
 
                 sts = bss.pluck('story')
                 self.eq(st5.id, sts[i].id, str(i))
@@ -1154,7 +1162,7 @@ class backlog(tester.tester):
                 bl.save()
                 bl = bl.orm.reloaded()
 
-                bss = bl.backlog_stories.sorted('ordinal')
+                bss = bl.backlog_stories.sorted('rank')
 
                 sts = bss.pluck('story')
                 self.eq(st5.id, sts[i].id, str(i))
@@ -1177,21 +1185,21 @@ class backlog(tester.tester):
             bl.insert(st)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
-        # Obtain the stories ensuring that the are sorted by ordinal
+        # Obtain the stories ensuring that the are sorted by rank
         sts = effort.stories(bss.pluck('story'))
 
         rms = bl.remove(sts.first)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.one(bss)
         self.one(rms)
         self.is_(sts.first, rms.only)
         self.is_(sts.second, bss.only.story)
-        self.eq(0, bss.only.ordinal)
+        self.eq(0, bss.only.rank)
 
         ''' Add 2; remove second '''
         sts = story.getvalid(n=2)
@@ -1200,21 +1208,21 @@ class backlog(tester.tester):
             bl.insert(st)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
-        # Obtain the stories ensuring that they are sorted by ordinal
+        # Obtain the stories ensuring that they are sorted by rank
         sts = effort.stories(bss.pluck('story'))
 
         rms = bl.remove(sts.second)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.one(bss)
         self.one(rms)
         self.is_(sts.second, rms.only)
         self.is_(sts.first, bss.only.story)
-        self.eq(0, bss.only.ordinal)
+        self.eq(0, bss.only.rank)
 
         ''' Add 10; removes first, middle, last '''
         sts = story.getvalid(n=10)
@@ -1223,7 +1231,7 @@ class backlog(tester.tester):
             bl.insert(st)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         sts = effort.stories(bss.pluck('story'))
 
@@ -1231,7 +1239,7 @@ class backlog(tester.tester):
         rms = bl.remove(sts.first)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.nine(bss)
@@ -1239,7 +1247,7 @@ class backlog(tester.tester):
         self.is_(sts.first, rms.only)
         self.is_(sts.second, bss.first.story)
         self.is_(sts.last, bss.last.story)
-        self.eq(list(range(9)), bss.pluck('ordinal'))
+        self.eq(list(range(9)), bss.pluck('rank'))
 
         # Remove last
         sts = effort.stories(bss.pluck('story'))
@@ -1247,7 +1255,7 @@ class backlog(tester.tester):
         rms = bl.remove(sts.last)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.eight(bss)
@@ -1255,7 +1263,7 @@ class backlog(tester.tester):
         self.is_(sts.last, rms.only)
         self.is_(sts.first, bss.first.story)
         self.is_(sts.penultimate, bss.last.story)
-        self.eq(list(range(8)), bss.pluck('ordinal'))
+        self.eq(list(range(8)), bss.pluck('rank'))
 
         # Remove middle
         sts = effort.stories(bss.pluck('story'))
@@ -1263,7 +1271,7 @@ class backlog(tester.tester):
         rms = bl.remove(sts.fourth)
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.seven(bss)
@@ -1271,7 +1279,7 @@ class backlog(tester.tester):
         self.is_(sts.fourth, rms.only)
         self.is_(sts.first, bss.first.story)
         self.is_(sts.last, bss.last.story)
-        self.eq(list(range(7)), bss.pluck('ordinal'))
+        self.eq(list(range(7)), bss.pluck('rank'))
 
     def it_removes_persisted_stories(self):
         ''' Add and remove one story '''
@@ -1307,13 +1315,13 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.one(bss)
         self.one(rms)
         self.is_(sts.first, rms.only)
         self.eq(sts.second.id, bss.only.story.id)
-        self.eq(0, bss.only.ordinal)
+        self.eq(0, bss.only.rank)
 
         ''' Add 2; remove second '''
         sts = story.getvalid(n=2)
@@ -1332,13 +1340,13 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.one(bss)
         self.one(rms)
         self.is_(sts.second, rms.only)
         self.eq(sts.first.id, bss.only.story.id)
-        self.eq(0, bss.only.ordinal)
+        self.eq(0, bss.only.rank)
 
         ''' Add 10; removes first, middle, last '''
         sts = story.getvalid(n=10)
@@ -1350,7 +1358,7 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
         sts = effort.stories(bss.pluck('story'))
 
         # Remove first
@@ -1360,7 +1368,7 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.nine(bss)
@@ -1368,11 +1376,11 @@ class backlog(tester.tester):
         self.is_(sts.first, rms.only)
         self.eq(sts.second.id, bss.first.story.id)
         self.eq(sts.last.id, bss.last.story.id)
-        self.eq(list(range(9)), bss.pluck('ordinal'))
+        self.eq(list(range(9)), bss.pluck('rank'))
 
         # Remove last
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
         sts = effort.stories(bss.pluck('story'))
         rms = bl.remove(sts.last)
 
@@ -1380,19 +1388,19 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.eight(bss)
         self.one(rms)
         self.is_(sts.last, rms.only)
         self.eq(sts.penultimate.id, bss.last.story.id)
-        self.eq(list(range(8)), bss.pluck('ordinal'))
+        self.eq(list(range(8)), bss.pluck('rank'))
 
         # Remove middle
         bss = bl.backlog_stories
         sts = effort.stories(bss.pluck('story'))
-        bss.sort('ordinal')
+        bss.sort('rank')
         sts = effort.stories(bss.pluck('story'))
         rms = bl.remove(sts.fourth)
 
@@ -1400,7 +1408,7 @@ class backlog(tester.tester):
         bl = bl.orm.reloaded()
 
         bss = bl.backlog_stories
-        bss.sort('ordinal')
+        bss.sort('rank')
 
         self.notin(bss.pluck('story'), rms.only)
         self.seven(bss)
@@ -1408,7 +1416,7 @@ class backlog(tester.tester):
         self.is_(sts.fourth, rms.only)
         self.eq(sts.first.id, bss.first.story.id)
         self.eq(sts.last.id, bss.last.story.id)
-        self.eq(list(range(7)), bss.pluck('ordinal'))
+        self.eq(list(range(7)), bss.pluck('rank'))
 
 class story(tester.tester):
     def __init__(self, *args, **kwargs):

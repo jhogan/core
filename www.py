@@ -2814,10 +2814,6 @@ class url(entities.entity):
         if not self.host:
             raise ValueError('Must provide host')
 
-        if self.query:
-            if not self.path:
-                raise ValueError('Must provide path')
-
         host = self.host
 
         if uid := self.username:
@@ -3048,14 +3044,49 @@ class url(entities.entity):
         # backwords compatible with the current inteface if done
         # correctly.
         import urllib.parse
-        return urllib.parse.parse_qs(self.query)
+        kvps = entities.kvps()
+
+        qs = urllib.parse.parse_qs(self.query)
+        for k, v in qs.items():
+            if len(v) == 1:
+                v = v[0]
+            elif len(v) == 0:
+                v = None
+
+            kvps += entities.kvp(k=k, v=v)
+
+        kvps.onafterset += self._kvps_onafterset
+        kvps.onremove += self._kvps_onremove
+
+        return kvps
 
     @qs.setter
     def qs(self, v):
         """ Set the qs attribute to `v`.
         """
+        if isinstance(v, entities.kvps):
+            self.qs = v.dict()
+            return
+                
         from urllib.parse import urlencode as enc
         self.query = enc(v, doseq=True)
+
+    def _kvps_onafterset(self, src, eargs):
+        """ Handles the kvps' onafterset event.
+        """
+
+        # Whenever an item is set or added to the kvps collection,
+        # convert the kvps (src) into a `dict` and assin it to this
+        # `url`'s qs property
+        self.qs = src.dict()
+
+    def _kvps_onremove(self, src, eargs):
+        """ Handles the kvps' onremove event.
+        """
+        # Whenever an item is deleted from the kvps collection, convert
+        # the kvps (src) into a `dict` and assign it to this `url`'s qs
+        # property
+        self.qs = src.dict()
 
     def __str__(self):
         """ Return the URL string.

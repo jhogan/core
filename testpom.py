@@ -3308,12 +3308,35 @@ class crud(tester.tester):
                 sup.owner = ecommerce.users.root
                 sup = sup.orm._super
 
-        super().__init__(propr=propr, *args, **kwargs)
+        # Now we can call the constructor
+        mods = 'pom', 'asset',
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
         if self.rebuildtables:
+            foonet.orm.recreate()
             orm.orm.recreate(
                 person,
             )
+
+    def it_calls__init__(self):
+        crud = pom.crud(e=persons)
+
+        self.is_(persons, crud.entity)
+
+        # Defaults to 'table' presentation mode
+        self.eq('table', crud.presentation)
+
+        # Supports 'cards' presentation mode
+        crud = pom.crud(e=persons, presentation='cards')
+
+        # Defaults to 'table' presentation mode
+        self.eq('cards', crud.presentation)
+
+        # Supports 'cards' presentation mode
+        self.expect(
+            ValueError, 
+            lambda: pom.crud(e=persons, presentation='derp')
+        )
 
     def it_GETs_form(self):
         ws = foonet()
@@ -3664,7 +3687,7 @@ class crud(tester.tester):
             self.in_(rels, 'edit')
             self.in_(rels, 'preview')
 
-            self.eq('/en/profiles', a.href)
+            self.eq(f'/en/profiles?id={per.id.hex}&crud=update', a.href)
 
             # Get the Edit anchor
             a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
@@ -3862,7 +3885,7 @@ class crud(tester.tester):
         self.eq(name, per.orm.reloaded().name)
 
     def it_navigates_to_entities_clicks_edit_and_submits(self):
-        """ Use the Edit feature of a pom.crud page goto the detail
+        """ Use the Edit feature of a pom.crud page to go to the detail
         page. Test submitting the form on the detail page. Test editing
         form and clicking the Cancel button as well.
         """
@@ -3916,7 +3939,7 @@ class crud(tester.tester):
 
             if btn == 'submit':
                 # Submit the <form>. This will "redirect" us (so to
-                # speak) back to the main, tabular pagen /profiles.
+                # speak) back to the main, tabular page /profiles.
                 res = self.submit(frm, tab)
             elif btn == 'cancel':
                 btns = tab['main form button:not([type=submit])']
@@ -3958,7 +3981,7 @@ class crud(tester.tester):
             self.in_(rels, 'edit')
             self.in_(rels, 'preview')
 
-            self.eq('/en/profiles', a.href)
+            self.eq(f'/en/profiles?id={per.id.hex}&crud=update', a.href)
 
             # Get the Edit anchor
             a = td['menu li a[rel~=edit]:not([rel~=preview])'].only

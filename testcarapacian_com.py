@@ -15,6 +15,7 @@ from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort
+import testeffort
 import orm
 import party
 import pom
@@ -291,6 +292,143 @@ class ticketsspa_ticket(tester.tester):
         btnedit = res['button.edit'].only
 
         btnedit.click()
+
+class ticketsspa_backlogs(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = carapacian_com.site().Proprietor
+        mods = 'effort',
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
+
+    def it_GETs(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(10)
+        bls.save()
+        
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(10, cards.count)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    break
+            else:
+                self.fail('backlog not found in cards collection')
+                break
+
+            # Edit
+            a = card['a[rel=edit]'].only
+            expect = (
+                '/en/ticketsspa/backlog'
+                f'?id={id}&crud=update&oncomplete=/ticketsspa/backlogs'
+            )
+            self.eq(expect, a.href)
+
+
+            tbl = card['table'].only
+
+            self.eq('effort.backlog_story', tbl.getattr('data-entity'))
+
+            ths = tbl['thead tr th']
+
+            hdrs = [x.text for x in ths]
+
+            self.in_(hdrs, 'name')
+            self.in_(hdrs, 'points')
+            self.in_(hdrs, 'created')
+
+            self.one(tbl['p.empty-state'])
+
+            # Add Nwe 
+            a = tbl['a[rel=create-form]'].only
+            expect = (
+                '/en/ticketsspa/story'
+                '?&crud=create'
+                '&oncomplete=/ticketsspa/backlogs'
+                f'&backlogid={bl.id.hex}'
+            )
+            self.eq(expect, a.href)
+
+    def it_navigates_to_story(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(3)
+        bls.save()
+        
+        # Load the backlogs page
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+        card = cards.getrandom()
+        tbl = card['table[data-entity="effort.backlog_story"]'].only
+
+        a = tbl['a[rel=create-form]'].only
+
+        # Click on [Add New] (story)
+        res = self.click(a, tab)
+        self.h200(res)
+
+        main = tab['main'].only
+        self.eq('/ticketsspa/story', main.getattr('data-path'))
+
+        # Get the form to create a new story
+        frm = main['form'].only
+
+        inp = frm['[data-entity-attribute=name] input'].only
+
+        name = uuid4().hex
+        inp.value = name
+
+        # Submit the form
+        res = self.submit(frm, tab)
+        self.h200(res)
+
+        main = tab['main'].only
+
+        # We should be back at the backlogs page because of the
+        # oncomplete
+        self.eq('/ticketsspa/backlogs', main.getattr('data-path'))
+
+        id = card.getattr('data-entity-id')
+
+        # Get the backlog card from the new page that batches the
+        # original backlog card's id
+        card = main[f'.card[data-entity-id="{id}"]'].only
+
+        tbl = card['table'].only
+        trs = tbl['tr[data-entity="effort.backlog_story"]']
+
+        # Search the <table> in the new backlog card for a value span
+        # that contains the randomly generated `name` from above. This
+        # will prove that the story was added to the backlog.
+        spans = trs['td span.value']
+        for span in spans:
+            td = span.closest('td')
+
+            if td.getattr('data-entity-attribute') != 'name':
+                continue
+
+            if span.text == name:
+                break
+        else:
+            self.fail('Cannot find story')
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     tester.cli().run()

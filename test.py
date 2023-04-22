@@ -30,7 +30,7 @@ from MySQLdb.constants.CR import SERVER_LOST
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
-from uuid import uuid4
+from uuid import uuid4, UUID
 import account
 import asset
 import auth
@@ -2401,8 +2401,8 @@ class orm_(tester.tester):
         self.zero(bgs.brokenrules)
 
         # Give the first and last issue the same name. This shoud break
-        # the declaritive issues.brokenrules property isnec
-        # bugs.brokenrules accesses it.
+        # the declaritive issues.brokenrules property bugs.brokenrules
+        # accesses it.
         bgs.last.name = bgs.first.name
         self.one(bgs.brokenrules)
         self.is_(bgs, bgs.brokenrules.first.entity)
@@ -15024,6 +15024,127 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # unusual/advanced types like "images", "file", "month",
         # "password", "range", "tel", "time", "url", "week", etc.
 
+    def it_calls_gettable(self):
+        isss = issues()
+
+        ''' Default call '''
+        n = randint(1, 10)
+        for i in range(n):
+            isss += issue.getvalid()
+
+        # orm.table and orm.gettable() should be the same
+        for getter in ('table', 'gettable'):
+            if getter == 'table':
+                tbl = isss.orm.table
+            elif getter == 'gettable':
+                tbl = isss.orm.gettable()
+            else:
+                assert False
+
+            attrs = ['id', 'name', 'assignee', 'raiseAttributeError']
+            ths = tbl['thead tr th']
+            self.eq(attrs, ths.pluck('text'))
+
+            trs = tbl['tbody tr']
+            self.count(n, tbl['tbody tr'])
+
+            for iss, tr in zip(isss, trs):
+                id = tr.getattr('data-entity-id')
+                self.eq(iss.id, UUID(id))
+
+                for td in tr['td']:
+                    attr = td.getattr('data-entity-attribute')
+                    v = td.text
+                    if attr == 'id':
+                        v = UUID(v)
+
+                    if v == '':
+                        v = None
+                        
+                    self.eq(getattr(iss, attr), v, attr)
+        
+        ''' Use select '''
+        isss = issues()
+
+        n = randint(1, 10)
+        for i in range(n):
+            isss += issue.getvalid()
+
+        # Columns in selects can be delaminated using a comma,
+        # whitespace or both
+        selects = (
+            'name, assignee',
+            'name assignee',
+            'name\t  assignee',
+
+            'assignee, name',
+            'assignee name',
+            'assignee\t  name',
+        )
+
+        for select in selects:
+            attrs = re.split(r'[,\s]+', select)
+            tbl = isss.orm.gettable(select=select)
+
+            ths = tbl['thead tr th']
+            self.eq(attrs, ths.pluck('text'))
+
+            trs = tbl['tbody tr']
+            self.count(n, tbl['tbody tr'])
+
+            for iss, tr in zip(isss, trs):
+                id = tr.getattr('data-entity-id')
+                self.eq(iss.id, UUID(id))
+
+                tds = tr['td']
+                self.two(tds)
+
+                desc =  attrs[0] == 'assignee'
+
+                attr = 'assignee' if desc else 'name'
+                self.eq(
+                    attr, tds.first.getattr('data-entity-attribute')
+                )
+
+                attr = 'name' if desc else 'assignee'
+                self.eq(
+                    attr, tds.second.getattr('data-entity-attribute')
+                )
+
+                expect = iss.assignee if desc else iss.name
+                self.eq(expect, tds.first.text)
+
+                expect = iss.name if desc else iss.assignee
+                self.eq(expect, tds.second.text)
+
+        ''' Use dot notation (i.e., 'artist.firstname', etc.) '''
+        art = artist.getvalid()
+        for i in range(10):
+            art.presentations += presentation.getvalid()
+
+        select = 'name description artist.firstname artist.lastname'
+        tbl = art.presentations.orm.gettable(select=select)
+
+        trs = tbl['tbody tr']
+        self.count(art.presentations.count, trs)
+        self.four(tbl['thead th'])
+
+        for tr, pres in zip(trs, art.presentations):
+            id = tr.getattr('data-entity-id')
+            self.eq(pres.id, UUID(id))
+
+            tds = tr['td']
+            self.four(tds)
+
+            for col, td in zip(select.split(), tds):
+                col = col.rpartition('artist.')[-1]
+                self.eq(col, td.getattr('data-entity-attribute'))
+
+            self.eq(pres.name, tds.first.text)
+            self.eq(pres.description, tds.second.text)
+            self.eq(pres.artist.firstname, tds.third.text)
+            self.eq(pres.artist.lastname, tds.fourth.text)
+
     def it_gets_card(self):
         art = artist.getvalid()
         card = art.orm.card
@@ -15044,6 +15165,123 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         self.one(div['label'])
 
         self.eq(getattr(art, map.name), div['span'].text)
+
+    def it_calls_getcard(self):
+        ''' Default call '''
+        iss = issue.getvalid()
+
+        # orm.card and orm.getcard() should be the same
+        for getter in ('card', 'getcard'):
+            if getter == 'card':
+                card = iss.orm.card
+            elif getter == 'getcard':
+                card = iss.orm.getcard()
+            else:
+                assert False
+
+            self.true('card' in card.classes)
+            self.endswith('.issue', card.getattr('data-entity'))
+            self.eq(iss.id.hex, card.getattr('data-entity-id'))
+
+            attrs = ['id', 'name', 'assignee', 'raiseAttributeError']
+
+            divs = card['.card>div[data-entity-attribute]']
+            self.count(4, divs)
+
+            for attr, div in zip(attrs, divs):
+                lbl, span = div['div>label, div>span']
+
+                v = getattr(iss, attr)
+
+                if v is None:
+                    v = str()
+
+                v = str(v)
+
+                self.eq(v, span.text)
+                self.eq(attr, div.getattr('data-entity-attribute'))
+                self.eq(attr.capitalize(), lbl.text)
+                self.eq(lbl.for_, span.id)
+
+        ''' Use select '''
+        # Columns in selects can be delaminated using a comma,
+        # whitespace or both
+        selects = (
+            'name, assignee',
+            'name assignee',
+            'name\t  assignee',
+
+            'assignee, name',
+            'assignee name',
+            'assignee\t  name',
+        )
+
+        for select in selects:
+            attrs = re.split(r'[,\s]+', select)
+            card = iss.orm.getcard(select=select)
+
+            divs = card['.card>div[data-entity-attribute]']
+
+            self.count(2, divs)
+
+            for attr, div in zip(attrs, divs):
+                lbl, span = div['div>label, div>span']
+
+                v = getattr(iss, attr)
+
+                if v is None:
+                    v = str()
+
+                v = str(v)
+
+                self.eq(v, span.text)
+                self.eq(attr, div.getattr('data-entity-attribute'))
+                self.eq(attr.capitalize(), lbl.text)
+                self.eq(lbl.for_, span.id)
+
+        ''' Use dot notation (i.e., 'artist.firstname', etc.) '''
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+
+        select = 'name description artist.firstname artist.lastname'
+        pres = art.presentations.first
+        card = pres.orm.getcard(select=select)
+
+        id = card.getattr('data-entity-id')
+        self.eq(pres.id, UUID(id))
+
+        divs = card['.card>div[data-entity-attribute]']
+
+        self.count(4, divs)
+
+        for attr, div in zip(select.split(), divs):
+            lbl = div['label'].only
+            span = div['span'].only
+            self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)
+            self.eq(getattr(pres, attr), span.text)
+            self.eq(lbl.for_, span.id)
+
+        ''' Use dot notation but with a different order '''
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+
+        select = 'artist.firstname artist.lastname name description'
+        pres = art.presentations.first
+        card = pres.orm.getcard(select=select)
+
+        id = card.getattr('data-entity-id')
+        self.eq(pres.id, UUID(id))
+
+        divs = card['.card>div[data-entity-attribute]']
+
+        self.count(4, divs)
+
+        for attr, div in zip(select.split(), divs):
+            lbl = div['label'].only
+            span = div['span'].only
+            self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)
+            self.eq(getattr(pres, attr), span.text)
+            self.eq(lbl.for_, span.id)
 
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):

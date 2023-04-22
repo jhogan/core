@@ -2312,6 +2312,115 @@ class entity:
         """
         return self.brokenrules.isempty
 
+class kvps(entities):
+    """ A collection of `kvp` entity objects.
+    """
+    def __init__(self, *args, **kwargs):
+        """ Create a new `kvps` collection.
+        """
+        super().__init__(*args, **kwargs)
+        
+        self._onafterset = None
+
+    @property
+    def onafterset(self):
+        """ Return the event object that is to be triggered whenever an
+        item in the collection is set or added.
+        """
+        if not self._onafterset:
+            self._onafterset = event()
+        return self._onafterset
+
+    @onafterset.setter
+    def onafterset(self, v):
+        self._onafterset = v
+
+    def __contains__(self, k):
+        """ Return True if `k` is the name of any of the items in this
+        `kvps` collection, False otherwise:
+
+            >>> c = kvps()
+            c += kvp(name='my-key', value='some-vasue')
+            assert 'my-key' in c
+            assert 'not-my-key' not in c
+        """
+        try:
+            self[k]
+        except KeyError:
+            return False
+
+        return True
+        
+    def __getitem__(self, k):
+        """ Return the value of the `kvp.value` attribute where k equals
+        the value of `kvp.name'.
+
+        :param: k str: The name of the `kvp`.
+        """
+        if isinstance(k, int):
+            return super().__getitem__(k)
+
+        for kvp in self:
+            if kvp.name == k:
+                return kvp.value
+        else:
+            raise KeyError(f'Key "{k}" not found')
+
+    def __setitem__(self, k, v):
+        """ Set the `kvp` object in the collection with a name of `k` to
+        `v`. If the kvp object does not exist, it is added.
+
+        :param: k str: The name of the `kvp`.
+
+        :param: v Object: The value of the `kvp`.
+        """
+        for kvp1 in self:
+            if kvp1.name == k:
+                kvp1.value = v
+                break
+        else:
+            kvp1 = kvp(k, v)
+            self += kvp1
+
+        self.onafterset(self, settingeventargs())
+
+    def __delitem__(self, k):
+        """ Remove the kvp in the collection whose `name` property
+        matches `k`.
+        """
+        for kvp in self:
+            if kvp.name == k:
+                super().remove(kvp)
+                break
+        else:
+            raise KeyError(f'Cannot remove; key "{k}" not found')
+
+    def dict(self):
+        """ Creates a new `dict` representation of this kvps collection
+        and returns it.
+        """
+        d = dict()
+        for kvp in self:
+            d[kvp.name] = kvp.value
+
+        return d
+        
+class kvp(entity):
+    """ A simple entity which contains a key-value-pair.
+
+    Each `kvp` object contains a `name` property which contains the key
+    and a `value` property that contains the value.
+    """
+    def __init__(self, k, v):
+        """ Create a new `kvp` object.
+
+        :param: k str: The name of the `kvp`.
+
+        :param: v Object: The value of the `kvp`.
+        """
+        self.name = k
+        self.value = v
+
 class BrokenRulesError(Exception):
     """ An exception that is raised when an attempt to use an invalid
     object is made at the wrong time. A typical example is trying to
@@ -2867,6 +2976,13 @@ class entityvaluechangeeventargs(eventargs):
 class appendeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
+
+class settingeventargs(eventargs):
+    """ Used when a property value is set.
+    """
+    def __init__(self):
+        """ Create a new settingeventargs object.
+        """
 
 class indexes(entities):
     """ A collection of index objects.
