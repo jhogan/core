@@ -362,6 +362,7 @@ class ticketsspa_backlogs(tester.tester):
         bls = testeffort.backlog.getvalid(3)
         bls.save()
         
+        # Load the backlogs page
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
@@ -370,12 +371,14 @@ class ticketsspa_backlogs(tester.tester):
 
         a = tbl['a[rel=create-form]'].only
 
+        # Click on [Add New] (story)
         res = self.click(a, tab)
         self.h200(res)
 
         main = tab['main'].only
         self.eq('/ticketsspa/story', main.getattr('data-path'))
 
+        # Get the form to create a new story
         frm = main['form'].only
 
         inp = frm['[data-entity-attribute=name] input'].only
@@ -383,11 +386,14 @@ class ticketsspa_backlogs(tester.tester):
         name = uuid4().hex
         inp.value = name
 
-        B()
+        # Submit the form
         res = self.submit(frm, tab)
         self.h200(res)
 
         main = tab['main'].only
+
+        # We should be back at the backlogs page because of the
+        # oncomplete
         self.eq('/ticketsspa/backlogs', main.getattr('data-path'))
 
 
