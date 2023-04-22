@@ -469,26 +469,26 @@ class ticketsspa(pom.spa):
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
+            # Get instance
             es = self.instance
 
+            # Get backlog articls
             cards = self.main['article.card']
 
             # For each backlog card in cards, add a table of stories
             for card in cards:
+                # Get backlog id from card
                 id = card.getattr('data-entity-id')
                 id = UUID(id)
 
-                for bl in self.instance:
-                    if bl.id == id:
-                        break
-                else:
-                    raise ValueError('Cannot find backlog')
+                bl = self.instance[id]
 
+                # Get the backlog-to-stories association page
                 pg = self.spa.pages['backlog-stories']
-
                 pg.clear()
 
-                pg.instance = es[id].backlog_stories
+                # Set its instance
+                pg.instance = bl.backlog_stories
                 pg(oncomplete=self.path)
                 
                 # TODO For some reason, calling `pg['table']` causes a
@@ -503,20 +503,32 @@ class ticketsspa(pom.spa):
                 for a in as_:
                     a.closest('li').remove()
 
+                # Get the Add New anchor
                 a = tbl['[rel=create-form]'].only
+
+                # Add a backlogid query string parameter
+
+                # TODO It would be nice if dom.a objects had a `url`
+                # property that returned a www.url that was bound to the
+                # anchor. That way, we could write the below statement
+                # as:
+                #
+                # a.url.qs['backlogid'] = card.getattr('data-entity-id')
+                #
+                # Event handlers within the dom.a would be responsible
+                # for updating the actual a.href property, thus the same
+                # results would be achieved. This would be better
+                # because the currently solution could potentially
+                # append multiple backlogid parameters to the query
+                # sting without knowing it. This approach would reequire
+                # that the www.url class can deal with URL path's
+                # without the need for a scheme or domain name.
                 a.href += '&backlogid=' + card.getattr('data-entity-id')
 
-                '''
-                XXX
-                href = www.url(a.href)
-                qs = href.qs
-                qs['backlogid'] = card.getattr('data-entity-id')
-                href.qs = qs
-                a.href = str(href)
-                '''
-
+                # Get each Edit element's href
                 as_ = tbl['a[rel~=edit]']
 
+                # Update each Edit elements href
                 for a in as_:
                     url = www.url(f'http://example.com/{a.href}')
 
@@ -536,6 +548,8 @@ class ticketsspa(pom.spa):
                         else:
                             raise ValueError('Cannot find story')
 
+                # Remove the table's parent so we can make `card` its
+                # new parent
                 tbl.orphan()
 
                 card += tbl
