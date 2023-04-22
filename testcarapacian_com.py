@@ -396,6 +396,29 @@ class ticketsspa_backlogs(tester.tester):
         # oncomplete
         self.eq('/ticketsspa/backlogs', main.getattr('data-path'))
 
+        id = card.getattr('data-entity-id')
+
+        # Get the backlog card from the new page that batches the
+        # original backlog card's id
+        card = main[f'.card[data-entity-id="{id}"]'].only
+
+        tbl = card['table'].only
+        trs = tbl['tr[data-entity="effort.backlog_story"]']
+
+        # Search the <table> in the new backlog card for a value span
+        # that contains the randomly generated `name` from above. This
+        # will prove that the story was added to the backlog.
+        spans = trs['td span.value']
+        for span in spans:
+            td = span.closest('td')
+
+            if td.getattr('data-entity-attribute') != 'name':
+                continue
+
+            if span.text == name:
+                break
+        else:
+            self.fail('Cannot find story')
 
 
 
