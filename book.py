@@ -8163,15 +8163,32 @@ with book('Hacking Carapacian Core'):
       Now that you've learned how to create and use ORM entity objects,
       we can discuss the General Entity Model (GEM). The GEM is a
       collection of several hundred prebuilt ORM entity classes that
-      come with the framework.They define the business objects for a
-      large number of domains such as persons and organizations, accounting
-      and budgeting, invoicing, order entry, products,
+      come with the framework. They define the business objects for a
+      large number of problem domains such as persons and organizations,
+      accounting and budgeting, invoicing, order entry, products,
       shipments and human resources. The GEM also provides object models
-      for industry-specific businssess object such as manufacturing,
+      for industry-specific domains such as manufacturing,
       telecommunications, health care, financial services, professional
       services, travel and ecommerce &mdash; though these later object
       models have not yet been implement in the source code as of the
       time of this writing.
+
+      These ORM entites derive mostly from Len Silverston's books "The
+      Data Model Resource Book" volumns 1 and 2. One of the many uses of
+      these data models is that, taken as a whole, it amounts to a
+      single data model that covers virtually all business data
+      management needs. This attribute of the data model is captured by
+      the GEM. It's possible to write entire applications using the Core
+      framework having the GEM provide the entire business and data
+      tier. 
+
+      To really take advantage of the GEM, you will need to pick up a
+      copy of "The Data Model Resource Book" volume 1 and optionally
+      volumn 2 (which contain the industry-specific domains mentioned
+      above). The GEM is an an object-oriented reflection of the data
+      models in those books thus the books are able to provide the
+      reader with a clear understanding of how to use the entities, what
+      their intentions are, and how they relate to one another.
     ''')
     with section('Using aprori.model()') as sec:
       ...
