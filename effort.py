@@ -879,6 +879,21 @@ class backlog(orm.entity):
     span         =  datespan
     goal         =  str
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # XXX
+        self.transation('planning')
+
+    def transation(self, st):
+        """
+        """
+        self.backlogstatustype = backlogstatustype(name=st)
+
+    @property
+    def inplanning(self):
+        return self.backlogstatustype.name == 'planning'
+
     def insert(self, rank, st=None):
         """ Puts the story `st` into this `backlog`.
 
