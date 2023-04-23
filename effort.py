@@ -86,6 +86,7 @@ class  productbacklogs(backlogs):                                pass
 class  releases(backlogs):                                       pass
 class  sprints(backlogs):                                        pass
 class  stories(requirements):                                    pass
+class  backlogstatustypes(apriori.types):                        pass
 
 class backlog_stories(orm.associations):
     """ A collection of `backlog_story` associations.
@@ -843,6 +844,9 @@ class breakdown(type_type):
 class dependency(type_type):
     """
     """
+
+class backlogstatustype(apriori.type):
+    backlogs = backlogs
 
 class backlog(orm.entity):
     """ Represents a agile backlog.
