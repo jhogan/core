@@ -475,6 +475,7 @@ class ticketsspa(pom.spa):
             # Get backlog articls
             cards = self.main['article.card']
 
+
             # For each backlog card in cards, add a table of stories
             for card in cards:
                 # Get backlog id from card

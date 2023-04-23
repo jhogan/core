@@ -600,6 +600,9 @@ class status(orm.entity):
 
 class statustype(apriori.type):
     """ Describes a ``status`` entity.
+
+    Note that this entity was originally called WORK EFFORT STATUS TYPE
+    in "The Data Model Resource Book".
     """
 
     # The collection of status entities that this entity describes.

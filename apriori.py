@@ -155,7 +155,7 @@ class type(orm.entity):
     """  An abstract entity to describe the type of another class. This
     class is used when a entity needs a many-to-one class that
     classifies the entity. For example, say there is an entity called
-    party::
+    party:
         
         class parties(orm.entities):
             ...
@@ -163,20 +163,20 @@ class type(orm.entity):
         class party(orm.entity):
             ...
 
-    we can use a use a subtype of ``apriori.type`` to classify ``party``
-    entities into types::
+    We can use a subtype of ``apriori.type`` to classify ``party``
+    entities into types:
         
         class partytype(apriori.type):
             # A collection of parties. This declaration links
-            # ``partytype`` to ``party``.
+            # `partytype` to `party`.
             parties = parties
 
     The ``name`` attribute of type, along with the subtype itself, form
     a unique key to distinguish each ``type`` subentity.
 
     An import note about type entity objects is that they are
-    self-ensuring. That means that, upon intantiation, there saved to
-    the database unless they already exist. See the example below.
+    self-ensuring. That means that, upon intantiation, they're saved to
+    the database unless they already exist. See the example below:
 
         # Example of how to use the `partytype` mentioned above.
 
@@ -192,13 +192,13 @@ class type(orm.entity):
 
         # Now we save party and its association with party.type. Note
         # that this will not save the ``partytype`` compostie entity
-        # because that was done during instantiation above.
+        # because that was already done during the instantiation above.
         part.save()
 
-        # The party.type can be loaded iterated over to get all the
-        # entities classified by it. It only has one in the database at
-        # this point, so we will assert that it has classified `part` as
-        # a "Dinner party".
+        # The party.type can be iterated over to get all the entities
+        # classified by it. It only has one in the database at this
+        # point, so we will assert that it has classified `part` as a
+        # "Dinner party".
         assert part.id == party.type(name='Dinner party').first.id
     """
 
@@ -220,10 +220,18 @@ class type(orm.entity):
 
     @property
     def creatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
 class log(orm.entity):
@@ -240,10 +248,18 @@ class log(orm.entity):
 
     @property
     def creatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
 class logtype(type):
@@ -251,10 +267,18 @@ class logtype(type):
 
     @property
     def creatability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
     @property
     def retrievability(self):
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # SECURITY This should not be deployed to a production
+        # environment.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
 
