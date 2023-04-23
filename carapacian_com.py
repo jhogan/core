@@ -484,6 +484,11 @@ class ticketsspa(pom.spa):
 
                 bl = self.instance[id]
 
+                # Transition state buttons
+                btn = dom.button('Close', class_='close')
+                btn.onclick += self.btnclose_onclick, card
+                card += btn
+
                 # Get the backlog-to-stories association page
                 pg = self.spa.pages['backlog-stories']
                 pg.clear()
@@ -554,6 +559,10 @@ class ticketsspa(pom.spa):
                 tbl.orphan()
 
                 card += tbl
+
+        def btnclose_onclick(self, src, eargs):
+            print('here')
+
             
         @property
         def detail(self):
