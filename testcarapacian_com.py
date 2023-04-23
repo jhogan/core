@@ -355,6 +355,30 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
+    def it_closes_backlog(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        N = 3
+        bls = testeffort.backlog.getvalid(N)
+        bls.save()
+        
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(N, cards.count)
+
+        bl = bls.getrandom()
+
+        card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
+
+        btn = card['button.close'].only
+
+        res = self.click(btn, tab)
+        self.h200(res)
+
     def it_navigates_to_story(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
