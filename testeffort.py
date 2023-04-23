@@ -1418,6 +1418,11 @@ class backlog(tester.tester):
         self.eq(sts.last.id, bss.last.story.id)
         self.eq(list(range(7)), bss.pluck('rank'))
 
+class productbacklog(tester.tester):
+    def it_calls__init__(self):
+        p = effort.productbacklog()
+        self.type(effort.productbacklog, p)
+
 class story(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'effort',

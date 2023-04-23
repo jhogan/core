@@ -82,6 +82,9 @@ class  dependencies(type_types):                                 pass
 class  deliverable_efforts(orm.associations):                    pass
 class  effort_product_items(orm.associations):                   pass
 class  backlogs(orm.entities):                                   pass
+class  productbacklogs(backlogs):                                pass
+class  releases(backlogs):                                       pass
+class  sprints(backlogs):                                        pass
 class  stories(requirements):                                    pass
 
 class backlog_stories(orm.associations):
@@ -1033,6 +1036,18 @@ class backlog(orm.entity):
         # TODO Add tests
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
+
+class productbacklog(backlog):
+    """ XXX
+    """
+
+class release(backlog):
+    """ XXX
+    """
+
+class sprint(backlog):
+    """ XXX
+    """
 
 class story(requirement):
     """ A class representing a user story in an Agile development
