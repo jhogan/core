@@ -3678,6 +3678,35 @@ class crud(page):
             # The `stead` property can be used by the event handler to
             # specify an object that should be saved instead of `e`.
             self.stead = None
-            
-        
 
+class dialog(dom.dialog):
+    """ XXX
+    """
+    def __init__(self, 
+        owner, msg, caption=None, onyes=None, onno=None, *args, **kwargs
+    ):
+        self.message = msg
+        self.caption = caption
+        self.open = True
+
+        if caption:
+            self += dom.header(caption)
+
+        frm = dom.form()
+
+        frm += dom.p(msg)
+
+        if onyes:
+            btn = dom.button('Yes')
+            btn.setattr('data-yes', True)
+            btn.onclick += onyes
+            frm += btn
+
+        if onno:
+            btn = dom.button('No')
+            btn.setattr('data-no', True)
+            btn.onclick += onno
+            frm += btn
+
+        self += frm
+        super().__init__(*args, **kwargs)
