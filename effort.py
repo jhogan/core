@@ -883,12 +883,24 @@ class backlog(orm.entity):
         super().__init__(*args, **kwargs)
         
         # XXX
-        self.transation('planning')
+        if self.orm.isnew:
+            self._transation('planning')
 
-    def transation(self, st):
+    def _transation(self, st):
         """
         """
         self.backlogstatustype = backlogstatustype(name=st)
+
+    def close(self):
+        """ XXX
+        """
+        self._transation('closed')
+
+    @property
+    def isclosed(self):
+        """ XXX
+        """
+        return self.backlogstatustype.name == 'closed'
 
     @property
     def inplanning(self):
