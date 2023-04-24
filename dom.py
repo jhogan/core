@@ -2654,6 +2654,17 @@ class dialog(element):
     # element. See
     # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
 
+    @property
+    def open(self):
+        """ XXX
+        """
+        return self.attributes['open'].value
+
+    @open.setter
+    def open(self, v):
+        self.attributes['open'] = v
+
+
 class figcaptions(elements):
     """ A class used to contain a collection of ``figcaption`` elements.
     """
