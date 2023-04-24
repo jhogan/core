@@ -8174,13 +8174,28 @@ with book('Hacking Carapacian Core'):
       time of this writing.
 
       These ORM entites derive mostly from Len Silverston's books "The
-      Data Model Resource Book" volumns 1 and 2. One of the many uses of
-      these data models is that, taken as a whole, it amounts to a
+      Data Model Resource Book" volumes 1 and 2. One of the many uses of
+      these data models is that, taken as a whole, they amounts to a
       single data model that covers virtually all business data
-      management needs. This attribute of the data model is captured by
-      the GEM. It's possible to write entire applications using the Core
-      framework having the GEM provide the entire business and data
-      tier. 
+      management needs. This universal applicability of the data model
+      is captured by the GEM. It's possible to write entire applications
+      using the Core framework having the GEM provide the entire
+      business and data tier. 
+
+      That being said, the GEM is also extensible to accomidate business
+      domains not covered or anticipated by Silverston's original
+      models. At the time of this writing, for example, Agile entities
+      such as **backlog**, **sprint** and **story** are being added to
+      the GEM to create a ticketing system. The agile software
+      development methodology was not popular when Silverston's
+      published his books, and it is not clear whether or not an agile
+      object model would have even been covered. However, the new object
+      model integrates nicely with with the original models. For
+      example, the `effort.story` entity inherits from the
+      `effort.requirement` entity which was defined in the original data
+      model. Thus `stories` can take advantage of the `requirement`'s
+      stated intention, its relationships with other entities, and its
+      attributes.
 
       To really take advantage of the GEM, you will need to pick up a
       copy of "The Data Model Resource Book" volume 1 and optionally
@@ -8189,6 +8204,22 @@ with book('Hacking Carapacian Core'):
       models in those books thus the books are able to provide the
       reader with a clear understanding of how to use the entities, what
       their intentions are, and how they relate to one another.
+
+      | File         | Volume | Chapter                   | Purpose |
+      |--------------|--------|---------------------------|---------|
+      | account      | 1      | Accounting and Budgeting  |         |
+      | apriori.py   | N/A    | N/A                       |         |
+      | asset.py     | 1      | Work Effort               |         |
+      | budget.py    | 1      | Accounting and Budgeting  |         |
+      | ecommerce.py | 2      | E-commerce models         |         |
+      | effort.py    | 1      | Work Effort               |         |
+      | hr.py        | 1      | Human Resources           |         |
+      | invoice.py   | 1      | Invoicing                 |         |
+      | order.py     | 1      | Ordering Products         |         |
+      | party.py     | 1      | People and Organizations  |         |
+      | product.py   | 1      | Products                  |         |
+      | shipment.py  | 1      | Shipments                 |         |
+
     ''')
     with section('Using aprori.model()') as sec:
       ...
