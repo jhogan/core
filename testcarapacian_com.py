@@ -374,10 +374,57 @@ class ticketsspa_backlogs(tester.tester):
 
         card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
 
-        btn = card['button.close'].only
+        # Click the "Close" button
+        btnclose = card['button.close'].only
 
-        res = self.click(btn, tab)
+        res = self.click(btnclose, tab)
         self.h200(res)
+
+        # Get the card again
+        card = tab[f'[data-entity-id="{bl.id.hex}"]'].only
+
+        # Get the <dialog> confirmation modal
+        dia = tab['dialog'].only
+        self.true(dia.open)
+
+        btnno = dia['button[data-no]'].only
+
+        res = self.click(btnno, tab)
+        self.h200(res)
+
+        # Make sure the card still exists
+        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+
+        # The <dialog> box should have been removed
+        self.zero(tab['dialog'])
+
+        # The backlog should not be closed
+        self.false(bl.orm.reloaded().isclosed)
+
+        # Click the "Close" button
+        btnclose = card['button.close'].only
+
+        res = self.click(btnclose, tab)
+        self.h200(res)
+
+        # Get the <dialog> confirmation modal
+        dia = tab['dialog'].only
+        self.true(dia.open)
+
+        btnyes = dia['button[data-yes]'].only
+
+        res = self.click(btnyes, tab)
+        self.h200(res)
+
+        # The card should have been removed
+        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+
+        # The backlog should be closed now
+        self.true(bl.orm.reloaded().isclosed)
+
+        # The <dialog> box should have been removed
+        self.zero(tab['dialog'])
+
 
     def it_navigates_to_story(self):
         ws = carapacian_com.site()
