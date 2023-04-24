@@ -561,7 +561,31 @@ class ticketsspa(pom.spa):
                 card += tbl
 
         def btnclose_onclick(self, src, eargs):
-            print('here')
+            """
+            """
+            card = eargs.html.only
+
+            dlgs = card['dialog']
+
+            if dlgs.isempty:
+                card += pom.dialog(
+                    card, 
+                    msg = 'Are you sure you want to close the backlog?',
+                    caption = 'Confirm',
+                    onyes = (self.btnclose_onclick, card),
+                    onno = (self.btnclose_onclick, card),
+                )
+
+            elif dlgs.issingular:
+                dlg = dlgs.only
+                btn = src
+                if btn.getattr('data-yes'):
+                    id = card.getattr('data-entity-id')
+                    bl = effort.backlog(id)
+                    bl.close()
+                    bl.save()
+
+                card.remove('dialog')
 
             
         @property
