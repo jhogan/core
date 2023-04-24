@@ -2647,8 +2647,6 @@ class dialog(element):
     """ The <dialog> HTML element represents a dialog box or other
     interactive component, such as a dismissible alert, inspector, or
     subwindow.
-
-    Note that this element isn't supported by Firefox or Safari.
     """
     # TODO The tabindex attribute must not be used on the <dialog>
     # element. See

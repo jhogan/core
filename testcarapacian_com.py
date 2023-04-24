@@ -295,6 +295,14 @@ class ticketsspa_ticket(tester.tester):
 
 class ticketsspa_backlogs(tester.tester):
     def __init__(self, *args, **kwargs):
+        # XXX Make sure we can run ticketsspa_backlogs alone
+        #
+        #    ./testcarapacian_com.py ticketsspa_backlogs
+        # 
+        # This sometimes works but, for some reason, will fail when ensuring
+        # carapacian_com.site() and claim that it can't load the root
+        # user even though it does exist in the database.
+
         propr = carapacian_com.site().Proprietor
         mods = 'effort',
         super().__init__(mods=mods, propr=propr, *args, **kwargs)
