@@ -1150,6 +1150,11 @@ function exec(els){
                             main.outerHTML, null, url
                         )
                     }
+                }else if (instr.classList.contains('remove')){
+                    //XXX
+                    var id = instr.getattr('content')
+                    el = document.getElementsById(id)
+                    el.remove()
                 }
             }
         }
