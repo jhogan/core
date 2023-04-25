@@ -425,7 +425,7 @@ class ticketsspa_backlogs(tester.tester):
         self.h200(res)
 
         # The card should have been removed
-        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+        self.zero(tab[f'[data-entity-id="{bl.id.hex}"]'])
 
         # The backlog should be closed now
         self.true(bl.orm.reloaded().isclosed)
