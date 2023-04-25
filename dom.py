@@ -10214,6 +10214,26 @@ class eventargs(entities.eventargs):
 
         self._html = v
 
+    def remove(self):
+        """ XXX
+        """
+        from pom import instructions, remove
+
+        el = self.element
+
+        instrs = instructions()
+
+        instrs += remove(el)
+
+        el += instrs
+
+    @property
+    def element(self):
+        """ XXX
+        """
+        return self.html.only
+
+
     def preventDefault(self):
         self.cancel = True
 
