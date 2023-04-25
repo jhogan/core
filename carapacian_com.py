@@ -578,12 +578,13 @@ class ticketsspa(pom.spa):
 
             elif dlgs.issingular:
                 dlg = dlgs.only
-                btn = src
+                btn = eargs.src
                 if btn.getattr('data-yes'):
                     id = card.getattr('data-entity-id')
                     bl = effort.backlog(id)
                     bl.close()
                     bl.save()
+                    eargs.remove()
 
                 card.remove('dialog')
 
