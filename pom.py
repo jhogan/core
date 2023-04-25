@@ -2792,6 +2792,15 @@ class set(instruction):
 
         super().__init__(*args, **kwargs)
 
+class remove(instruction):
+    """ XXX
+    """
+    def __init__(self, el, *args, **kwargs):
+        self.element = el
+        self.classes += 'remove'
+        self.content = el.id
+        super().__init__(*args, **kwargs)
+
 class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete a given `orm.entity` or `orm.entities` object.
