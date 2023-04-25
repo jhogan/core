@@ -419,8 +419,8 @@ class ticketsspa_backlogs(tester.tester):
         dia = tab['dialog'].only
         self.true(dia.open)
 
+        # Confirm the closure of the backlog
         btnyes = dia['button[data-yes]'].only
-
         res = self.click(btnyes, tab)
         self.h200(res)
 

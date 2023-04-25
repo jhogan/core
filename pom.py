@@ -854,7 +854,8 @@ function ajax(e){
             if (this.status < 400){
                 // If no HTML was returned from the XHR request, we can
                 // return. Usually, events will return HTML, however it
-                // possible that in some cases they will choose not to.
+                // is possible that, in some cases, they will choose not
+                // to.
                 if(!xhr.responseText){
                     console.info('No response')
                     return
@@ -892,7 +893,6 @@ function ajax(e){
                     )
 
                     exec([new_])
-
 
                 // If the element is not a <main>, we are doing a
                 // regular AJAX call, i.e., we are not loading a new

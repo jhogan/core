@@ -10235,9 +10235,13 @@ class eventargs(entities.eventargs):
 
 
     def preventDefault(self):
+        """ XXX
+        """
         self.cancel = True
 
     def __repr__(self):
+        """ XXX
+        """
         r = type(self).__name__
         if (html := self.html) is not None:
             html = html[:10] + (html[10:] and '...')
