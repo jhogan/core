@@ -1152,8 +1152,8 @@ function exec(els){
                     }
                 }else if (instr.classList.contains('remove')){
                     //XXX
-                    var id = instr.getattr('content')
-                    el = document.getElementsById(id)
+                    var id = instr.getAttribute('content')
+                    el = document.getElementById(id)
                     el.remove()
                 }
             }
