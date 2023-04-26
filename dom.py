@@ -7039,8 +7039,12 @@ class html(element):
                 el = el(id=self.ids)
 
                 # Assign HTML attributes
-                for attr in attrs:
-                    el.attributes[attr[0]] = attr[1]
+                for k, v in attrs:
+                    # XXX
+                    if v == '':
+                        v = True
+
+                    el.attributes[k] = v
 
                 # Push element on top of stack
                 try:
