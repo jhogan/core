@@ -2654,14 +2654,15 @@ class dialog(element):
 
     @property
     def open(self):
-        """ XXX
+        """ Indicates that the dialog is active and can be interacted
+        with. When the open attribute is not set, the dialog shouldn't
+        be shown to the user. 
         """
         return self.attributes['open'].value
 
     @open.setter
     def open(self, v):
         self.attributes['open'] = v
-
 
 class figcaptions(elements):
     """ A class used to contain a collection of ``figcaption`` elements.
@@ -7040,8 +7041,18 @@ class html(element):
 
                 # Assign HTML attributes
                 for k, v in attrs:
-                    # XXX
+                    
+                    # If value is an empty string...
                     if v == '':
+                        # We want to support boolean attributes that are
+                        # declared with an empty string assignment.
+                        #
+                        #     <input hidden="">
+                        # 
+                        # The above should be interpreted the same as:
+                        #
+                        #     <input hidden>
+                        # 
                         v = True
 
                     el.attributes[k] = v
@@ -10219,7 +10230,22 @@ class eventargs(entities.eventargs):
         self._html = v
 
     def remove(self):
-        """ XXX
+        """ Insert a `remove` instruction into this `dom.eventargs`
+        `html` element.
+
+        Calling this method will instruct the JavaScript to remove the
+        element that it sent us from the browser's DOM. 
+
+        A good use case for this would be when a user has clicked a
+        "Delete" button on a <tr> element. The server-side event handler may delete
+        the entity that the <tr> corresponds to from the database. The
+        event handler would like the <tr> remove from the user's browser
+        so it is clear to the user that the entity has been deleted.
+        Calling this method will instructed the client-side JavaScript
+        to do that.
+
+        Note that, at the moment, this method assumes there is only one
+        element sent to by the browser.
         """
         from pom import instructions, remove
 
@@ -10233,18 +10259,20 @@ class eventargs(entities.eventargs):
 
     @property
     def element(self):
-        """ XXX
+        """ Return the only element sent by the browser.
+
+        If more or less than one element was sent, a ValueError is
+        raised.
         """
         return self.html.only
 
-
     def preventDefault(self):
-        """ XXX
+        """ TODO
         """
         self.cancel = True
 
     def __repr__(self):
-        """ XXX
+        """ Return a string representation of this dom.eventargs object.
         """
         r = type(self).__name__
         if (html := self.html) is not None:

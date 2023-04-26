@@ -1151,7 +1151,7 @@ function exec(els){
                         )
                     }
                 }else if (instr.classList.contains('remove')){
-                    //XXX
+                    // Process a remove instruction
                     var id = instr.getAttribute('content')
                     el = document.getElementById(id)
                     el.remove()
@@ -1161,7 +1161,6 @@ function exec(els){
     }
     console.groupEnd()
 }
-
 '''
         #// Return the JavaScript
         return r
@@ -2793,12 +2792,24 @@ class set(instruction):
         super().__init__(*args, **kwargs)
 
 class remove(instruction):
-    """ XXX
+    """ A remove instruction to be sent to the browser.
+
+    Remove instruction instruct the JavaScript to remove the element
+    defined by self.element.
     """
     def __init__(self, el, *args, **kwargs):
+        """ Create a `remove` instruction.
+
+        :param: el dom.element: The element to be removed.
+        """
         self.element = el
+
+        # Add `remove' to the `class` attribute.
         self.classes += 'remove'
+
+        # Set the `content` attribute to the element`s id
         self.content = el.id
+
         super().__init__(*args, **kwargs)
 
 class crud(page):
@@ -3694,28 +3705,57 @@ class crud(page):
             self.stead = None
 
 class dialog(dom.dialog):
-    """ XXX
+    """ Inherits from dom.dialog to provide a richer set of features.
     """
     def __init__(self, 
         owner, msg, caption=None, onyes=None, onno=None, *args, **kwargs
     ):
-        self.message = msg
-        self.caption = caption
-        self.open = True
+        """ Create a pom.dialog element.
 
+        :param: owner dom.element: The dom.element that owns the dialog
+        modal.
+
+        :param: msg str: The message to display to the user.
+
+        :param: caption str: The message to display in the modal's
+        header.
+
+        :param: onyes tuple: When not None, instructs the dialog to
+        display a "Yes" button. The first element of the tuple will be
+        the server-side event handler that should be called when the
+        button is clicked. The remaining elements of the tuple will be
+        the elements that should be sent from the browser to the server.
+
+        :param: onno tuple: When not None, instructs the dialog to
+        display a "No" button. The first element of the tuple will be
+        the server-side event handler that should be called when the
+        button is clicked. The remaining elements of the tuple will be
+        the elements that should be sent from the browser to the server.
+        """
+        self.message  =  msg
+        self.caption  =  caption
+
+        # Make sure the <dialog> has the `open` attribute present.
+        self.open     =  True
+
+        # Add caption
         if caption:
             self += dom.header(caption)
 
+        # Create <form> to be put in <dialog>
         frm = dom.form()
 
+        # Add message
         frm += dom.p(msg)
 
+        # Add Yes button
         if onyes:
             btn = dom.button('Yes')
             btn.setattr('data-yes', True)
             btn.onclick += onyes
             frm += btn
 
+        # Add Yes button
         if onno:
             btn = dom.button('No')
             btn.setattr('data-no', True)
