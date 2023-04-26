@@ -3732,6 +3732,7 @@ class dialog(dom.dialog):
         button is clicked. The remaining elements of the tuple will be
         the elements that should be sent from the browser to the server.
         """
+        self.owner    =  owner
         self.message  =  msg
         self.caption  =  caption
 
