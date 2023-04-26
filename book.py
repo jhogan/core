@@ -8189,15 +8189,14 @@ with book('Hacking Carapacian Core'):
       the GEM to create a ticketing system. The agile software
       development methodology was not popular when Silverston's
       published his books, and it is not clear whether or not an agile
-      object model would have even been covered. However, the new object
-      model integrates nicely with with the original models. For
-      example, the `effort.story` entity inherits from the
+      object model would have even been covered. However, the new agile
+      object model integrates nicely with with the original models. For
+      example, the new `effort.story` entity inherits from the
       `effort.requirement` entity which was defined in the original data
       model. Thus `stories` can take advantage of the `requirement`'s
-      stated intention, its relationships with other entities, and its
-      attributes.
+      attributes and its relationships with other entities.
 
-      To really take advantage of the GEM, you will need to pick up a
+      To really take advantage of the GEM, one will need to pick up a
       copy of "The Data Model Resource Book" volume 1 and optionally
       volumn 2 (which contain the industry-specific domains mentioned
       above). The GEM is an an object-oriented reflection of the data
@@ -8205,9 +8204,12 @@ with book('Hacking Carapacian Core'):
       reader with a clear understanding of how to use the entities, what
       their intentions are, and how they relate to one another.
 
+      Below is a table of the modules that are currently available that
+      contain the GEM classes.
+
       | File         | Volume | Chapter                   | Purpose |
       |--------------|--------|---------------------------|---------|
-      | account      | 1      | Accounting and Budgeting  |         |
+      | account.py   | 1      | Accounting and Budgeting  |         |
       | apriori.py   | N/A    | N/A                       |         |
       | asset.py     | 1      | Work Effort               |         |
       | budget.py    | 1      | Accounting and Budgeting  |         |
