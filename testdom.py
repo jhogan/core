@@ -1406,9 +1406,14 @@ class html(tester.tester):
         self.eq(v, txt.value.strip())
 
     def it_parses_boolean_attributes(self):
+        """ Make sure boolean attributes are parsed correctly. We want
+        to support the following types of boolean attributes:
+
+            <p data-my-boolean>
+
+            <p data-my-boolean="">
         """
-        XXX
-        """
+
         html = self.dedent('''
         <p data-my-boolean>True</p>
         ''')
