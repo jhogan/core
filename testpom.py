@@ -3391,7 +3391,7 @@ class crud(tester.tester):
         self.eq('born', inp.name)
         self.eq('date', inp.type)
         self.eq(lbl.for_, inp.id)
-        self.eq(str(), inp.value)
+        self.none(inp.value)
 
         # Default text
         '''

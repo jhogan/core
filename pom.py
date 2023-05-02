@@ -1083,12 +1083,14 @@ function wake(els){
         for (var el of els){
             // Append a text node to <textarea> elements containing the
             // data in its .value property.
+            var v = el.value
+
             if (el.tagName == 'TEXTAREA'){
                 
                 // Create text node before.
                 // NOTE Do this first because removing the child nodes
                 // affects el.value in some cases.
-                var nd = document.createTextNode(el.value)
+                var nd = document.createTextNode(v)
 
                 // Clear the current text nodes
                 while(el.firstChild){
@@ -1099,7 +1101,13 @@ function wake(els){
                 el.appendChild(nd)
             }
             if (el.tagName == 'INPUT'){
-                el.setAttribute('value', el.value)
+                // XXX Explain
+                if (v){
+                    el.setAttribute('value', v)
+                }else{
+                    el.removeAttribute('value')
+                }
+
             }
             // TODO Add support for other input elements like checkboxes,
             // dropdown lists, etc.

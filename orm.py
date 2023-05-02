@@ -12134,13 +12134,12 @@ class orm:
 
             v = getattr(inst, name)
             
-            if v is None:
-                v = str()
-
-            if isinstance(dominp, dom.textarea):
-                dominp += dom.text(v)
-            else:
-                dominp.value = v
+            # XXX
+            if v:
+                if isinstance(dominp, dom.textarea):
+                    dominp += dom.text(v)
+                else:
+                    dominp.value = v
 
             return inp
 
