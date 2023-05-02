@@ -787,8 +787,8 @@ class tester(entities.entity):
                     ids = list('#' + x.id for x in eargs.html)
                     for i, id in enumerate(ids):
                         el = res.html[i]
-                        exec(el)
                         replace(id, res.html[i])
+                        exec(el)
 
                     self.listen(res.html)
 
