@@ -12134,11 +12134,15 @@ class orm:
 
             v = getattr(inst, name)
             
-            # XXX
+            # XXX This won't work with int(0)
+
+            # If v not an empty string...
             if v:
                 if isinstance(dominp, dom.textarea):
+                    # Add the value as a text node to the <textarea>
                     dominp += dom.text(v)
                 else:
+                    # Add the value to the <input>'s `value` attribute
                     dominp.value = v
 
             return inp

@@ -1105,10 +1105,14 @@ function wake(els){
                 el.appendChild(nd)
             }
             if (el.tagName == 'INPUT'){
-                // XXX Explain
                 if (v){
                     el.setAttribute('value', v)
                 }else{
+                    // If an empty string is assigned to the `value`
+                    // attribute, remove it. Otherwise, it will be
+                    // interpreted as a Boolean attribute when processed
+                    // by the server and will equal `True` instead of
+                    // ''.
                     el.removeAttribute('value')
                 }
 
