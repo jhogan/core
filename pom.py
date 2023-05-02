@@ -919,7 +919,11 @@ function ajax(e){
                     }
                 }
             }else{ // If there was an error...
-                // Remove any elements with a class of 'exception'
+                document.querySelectorAll('dialog').forEach(
+                    e => e.remove()
+                )
+
+
                 // Insert the response HTML making it the first element
                 // under <main>. The response HTML will have a parent
                 // element with an "exception" class.
