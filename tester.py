@@ -704,11 +704,18 @@ class tester(entities.entity):
                         instrs = instrs['.instruction']
 
                         for instr in instrs:
-                            attr = instr.attributes['name']
-                            if attr.value == 'url':
-                                attr = instr.attributes['content']
-                                url = ecommerce.url(address=attr.value)
-                                self.url = url
+                            # If we have a 'set' instruction
+                            if 'set' in instr.classes:
+                                attr = instr.getattr('name')
+                                if attr == 'url':
+                                    attr = instr.getattr('content')
+                                    url = ecommerce.url(address=attr)
+                                    self.url = url
+
+                            elif 'remove' in instr.classes:
+                                id = instr.getattr('content')
+                                el = self['#' + id].only
+                                el.remove()
 
                 ''' Method logic '''
 
