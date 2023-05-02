@@ -433,7 +433,6 @@ class ticketsspa_backlogs(tester.tester):
         # The <dialog> box should have been removed
         self.zero(tab['dialog'])
 
-
     def it_navigates_to_story(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
