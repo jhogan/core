@@ -8179,18 +8179,17 @@ with book('Hacking Carapacian Core'):
       single data model that covers virtually all business data
       management needs. This universal applicability of the data model
       is captured by the GEM. It's possible to write entire applications
-      using the Core framework having the GEM provide the entire
-      business and data tier. 
+      using the Core framework using the GEM as the business tier.
 
       That being said, the GEM is also extensible to accomidate business
       domains not covered or anticipated by Silverston's original
-      models. At the time of this writing, for example, Agile entities
+      models. At the time of this writing, for example, agile entities
       such as **backlog**, **sprint** and **story** are being added to
       the GEM to create a ticketing system. The agile software
       development methodology was not popular when Silverston's
       published his books, and it is not clear whether or not an agile
       object model would have even been covered. However, the new agile
-      object model integrates nicely with with the original models. For
+      object model integrates nicely with the original models. For
       example, the new `effort.story` entity inherits from the
       `effort.requirement` entity which was defined in the original data
       model. Thus `stories` can take advantage of the `requirement`'s
@@ -8198,30 +8197,38 @@ with book('Hacking Carapacian Core'):
 
       To really take advantage of the GEM, one will need to pick up a
       copy of "The Data Model Resource Book" volume 1 and optionally
-      volumn 2 (which contain the industry-specific domains mentioned
+      volumn 2 (which contains the industry-specific domains mentioned
       above). The GEM is an an object-oriented reflection of the data
       models in those books thus the books are able to provide the
-      reader with a clear understanding of how to use the entities, what
-      their intentions are, and how they relate to one another.
+      reader with a clear understanding of how to use and extend the
+      entities, what their intentions are, and how they relate to one
+      another.
 
       Below is a table of the modules that are currently available that
       contain the GEM classes.
 
-      | File         | Volume | Chapter                   | Purpose |
-      |--------------|--------|---------------------------|---------|
-      | account.py   | 1      | Accounting and Budgeting  |         |
-      | apriori.py   | N/A    | N/A                       |         |
-      | asset.py     | 1      | Work Effort               |         |
-      | budget.py    | 1      | Accounting and Budgeting  |         |
-      | ecommerce.py | 2      | E-commerce models         |         |
-      | effort.py    | 1      | Work Effort               |         |
-      | hr.py        | 1      | Human Resources           |         |
-      | invoice.py   | 1      | Invoicing                 |         |
-      | order.py     | 1      | Ordering Products         |         |
-      | party.py     | 1      | People and Organizations  |         |
-      | product.py   | 1      | Products                  |         |
-      | shipment.py  | 1      | Shipments                 |         |
+      | File         | Volume | Chapter                   |
+      |--------------|--------|---------------------------|
+      | account.py   | 1      | Accounting and Budgeting  |
+      | apriori.py   | N/A    | N/A                       |
+      | asset.py     | 1      | Work Effort               |
+      | budget.py    | 1      | Accounting and Budgeting  |
+      | ecommerce.py | 2      | E-commerce models         |
+      | effort.py    | 1      | Work Effort               |
+      | hr.py        | 1      | Human Resources           |
+      | invoice.py   | 1      | Invoicing                 |
+      | order.py     | 1      | Ordering Products         |
+      | party.py     | 1      | People and Organizations  |
+      | product.py   | 1      | Products                  |
+      | shipment.py  | 1      | Shipments                 |
 
+      As you can see, the GEM is quite expansive. Before begining any
+      application that uses the framework, it is recommend that you
+      become familiar with the GEM objects models that are relevent to
+      the application you are writing. As stated, this should be done
+      through obtaining a copy of Silverston's books. Note that the GEM
+      is, by definition, of general applicability, thus changes to the
+      GEM should take its universal nature into account. 
     ''')
     with section('Using aprori.model()') as sec:
       ...
