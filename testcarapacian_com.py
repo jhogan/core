@@ -362,6 +362,74 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
+    def it_GETs_filtered(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(4)
+
+        for i, bl in bls.enumerate():
+            if i.even:
+                bl.close()
+
+        bls.save()
+
+        # Unfiltered
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(4, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.inplanning or bl.isclosed)
+
+                    if bl.isclosed:
+                        self.zero(card['button.close'])
+                    elif bl.inplanning:
+                        self.one(card['button.close'])
+                    break
+            else:
+                self.fail('Cannot find backlog')
+
+        res = tab.navigate('/en/ticketsspa/backlogs?type=planning', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.inplanning)
+                    self.one(card['button.close'])
+                    break
+            else:
+                self.true(bl.isclosed)
+
+        res = tab.navigate('/en/ticketsspa/backlogs?type=closed', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.isclosed)
+                    self.zero(card['button.close'])
+                    break
+            else:
+                self.true(bl.inplanning)
+
     def it_closes_backlog(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
