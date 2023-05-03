@@ -485,9 +485,10 @@ class ticketsspa(pom.spa):
                 bl = self.instance[id]
 
                 # Transition state buttons
-                btn = dom.button('Close', class_='close')
-                btn.onclick += self.btnclose_onclick, card
-                card += btn
+                if not bl.isclosed:
+                    btn = dom.button('Close', class_='close')
+                    btn.onclick += self.btnclose_onclick, card
+                    card += btn
 
                 # Get the backlog-to-stories association page
                 pg = self.spa.pages['backlog-stories']
