@@ -12135,7 +12135,7 @@ class orm:
             v = getattr(inst, name)
             
             # If v not an empty string...
-            if v:
+            if v != str() and v is not None:
                 if isinstance(dominp, dom.textarea):
                     # Add the value as a text node to the <textarea>
                     dominp += dom.text(v)
