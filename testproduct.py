@@ -331,7 +331,6 @@ class product_(tester.tester):
             sorted(x.feature.name for x in pfs1)
         )
 
-
         # Associate `good1` to purple
         good1.product_features += product.product_feature(
             type=product.product_feature.Required,
@@ -589,7 +588,6 @@ class product_(tester.tester):
         # Goods should have a collection of inventory items
         good = self.getvalid(product.good, comment=1)
         self.expect(None, lambda: good.items)
-
 
         # Add 10 serialized inventory items for the good
         for sn in range(10000, 10005):
