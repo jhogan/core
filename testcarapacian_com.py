@@ -295,6 +295,13 @@ class ticketsspa_ticket(tester.tester):
 
 class ticketsspa_backlogs(tester.tester):
     def __init__(self, *args, **kwargs):
+        # TODO Make sure we can run ticketsspa_backlogs alone
+        #
+        #    ./testcarapacian_com.py ticketsspa_backlogs
+        # 
+        # This sometimes works but, for some reason, will fail when ensuring
+        # carapacian_com.site() and claim that it can't load the root
+        # user even though it does exist in the database.
         propr = carapacian_com.site().Proprietor
         mods = 'effort',
         super().__init__(mods=mods, propr=propr, *args, **kwargs)
@@ -354,6 +361,76 @@ class ticketsspa_backlogs(tester.tester):
                 f'&backlogid={bl.id.hex}'
             )
             self.eq(expect, a.href)
+
+    def it_closes_backlog(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        N = 3
+        bls = testeffort.backlog.getvalid(N)
+        bls.save()
+        
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(N, cards.count)
+
+        bl = bls.getrandom()
+
+        card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
+
+        # Click the "Close" button
+        btnclose = card['button.close'].only
+
+        res = self.click(btnclose, tab)
+        self.h200(res)
+
+        # Get the card again
+        card = tab[f'[data-entity-id="{bl.id.hex}"]'].only
+
+        # Get the <dialog> confirmation modal
+        dia = tab['dialog'].only
+        self.true(dia.open)
+
+        btnno = dia['button[data-no]'].only
+
+        res = self.click(btnno, tab)
+        self.h200(res)
+
+        # Make sure the card still exists
+        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+
+        # The <dialog> box should have been removed
+        self.zero(tab['dialog'])
+
+        # The backlog should not be closed
+        self.false(bl.orm.reloaded().isclosed)
+
+        # Click the "Close" button
+        btnclose = card['button.close'].only
+
+        res = self.click(btnclose, tab)
+        self.h200(res)
+
+        # Get the <dialog> confirmation modal
+        dia = tab['dialog'].only
+        self.true(dia.open)
+
+        # Confirm the closure of the backlog
+        btnyes = dia['button[data-yes]'].only
+        res = self.click(btnyes, tab)
+        self.h200(res)
+
+        # The card should have been removed
+        self.zero(tab[f'[data-entity-id="{bl.id.hex}"]'])
+
+        # The backlog should be closed now
+        self.true(bl.orm.reloaded().isclosed)
+
+        # The <dialog> box should have been removed
+        self.zero(tab['dialog'])
 
     def it_navigates_to_story(self):
         ws = carapacian_com.site()
@@ -419,16 +496,6 @@ class ticketsspa_backlogs(tester.tester):
                 break
         else:
             self.fail('Cannot find story')
-
-
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     tester.cli().run()

@@ -475,6 +475,7 @@ class ticketsspa(pom.spa):
             # Get backlog articls
             cards = self.main['article.card']
 
+
             # For each backlog card in cards, add a table of stories
             for card in cards:
                 # Get backlog id from card
@@ -482,6 +483,12 @@ class ticketsspa(pom.spa):
                 id = UUID(id)
 
                 bl = self.instance[id]
+
+                # Transition state buttons
+                if not bl.isclosed:
+                    btn = dom.button('Close', class_='close')
+                    btn.onclick += self.btnclose_onclick, card
+                    card += btn
 
                 # Get the backlog-to-stories association page
                 pg = self.spa.pages['backlog-stories']
@@ -553,6 +560,34 @@ class ticketsspa(pom.spa):
                 tbl.orphan()
 
                 card += tbl
+
+        def btnclose_onclick(self, src, eargs):
+            """
+            """
+            card = eargs.html.only
+
+            dlgs = card['dialog']
+
+            if dlgs.isempty:
+                card += pom.dialog(
+                    card, 
+                    msg = 'Are you sure you want to close the backlog?',
+                    caption = 'Confirm',
+                    onyes = (self.btnclose_onclick, card),
+                    onno = (self.btnclose_onclick, card),
+                )
+
+            elif dlgs.issingular:
+                dlg = dlgs.only
+                btn = eargs.src
+                if btn.getattr('data-yes'):
+                    id = card.getattr('data-entity-id')
+                    bl = effort.backlog(id)
+                    bl.close()
+                    bl.save()
+                    eargs.remove()
+
+                card.remove('dialog')
             
         @property
         def detail(self):

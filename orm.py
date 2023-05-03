@@ -9241,17 +9241,19 @@ class orm:
             art = artist()
             assert art.style == 'classicism'
 
-        The ``kwargs`` argument can be used to override this default::
+        The ``kwargs`` argument can be used to override this default:
 
             art = artist(style='cubism')
             assert art.style == 'cubism'
 
         The kwargs arguments will be discoverd through inspection,
-        though the ``dict`` parameter  can be used instead if the kwargs
+        though the ``dict`` parameter can be used instead if the kwargs
         argument isn't available for some reason.
         
-        :param: attr str: The attribute/map to be set
-        :param: v object: The value to set the attribute to
+        :param: attr str: The attribute/map to be set.
+
+        :param: v object: The value to set the attribute to.
+
         :param: dict dict: A replacment dict if the calling method
         (usually __init__) doesn't have a **kwargs parameter.
         """
@@ -9268,8 +9270,10 @@ class orm:
             # former is significantly faster. The underscore in
             # _getframe indicates that this methed is implementation
             # dependent. If there is ever an issue, we can fall back to:
+            #
             #     st = inspect.stack()
             #     dict = st[1].frame.f_locals['kwargs']
+            #
             dict = sys._getframe().f_back.f_locals['kwargs']
         except Exception as ex:
             raise ValueError(
@@ -12130,13 +12134,14 @@ class orm:
 
             v = getattr(inst, name)
             
-            if v is None:
-                v = str()
-
-            if isinstance(dominp, dom.textarea):
-                dominp += dom.text(v)
-            else:
-                dominp.value = v
+            # If v not an empty string...
+            if v != str() and v is not None:
+                if isinstance(dominp, dom.textarea):
+                    # Add the value as a text node to the <textarea>
+                    dominp += dom.text(v)
+                else:
+                    # Add the value to the <input>'s `value` attribute
+                    dominp.value = v
 
             return inp
 

@@ -82,7 +82,11 @@ class  dependencies(type_types):                                 pass
 class  deliverable_efforts(orm.associations):                    pass
 class  effort_product_items(orm.associations):                   pass
 class  backlogs(orm.entities):                                   pass
+class  productbacklogs(backlogs):                                pass
+class  releases(backlogs):                                       pass
+class  sprints(backlogs):                                        pass
 class  stories(requirements):                                    pass
+class  backlogstatustypes(apriori.types):                        pass
 
 class backlog_stories(orm.associations):
     """ A collection of `backlog_story` associations.
@@ -600,6 +604,9 @@ class status(orm.entity):
 
 class statustype(apriori.type):
     """ Describes a ``status`` entity.
+
+    Note that this entity was originally called WORK EFFORT STATUS TYPE
+    in "The Data Model Resource Book".
     """
 
     # The collection of status entities that this entity describes.
@@ -838,6 +845,9 @@ class dependency(type_type):
     """
     """
 
+class backlogstatustype(apriori.type):
+    backlogs = backlogs
+
 class backlog(orm.entity):
     """ Represents a agile backlog.
 
@@ -868,6 +878,45 @@ class backlog(orm.entity):
     description  =  text
     span         =  datespan
     goal         =  str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Default self.backlogstatustype.name to 'planning'
+        if self.orm.isnew:
+            self._transation('planning')
+
+    def _transation(self, st):
+        """ Change the `backlogstatustype.name` of this `backlog` to
+        `st`. 
+
+        :param: st str: The name of the status to transfer to.
+        """
+        self.backlogstatustype = backlogstatustype(name=st)
+
+    def close(self):
+        """ Mark this `backlog` as closed, i.e.:
+            
+            self.backlogstatustype.name = 'closed'
+
+        Note that this is a transative operation, i.e., the `backlog`
+        operation will need to be `save()` in order to persist the
+        status transfer.
+        """
+        self._transation('closed')
+
+    @property
+    def isclosed(self):
+        """ Returns True if this `backlog` is closed, False otherwise.
+        """
+        return self.backlogstatustype.name == 'closed'
+
+    @property
+    def inplanning(self):
+        """ Returns True if this `backlog` is in the planning state,
+        False otherwise.
+        """
+        return self.backlogstatustype.name == 'planning'
 
     def insert(self, rank, st=None):
         """ Puts the story `st` into this `backlog`.
@@ -1030,6 +1079,31 @@ class backlog(orm.entity):
         # TODO Add tests
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
+
+class productbacklog(backlog):
+    """ A product backlog is a prioritized list of requirements that
+    contains the work that needs to be done on a product. It is
+    maintained by the product owner and is continuously refined to
+    ensure that it reflects the evolving needs of the stakeholders. This
+    class represents a product backlog, which is a type of backlog that
+    contains all the stories and features that the development team
+    plans to work on in the future.
+    """
+    
+class release(backlog):
+    """A release backlog is a list of user stories that are planned to
+    be released to the customers in a specific release. It is created by
+    the product owner and the development team during the release
+    planning phase. This class represents a release backlog, which is a
+    type of backlog that contains the stories that the team plans to
+    complete in a specific release.
+    """
+
+class sprint(backlog):
+    """A sprint backlog is a list of user stories that the development
+    team has committed to completing during the upcoming sprint. It is
+    created by the team during the sprint planning phase. 
+    """
 
 class story(requirement):
     """ A class representing a user story in an Agile development

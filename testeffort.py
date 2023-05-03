@@ -816,6 +816,55 @@ class effort_(tester.tester):
         self.eq(st.asset.id, st1.asset.id)
         self.eq(st.asset.name, st1.asset.name)
 
+class backlogstatustype(tester.tester):
+    def __init__(self, *args, **kwargs):
+        mods = 'effort',
+        super().__init__(mods=mods, *args, **kwargs)
+
+        # TODO Remove when accessability properties have been
+        # implemented.
+        #orm.security().owner = ecommerce.users.root
+
+    def it_ensures(self):
+        type = effort.backlogstatustype(name='in progress')
+        type1 = type.orm.reloaded()
+        self.eq('in progress', type1.name)
+
+        type2 = effort.backlogstatustype(name='in progress')
+
+        self.eq(type2.id, type.id)
+
+    def it_categorizes(self):
+        bl = backlog.getvalid()
+        bl1 = backlog.getvalid()
+
+        planning = effort.backlogstatustype(name='planning')
+        inprogress = effort.backlogstatustype(name='in progress')
+
+        N = 6
+        Half = int(N/2)
+        for i in range(N):
+            type = planning if i % 2 else inprogress
+
+            bl = backlog.getvalid()
+            bl.backlogstatustype = type
+            bl.save()
+
+        planning = effort.backlogstatustype(name='planning')
+        inprogress = effort.backlogstatustype(name='in progress')
+
+        bls = planning.backlogs
+        self.count(Half, bls)
+
+        types = bls.pluck('backlogstatustype.name')
+        self.eq(['planning'] * Half, types)
+
+        bls = inprogress.backlogs
+        self.count(Half, bls)
+
+        types = bls.pluck('backlogstatustype.name')
+        self.eq(['in progress'] * Half, types)
+
 class backlog(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'effort',
@@ -1417,6 +1466,15 @@ class backlog(tester.tester):
         self.eq(sts.first.id, bss.first.story.id)
         self.eq(sts.last.id, bss.last.story.id)
         self.eq(list(range(7)), bss.pluck('rank'))
+
+    def it_defaults_to_planning(self):
+        bl = effort.backlog()
+        self.true(bl.inplanning) 
+
+class productbacklog(tester.tester):
+    def it_calls__init__(self):
+        p = effort.productbacklog()
+        self.type(effort.productbacklog, p)
 
 class story(tester.tester):
     def __init__(self, *args, **kwargs):

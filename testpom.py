@@ -3391,7 +3391,7 @@ class crud(tester.tester):
         self.eq('born', inp.name)
         self.eq('date', inp.type)
         self.eq(lbl.for_, inp.id)
-        self.eq(str(), inp.value)
+        self.none(inp.value)
 
         # Default text
         '''
@@ -3579,6 +3579,8 @@ class crud(tester.tester):
 
     def it_updates(self):
         ''' Happy path '''
+        # TODO Test updating <input> and <textarea>s with empty values
+        # and strings with trailing whitespace. 
         per = person.getvalid()
         per.save()
 

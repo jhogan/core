@@ -1405,6 +1405,33 @@ class html(tester.tester):
 
         self.eq(v, txt.value.strip())
 
+    def it_parses_boolean_attributes(self):
+        """ Make sure boolean attributes are parsed correctly. We want
+        to support the following types of boolean attributes:
+
+            <p data-my-boolean>
+
+            <p data-my-boolean="">
+        """
+
+        html = self.dedent('''
+        <p data-my-boolean>True</p>
+        ''')
+
+        html = dom.html(html)
+        p = html['p'].only
+
+        self.true(p.getattr('data-my-boolean'))
+
+        html = self.dedent('''
+        <p data-my-boolean="">Also True</p>
+        ''')
+
+        html = dom.html(html)
+        p = html['p'].only
+
+        self.true(p.getattr('data-my-boolean'))
+
 class markdown(tester.tester):
     def it_parses_code(self):
         md = dom.markdown('''

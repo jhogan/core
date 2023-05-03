@@ -854,7 +854,8 @@ function ajax(e){
             if (this.status < 400){
                 // If no HTML was returned from the XHR request, we can
                 // return. Usually, events will return HTML, however it
-                // possible that in some cases they will choose not to.
+                // is possible that, in some cases, they will choose not
+                // to.
                 if(!xhr.responseText){
                     console.info('No response')
                     return
@@ -893,7 +894,6 @@ function ajax(e){
 
                     exec([new_])
 
-
                 // If the element is not a <main>, we are doing a
                 // regular AJAX call, i.e., we are not loading a new
                 // <main> as a SPA page.
@@ -919,7 +919,11 @@ function ajax(e){
                     }
                 }
             }else{ // If there was an error...
-                // Remove any elements with a class of 'exception'
+                document.querySelectorAll('dialog').forEach(
+                    e => e.remove()
+                )
+
+
                 // Insert the response HTML making it the first element
                 // under <main>. The response HTML will have a parent
                 // element with an "exception" class.
@@ -1083,12 +1087,14 @@ function wake(els){
         for (var el of els){
             // Append a text node to <textarea> elements containing the
             // data in its .value property.
+            var v = el.value
+
             if (el.tagName == 'TEXTAREA'){
                 
                 // Create text node before.
                 // NOTE Do this first because removing the child nodes
                 // affects el.value in some cases.
-                var nd = document.createTextNode(el.value)
+                var nd = document.createTextNode(v)
 
                 // Clear the current text nodes
                 while(el.firstChild){
@@ -1099,7 +1105,17 @@ function wake(els){
                 el.appendChild(nd)
             }
             if (el.tagName == 'INPUT'){
-                el.setAttribute('value', el.value)
+                if (v){
+                    el.setAttribute('value', v)
+                }else{
+                    // If an empty string is assigned to the `value`
+                    // attribute, remove it. Otherwise, it will be
+                    // interpreted as a Boolean attribute when processed
+                    // by the server and will equal `True` instead of
+                    // ''.
+                    el.removeAttribute('value')
+                }
+
             }
             // TODO Add support for other input elements like checkboxes,
             // dropdown lists, etc.
@@ -1150,13 +1166,17 @@ function exec(els){
                             main.outerHTML, null, url
                         )
                     }
+                }else if (instr.classList.contains('remove')){
+                    // Process a remove instruction
+                    var id = instr.getAttribute('content')
+                    el = document.getElementById(id)
+                    el.remove()
                 }
             }
         }
     }
     console.groupEnd()
 }
-
 '''
         #// Return the JavaScript
         return r
@@ -2787,6 +2807,27 @@ class set(instruction):
 
         super().__init__(*args, **kwargs)
 
+class remove(instruction):
+    """ A remove instruction to be sent to the browser.
+
+    Remove instruction instruct the JavaScript to remove the element
+    defined by self.element.
+    """
+    def __init__(self, el, *args, **kwargs):
+        """ Create a `remove` instruction.
+
+        :param: el dom.element: The element to be removed.
+        """
+        self.element = el
+
+        # Add `remove' to the `class` attribute.
+        self.classes += 'remove'
+
+        # Set the `content` attribute to the element`s id
+        self.content = el.id
+
+        super().__init__(*args, **kwargs)
+
 class crud(page):
     """ A class to implement the display logic to create, retrieve,
     update and delete a given `orm.entity` or `orm.entities` object.
@@ -3678,6 +3719,65 @@ class crud(page):
             # The `stead` property can be used by the event handler to
             # specify an object that should be saved instead of `e`.
             self.stead = None
-            
-        
 
+class dialog(dom.dialog):
+    """ Inherits from dom.dialog to provide a richer set of features.
+    """
+    def __init__(self, 
+        owner, msg, caption=None, onyes=None, onno=None, *args, **kwargs
+    ):
+        """ Create a pom.dialog element.
+
+        :param: owner dom.element: The dom.element that owns the dialog
+        modal.
+
+        :param: msg str: The message to display to the user.
+
+        :param: caption str: The message to display in the modal's
+        header.
+
+        :param: onyes tuple: When not None, instructs the dialog to
+        display a "Yes" button. The first element of the tuple will be
+        the server-side event handler that should be called when the
+        button is clicked. The remaining elements of the tuple will be
+        the elements that should be sent from the browser to the server.
+
+        :param: onno tuple: When not None, instructs the dialog to
+        display a "No" button. The first element of the tuple will be
+        the server-side event handler that should be called when the
+        button is clicked. The remaining elements of the tuple will be
+        the elements that should be sent from the browser to the server.
+        """
+        self.owner    =  owner
+        self.message  =  msg
+        self.caption  =  caption
+
+        # Make sure the <dialog> has the `open` attribute present.
+        self.open     =  True
+
+        # Add caption
+        if caption:
+            self += dom.header(caption)
+
+        # Create <form> to be put in <dialog>
+        frm = dom.form()
+
+        # Add message
+        frm += dom.p(msg)
+
+        # Add Yes button
+        if onyes:
+            btn = dom.button('Yes')
+            btn.setattr('data-yes', True)
+            btn.onclick += onyes
+            frm += btn
+
+        # Add Yes button
+        if onno:
+            btn = dom.button('No')
+            btn.setattr('data-no', True)
+            btn.onclick += onno
+            frm += btn
+
+        self += frm
+        super().__init__(*args, **kwargs)
