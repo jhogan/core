@@ -732,7 +732,9 @@ class ticketsspa(pom.spa):
         mnu.items  +=  pom.menu.item(
             'New', 'ticketsspa/ticket?crud=create'
         )
-        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlogs')
+        mnu.items  +=  pom.menu.item(
+            'Backlog',  'ticketsspa/backlogs?type=planning'
+        )
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
 
