@@ -461,10 +461,14 @@ class ticketsspa(pom.spa):
             super().__init__(
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
+            self.type = None
 
         def main(self, 
-            id:str=None, crud:str='retrieve', oncomplete=None
+            id:str = None, crud:str = 'retrieve', 
+            oncomplete = None, type:str = 'planning,closed',
         ):
+            self.type = type
+
             """ Override main to pull in a table of stories.
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
