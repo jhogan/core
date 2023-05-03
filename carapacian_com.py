@@ -605,6 +605,24 @@ class ticketsspa(pom.spa):
                 )
             return self._select
 
+        @property
+        def instance(self):
+            """ XXX
+            """
+            if not self._instance:
+                self._instance = effort.backlogs()
+
+                args = self.type.split(',')
+                pred = 'name in (%s)'
+                pred %= ', '.join(['%s'] * len(args))
+
+                types = effort.backlogstatustypes(pred, args)
+
+                for type in types:
+                    self._instance += type.backlogs
+
+            return self._instance
+
     class backlog(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)

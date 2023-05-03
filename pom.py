@@ -2867,7 +2867,7 @@ class crud(page):
         """ Overrides `page.clear` to set the `instance` to None so it
         is reloaded when necessary.
         """
-        self.instance = None
+        self._instance = None
         super().clear()
 
     @property
