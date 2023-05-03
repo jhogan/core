@@ -3579,7 +3579,8 @@ class crud(tester.tester):
 
     def it_updates(self):
         ''' Happy path '''
-        # XXX Test updating <input> and <textarea>s with empty values
+        # TODO Test updating <input> and <textarea>s with empty values
+        # and strings with trailing whitespace. 
         per = person.getvalid()
         per.save()
 

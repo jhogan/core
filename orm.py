@@ -12134,8 +12134,6 @@ class orm:
 
             v = getattr(inst, name)
             
-            # XXX This won't work with int(0)
-
             # If v not an empty string...
             if v:
                 if isinstance(dominp, dom.textarea):

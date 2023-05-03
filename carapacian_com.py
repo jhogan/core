@@ -588,7 +588,6 @@ class ticketsspa(pom.spa):
                     eargs.remove()
 
                 card.remove('dialog')
-
             
         @property
         def detail(self):
