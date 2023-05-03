@@ -846,6 +846,8 @@ class dependency(type_type):
     """
 
 class backlogstatustype(apriori.type):
+    """ XXX
+    """
     backlogs = backlogs
 
 class backlog(orm.entity):
@@ -880,6 +882,8 @@ class backlog(orm.entity):
     goal         =  str
 
     def __init__(self, *args, **kwargs):
+        """ XXX
+        """
         super().__init__(*args, **kwargs)
         
         # Default self.backlogstatustype.name to 'planning'
