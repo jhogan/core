@@ -8224,12 +8224,46 @@ with book('Hacking Carapacian Core'):
 
       As you can see, the GEM is quite expansive. Before begining any
       application that uses the framework, it is recommend that you
-      become familiar with the GEM objects models that are relevent to
+      become familiar with the GEM object models that are relevent to
       the application you are writing. As stated, this should be done
       through obtaining a copy of Silverston's books. Note that the GEM
       is, by definition, of general applicability, thus changes to the
-      GEM should take its universal nature into account. 
+      GEM should take its universal nature into account. Where special
+      changes to the GEM are required to meet the unique needs of your
+      applicaiton, you should create classes that inherit from the
+      original GEM class to override its functionality. However, you're
+      encouraged to first explore general solutions to the problem
+      that would end up serving as enhancements to the GEM, thus
+      benefiting you and the larger community of Core users.
     ''')
+
+    with listing('An brief illustration of using the GEM'):
+      import party
+      import order
+      import product
+
+      per = party.person(first='Sam', last='Altman')
+      ''' Create roles involved in order '''
+      placing = party.placing()
+
+      per.roles += placing
+
+      gpu = party.product(
+        name = 'NVIDIA Tesla A100 Ampere 40 GB Graphics Card - PCIe 4.0'
+      )
+
+      qty = 30_000
+      so = order.salesorder()
+      so.items += orde.salesitem(
+        product = gpu,
+        quantity = qty,
+        price = 14_000 * qty,
+      )
+
+      so.placing = placing
+
+
+
     with section('Using aprori.model()') as sec:
       ...
 
