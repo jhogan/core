@@ -396,7 +396,7 @@ class ticketsspa_backlogs(tester.tester):
             else:
                 self.fail('Cannot find backlog')
 
-        res = tab.navigate('/en/ticketsspa/backlogs?type=planning', ws)
+        res = tab.navigate('/en/ticketsspa/backlogs?types=planning', ws)
         self.status(200, res)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
@@ -413,7 +413,7 @@ class ticketsspa_backlogs(tester.tester):
             else:
                 self.true(bl.isclosed)
 
-        res = tab.navigate('/en/ticketsspa/backlogs?type=closed', ws)
+        res = tab.navigate('/en/ticketsspa/backlogs?types=closed', ws)
         self.status(200, res)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
@@ -429,6 +429,40 @@ class ticketsspa_backlogs(tester.tester):
                     break
             else:
                 self.true(bl.inplanning)
+
+    def it_filters(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        bls = testeffort.backlog.getvalid(4)
+
+        for i, bl in bls.enumerate():
+            if i.even:
+                bl.close()
+
+        bls.save()
+
+        # Unfiltered
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.h200(res)
+
+        flt = tab['div.cards section.filter'].only
+
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            self.true(bl.inplanning)
 
     def it_closes_backlog(self):
         ws = carapacian_com.site()

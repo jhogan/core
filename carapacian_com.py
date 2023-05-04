@@ -461,27 +461,49 @@ class ticketsspa(pom.spa):
             super().__init__(
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
-            self.type = None
+            self._types = None
 
         def main(self, 
-            id:str = None, crud:str = 'retrieve', 
-            oncomplete = None, type:str = 'planning,closed',
+            id:str = None,     crud:str = 'retrieve', 
+            oncomplete = None, types:str = None,
         ):
-            self.type = type
-
             """ Override main to pull in a table of stories.
+
+            XXX Explain params
             """
+
+            # XXX
+            self.types = types
+
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
             # Get instance
             es = self.instance
 
-            # Get backlog articls
-            cards = self.main['article.card']
+            # Get backlog articls's div
+            div = self.main['div.cards'].only
 
+            # XXX
+            types = effort.backlogstatustypes.orm.all
+            fltstr = ','.join(types.pluck('name'))
+
+            flt = dom.section(class_='filter')
+            flt.setattr('data-filter', fltstr)
+
+            for type in types:
+                inp = dom.input(
+                    type   =  'checkbox',
+                    name   =  type.name,
+                    value  =  type.id.hex
+                )
+
+                inp.onclick += self.chkfilters_onclick, div
+                flt += inp
+
+            div << flt
 
             # For each backlog card in cards, add a table of stories
-            for card in cards:
+            for card in div['article.card']:
                 # Get backlog id from card
                 id = card.getattr('data-entity-id')
                 id = UUID(id)
@@ -565,6 +587,23 @@ class ticketsspa(pom.spa):
 
                 card += tbl
 
+        def chkfilters_onclick(self, src, eargs):
+            """ XXX
+            """
+            div = eargs.element
+            flt = div['section.filter'].only
+            chks = flt['[checked]']
+            self.types = ','.join(chks.pluck('name'))
+
+
+            div.remove('article.card')
+            B()
+
+            chkinplanning = flt['[name=planning]'].only
+            chkisclosed = flt['[name=closed]'].only
+            print(flt)
+            B()
+
         def btnclose_onclick(self, src, eargs):
             """
             """
@@ -606,19 +645,35 @@ class ticketsspa(pom.spa):
             return self._select
 
         @property
+        def types(self):
+            """ XXX
+            """
+            if self._types is None:
+                self._types = effort.backlogstatustypes.orm.all
+
+            elif isinstance(self._types, str):
+                args = self._types.split(',')
+                pred = 'name in (%s)'
+                pred %= ', '.join(['%s'] * len(args))
+
+                self._types = effort.backlogstatustypes(pred, args)
+
+            return self._types
+
+        @types.setter
+        def types(self, v):
+            """
+            """
+            self._types = v
+
+        @property
         def instance(self):
             """ XXX
             """
             if not self._instance:
                 self._instance = effort.backlogs()
 
-                args = self.type.split(',')
-                pred = 'name in (%s)'
-                pred %= ', '.join(['%s'] * len(args))
-
-                types = effort.backlogstatustypes(pred, args)
-
-                for type in types:
+                for type in self.types:
                     self._instance += type.backlogs
 
             return self._instance
