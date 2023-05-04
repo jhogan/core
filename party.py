@@ -653,7 +653,6 @@ class person(party):
     def first(self, v):
         """ Set first name of the person.
         """
-
         self._setname(v, 'first')
 
     @property
@@ -692,7 +691,6 @@ class person(party):
         """ Get the name given an ordinal (``ord``) such as ``first``,
         ``middle``, `last``.
         """
-
         now = primative.datetime.utcnow()
 
         for name in self.names:

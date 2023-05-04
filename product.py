@@ -265,7 +265,6 @@ class product(orm.entity):
     representations in product.serial an product.nonserial classes. See
     those entity objects for more information.
     """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         attrs = (
