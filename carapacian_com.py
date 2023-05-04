@@ -597,15 +597,12 @@ class ticketsspa(pom.spa):
 
 
             div.remove('article.card')
-            B()
 
             chkinplanning = flt['[name=planning]'].only
             chkisclosed = flt['[name=closed]'].only
-            print(flt)
-            B()
 
         def btnclose_onclick(self, src, eargs):
-            """
+            """ XXX
             """
             card = eargs.html.only
 

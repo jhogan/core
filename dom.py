@@ -5876,6 +5876,8 @@ class input(element):
         self.attributes['formmethod'].value = v
 
     def click(self):
+        """ XXX
+        """
         if self.type == 'checkbox':
             v = self.getattr('checked')
             self.setattr('checked', not v)
