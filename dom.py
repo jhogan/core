@@ -5875,6 +5875,13 @@ class input(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
+    def click(self):
+        if self.type == 'checkbox':
+            v = self.getattr('checked')
+            self.setattr('checked', not v)
+
+        self._trigger('click')()
+
 class ths(elements):
     """ A class used to contain a collection of ``th`` elements.  """
 
