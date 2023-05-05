@@ -463,13 +463,8 @@ class ticketsspa(pom.spa):
             )
             self._types = None
 
-        def main(self, 
-            id:str = None,     crud:str = 'retrieve', 
-            oncomplete = None, types:str = None,
-        ):
-            """ Override main to pull in a table of stories.
-
-            XXX Explain params
+        def gethtml(self, id, crud, oncomplete):
+            """ XXX
             """
 
             # XXX
