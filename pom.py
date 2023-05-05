@@ -3453,8 +3453,8 @@ class crud(page):
     def instance(self, v):
         self._instance = v
 
-    def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
-        """ The main handler for this `crud` page.
+    def gethtml(self, id, crud, oncomplete):
+        """ XXX
         """
         frm = False
 
@@ -3654,7 +3654,12 @@ class crud(page):
 
         # Add whichever element we created (<form>, <article>, <table>)
         # to <main>.
+        return el
 
+    def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
+        """ The main handler for this `crud` page.
+        """
+        el = self.gethtml(id=id, crud=crud, oncomplete=oncomplete)
         self.main += el
 
     def _menu(self, td):
