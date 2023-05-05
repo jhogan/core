@@ -198,7 +198,6 @@ class order_(tester.tester):
         th placing customer) to a sales order.
         """
 
-
         ''' Create parties involved in order '''
         acme = party.company(name='ACME Company')
         sub  = party.company(name='ACME Subsidiary')
@@ -289,7 +288,6 @@ class order_(tester.tester):
         self.eq(acmeaddr.id,     acmeaddr1.id)
         self.eq(acmesubaddr.id,  acmesubaddr1.id)
         self.eq(acmeaddr.id,     acmeaddr2.id)
-
 
         itm = so1.items.first.orm.cast(order.salesitem)
         shipto1 = itm.shipto
