@@ -5585,7 +5585,7 @@ class input(element):
         isn't listed in the form data at all. The default value for
         checkboxes and radio buttons is on.
         """
-        return self.attributes['checked'].value
+        return self.attributes['checked'].value is None
 
     @checked.setter
     def checked(self, v):
