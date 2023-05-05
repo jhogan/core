@@ -874,6 +874,10 @@ class elements(entities.entities):
     # TODO All html should pass the W3C validation service at:
     # https://validator.w3.org/#validate_by_input
 
+    def orphan(self):
+        for el in self:
+            el.orphan()
+
     @property
     def root(self):
         """ Returns the root ``element`` that this collection is under.
