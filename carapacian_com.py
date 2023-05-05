@@ -466,17 +466,12 @@ class ticketsspa(pom.spa):
         def gethtml(self, id, crud, oncomplete):
             """ XXX
             """
-
-            # XXX
-            self.types = types
-
-            super().main(id=id, crud=crud, oncomplete=oncomplete)
+            div = super().gethtml(
+                id=id, crud=crud, oncomplete=oncomplete
+            )
 
             # Get instance
             es = self.instance
-
-            # Get backlog articls's div
-            div = self.main['div.cards'].only
 
             # XXX
             types = effort.backlogstatustypes.orm.all
@@ -581,20 +576,47 @@ class ticketsspa(pom.spa):
                 tbl.orphan()
 
                 card += tbl
+            return div
+
+        def main(self, 
+            id:str = None,     crud:str = 'retrieve', 
+            oncomplete = None, types:str = None,
+        ):
+            """ Override main to pull in a table of stories.
+
+            XXX Explain params
+            """
+
+            # XXX
+            self.types = types
+
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
 
         def chkfilters_onclick(self, src, eargs):
             """ XXX
             """
+            # Get the cards <div> that was sent
             div = eargs.element
+
+            # Get the filter <section>
             flt = div['section.filter'].only
+
+            # Get the filter checkboxes
             chks = flt['[checked]']
+
+            # Create a comma seperate list of filter names
             self.types = ','.join(chks.pluck('name'))
 
+            div1 = self.gethtml(
+                id=None, crud='retrieve', oncomplete=None
+            )
 
-            div.remove('article.card')
+            div.clear()
 
-            chkinplanning = flt['[name=planning]'].only
-            chkisclosed = flt['[name=closed]'].only
+            els = div1.elements
+            els.orphan()
+
+            div += els
 
         def btnclose_onclick(self, src, eargs):
             """ XXX

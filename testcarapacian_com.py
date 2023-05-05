@@ -452,6 +452,9 @@ class ticketsspa_backlogs(tester.tester):
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
 
+        self.false(chkinplanning.checked)
+        self.false(chkisclosed.checked)
+
         res = self.click(chkinplanning, tab)
         self.h200(res)
 
@@ -463,6 +466,33 @@ class ticketsspa_backlogs(tester.tester):
             id = card.getattr('data-entity-id')
             bl = effort.backlog(id)
             self.true(bl.inplanning)
+
+        # Unfilter by inplanning
+        flt = tab['div.cards section.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.false(chkisclosed.checked)
+
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        flts = False, False
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            if bl.inplanning:
+                flts[0] = True
+            elif bl.isclosed:
+                flts[1] = True
+
+        self.eq((True, True), flts)
 
     def it_closes_backlog(self):
         ws = carapacian_com.site()
