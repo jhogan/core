@@ -5283,7 +5283,6 @@ class input(element):
         email, date, month, week, time, datetime-local, number, and
         password input types.
         """
-
         return self.attributes['readonly'].value
 
     @readonly.setter

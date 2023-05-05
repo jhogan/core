@@ -3652,7 +3652,7 @@ class crud(page):
             a = dom.a('Back', href=pg.path)
             self.main += a
 
-        # Add whichever element we created (<form>, <article>, <table>)
+        # Return whichever element we created (<form>, <article>, <table>)
         # to <main>.
         return el
 

@@ -442,12 +442,11 @@ class ticketsspa_backlogs(tester.tester):
 
         bls.save()
 
-        # Unfiltered
+        # Filter by planning
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
         self.h200(res)
 
         flt = tab['div.cards section.filter'].only
-
 
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
