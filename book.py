@@ -8244,6 +8244,10 @@ with book('Hacking Carapacian Core'):
     ''')
 
     with listing('An brief illustration of using the GEM'):
+      # Run apriori.model() to ensure that all GEM modules are loaded
+      import apriori
+      aprori.model()
+
       # Import GEM modules
       import party
       import order
@@ -8277,38 +8281,44 @@ with book('Hacking Carapacian Core'):
       so.save()
 
     print('''
-      We can see that, the GEM is easily able to not only create persons,
-      products and sales orders, but also associated them together and
-      persist them to the database.
+      Before we can use the GEM, we must first import `aprori` and call
+      `aprori.model()`. This causes all the GEM modules to be imported
+      by the framework. This call is a requirement because the framework
+      needs to be aware of the relationships that each of the GEM
+      classes have to one another so their data definitions can be
+      completely evalutated.
 
-      The GEM provides a much more rich object model than the example
-      can really demonstrate. For example, the `party` module has
-      classes that would allow us to assign phone numbers, postal
-      addresses and email address to the user. The `product` module has
-      class that would allow us to define the various features of the
-      `gpu` as well as details about the prices the product would have
-      at different times and regions. 
+      Moving on, we can see that the GEM is easily able to not only
+      create persons, products and sales orders, but also associated
+      them together and persist them to the database.
+
+      Though this is a lot of functionality out-of-the-box, the GEM
+      provides a much richer object model than the simple example
+      demonstrates.  For example, the `party` module has classes that
+      would allow us to assign phone numbers, postal addresses and email
+      address to the user. The `product` module has classes that would
+      allow us to define the various features of the `gpu` as well as
+      details about the prices the product would have at different times
+      and for different regions. 
 
       As you can see, the `party` module provides the concept of a
       `role`. This allows different `parties` to play different roles
       with respect to an entity such as an `order`.  In this example,
-      `per` places the order. However, other parties may other roles to
-      the order such as shipper, suppler or the order's billto.
+      `per` places the order. However, other parties may play other
+      `roles` to the order such as shipper, suppler or the order's
+      bill-to.
 
       We've still only scratched the surface of what the GEM can do for
       order entry. Though we've only used three GEM modules, we can
-      easily imagine how other modules could be used to corrditane other
+      easily imagine how other modules could be used to coordinate other
       aspects of the order. For example, object models in the `shipping`
       module could help us track shipments of the order, classes in the
       `hr` module could help us properly compensate the sales person who
       closed the sale with a commision, objects in the `invoice` module
       would help us bill the customer, and the `account` module could be
-      used to post the transactions to the general ledger for
-      appropriate bookkeeping. 
+      used to post the transactions to a general ledger for appropriate
+      bookkeeping. 
     ''')
-
-    with section('Using aprori.model()') as sec:
-      ...
 
   with chapter("Authoring DOM objects", id='22ee9373') as sec:
     ...
