@@ -8,7 +8,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 ########################################################################
 
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from dbg import B
 from entities import classproperty
 from func import enumerate

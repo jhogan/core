@@ -24,6 +24,7 @@ owner:         own
 page:          pg
 parenthesis:   paren
 parent:        rent
+pattern:       pat
 proprietor:    propr
 remove:        rm
 result:        res

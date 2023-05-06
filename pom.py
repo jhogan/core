@@ -2165,6 +2165,9 @@ class page(dom.html):
         """ This method calls into this `page`'s `main` method which the
         web developer writes.
 
+        # XXX This also calls into page events. Make sure that and
+        # anything else is correctly documented in the comments.
+
             class mypage(page):
                 def main(self):
                     ...
@@ -2186,8 +2189,6 @@ class page(dom.html):
         it, a ValueError will be raised encouraging the useng to use
         **kwargs (i.e., qsargs)
 
-        :param: *qsargs dict: A dictionary that holds the query string
-        arguments the webpage is being called with. For example, if the
         URL look like:
             
             /en/time?greet=1&tz=America/Phoenix&a=1&b=2
@@ -2228,7 +2229,7 @@ class page(dom.html):
                     
                 # Determine if page is being called from an event
                 # trigger (e.g., when a menu item is clicked and the SPA
-                # loads a subpage.  If `eargs is not None`, then we are
+                # loads a subpage).  If `eargs is not None`, then we are
                 # being called by an event handler. 
                 isevent = bool(eargs)
 
@@ -2262,6 +2263,7 @@ class page(dom.html):
                     # Call page's main method. It's called `_mainfunc`
                     # here but the web developer will call it `main`.
                     self._mainfunc(**self._arguments)
+
                 self._called = True
 
             finally:

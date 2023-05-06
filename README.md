@@ -625,6 +625,9 @@ control.
 This has the same affect as the `-b` flag except it only goes into
 effect at that point which can avoid a lot of unnecessary breaking.
 
+<!-- XXX Explain that B() can cause tester to misreport the line numbers
+of tests that fails-->
+
 ### Setting breakpoints ###
 Breakpoints allow you to stop the code while its running in order to
 debug a certain point in the execution of the code. This is typically
