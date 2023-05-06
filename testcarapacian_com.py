@@ -482,7 +482,7 @@ class ticketsspa_backlogs(tester.tester):
 
         self.ge(2, cards)
 
-        flts = False, False
+        flts = list((False, False))
         for card in cards:
             id = card.getattr('data-entity-id')
             bl = effort.backlog(id)
@@ -491,7 +491,7 @@ class ticketsspa_backlogs(tester.tester):
             elif bl.isclosed:
                 flts[1] = True
 
-        self.eq((True, True), flts)
+        self.eq(list((True, True)), flts)
 
     def it_closes_backlog(self):
         ws = carapacian_com.site()
