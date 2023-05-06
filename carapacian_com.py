@@ -611,12 +611,7 @@ class ticketsspa(pom.spa):
                 id=None, crud='retrieve', oncomplete=None
             )
 
-            div.clear()
-
-            els = div1.elements
-            els.orphan()
-
-            div += els
+            eargs.html.first = div1
 
         def btnclose_onclick(self, src, eargs):
             """ XXX
