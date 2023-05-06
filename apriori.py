@@ -28,8 +28,8 @@ def model():
 
     Invoking this function is a requirement for any excecutable, such as
     test.py, bot.py, testmessage.py, or any process that relies on the
-    General Entity Model (GEM). All GEM modules need to be loaded ab
-    initio so introspection can be used to reflect on their data
+    General Entity Model (GEM). All GEM modules need to be loaded *ab
+    initio* so introspection can be used to reflect on their data
     definitions (i.e., orm.entity.__subclasses__() needs to be able to
     return every GEM entity class). If modules are left out, the full
     entity model cannot be constructed since there will be missing
@@ -39,7 +39,7 @@ def model():
     Any module that contains orm.entity classes, and that form the
     General Entity Model, should be imported here. Since entity modules
     are rarely added, this function will rarely be modified. However,
-    whenever one is, be sure to import here. 
+    whenever a GEM module is added, be sure to import here. 
 
     Note that to use the module in an executable, you will still need to
     import it there in order to get it in the executable's namespace.
