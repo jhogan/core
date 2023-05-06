@@ -10283,6 +10283,44 @@ class eventargs(entities.eventargs):
         """
         self.cancel = True
 
+    @contextmanager
+    def maintain(self):
+        """ XXX
+        """
+        ids = self.html.pluck('id')
+        yield
+
+        trigs = element.Triggers
+        pat = '|'.join(
+            [
+                f'data-{x}-fragment' 
+                for x in trigs
+            ]
+        )
+
+        frag = re.compile(pat)
+                    
+        for i, el in self.html.enumerate():
+            old = ids[i]
+            new = el.id
+            sels = ', '.join(
+                [
+                    f'[data-{x}-fragments="#{new}"]' 
+                    for x in trigs
+                ]
+            )
+
+            el.id = old
+
+            els = el[sels]
+
+            for el in els:
+                for attr in el.attributes:
+                    if frag.match(attr.name):
+                        attr.value = '#' + old
+                    
+
+
     def __repr__(self):
         """ Return a string representation of this dom.eventargs object.
         """
