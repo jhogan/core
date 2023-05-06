@@ -2239,10 +2239,13 @@ class page(dom.html):
                     else:
                         meth = self._mainfunc
 
-                    if eargs.handler:
-                        meth(src=eargs.src, eargs=eargs)
-                    else:
-                        meth(**self._arguments)
+                    with eargs.maintain():
+                        # XXX Should this and the above conditional be
+                        # merged?
+                        if eargs.handler:
+                            meth(src=eargs.src, eargs=eargs)
+                        else:
+                            meth(**self._arguments)
                 else:
                     try:
                         main = self._mainfunc
