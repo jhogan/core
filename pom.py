@@ -1058,7 +1058,7 @@ function listen(el){
 }
 
 function wake(els){
-    /* Recursive through each element in `els` seaching form <form>'s.
+    /* Recursive through each element in `els` searching for <form>'s.
      * When found, makes them fully aware of the values that the user
      * has put in its form fields.
      * 
@@ -1076,7 +1076,7 @@ function wake(els){
         // Recurse
         wake(el.children)
 
-        // Ignore non <form> elements
+        // Ignore non-<form> elements
         if (el.tagName != 'FORM'){
             continue
         }
@@ -1104,6 +1104,7 @@ function wake(els){
                 // Append
                 el.appendChild(nd)
             }
+
             if (el.tagName == 'INPUT'){
                 if (v){
                     el.setAttribute('value', v)

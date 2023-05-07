@@ -10230,6 +10230,9 @@ class eventargs(entities.eventargs):
         # JavaScript in the browser (eventjs) uses the id of the HTML it
         # sent to be the same as what it receives so it replace the old
         # HTML in the DOM with the new HTML.
+
+        # XXX I think we can remove this logic now with the advent of
+        # self.maintain().
         if html := self._html:
             if isinstance(v, element):
                 if v.id:
@@ -10318,8 +10321,6 @@ class eventargs(entities.eventargs):
                 for attr in el.attributes:
                     if frag.match(attr.name):
                         attr.value = '#' + old
-                    
-
 
     def __repr__(self):
         """ Return a string representation of this dom.eventargs object.

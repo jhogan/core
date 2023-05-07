@@ -1,5 +1,6 @@
 carapacian:    car    cara
 context:       ctx
+checkbox:      chk
 description:   desc
 entities:      es
 entity:        e
@@ -30,6 +31,8 @@ remove:        rm
 result:        res
 return-value:  r
 segment:       seg
+selector:      sel
+selectors:     sels
 switch-user:   su
 trigger:       trig
 tuple:         tup

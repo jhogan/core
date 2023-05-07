@@ -442,7 +442,7 @@ class ticketsspa_backlogs(tester.tester):
 
         bls.save()
 
-        # Filter by planning
+        # Filter by inplanning
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
         self.h200(res)
 
