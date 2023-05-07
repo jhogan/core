@@ -3323,7 +3323,7 @@ class crud(page):
             card = e.orm.card
 
             # Return card to browser
-            eargs.html = card
+            eargs.html.first = card
 
             # Create Edit button
             btnedit = dom.button('Edit', class_='edit')
