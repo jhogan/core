@@ -678,7 +678,7 @@ class ticketsspa(pom.spa):
         def types(self):
             """ XXX
             """
-            if self._types is None:
+            if not self._types:
                 self._types = effort.backlogstatustypes.orm.all
 
             elif isinstance(self._types, str):
