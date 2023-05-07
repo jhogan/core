@@ -10297,8 +10297,14 @@ class eventargs(entities.eventargs):
     def maintain(self):
         """ XXX
         """
-        ids = self.html.pluck('id')
+        ids = None
+        if html := self.html:
+            ids = html.pluck('id')
+
         yield
+
+        if not ids:
+            return
 
         trigs = element.Triggers
         pat = '|'.join(
