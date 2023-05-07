@@ -5879,10 +5879,15 @@ class input(element):
         self.attributes['formmethod'].value = v
 
     def click(self):
-        """ XXX
+        """ Simulate a click on this `input`.
         """
+        # If checkbox
         if self.type == 'checkbox':
+            # Get whether or not the checkbox is in a checked state
             v = self.getattr('checked')
+
+            # Negate the checked state and assign it to the checked
+            # attribute
             self.setattr('checked', not v)
 
         self._trigger('click')()
@@ -10297,18 +10302,31 @@ class eventargs(entities.eventargs):
     def maintain(self):
         """ XXX
         """
+        # Set ids to None since there may be no HTML fragments in some
+        # cases
         ids = None
+
         if html := self.html:
+            # Get all the current ids
             ids = html.pluck('id')
 
+        # Yield here. The remaining logic will be executed when we exit
+        # the context manager
         yield
 
+        # If no ids were found above, abort.
         if not ids:
             return
 
+        # Create a regular expression to match attributes that look like
+        #
+        #     data-<event>-fragment
+        #
         trigs = element.Triggers
+
         pat = '|'.join(
             [
+                # XXX I think this should be data-{x}-fragments
                 f'data-{x}-fragment' 
                 for x in trigs
             ]
@@ -10316,9 +10334,17 @@ class eventargs(entities.eventargs):
 
         frag = re.compile(pat)
                     
+        # For each of the root elements...
         for i, el in self.html.enumerate():
+            # Get the old and new ids
             old = ids[i]
             new = el.id
+
+            # Create a CSS selector to find all attritutes in the
+            # element that match the expression:
+            #
+            #     data-<event>-fragments
+            #
             sels = ', '.join(
                 [
                     f'[data-{x}-fragments="#{new}"]' 
@@ -10326,13 +10352,23 @@ class eventargs(entities.eventargs):
                 ]
             )
 
+            # Restore the old id on the root element
             el.id = old
 
+            # Find all elements that use the root element asa fragment
+            # to send to an event handler
             els = el[sels]
 
+            # For earch of these elements...
             for el in els:
+                
+                # For each of their attributes...
                 for attr in el.attributes:
+
+                    # If the attribute matches data-<event>-fragments
                     if frag.match(attr.name):
+
+                        # Restore the old id
                         attr.value = '#' + old
 
     def __repr__(self):

@@ -2175,11 +2175,12 @@ class page(dom.html):
         self._header = None
 
     def __call__(self, eargs=None, *args, **qsargs):
-        """ This method calls into this `page`'s `main` method which the
-        web developer writes.
+        """ If eargs is None, this method calls into this `page`'s
+        `main` method which the web developer writes. If the `eargs`
+        parameter is set, this method calls into the event handler
+        designated within eargs.
 
-        # XXX This also calls into page events. Make sure that and
-        # anything else is correctly documented in the comments.
+        Below is an example of calling the page's main method.
 
             class mypage(page):
                 def main(self):
@@ -2192,10 +2193,10 @@ class page(dom.html):
             # defined above.
             pg() 
 
-        :param: eargs dom.eventargs: If the call is made by an event,
-        (e.g., the click of a button on a web page), eargs will be a
-        dom.eventargs object. This object will contain a reference to
-        the event handler needed to process the event as well as the
+        :param: eargs dom.eventargs: If the call is triggered by an
+        event, (e.g., the click of a button on a web page), eargs will
+        be a dom.eventargs object. This object will contain a reference
+        to the event handler needed to process the event as well as the
         HTML from the webpage from which the event was fired.
 
         :param: *args tuple: Do not use. If an attempt is made to use
@@ -2211,7 +2212,6 @@ class page(dom.html):
             {'a': '1', 'b': '2', 'greet': '1', 'tz': 'America/Phoenix'}
 
         """
-
         # A call was attemped
         self._attemped = True
 
@@ -2224,7 +2224,10 @@ class page(dom.html):
                 'second call.'
             )
 
+        # If we are not recursively being called...
         if not self._calling:
+            # Pass query string arguments to the self._arguments
+            # @property method
             self._arguments = qsargs
 
             try:
@@ -3472,7 +3475,30 @@ class crud(page):
         self._instance = v
 
     def gethtml(self, id, crud, oncomplete):
-        """ XXX
+        """ Create and return a DOM object (dom.element) for the page.
+
+        This method is typically called by the `main()` method and some
+        event handlers to obtain the page's HTML.
+
+        :param: id str: The UUID, in hex format, for the entity that
+        this `crud` page represents. Will be None if the page represents
+        a collection of entities.
+
+        :param: crud str: The crud operation that the HTML needs to
+        support. 
+            
+            if crud == 'create':
+                We will return an empty <form>.
+
+            if crud == 'retrieve'
+                A <table>, cards <div> or card <article> will be
+                returned with the contents of the entity/entities.
+
+            if crud == 'update':
+                A <form> will be returned to edit the given entity.
+
+        :param: oncomplete str: The path to the page to return to when
+        processing has completed.
         """
         frm = False
 
