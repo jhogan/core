@@ -362,6 +362,44 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
+    def it_filter_form(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        # Do this to make sure the backlogstatustypes records have been
+        # created first. If they don't exist, the <form> will have
+        # nothing to filter on since it pulls from these records to
+        # create the checkboxes.
+        bl = testeffort.backlog.getvalid()
+        assert bl.inplanning
+        bl.save()
+        bl.close()
+        bl.save()
+
+        # Navigate
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        frm = tab['form.filter']
+        self.one(frm)
+
+        flt = frm.only
+        types = effort.backlogstatustypes.orm.all
+
+        names = sorted(types.pluck('name'))
+
+        chks = flt['input[type=checkbox]']
+
+        names1 = sorted(chks.pluck('name'))
+
+        self.eq(names, names1)
+
+        for chk in chks:
+            lbls = frm[f'label[for={chk.id}]']
+            self.one(lbls)
+            lbl = lbls.only
+            self.eq(chk.name.capitalize(), lbl.text)
+
     def it_GETs_filtered(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
@@ -446,7 +484,7 @@ class ticketsspa_backlogs(tester.tester):
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
         self.h200(res)
 
-        flt = tab['div.cards section.filter'].only
+        flt = tab['div.cards form.filter'].only
 
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
@@ -465,9 +503,10 @@ class ticketsspa_backlogs(tester.tester):
             id = card.getattr('data-entity-id')
             bl = effort.backlog(id)
             self.true(bl.inplanning)
+            self.false(bl.isclosed)
 
-        # Unfilter by inplanning
-        flt = tab['div.cards section.filter'].only
+        # Filter by both inplanning and isclosed
+        flt = tab['div.cards form.filter'].only
 
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
@@ -475,14 +514,14 @@ class ticketsspa_backlogs(tester.tester):
         self.true(chkinplanning.checked)
         self.false(chkisclosed.checked)
 
-        res = self.click(chkinplanning, tab)
+        res = self.click(chkisclosed, tab)
         self.h200(res)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
 
-        self.ge(2, cards)
+        self.ge(4, cards)
 
-        flts = list((False, False))
+        flts = [False] * 2
         for card in cards:
             id = card.getattr('data-entity-id')
             bl = effort.backlog(id)
@@ -491,7 +530,59 @@ class ticketsspa_backlogs(tester.tester):
             elif bl.isclosed:
                 flts[1] = True
 
-        self.eq(list((True, True)), flts)
+        self.eq([True] * 2, flts)
+
+        # Filter by only isclosed
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            self.true(bl.isclosed)
+            self.false(bl.inplanning)
+
+        # Uncheck both filters. Paradoxically, this should have the same
+        # affect as selecting both.
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        # Unselect is closed
+        res = self.click(chkisclosed, tab)
+        self.h200(res)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(4, cards)
+
+        flts = [False] * 2
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            if bl.inplanning:
+                flts[0] = True
+            elif bl.isclosed:
+                flts[1] = True
+
+        self.eq([True] * 2, flts)
+
 
     def it_closes_backlog(self):
         ws = carapacian_com.site()

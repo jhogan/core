@@ -477,8 +477,12 @@ class ticketsspa(pom.spa):
             types = effort.backlogstatustypes.orm.all
             fltstr = ','.join(types.pluck('name'))
 
-            flt = dom.section(class_='filter')
-            flt.setattr('data-filter', fltstr)
+            # TODO Instead of creating a filter <form> manually, we
+            # should investigate creating a new `pom.filter` class that
+            # inherits from dom.form and can provide nice interface to
+            # control and interrogate the object's properties.
+            frm = dom.form(class_='filter')
+            frm.setattr('data-filter', fltstr)
 
             for type in types:
                 inp = dom.input(
@@ -487,10 +491,15 @@ class ticketsspa(pom.spa):
                     value  =  type.id.hex
                 )
 
-                inp.onclick += self.chkfilters_onclick, div
-                flt += inp
+                inp.identify()
 
-            div << flt
+                inp.onclick += self.chkfilters_onclick, div
+
+                lbl = dom.label(type.name.capitalize(), for_=inp.id)
+                frm += lbl
+                frm += inp
+
+            div << frm
 
             # For each backlog card in cards, add a table of stories
             for card in div['article.card']:
@@ -599,17 +608,29 @@ class ticketsspa(pom.spa):
             div = eargs.element
 
             # Get the filter <section>
-            flt = div['section.filter'].only
+            frm = div['form.filter'].only
 
             # Get the filter checkboxes
-            chks = flt['[checked]']
+            chks = frm['[checked]']
 
             # Create a comma seperate list of filter names
-            self.types = ','.join(chks.pluck('name'))
+            types = chks.pluck('name')
+            self.types = ','.join(types)
 
             div1 = self.gethtml(
                 id=None, crud='retrieve', oncomplete=None
             )
+
+            # section.filter input[type=checkbox, name=name], 
+            frm1 = div1['form.filter'].only
+
+            if types:
+                sels = ','.join(
+                    f'input[type=checkbox][name={x}]' for x in types
+                )
+
+                for chk in frm1[sels]:
+                    chk.checked = True
 
             eargs.html.first = div1
 
