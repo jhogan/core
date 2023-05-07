@@ -6164,6 +6164,13 @@ class label(element):
     """ The <label> HTML element represents a caption for an item in a
     user interface.
     """
+    def __init__(self, *args, **kwargs):
+
+        with suppress(KeyError):
+            kwargs['for'] = kwargs.pop('for_')
+
+        super().__init__(*args, **kwargs)
+
     @property
     def for_(self):
         """ The value of the for attribute must be a single id for a
