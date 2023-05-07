@@ -1106,20 +1106,32 @@ function wake(els){
             }
 
             if (el.tagName == 'INPUT'){
-                if (v){
-                    el.setAttribute('value', v)
-                }else{
-                    // If an empty string is assigned to the `value`
-                    // attribute, remove it. Otherwise, it will be
-                    // interpreted as a Boolean attribute when processed
-                    // by the server and will equal `True` instead of
-                    // ''.
-                    el.removeAttribute('value')
+                switch (el.getAttribute('type')){
+                    case 'checkbox':
+                        if (el.checked){
+                            el.setAttribute('checked', true)
+                        }else{
+                            el.removeAttribute('checked')
+                        }
+                        break;
+
+                    case 'text':
+                        if (v){
+                            el.setAttribute('value', v)
+                        }else{
+                            // If an empty string is assigned to the `value`
+                            // attribute, remove it. Otherwise, it will be
+                            // interpreted as a Boolean attribute when processed
+                            // by the server and will equal `True` instead of
+                            // ''.
+                            el.removeAttribute('value')
+                        }
+                        break;
                 }
 
             }
-            // TODO Add support for other input elements like checkboxes,
-            // dropdown lists, etc.
+            // TODO Add support for other input elements like dropdown
+            // lists, etc.
         }
     }
 }
