@@ -464,8 +464,10 @@ class ticketsspa(pom.spa):
             self._types = None
 
         def gethtml(self, id, crud, oncomplete):
-            """ XXX
+            """ An override of pom.crud.gethtml to produces the HTML
+            needed for this `backlogs` page.
             """
+            # Get the default cards div
             div = super().gethtml(
                 id=id, crud=crud, oncomplete=oncomplete
             )
@@ -473,7 +475,7 @@ class ticketsspa(pom.spa):
             # Get instance
             es = self.instance
 
-            # XXX
+            # Get all backlog status types 
             types = effort.backlogstatustypes.orm.all
             fltstr = ','.join(types.pluck('name'))
 
@@ -482,6 +484,10 @@ class ticketsspa(pom.spa):
             # inherits from dom.form and can provide nice interface to
             # control and interrogate the object's properties.
             frm = dom.form(class_='filter')
+
+            # XXX We can remove this since it was never used. The data
+            # can be obtained by interrogating the checkboxes in the
+            # form.
             frm.setattr('data-filter', fltstr)
 
             for type in types:
@@ -591,18 +597,17 @@ class ticketsspa(pom.spa):
             id:str = None,     crud:str = 'retrieve', 
             oncomplete = None, types:str = None,
         ):
-            """ Override main to pull in a table of stories.
-
-            XXX Explain params
+            """ An override of pom.crud.main. The `types` parameter, if
+            given, will contain a comma seperated string of backlog
+            status types to filter the backlog cards by.
             """
-
-            # XXX
             self.types = types
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
         def chkfilters_onclick(self, src, eargs):
-            """ XXX
+            """ A handler for the onclick event of the backlog status
+            type filters.
             """
             # Get the cards <div> that was sent
             div = eargs.element
@@ -632,16 +637,27 @@ class ticketsspa(pom.spa):
                 for chk in frm1[sels]:
                     chk.checked = True
 
+            # XXX Use a `set` `instruction` to update the URL with the
+            # new value for the `types` query string parameter.
             eargs.html.first = div1
 
         def btnclose_onclick(self, src, eargs):
-            """ XXX
+            """ A handler for the onclick event of backlog card close
+            buttons.
             """
+
+            # Get the card
             card = eargs.html.only
 
+            # Get the confirmation dialog box if there is one 
             dlgs = card['dialog']
 
+            # If there is no dialog box. This will be the case when the
+            # Close button is first clicked.
             if dlgs.isempty:
+                
+                # Create the dialog to prompt the user to confirm
+                # closure
                 card += pom.dialog(
                     card, 
                     msg = 'Are you sure you want to close the backlog?',
@@ -650,16 +666,32 @@ class ticketsspa(pom.spa):
                     onno = (self.btnclose_onclick, card),
                 )
 
+            # If there was a dialog box
             elif dlgs.issingular:
                 dlg = dlgs.only
                 btn = eargs.src
+
+                # If user clicked the Yes button
                 if btn.getattr('data-yes'):
+                    
+                    # Get backlog id
                     id = card.getattr('data-entity-id')
+
+                    # Get backlog
                     bl = effort.backlog(id)
+
+                    # Close
                     bl.close()
                     bl.save()
+
+                    # Remove the backlog card from the page
+                    # XXX Remove only if closed backlogs is filtered
+                    # out. We will need to pass in the filter <form> to
+                    # this event handler. If we don't remove it, we will
+                    # still need to remove the Close button.
                     eargs.remove()
 
+                # Remove the dialog box so the user won't see it anymore
                 card.remove('dialog')
             
         @property

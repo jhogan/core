@@ -10300,7 +10300,20 @@ class eventargs(entities.eventargs):
 
     @contextmanager
     def maintain(self):
-        """ XXX
+        """ A context manager to preserve the id of the top-level
+        elements of the HTML that is sent to the server by the browser
+        during XHR requests.
+
+        When HTML fragments are sent by the browser, the `id` attributes
+        of their top-level elements are used by the JavaScript to update
+        the browesr's DOM with the potentially modified versions of the
+        elements that the server returns. This means that this `id`
+        attribute mustn't change. However, it will change if the event
+        handler needs to replace the entire element with a new one. This
+        context manager will restore the `id` of the top-level
+        element(s) to the original one. It will also update attributes
+        that reference this top-level element, in particular the
+        `data-<event>-fragments` attributes.
         """
         # Set ids to None since there may be no HTML fragments in some
         # cases
