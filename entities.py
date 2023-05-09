@@ -2366,6 +2366,14 @@ class kvps(entities):
         else:
             raise KeyError(f'Key "{k}" not found')
 
+    def __call__(self, k):
+        """ XXX
+        """
+        try:
+            return self[k]
+        except KeyError:
+            return None
+
     def __setitem__(self, k, v):
         """ Set the `kvp` object in the collection with a name of `k` to
         `v`. If the kvp object does not exist, it is added.
