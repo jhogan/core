@@ -485,11 +485,6 @@ class ticketsspa(pom.spa):
             # control and interrogate the object's properties.
             frm = dom.form(class_='filter')
 
-            # XXX We can remove this since it was never used. The data
-            # can be obtained by interrogating the checkboxes in the
-            # form.
-            frm.setattr('data-filter', fltstr)
-
             for type in types:
                 inp = dom.input(
                     type   =  'checkbox',
@@ -741,6 +736,8 @@ class ticketsspa(pom.spa):
             return self._instance
 
     class backlog(pom.crud):
+        """ XXX
+        """
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
 

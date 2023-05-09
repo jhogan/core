@@ -2022,7 +2022,7 @@ class page(dom.html):
 
     @property
     def _arguments(self):
-        """ Return a dict to be pased into the page's __call__ method
+        """ Return a dict to be passed into the page's __call__ method
         using the ** notation.
 
             self._mainfunc(**self._arguments)
@@ -2040,8 +2040,8 @@ class page(dom.html):
 
         This dict would be return by this @property.
 
-        Note that boolean valuse, like the 1 for 'greet' are normalized
-        into Python boolean types. The normalization happens because the
+        Note that Boolean values, like the 1 for 'greet' are normalized
+        into Python Boolean types. The normalization happens because the
         parameter list for the /en/time's main() method are examined and
         their annotations are used.
 
@@ -2249,6 +2249,7 @@ class page(dom.html):
                 # being called by an event handler. 
                 isevent = bool(eargs)
 
+                # XXX Comment
                 if isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)

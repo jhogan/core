@@ -2611,6 +2611,7 @@ class browser(entities.entity):
             """
             if not self._onbeforeunload:
                 self._onbeforeunload = entities.event()
+
             return self._onbeforeunload
 
         @onbeforeunload.setter
