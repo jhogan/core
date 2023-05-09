@@ -492,6 +492,9 @@ class ticketsspa(pom.spa):
                     value  =  type.id.hex
                 )
 
+                if type.name in self.types.pluck('name'):
+                    inp.checked = True
+
                 inp.identify()
 
                 inp.onclick += self.chkfilters_onclick, div
@@ -621,19 +624,14 @@ class ticketsspa(pom.spa):
                 id=None, crud='retrieve', oncomplete=None
             )
 
-            # section.filter input[type=checkbox, name=name], 
-            frm1 = div1['form.filter'].only
+            # XXX Explain
+            url = www.application.current.request.url.clone()
+            url.qs['types'] = sorted(types)
 
-            if types:
-                sels = ','.join(
-                    f'input[type=checkbox][name={x}]' for x in types
-                )
+            instrs = pom.instructions()
+            instrs += pom.set('url', url)
+            div1 += instrs
 
-                for chk in frm1[sels]:
-                    chk.checked = True
-
-            # XXX Use a `set` `instruction` to update the URL with the
-            # new value for the `types` query string parameter.
             eargs.html.first = div1
 
         def btnclose_onclick(self, src, eargs):
@@ -847,7 +845,7 @@ class ticketsspa(pom.spa):
             'New', 'ticketsspa/ticket?crud=create'
         )
         mnu.items  +=  pom.menu.item(
-            'Backlog',  'ticketsspa/backlogs?type=planning'
+            'Backlog',  'ticketsspa/backlogs?types=planning'
         )
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')

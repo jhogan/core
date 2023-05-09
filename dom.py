@@ -10339,8 +10339,7 @@ class eventargs(entities.eventargs):
 
         pat = '|'.join(
             [
-                # XXX I think this should be data-{x}-fragments
-                f'data-{x}-fragment' 
+                f'data-{x}-fragments' 
                 for x in trigs
             ]
         )

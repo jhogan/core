@@ -15,7 +15,6 @@ from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort
-import testeffort
 import orm
 import party
 import pom
@@ -277,7 +276,7 @@ class ticketsspa_ticket(tester.tester):
 
         self.eq(f'id={id}&crud=retrieve', tab.url.query)
 
-        self.eq(id, tab.url.qs['id'][0])
+        self.eq(id, tab.url.qs['id'])
 
     def it_edits(self):
         ws = carapacian_com.site()
@@ -310,6 +309,7 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(10)
         bls.save()
         
@@ -362,7 +362,7 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
-    def it_filter_form(self):
+    def it_gets_filter_form(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
@@ -370,6 +370,7 @@ class ticketsspa_backlogs(tester.tester):
         # created first. If they don't exist, the <form> will have
         # nothing to filter on since it pulls from these records to
         # create the checkboxes.
+        import testeffort
         bl = testeffort.backlog.getvalid()
         assert bl.inplanning
         bl.save()
@@ -404,6 +405,7 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(4)
 
         for i, bl in bls.enumerate():
@@ -415,6 +417,14 @@ class ticketsspa_backlogs(tester.tester):
         # Unfiltered
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
         self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
 
@@ -434,8 +444,17 @@ class ticketsspa_backlogs(tester.tester):
             else:
                 self.fail('Cannot find backlog')
 
+
         res = tab.navigate('/en/ticketsspa/backlogs?types=planning', ws)
         self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.false(chkisclosed.checked)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
 
@@ -453,6 +472,14 @@ class ticketsspa_backlogs(tester.tester):
 
         res = tab.navigate('/en/ticketsspa/backlogs?types=closed', ws)
         self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
 
         cards = tab['article.card[data-entity="effort.backlog"]']
 
@@ -472,6 +499,7 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(4)
 
         for i, bl in bls.enumerate():
@@ -481,7 +509,9 @@ class ticketsspa_backlogs(tester.tester):
         bls.save()
 
         # Filter by inplanning
-        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        res = tab.navigate(
+            '/en/ticketsspa/backlogs?types=planning&types=closed', ws
+        )
         self.h200(res)
 
         flt = tab['div.cards form.filter'].only
@@ -489,23 +519,15 @@ class ticketsspa_backlogs(tester.tester):
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
 
-        self.false(chkinplanning.checked)
-        self.false(chkisclosed.checked)
+        # XXX This doesn't work because the framework doesn't support
+        # same-name qs parameters yet.
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
 
-        res = self.click(chkinplanning, tab)
+        # Filter by inplanning
+        res = tab.navigate('/en/ticketsspa/backlogs?types=planning', ws)
         self.h200(res)
 
-        cards = tab['article.card[data-entity="effort.backlog"]']
-
-        self.ge(2, cards)
-
-        for card in cards:
-            id = card.getattr('data-entity-id')
-            bl = effort.backlog(id)
-            self.true(bl.inplanning)
-            self.false(bl.isclosed)
-
-        # Filter by both inplanning and isclosed
         flt = tab['div.cards form.filter'].only
 
         chkinplanning = flt['[name=planning]'].only
@@ -514,8 +536,49 @@ class ticketsspa_backlogs(tester.tester):
         self.true(chkinplanning.checked)
         self.false(chkisclosed.checked)
 
+        # Filter by none (which is also both)
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.h200(res)
+
+        self.expect(KeyError, lambda: tab.url.qs['types'])
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        # Unclick chkinplanning
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        self.eq('closed', tab.url.qs('types'))
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            self.false(bl.inplanning)
+            self.true(bl.isclosed)
+
+        # Filter by both inplanning and isclosed
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
         res = self.click(chkisclosed, tab)
         self.h200(res)
+
+        self.none(tab.url.qs('types'))
 
         cards = tab['article.card[data-entity="effort.backlog"]']
 
@@ -544,6 +607,8 @@ class ticketsspa_backlogs(tester.tester):
         res = self.click(chkinplanning, tab)
         self.h200(res)
 
+        self.eq('closed', tab.url.qs('types'))
+
         cards = tab['article.card[data-entity="effort.backlog"]']
 
         self.ge(2, cards)
@@ -568,6 +633,8 @@ class ticketsspa_backlogs(tester.tester):
         res = self.click(chkisclosed, tab)
         self.h200(res)
 
+        self.none(tab.url.qs('types'))
+
         cards = tab['article.card[data-entity="effort.backlog"]']
 
         self.ge(4, cards)
@@ -589,6 +656,7 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         N = 3
+        import testeffort
         bls = testeffort.backlog.getvalid(N)
         bls.save()
         
@@ -658,6 +726,7 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(3)
         bls.save()
         

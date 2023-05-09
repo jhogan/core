@@ -709,7 +709,7 @@ class tester(entities.entity):
                                 attr = instr.getattr('name')
                                 if attr == 'url':
                                     attr = instr.getattr('content')
-                                    url = ecommerce.url(address=attr)
+                                    url = www.url(attr)
                                     self.url = url
 
                             elif 'remove' in instr.classes:
@@ -944,8 +944,8 @@ class tester(entities.entity):
                 res = self.get(pg, ws)
                 self.html = res.html
 
-                self.url = ecommerce.url(
-                    address = f'http://{ws.host}/{pg.lstrip("/")}'
+                self.url = www.url(
+                    f'http://{ws.host}/{pg.lstrip("/")}'
                 )
 
                 eargs = www.browser.loadeventargs(url=self.url)

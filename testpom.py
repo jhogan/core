@@ -3868,6 +3868,7 @@ class crud(tester.tester):
         frm.setvalue('name', name)
 
         res = self.submit(frm, tab)
+        self.h200(res)
         
         # Obtain the <tr> again
         tr = tbl[sels].only
