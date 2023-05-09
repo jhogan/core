@@ -624,10 +624,12 @@ class ticketsspa(pom.spa):
                 id=None, crud='retrieve', oncomplete=None
             )
 
-            # XXX Explain
+            # Take the current url, clone it and set the `types` query
+            # string parameter to `types`
             url = www.application.current.request.url.clone()
             url.qs['types'] = sorted(types)
 
+            # Instruct the browser to set the location bar to `url`
             instrs = pom.instructions()
             instrs += pom.set('url', url)
             div1 += instrs
@@ -701,12 +703,17 @@ class ticketsspa(pom.spa):
 
         @property
         def types(self):
-            """ XXX
+            """ Returns the backlogstatustypes to filter on.
             """
+
+            # If no types were set, filter on all
             if not self._types:
                 self._types = effort.backlogstatustypes.orm.all
 
+            # If self._types is currently a str
             elif isinstance(self._types, str):
+                # Query backlogstatustypes based on the values found in
+                # self._types
                 args = self._types.split(',')
                 pred = 'name in (%s)'
                 pred %= ', '.join(['%s'] * len(args))
@@ -717,24 +724,36 @@ class ticketsspa(pom.spa):
 
         @types.setter
         def types(self, v):
-            """
+            """ Set the backlogstatustypes to filter on.
+
+            :param: v str|effort.backlogstatustypes|None: The
+            backlogstatustypes. If str, it will be considered a
+            comma-seperated string of backlogstatustype names. Setting
+            `types` to None implies we want all types.
             """
             self._types = v
 
         @property
         def instance(self):
-            """ XXX
+            """ Returns a `effort.backlogs` collection. Only the
+            `backlogs` matching the backlog statust types found in
+            `self.types` will be returned.
             """
             if not self._instance:
+                # Create an empty collection
                 self._instance = effort.backlogs()
 
+                # For each of the backlog status types
                 for type in self.types:
+                    
+                    # Append the type's backlog collection
                     self._instance += type.backlogs
 
             return self._instance
 
     class backlog(pom.crud):
-        """ XXX
+        """ A pom.crud page used to create and edit `effort.backlog`
+        entity objects.
         """
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)

@@ -271,7 +271,13 @@ class site(asset.asset):
 
                     sup = self
                     while sup:
-                        # XXX Explain
+                        # Directly set the owner of self and its supers.
+                        # This gets around the problem of indirect
+                        # setting which can cause a needless load of
+                        # `sup`'s existing owner. We may not be in a
+                        # security context that will permit that load
+                        # and will thus get an AuthenticationError or
+                        # RecordNotFoundError error.
                         sup.orm.mappings['owner'].value = root
                         sup.orm.mappings['owner__userid'].value = root.id
                         sup = sup.orm.super
@@ -2260,16 +2266,6 @@ class page(dom.html):
                     else:
                         meth = self._mainfunc
                         meth(**self._arguments)
-
-                    """
-                    with eargs.maintain():
-                        # XXX Should this and the above conditional be
-                        # merged?
-                        if eargs.handler:
-                            meth(src=eargs.src, eargs=eargs)
-                        else:
-                            meth(**self._arguments)
-                    """
                 else:
                     try:
                         main = self._mainfunc

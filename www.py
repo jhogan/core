@@ -2816,7 +2816,7 @@ class url(entities.entity):
         super().__init__(*args, **kwargs)
 
     def clone(self):
-        """ XXX
+        """ Return a new `url` instance equivalent to this `url`.
         """
         return type(self)(str(self))
 

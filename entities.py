@@ -2367,7 +2367,12 @@ class kvps(entities):
             raise KeyError(f'Key "{k}" not found')
 
     def __call__(self, k):
-        """ XXX
+        """ Return the value of the `kvp.value` attribute where `k`
+        equals the value of `kvp.name`. Similar to __getitem__ but
+        returns None if `k` is not found instead of raising an
+        exception.
+
+        :param: k str: The name of the `kvp`.
         """
         try:
             return self[k]
