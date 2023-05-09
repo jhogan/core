@@ -10237,23 +10237,6 @@ class eventargs(entities.eventargs):
 
     @html.setter
     def html(self, v):
-        # If we are replacing existing HTML, use the id from the old
-        # HTML's root and use it for the new HTML. We do this because
-        # JavaScript in the browser (eventjs) uses the id of the HTML it
-        # sent to be the same as what it receives so it replace the old
-        # HTML in the DOM with the new HTML.
-
-        # XXX I think we can remove this logic now with the advent of
-        # self.maintain().
-        if html := self._html:
-            if isinstance(v, element):
-                if v.id:
-                    raise ValueError(
-                        "Can't overwrite existing id"
-                    )
-
-                v.id = html.only.id
-
         self._html = v
 
     def remove(self):
