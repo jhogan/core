@@ -271,7 +271,9 @@ class site(asset.asset):
 
                     sup = self
                     while sup:
-                        sup.owner = root
+                        # XXX Explain
+                        sup.orm.mappings['owner'].value = root
+                        sup.orm.mappings['owner__userid'].value = root.id
                         sup = sup.orm.super
 
                 self.proprietor = propr
