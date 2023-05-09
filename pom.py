@@ -3295,7 +3295,7 @@ class crud(page):
             tr = e.orm.tr
 
             # Set the <tr> back to the browser
-            eargs.html = tr
+            eargs.html.first = tr
 
             td = tr['td[data-entity-attribute=id]'].only
 
