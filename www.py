@@ -2815,6 +2815,11 @@ class url(entities.entity):
         self.name       =  name
         super().__init__(*args, **kwargs)
 
+    def clone(self):
+        """ XXX
+        """
+        return type(self)(str(self))
+
     @property
     def name(self):
         """ Return the URL string.
