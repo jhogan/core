@@ -2255,9 +2255,13 @@ class page(dom.html):
                 if isevent:
                     if eargs.handler:
                         meth = getattr(self, eargs.handler)
+                        with eargs.maintain():
+                            meth(src=eargs.src, eargs=eargs)
                     else:
                         meth = self._mainfunc
+                        meth(**self._arguments)
 
+                    """
                     with eargs.maintain():
                         # XXX Should this and the above conditional be
                         # merged?
@@ -2265,6 +2269,7 @@ class page(dom.html):
                             meth(src=eargs.src, eargs=eargs)
                         else:
                             meth(**self._arguments)
+                    """
                 else:
                     try:
                         main = self._mainfunc
