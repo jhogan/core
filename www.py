@@ -2602,6 +2602,19 @@ class browser(entities.entity):
             browser object itself.
             """
             self.tabs = tabs
+            self._url = None
+
+        @property
+        def url(self):
+            return self._url
+
+        @url.setter
+        def url(self, v):
+            if v is not None:
+                if not isinstance(v, url):
+                    raise TypeError('url is of wrong type')
+
+            self._url = v
 
         @property
         def onbeforeunload(self):
