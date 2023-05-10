@@ -519,8 +519,6 @@ class ticketsspa_backlogs(tester.tester):
         chkinplanning = flt['[name=planning]'].only
         chkisclosed = flt['[name=closed]'].only
 
-        # XXX This doesn't work because the framework doesn't support
-        # same-name qs parameters yet.
         self.true(chkinplanning.checked)
         self.true(chkisclosed.checked)
 
