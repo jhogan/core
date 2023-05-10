@@ -810,8 +810,17 @@ function ajax(e){
     }
 
     // Get all alements that are fragments for the src.
-    var frag = src.getAttribute('data-' + trigger + '-fragments')
-    var els = document.querySelectorAll(frag)
+    var frags = src.getAttribute('data-' + trigger + '-fragments')
+
+    // XXX Comment
+    var els = [];
+    if (frags){
+        frags = frags.split(', ')
+
+        for (var frag of frags){
+            els.push(document.querySelector(frag))
+        }
+    }
 
     // Get the name of the event handler of the trigger
     var hnd = src.getAttribute('data-' + trigger + '-handler')
