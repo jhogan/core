@@ -655,72 +655,108 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
-        N = 3
         import testeffort
+
+        # Ensure that the backlog status types exist
+        effort.backlogstatustype(name='closed')
+        effort.backlogstatustype(name='planning')
+
+        N = 3
         bls = testeffort.backlog.getvalid(N)
         bls.save()
+
+        flts = (
+            str(),
+            'types=planning',
+        )
         
-        res = tab.navigate('/en/ticketsspa/backlogs', ws)
-        self.status(200, res)
+        for i, flt in enumerate(flts):
+            res = tab.navigate(f'/en/ticketsspa/backlogs?{flt}', ws)
+            self.status(200, res)
 
-        cards = tab['article.card[data-entity="effort.backlog"]']
+            cards = tab['article.card[data-entity="effort.backlog"]']
 
-        self.ge(N, cards.count)
+            # Get a backlog from the ones we created above
+            for bl in bls:
+                if bl.orm.reloaded().inplanning:
+                    break
+            else:
+                assert 'Cannot find open backlog'
 
-        bl = bls.getrandom()
+            # Get it's corresponding card
+            card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
 
-        card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
+            # Get Close button
+            btnclose = card['button.close'].only
 
-        # Click the "Close" button
-        btnclose = card['button.close'].only
+            # Click the "Close" button
+            res = self.click(btnclose, tab)
+            self.h200(res)
 
-        res = self.click(btnclose, tab)
-        self.h200(res)
+            # Get the card again
+            cards = tab[f'[data-entity-id="{bl.id.hex}"]']
 
-        # Get the card again
-        card = tab[f'[data-entity-id="{bl.id.hex}"]'].only
+            card = cards.only
 
-        # Get the <dialog> confirmation modal
-        dia = tab['dialog'].only
-        self.true(dia.open)
+            # Get the <dialog> confirmation modal
+            dia = tab['dialog'].only
+            self.true(dia.open)
 
-        btnno = dia['button[data-no]'].only
+            btnno = dia['button[data-no]'].only
 
-        res = self.click(btnno, tab)
-        self.h200(res)
+            res = self.click(btnno, tab)
+            self.h200(res)
 
-        # Make sure the card still exists
-        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+            # Make sure the card still exists
+            self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
 
-        # The <dialog> box should have been removed
-        self.zero(tab['dialog'])
+            # The <dialog> box should have been removed
+            self.zero(tab['dialog'])
 
-        # The backlog should not be closed
-        self.false(bl.orm.reloaded().isclosed)
+            # The backlog should not be closed
+            self.false(bl.orm.reloaded().isclosed)
 
-        # Click the "Close" button
-        btnclose = card['button.close'].only
+            # Click the "Close" button
+            btnclose = card['button.close'].only
 
-        res = self.click(btnclose, tab)
-        self.h200(res)
+            res = self.click(btnclose, tab)
+            self.h200(res)
 
-        # Get the <dialog> confirmation modal
-        dia = tab['dialog'].only
-        self.true(dia.open)
+            # Get the <dialog> confirmation modal
+            dia = tab['dialog'].only
+            self.true(dia.open)
 
-        # Confirm the closure of the backlog
-        btnyes = dia['button[data-yes]'].only
-        res = self.click(btnyes, tab)
-        self.h200(res)
+            # Confirm the closure of the backlog
+            btnyes = dia['button[data-yes]'].only
+            res = self.click(btnyes, tab)
+            self.h200(res)
 
-        # The card should have been removed
-        self.zero(tab[f'[data-entity-id="{bl.id.hex}"]'])
+            # Get the card again
+            cards = tab[f'[data-entity-id="{bl.id.hex}"]']
 
-        # The backlog should be closed now
-        self.true(bl.orm.reloaded().isclosed)
+            if flt in ('types=closed', str()):
+                # The card should still be displayed because we are
+                # filtering on closed or we are not filtering on types.
+                self.one(cards)
 
-        # The <dialog> box should have been removed
-        self.zero(tab['dialog'])
+                card = cards.only
+
+                # Get Close button
+                btns = card['button.close']
+
+                # The Close button should have been removed
+                self.zero(btns)
+
+            elif flt == 'types=planned':
+                # We are filtering out closed backlogs so we should no
+                # see the card
+                self.zero(cards)
+
+            # The backlog should be closed now
+            self.true(bl.orm.reloaded().isclosed)
+
+            # The <dialog> box should have been removed
+            self.zero(tab['dialog'])
 
     def it_navigates_to_story(self):
         ws = carapacian_com.site()

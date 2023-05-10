@@ -516,7 +516,7 @@ class ticketsspa(pom.spa):
                 # Transition state buttons
                 if not bl.isclosed:
                     btn = dom.button('Close', class_='close')
-                    btn.onclick += self.btnclose_onclick, card
+                    btn.onclick += self.btnclose_onclick, card, frm
                     card += btn
 
                 # Get the backlog-to-stories association page
@@ -642,7 +642,16 @@ class ticketsspa(pom.spa):
             """
 
             # Get the card
-            card = eargs.html.only
+            card = eargs.html.first
+
+            # Get the filter form
+            frm = eargs.html.second
+
+            # Get the types we are filtering on frmo the filter form
+            types = frm['input[type=checkbox][checked]'].pluck('name')
+
+            # Set those types to self.types 
+            self.types = types
 
             # Get the confirmation dialog box if there is one 
             dlgs = card['dialog']
@@ -657,8 +666,8 @@ class ticketsspa(pom.spa):
                     card, 
                     msg = 'Are you sure you want to close the backlog?',
                     caption = 'Confirm',
-                    onyes = (self.btnclose_onclick, card),
-                    onno = (self.btnclose_onclick, card),
+                    onyes = (self.btnclose_onclick, card, frm),
+                    onno = (self.btnclose_onclick, card, frm),
                 )
 
             # If there was a dialog box
