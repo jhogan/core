@@ -2257,17 +2257,36 @@ class page(dom.html):
                 # being called by an event handler. 
                 isevent = bool(eargs)
 
-                # XXX Comment
+                # If request is an XHR event
                 if isevent:
+                    
+                    # If an event handler was specified by the browser
                     if eargs.handler:
+
+                        # Get the event handler
                         meth = getattr(self, eargs.handler)
+
+                        # While maintaing the root elements' ids in
+                        # eargs.html...
                         with eargs.maintain():
+                            # Call the event handler
                             meth(src=eargs.src, eargs=eargs)
+
+                    # If an event handler was not specified...
                     else:
+                        # ...we are performing a SPA page navigation.
+
+                        # Get the page's `main` method
                         meth = self._mainfunc
+
+                        # Call the page's main method
                         meth(**self._arguments)
+
+                # If the request is not an XHR event
                 else:
+                    # ...then the request is a regular HTTP page request
                     try:
+                        # Get the page's `main` method
                         main = self._mainfunc
                     except AttributeError as ex:
                         cls = str(type(self))

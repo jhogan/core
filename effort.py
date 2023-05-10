@@ -846,8 +846,12 @@ class dependency(type_type):
     """
 
 class backlogstatustype(apriori.type):
-    """ XXX
+    """ Represents the status that a backlog is in. Names of backlog
+    statuses are 'closed' and 'planning'.
     """
+
+    # The collection of backlogs that have the `status` identified by
+    # this backlogstatustype object.
     backlogs = backlogs
 
 class backlog(orm.entity):
@@ -876,13 +880,20 @@ class backlog(orm.entity):
     Note that this is part of the Agile object model extention to the
     original UDM.
     """
-    name         =  str
-    description  =  text
-    span         =  datespan
-    goal         =  str
+    # The name of the backlog 
+    name = str
+
+    # A description of the backlog
+    description = text
+
+    # The begin and end data for the backlog
+    span = datespan
+
+    # A description of the goal the backlog is intended to achieve
+    goal = str
 
     def __init__(self, *args, **kwargs):
-        """ XXX
+        """ Create a new backlog.
         """
         super().__init__(*args, **kwargs)
         
