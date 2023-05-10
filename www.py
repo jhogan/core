@@ -692,8 +692,13 @@ class request(entities.entity):
         """ Returns the query string paramter as a dict.
         """
         import urllib
-        return dict(urllib.parse.parse_qsl(self.qs))
-
+        d = urllib.parse.parse_qs(self.qs)
+        for k, ls in d.items():
+            if len(ls) == 1:
+                d[k] = ls[0]
+                
+        return d
+                
     @property
     def qs(self):
         """ Returns the query string portion of the URL being requested.
