@@ -812,7 +812,16 @@ function ajax(e){
     // Get all alements that are fragments for the src.
     var frags = src.getAttribute('data-' + trigger + '-fragments')
 
-    // XXX Comment
+    // We need to take the CSS selector in `frags` and split it over the
+    // comma, then run a `document.querySelector` on each of the CSS
+    // selectors (which should all be CSS id selectors (e.g.,
+    // '#xa1b2c3'). We could pass `frags` straight to
+    // `document.querySelectorAll` since it is a valid CSS selector,
+    // however that function must return the elements in "document
+    // order" (https://www.w3.org/TR/selectors-api/#queryselectorall)
+    // which is not what we want because event handlers expect the HTML
+    // fragments to be sent in the order specified in the
+    // `data-<trigger>-fragments` attributes.
     var els = [];
     if (frags){
         frags = frags.split(', ')
