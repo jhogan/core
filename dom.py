@@ -10239,7 +10239,7 @@ class eventargs(entities.eventargs):
     def html(self, v):
         self._html = v
 
-    def remove(self):
+    def remove(self, el):
         """ Insert a `remove` instruction into this `dom.eventargs`
         `html` element.
 
@@ -10258,8 +10258,6 @@ class eventargs(entities.eventargs):
         element sent to by the browser.
         """
         from pom import instructions, remove
-
-        el = self.element
 
         instrs = instructions()
 
