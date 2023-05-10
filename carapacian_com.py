@@ -688,12 +688,12 @@ class ticketsspa(pom.spa):
                     bl.close()
                     bl.save()
 
-                    # Remove the backlog card from the page
-                    # XXX Remove only if closed backlogs is filtered
-                    # out. We will need to pass in the filter <form> to
-                    # this event handler. If we don't remove it, we will
-                    # still need to remove the Close button.
-                    eargs.remove()
+                    if 'closed' not in self.types.pluck('name'):
+                        # Remove the backlog card from the page
+                        eargs.remove(card)
+                    else:
+                        # Just remove the Close button from the card
+                        card.remove('button.close')
 
                 # Remove the dialog box so the user won't see it anymore
                 card.remove('dialog')
