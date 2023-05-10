@@ -721,9 +721,12 @@ class ticketsspa(pom.spa):
 
             # If self._types is currently a str
             elif isinstance(self._types, str):
+                self._types = self._types.split(',')
+
+            if isinstance(self._types, list):
                 # Query backlogstatustypes based on the values found in
                 # self._types
-                args = self._types.split(',')
+                args = self._types
                 pred = 'name in (%s)'
                 pred %= ', '.join(['%s'] * len(args))
 
