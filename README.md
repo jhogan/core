@@ -603,7 +603,7 @@ code, etc. If you don't know how to use PDB you can find a reference
 There is a caveat to this technique: since any context manager that the
 code was in will have exited by the time you enter the post mortem, some
 global variables may have changed. This is particularly true of the
-`orm.security` variables such as `proprietor` and `owner` which make up
+`orm.security` properties such as `proprietor` and `owner` which make up
 the security context. Be mindful of this when determine the cause of the
 exception, particularly when the cause may depend on these global
 variables. If such is the case, you may need to set breakpoints (as
@@ -642,6 +642,13 @@ Run the code as you normally would:
     ./test.py
 
 If the `B` function is encountered, you will be dropped into PDB.
+
+A small issue exists when `B()` is used in tests. If you arrive at a
+breakpoint caused by `B()` when running a test, and you hit `c` to
+complete the tests, and there are errors in the tests, the line numbers
+reported will be slightly off. This appears to be a bug with `pdb`. You
+can easily correct this by removing the `B()` and rerunning the test to
+see the correct line number.
 
 ### When exceptions are caught ###
 If an exception is raised and caught, you may find yourself in the

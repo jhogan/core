@@ -461,23 +461,52 @@ class ticketsspa(pom.spa):
             super().__init__(
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
+            self._types = None
 
-        def main(self, 
-            id:str=None, crud:str='retrieve', oncomplete=None
-        ):
-            """ Override main to pull in a table of stories.
+        def gethtml(self, id, crud, oncomplete):
+            """ An override of pom.crud.gethtml to produces the HTML
+            needed for this `backlogs` page.
             """
-            super().main(id=id, crud=crud, oncomplete=oncomplete)
+            # Get the default cards div
+            div = super().gethtml(
+                id=id, crud=crud, oncomplete=oncomplete
+            )
 
             # Get instance
             es = self.instance
 
-            # Get backlog articls
-            cards = self.main['article.card']
+            # Get all backlog status types 
+            types = effort.backlogstatustypes.orm.all
+            fltstr = ','.join(types.pluck('name'))
 
+            # TODO Instead of creating a filter <form> manually, we
+            # should investigate creating a new `pom.filter` class that
+            # inherits from dom.form and can provide nice interface to
+            # control and interrogate the object's properties.
+            frm = dom.form(class_='filter')
+
+            for type in types:
+                inp = dom.input(
+                    type   =  'checkbox',
+                    name   =  type.name,
+                    value  =  type.id.hex
+                )
+
+                if type.name in self.types.pluck('name'):
+                    inp.checked = True
+
+                inp.identify()
+
+                inp.onclick += self.chkfilters_onclick, div
+
+                lbl = dom.label(type.name.capitalize(), for_=inp.id)
+                frm += lbl
+                frm += inp
+
+            div << frm
 
             # For each backlog card in cards, add a table of stories
-            for card in cards:
+            for card in div['article.card']:
                 # Get backlog id from card
                 id = card.getattr('data-entity-id')
                 id = UUID(id)
@@ -487,7 +516,7 @@ class ticketsspa(pom.spa):
                 # Transition state buttons
                 if not bl.isclosed:
                     btn = dom.button('Close', class_='close')
-                    btn.onclick += self.btnclose_onclick, card
+                    btn.onclick += self.btnclose_onclick, card, frm
                     card += btn
 
                 # Get the backlog-to-stories association page
@@ -560,33 +589,112 @@ class ticketsspa(pom.spa):
                 tbl.orphan()
 
                 card += tbl
+            return div
+
+        def main(self, 
+            id:str = None,     crud:str = 'retrieve', 
+            oncomplete = None, types:str = None,
+        ):
+            """ An override of pom.crud.main. The `types` parameter, if
+            given, will contain a comma seperated string of backlog
+            status types to filter the backlog cards by.
+            """
+            self.types = types
+
+            super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+        def chkfilters_onclick(self, src, eargs):
+            """ A handler for the onclick event of the backlog status
+            type filters.
+            """
+            # Get the cards <div> that was sent
+            div = eargs.element
+
+            # Get the filter <section>
+            frm = div['form.filter'].only
+
+            # Get the filter checkboxes
+            chks = frm['[checked]']
+
+            # Create a comma seperate list of filter names
+            types = chks.pluck('name')
+            self.types = ','.join(types)
+
+            div1 = self.gethtml(
+                id=None, crud='retrieve', oncomplete=None
+            )
+
+            # Take the current url, clone it and set the `types` query
+            # string parameter to `types`
+            url = www.application.current.request.url.clone()
+            url.qs['types'] = sorted(types)
+
+            # Instruct the browser to set the location bar to `url`
+            instrs = pom.instructions()
+            instrs += pom.set('url', url)
+            div1 += instrs
+
+            eargs.html.first = div1
 
         def btnclose_onclick(self, src, eargs):
+            """ A handler for the onclick event of backlog card close
+            buttons.
             """
-            """
-            card = eargs.html.only
+            # Get the card
+            card = eargs.html.first
 
+            # Get the filter form
+            frm = eargs.html.second
+
+            # Get the types we are filtering on frmo the filter form
+            types = frm['input[type=checkbox][checked]'].pluck('name')
+
+            # Set those types to self.types 
+            self.types = types
+
+            # Get the confirmation dialog box if there is one 
             dlgs = card['dialog']
 
+            # If there is no dialog box. This will be the case when the
+            # Close button is first clicked.
             if dlgs.isempty:
+                
+                # Create the dialog to prompt the user to confirm
+                # closure
                 card += pom.dialog(
                     card, 
                     msg = 'Are you sure you want to close the backlog?',
                     caption = 'Confirm',
-                    onyes = (self.btnclose_onclick, card),
-                    onno = (self.btnclose_onclick, card),
+                    onyes = (self.btnclose_onclick, card, frm),
+                    onno = (self.btnclose_onclick, card, frm),
                 )
 
+            # If there was a dialog box
             elif dlgs.issingular:
                 dlg = dlgs.only
                 btn = eargs.src
+
+                # If user clicked the Yes button
                 if btn.getattr('data-yes'):
+                    
+                    # Get backlog id
                     id = card.getattr('data-entity-id')
+
+                    # Get backlog
                     bl = effort.backlog(id)
+
+                    # Close
                     bl.close()
                     bl.save()
-                    eargs.remove()
 
+                    if 'closed' not in self.types.pluck('name'):
+                        # Remove the backlog card from the page
+                        eargs.remove(card)
+                    else:
+                        # Just remove the Close button from the card
+                        card.remove('button.close')
+
+                # Remove the dialog box so the user won't see it anymore
                 card.remove('dialog')
             
         @property
@@ -601,7 +709,63 @@ class ticketsspa(pom.spa):
                 )
             return self._select
 
+        @property
+        def types(self):
+            """ Returns the backlogstatustypes to filter on.
+            """
+
+            # If no types were set, filter on all
+            if not self._types:
+                self._types = effort.backlogstatustypes.orm.all
+
+            # If self._types is currently a str
+            elif isinstance(self._types, str):
+                self._types = self._types.split(',')
+
+            if isinstance(self._types, list):
+                # Query backlogstatustypes based on the values found in
+                # self._types
+                args = self._types
+                pred = 'name in (%s)'
+                pred %= ', '.join(['%s'] * len(args))
+
+                self._types = effort.backlogstatustypes(pred, args)
+
+            return self._types
+
+        @types.setter
+        def types(self, v):
+            """ Set the backlogstatustypes to filter on.
+
+            :param: v str|effort.backlogstatustypes|None: The
+            backlogstatustypes. If str, it will be considered a
+            comma-seperated string of backlogstatustype names. Setting
+            `types` to None implies we want all types.
+            """
+            self._types = v
+
+        @property
+        def instance(self):
+            """ Returns a `effort.backlogs` collection. Only the
+            `backlogs` matching the backlog statust types found in
+            `self.types` will be returned.
+            """
+            if not self._instance:
+                # Create an empty collection
+                self._instance = effort.backlogs()
+
+                # For each of the backlog status types
+                for type in self.types:
+                    
+                    # Append the type's backlog collection
+                    self._instance += type.backlogs
+
+            return self._instance
+
     class backlog(pom.crud):
+        """ A pom.crud page used to create and edit `effort.backlog`
+        entity objects.
+        """
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.backlog, *args, **kwargs)
 
@@ -710,7 +874,9 @@ class ticketsspa(pom.spa):
         mnu.items  +=  pom.menu.item(
             'New', 'ticketsspa/ticket?crud=create'
         )
-        mnu.items  +=  pom.menu.item('Backlog',  'ticketsspa/backlogs')
+        mnu.items  +=  pom.menu.item(
+            'Backlog',  'ticketsspa/backlogs?types=planning'
+        )
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
 

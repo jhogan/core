@@ -15,7 +15,6 @@ from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort
-import testeffort
 import orm
 import party
 import pom
@@ -277,7 +276,7 @@ class ticketsspa_ticket(tester.tester):
 
         self.eq(f'id={id}&crud=retrieve', tab.url.query)
 
-        self.eq(id, tab.url.qs['id'][0])
+        self.eq(id, tab.url.qs['id'])
 
     def it_edits(self):
         ws = carapacian_com.site()
@@ -310,6 +309,7 @@ class ticketsspa_backlogs(tester.tester):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(10)
         bls.save()
         
@@ -362,80 +362,405 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, a.href)
 
+    def it_gets_filter_form(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        # Do this to make sure the backlogstatustypes records have been
+        # created first. If they don't exist, the <form> will have
+        # nothing to filter on since it pulls from these records to
+        # create the checkboxes.
+        import testeffort
+        bl = testeffort.backlog.getvalid()
+        assert bl.inplanning
+        bl.save()
+        bl.close()
+        bl.save()
+
+        # Navigate
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        frm = tab['form.filter']
+        self.one(frm)
+
+        flt = frm.only
+        types = effort.backlogstatustypes.orm.all
+
+        names = sorted(types.pluck('name'))
+
+        chks = flt['input[type=checkbox]']
+
+        names1 = sorted(chks.pluck('name'))
+
+        self.eq(names, names1)
+
+        for chk in chks:
+            lbls = frm[f'label[for={chk.id}]']
+            self.one(lbls)
+            lbl = lbls.only
+            self.eq(chk.name.capitalize(), lbl.text)
+
+    def it_GETs_filtered(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bls = testeffort.backlog.getvalid(4)
+
+        for i, bl in bls.enumerate():
+            if i.even:
+                bl.close()
+
+        bls.save()
+
+        # Unfiltered
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(4, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.inplanning or bl.isclosed)
+
+                    if bl.isclosed:
+                        self.zero(card['button.close'])
+                    elif bl.inplanning:
+                        self.one(card['button.close'])
+                    break
+            else:
+                self.fail('Cannot find backlog')
+
+
+        res = tab.navigate('/en/ticketsspa/backlogs?types=planning', ws)
+        self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.false(chkisclosed.checked)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.inplanning)
+                    self.one(card['button.close'])
+                    break
+            else:
+                self.true(bl.isclosed)
+
+        res = tab.navigate('/en/ticketsspa/backlogs?types=closed', ws)
+        self.status(200, res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for bl in bls:
+            for card in cards:
+                id = card.getattr('data-entity-id')
+                if bl.id.hex == id:
+                    self.true(bl.isclosed)
+                    self.zero(card['button.close'])
+                    break
+            else:
+                self.true(bl.inplanning)
+
+    def it_filters(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bls = testeffort.backlog.getvalid(4)
+
+        for i, bl in bls.enumerate():
+            if i.even:
+                bl.close()
+
+        bls.save()
+
+        # Filter by inplanning
+        res = tab.navigate(
+            '/en/ticketsspa/backlogs?types=planning&types=closed', ws
+        )
+        self.h200(res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        # Filter by inplanning
+        res = tab.navigate('/en/ticketsspa/backlogs?types=planning', ws)
+        self.h200(res)
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.false(chkisclosed.checked)
+
+        # Filter by none (which is also both)
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        self.h200(res)
+
+        self.expect(KeyError, lambda: tab.url.qs['types'])
+
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        # Unclick chkinplanning
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        self.eq('closed', tab.url.qs('types'))
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            self.false(bl.inplanning)
+            self.true(bl.isclosed)
+
+        # Filter by both inplanning and isclosed
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        res = self.click(chkisclosed, tab)
+        self.h200(res)
+
+        self.none(tab.url.qs('types'))
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(4, cards)
+
+        flts = [False] * 2
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            if bl.inplanning:
+                flts[0] = True
+            elif bl.isclosed:
+                flts[1] = True
+
+        self.eq([True] * 2, flts)
+
+        # Filter by only isclosed
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.true(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        res = self.click(chkinplanning, tab)
+        self.h200(res)
+
+        self.eq('closed', tab.url.qs('types'))
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(2, cards)
+
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            self.true(bl.isclosed)
+            self.false(bl.inplanning)
+
+        # Uncheck both filters. Paradoxically, this should have the same
+        # affect as selecting both.
+        flt = tab['div.cards form.filter'].only
+
+        chkinplanning = flt['[name=planning]'].only
+        chkisclosed = flt['[name=closed]'].only
+
+        self.false(chkinplanning.checked)
+        self.true(chkisclosed.checked)
+
+        # Unselect is closed
+        res = self.click(chkisclosed, tab)
+        self.h200(res)
+
+        self.none(tab.url.qs('types'))
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+
+        self.ge(4, cards)
+
+        flts = [False] * 2
+        for card in cards:
+            id = card.getattr('data-entity-id')
+            bl = effort.backlog(id)
+            if bl.inplanning:
+                flts[0] = True
+            elif bl.isclosed:
+                flts[1] = True
+
+        self.eq([True] * 2, flts)
+
+
     def it_closes_backlog(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
+
+        # Ensure that the backlog status types exist
+        effort.backlogstatustype(name='closed')
+        effort.backlogstatustype(name='planning')
+
         N = 3
         bls = testeffort.backlog.getvalid(N)
         bls.save()
+
+        flts = (
+            str(),
+            'types=planning',
+        )
         
-        res = tab.navigate('/en/ticketsspa/backlogs', ws)
-        self.status(200, res)
+        for i, flt in enumerate(flts):
+            res = tab.navigate(f'/en/ticketsspa/backlogs?{flt}', ws)
+            self.status(200, res)
 
-        cards = tab['article.card[data-entity="effort.backlog"]']
+            cards = tab['article.card[data-entity="effort.backlog"]']
 
-        self.ge(N, cards.count)
+            # Get a backlog from the ones we created above
+            for bl in bls:
+                if bl.orm.reloaded().inplanning:
+                    break
+            else:
+                assert 'Cannot find open backlog'
 
-        bl = bls.getrandom()
+            # Get it's corresponding card
+            card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
 
-        card = cards[f'[data-entity-id="{bl.id.hex}"]'].only
+            # Get Close button
+            btnclose = card['button.close'].only
 
-        # Click the "Close" button
-        btnclose = card['button.close'].only
+            # Click the "Close" button
+            res = self.click(btnclose, tab)
+            self.h200(res)
 
-        res = self.click(btnclose, tab)
-        self.h200(res)
+            # Get the card again
+            cards = tab[f'[data-entity-id="{bl.id.hex}"]']
 
-        # Get the card again
-        card = tab[f'[data-entity-id="{bl.id.hex}"]'].only
+            card = cards.only
 
-        # Get the <dialog> confirmation modal
-        dia = tab['dialog'].only
-        self.true(dia.open)
+            # Get the <dialog> confirmation modal
+            dia = tab['dialog'].only
+            self.true(dia.open)
 
-        btnno = dia['button[data-no]'].only
+            btnno = dia['button[data-no]'].only
 
-        res = self.click(btnno, tab)
-        self.h200(res)
+            res = self.click(btnno, tab)
+            self.h200(res)
 
-        # Make sure the card still exists
-        self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
+            # Make sure the card still exists
+            self.one(tab[f'[data-entity-id="{bl.id.hex}"]'])
 
-        # The <dialog> box should have been removed
-        self.zero(tab['dialog'])
+            # The <dialog> box should have been removed
+            self.zero(tab['dialog'])
 
-        # The backlog should not be closed
-        self.false(bl.orm.reloaded().isclosed)
+            # The backlog should not be closed
+            self.false(bl.orm.reloaded().isclosed)
 
-        # Click the "Close" button
-        btnclose = card['button.close'].only
+            # Click the "Close" button
+            btnclose = card['button.close'].only
 
-        res = self.click(btnclose, tab)
-        self.h200(res)
+            res = self.click(btnclose, tab)
+            self.h200(res)
 
-        # Get the <dialog> confirmation modal
-        dia = tab['dialog'].only
-        self.true(dia.open)
+            # Get the <dialog> confirmation modal
+            dia = tab['dialog'].only
+            self.true(dia.open)
 
-        # Confirm the closure of the backlog
-        btnyes = dia['button[data-yes]'].only
-        res = self.click(btnyes, tab)
-        self.h200(res)
+            # Confirm the closure of the backlog
+            btnyes = dia['button[data-yes]'].only
+            res = self.click(btnyes, tab)
+            self.h200(res)
 
-        # The card should have been removed
-        self.zero(tab[f'[data-entity-id="{bl.id.hex}"]'])
+            # Get the card again
+            cards = tab[f'[data-entity-id="{bl.id.hex}"]']
 
-        # The backlog should be closed now
-        self.true(bl.orm.reloaded().isclosed)
+            if flt in ('types=closed', str()):
+                # The card should still be displayed because we are
+                # filtering on closed or we are not filtering on types.
+                self.one(cards)
 
-        # The <dialog> box should have been removed
-        self.zero(tab['dialog'])
+                card = cards.only
+
+                # Get Close button
+                btns = card['button.close']
+
+                # The Close button should have been removed
+                self.zero(btns)
+
+            elif flt == 'types=planned':
+                # We are filtering out closed backlogs so we should no
+                # see the card
+                self.zero(cards)
+
+            # The backlog should be closed now
+            self.true(bl.orm.reloaded().isclosed)
+
+            # The <dialog> box should have been removed
+            self.zero(tab['dialog'])
 
     def it_navigates_to_story(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
+        import testeffort
         bls = testeffort.backlog.getvalid(3)
         bls.save()
         

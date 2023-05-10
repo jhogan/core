@@ -271,7 +271,15 @@ class site(asset.asset):
 
                     sup = self
                     while sup:
-                        sup.owner = root
+                        # Directly set the owner of self and its supers.
+                        # This gets around the problem of indirect
+                        # setting which can cause a needless load of
+                        # `sup`'s existing owner. We may not be in a
+                        # security context that will permit that load
+                        # and will thus get an AuthenticationError or
+                        # RecordNotFoundError error.
+                        sup.orm.mappings['owner'].value = root
+                        sup.orm.mappings['owner__userid'].value = root.id
                         sup = sup.orm.super
 
                 self.proprietor = propr
@@ -802,8 +810,26 @@ function ajax(e){
     }
 
     // Get all alements that are fragments for the src.
-    var frag = src.getAttribute('data-' + trigger + '-fragments')
-    var els = document.querySelectorAll(frag)
+    var frags = src.getAttribute('data-' + trigger + '-fragments')
+
+    // We need to take the CSS selector in `frags` and split it over the
+    // comma, then run a `document.querySelector` on each of the CSS
+    // selectors (which should all be CSS id selectors (e.g.,
+    // '#xa1b2c3'). We could pass `frags` straight to
+    // `document.querySelectorAll` since it is a valid CSS selector,
+    // however that function must return the elements in "document
+    // order" (https://www.w3.org/TR/selectors-api/#queryselectorall)
+    // which is not what we want because event handlers expect the HTML
+    // fragments to be sent in the order specified in the
+    // `data-<trigger>-fragments` attributes.
+    var els = [];
+    if (frags){
+        frags = frags.split(', ')
+
+        for (var frag of frags){
+            els.push(document.querySelector(frag))
+        }
+    }
 
     // Get the name of the event handler of the trigger
     var hnd = src.getAttribute('data-' + trigger + '-handler')
@@ -1058,7 +1084,7 @@ function listen(el){
 }
 
 function wake(els){
-    /* Recursive through each element in `els` seaching form <form>'s.
+    /* Recursive through each element in `els` searching for <form>'s.
      * When found, makes them fully aware of the values that the user
      * has put in its form fields.
      * 
@@ -1076,7 +1102,7 @@ function wake(els){
         // Recurse
         wake(el.children)
 
-        // Ignore non <form> elements
+        // Ignore non-<form> elements
         if (el.tagName != 'FORM'){
             continue
         }
@@ -1104,21 +1130,34 @@ function wake(els){
                 // Append
                 el.appendChild(nd)
             }
+
             if (el.tagName == 'INPUT'){
-                if (v){
-                    el.setAttribute('value', v)
-                }else{
-                    // If an empty string is assigned to the `value`
-                    // attribute, remove it. Otherwise, it will be
-                    // interpreted as a Boolean attribute when processed
-                    // by the server and will equal `True` instead of
-                    // ''.
-                    el.removeAttribute('value')
+                switch (el.getAttribute('type')){
+                    case 'checkbox':
+                        if (el.checked){
+                            el.setAttribute('checked', true)
+                        }else{
+                            el.removeAttribute('checked')
+                        }
+                        break;
+
+                    case 'text':
+                        if (v){
+                            el.setAttribute('value', v)
+                        }else{
+                            // If an empty string is assigned to the `value`
+                            // attribute, remove it. Otherwise, it will be
+                            // interpreted as a Boolean attribute when processed
+                            // by the server and will equal `True` instead of
+                            // ''.
+                            el.removeAttribute('value')
+                        }
+                        break;
                 }
 
             }
-            // TODO Add support for other input elements like checkboxes,
-            // dropdown lists, etc.
+            // TODO Add support for other input elements like dropdown
+            // lists, etc.
         }
     }
 }
@@ -2009,7 +2048,7 @@ class page(dom.html):
 
     @property
     def _arguments(self):
-        """ Return a dict to be pased into the page's __call__ method
+        """ Return a dict to be passed into the page's __call__ method
         using the ** notation.
 
             self._mainfunc(**self._arguments)
@@ -2027,8 +2066,8 @@ class page(dom.html):
 
         This dict would be return by this @property.
 
-        Note that boolean valuse, like the 1 for 'greet' are normalized
-        into Python boolean types. The normalization happens because the
+        Note that Boolean values, like the 1 for 'greet' are normalized
+        into Python Boolean types. The normalization happens because the
         parameter list for the /en/time's main() method are examined and
         their annotations are used.
 
@@ -2162,8 +2201,12 @@ class page(dom.html):
         self._header = None
 
     def __call__(self, eargs=None, *args, **qsargs):
-        """ This method calls into this `page`'s `main` method which the
-        web developer writes.
+        """ If eargs is None, this method calls into this `page`'s
+        `main` method which the web developer writes. If the `eargs`
+        parameter is set, this method calls into the event handler
+        designated within eargs.
+
+        Below is an example of calling the page's main method.
 
             class mypage(page):
                 def main(self):
@@ -2176,18 +2219,16 @@ class page(dom.html):
             # defined above.
             pg() 
 
-        :param: eargs dom.eventargs: If the call is made by an event,
-        (e.g., the click of a button on a web page), eargs will be a
-        dom.eventargs object. This object will contain a reference to
-        the event handler needed to process the event as well as the
+        :param: eargs dom.eventargs: If the call is triggered by an
+        event, (e.g., the click of a button on a web page), eargs will
+        be a dom.eventargs object. This object will contain a reference
+        to the event handler needed to process the event as well as the
         HTML from the webpage from which the event was fired.
 
         :param: *args tuple: Do not use. If an attempt is made to use
         it, a ValueError will be raised encouraging the useng to use
         **kwargs (i.e., qsargs)
 
-        :param: *qsargs dict: A dictionary that holds the query string
-        arguments the webpage is being called with. For example, if the
         URL look like:
             
             /en/time?greet=1&tz=America/Phoenix&a=1&b=2
@@ -2197,7 +2238,6 @@ class page(dom.html):
             {'a': '1', 'b': '2', 'greet': '1', 'tz': 'America/Phoenix'}
 
         """
-
         # A call was attemped
         self._attemped = True
 
@@ -2210,7 +2250,10 @@ class page(dom.html):
                 'second call.'
             )
 
+        # If we are not recursively being called...
         if not self._calling:
+            # Pass query string arguments to the self._arguments
+            # @property method
             self._arguments = qsargs
 
             try:
@@ -2228,22 +2271,40 @@ class page(dom.html):
                     
                 # Determine if page is being called from an event
                 # trigger (e.g., when a menu item is clicked and the SPA
-                # loads a subpage.  If `eargs is not None`, then we are
+                # loads a subpage).  If `eargs is not None`, then we are
                 # being called by an event handler. 
                 isevent = bool(eargs)
 
+                # If request is an XHR event
                 if isevent:
+                    
+                    # If an event handler was specified by the browser
                     if eargs.handler:
+
+                        # Get the event handler
                         meth = getattr(self, eargs.handler)
+
+                        # While maintaing the root elements' ids in
+                        # eargs.html...
+                        with eargs.maintain():
+                            # Call the event handler
+                            meth(src=eargs.src, eargs=eargs)
+
+                    # If an event handler was not specified...
                     else:
+                        # ...we are performing a SPA page navigation.
+
+                        # Get the page's `main` method
                         meth = self._mainfunc
 
-                    if eargs.handler:
-                        meth(src=eargs.src, eargs=eargs)
-                    else:
+                        # Call the page's main method
                         meth(**self._arguments)
+
+                # If the request is not an XHR event
                 else:
+                    # ...then the request is a regular HTTP page request
                     try:
+                        # Get the page's `main` method
                         main = self._mainfunc
                     except AttributeError as ex:
                         cls = str(type(self))
@@ -2262,6 +2323,7 @@ class page(dom.html):
                     # Call page's main method. It's called `_mainfunc`
                     # here but the web developer will call it `main`.
                     self._mainfunc(**self._arguments)
+
                 self._called = True
 
             finally:
@@ -2867,7 +2929,7 @@ class crud(page):
         """ Overrides `page.clear` to set the `instance` to None so it
         is reloaded when necessary.
         """
-        self.instance = None
+        self._instance = None
         super().clear()
 
     @property
@@ -3266,7 +3328,7 @@ class crud(page):
             tr = e.orm.tr
 
             # Set the <tr> back to the browser
-            eargs.html = tr
+            eargs.html.first = tr
 
             td = tr['td[data-entity-attribute=id]'].only
 
@@ -3305,7 +3367,7 @@ class crud(page):
             card = e.orm.card
 
             # Return card to browser
-            eargs.html = card
+            eargs.html.first = card
 
             # Create Edit button
             btnedit = dom.button('Edit', class_='edit')
@@ -3453,8 +3515,31 @@ class crud(page):
     def instance(self, v):
         self._instance = v
 
-    def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
-        """ The main handler for this `crud` page.
+    def gethtml(self, id, crud, oncomplete):
+        """ Create and return a DOM object (dom.element) for the page.
+
+        This method is typically called by the `main()` method and some
+        event handlers to obtain the page's HTML.
+
+        :param: id str: The UUID, in hex format, for the entity that
+        this `crud` page represents. Will be None if the page represents
+        a collection of entities.
+
+        :param: crud str: The crud operation that the HTML needs to
+        support. 
+            
+            if crud == 'create':
+                We will return an empty <form>.
+
+            if crud == 'retrieve'
+                A <table>, cards <div> or card <article> will be
+                returned with the contents of the entity/entities.
+
+            if crud == 'update':
+                A <form> will be returned to edit the given entity.
+
+        :param: oncomplete str: The path to the page to return to when
+        processing has completed.
         """
         frm = False
 
@@ -3652,9 +3737,14 @@ class crud(page):
             a = dom.a('Back', href=pg.path)
             self.main += a
 
-        # Add whichever element we created (<form>, <article>, <table>)
+        # Return whichever element we created (<form>, <article>, <table>)
         # to <main>.
+        return el
 
+    def main(self, id:str=None, crud:str='retrieve', oncomplete=None):
+        """ The main handler for this `crud` page.
+        """
+        el = self.gethtml(id=id, crud=crud, oncomplete=oncomplete)
         self.main += el
 
     def _menu(self, td):

@@ -1,5 +1,6 @@
 carapacian:    car    cara
 context:       ctx
+checkbox:      chk
 description:   desc
 entities:      es
 entity:        e
@@ -24,11 +25,15 @@ owner:         own
 page:          pg
 parenthesis:   paren
 parent:        rent
+pattern:       pat
 proprietor:    propr
+query:         qry
 remove:        rm
 result:        res
 return-value:  r
 segment:       seg
+selector:      sel
+selectors:     sels
 switch-user:   su
 trigger:       trig
 tuple:         tup

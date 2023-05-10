@@ -8,7 +8,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2022
 ########################################################################
 
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from dbg import B
 from entities import classproperty
 from func import enumerate
@@ -873,6 +873,10 @@ class elements(entities.entities):
 
     # TODO All html should pass the W3C validation service at:
     # https://validator.w3.org/#validate_by_input
+
+    def orphan(self):
+        for el in self:
+            el.orphan()
 
     @property
     def root(self):
@@ -5279,7 +5283,6 @@ class input(element):
         email, date, month, week, time, datetime-local, number, and
         password input types.
         """
-
         return self.attributes['readonly'].value
 
     @readonly.setter
@@ -5582,7 +5585,7 @@ class input(element):
         isn't listed in the form data at all. The default value for
         checkboxes and radio buttons is on.
         """
-        return self.attributes['checked'].value
+        return self.attributes['checked'].value is not None
 
     @checked.setter
     def checked(self, v):
@@ -5875,6 +5878,20 @@ class input(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
+    def click(self):
+        """ Simulate a click on this `input`.
+        """
+        # If checkbox
+        if self.type == 'checkbox':
+            # Get whether or not the checkbox is in a checked state
+            v = self.getattr('checked')
+
+            # Negate the checked state and assign it to the checked
+            # attribute
+            self.setattr('checked', not v)
+
+        self._trigger('click')()
+
 class ths(elements):
     """ A class used to contain a collection of ``th`` elements.  """
 
@@ -6152,6 +6169,13 @@ class label(element):
     """ The <label> HTML element represents a caption for an item in a
     user interface.
     """
+    def __init__(self, *args, **kwargs):
+
+        with suppress(KeyError):
+            kwargs['for'] = kwargs.pop('for_')
+
+        super().__init__(*args, **kwargs)
+
     @property
     def for_(self):
         """ The value of the for attribute must be a single id for a
@@ -10213,23 +10237,9 @@ class eventargs(entities.eventargs):
 
     @html.setter
     def html(self, v):
-        # If we are replacing existing HTML, use the id from the old
-        # HTML's root and use it for the new HTML. We do this because
-        # JavaScript in the browser (eventjs) uses the id of the HTML it
-        # sent to be the same as what it receives so it replace the old
-        # HTML in the DOM with the new HTML.
-        if html := self._html:
-            if isinstance(v, element):
-                if v.id:
-                    raise ValueError(
-                        "Can't overwrite existing id"
-                    )
-
-                v.id = html.only.id
-
         self._html = v
 
-    def remove(self):
+    def remove(self, el):
         """ Insert a `remove` instruction into this `dom.eventargs`
         `html` element.
 
@@ -10248,8 +10258,6 @@ class eventargs(entities.eventargs):
         element sent to by the browser.
         """
         from pom import instructions, remove
-
-        el = self.element
 
         instrs = instructions()
 
@@ -10270,6 +10278,91 @@ class eventargs(entities.eventargs):
         """ TODO
         """
         self.cancel = True
+
+    @contextmanager
+    def maintain(self):
+        """ A context manager to preserve the id of the top-level
+        elements of the HTML that is sent to the server by the browser
+        during XHR requests.
+
+        When HTML fragments are sent by the browser, the `id` attributes
+        of their top-level elements are used by the JavaScript to update
+        the browesr's DOM with the potentially modified versions of the
+        elements that the server returns. This means that this `id`
+        attribute mustn't change. However, it will change if the event
+        handler needs to replace the entire element with a new one. This
+        context manager will restore the `id` of the top-level
+        element(s) to the original one. It will also update attributes
+        that reference this top-level element, in particular the
+        `data-<event>-fragments` attributes.
+        """
+        # Set ids to None since there may be no HTML fragments in some
+        # cases
+        ids = None
+
+        if html := self.html:
+            # Get all the current ids
+            ids = html.pluck('id')
+
+        # Yield here. The remaining logic will be executed when we exit
+        # the context manager
+        yield
+
+        # If no ids were found above, abort.
+        if not ids:
+            return
+
+        # Create a regular expression to match attributes that look like
+        #
+        #     data-<event>-fragment
+        #
+        trigs = element.Triggers
+
+        pat = '|'.join(
+            [
+                f'data-{x}-fragments' 
+                for x in trigs
+            ]
+        )
+
+        frag = re.compile(pat)
+                    
+        # For each of the root elements...
+        for i, el in self.html.enumerate():
+            # Get the old and new ids
+            old = ids[i]
+            new = el.id
+
+            # Create a CSS selector to find all attritutes in the
+            # element that match the expression:
+            #
+            #     data-<event>-fragments
+            #
+            sels = ', '.join(
+                [
+                    f'[data-{x}-fragments="#{new}"]' 
+                    for x in trigs
+                ]
+            )
+
+            # Restore the old id on the root element
+            el.id = old
+
+            # Find all elements that use the root element asa fragment
+            # to send to an event handler
+            els = el[sels]
+
+            # For earch of these elements...
+            for el in els:
+                
+                # For each of their attributes...
+                for attr in el.attributes:
+
+                    # If the attribute matches data-<event>-fragments
+                    if frag.match(attr.name):
+
+                        # Restore the old id
+                        attr.value = '#' + old
 
     def __repr__(self):
         """ Return a string representation of this dom.eventargs object.

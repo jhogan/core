@@ -692,8 +692,13 @@ class request(entities.entity):
         """ Returns the query string paramter as a dict.
         """
         import urllib
-        return dict(urllib.parse.parse_qsl(self.qs))
-
+        d = urllib.parse.parse_qs(self.qs)
+        for k, ls in d.items():
+            if len(ls) == 1:
+                d[k] = ls[0]
+                
+        return d
+                
     @property
     def qs(self):
         """ Returns the query string portion of the URL being requested.
@@ -2602,6 +2607,19 @@ class browser(entities.entity):
             browser object itself.
             """
             self.tabs = tabs
+            self._url = None
+
+        @property
+        def url(self):
+            return self._url
+
+        @url.setter
+        def url(self, v):
+            if v is not None:
+                if not isinstance(v, url):
+                    raise TypeError('url is of wrong type')
+
+            self._url = v
 
         @property
         def onbeforeunload(self):
@@ -2611,6 +2629,7 @@ class browser(entities.entity):
             """
             if not self._onbeforeunload:
                 self._onbeforeunload = entities.event()
+
             return self._onbeforeunload
 
         @onbeforeunload.setter
@@ -2800,6 +2819,11 @@ class url(entities.entity):
         self._port      =  None
         self.name       =  name
         super().__init__(*args, **kwargs)
+
+    def clone(self):
+        """ Return a new `url` instance equivalent to this `url`.
+        """
+        return type(self)(str(self))
 
     @property
     def name(self):

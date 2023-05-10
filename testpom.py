@@ -3430,6 +3430,7 @@ class crud(tester.tester):
         res = self.click(aprofile, tab)
         self.h200(res)
 
+
         # TODO We should also test different crud operations here. At
         # the moment, only 'create' makes sense for a menu. We would
         # want hyperlinks for things like 'retrieve', 'update', and
@@ -3867,6 +3868,7 @@ class crud(tester.tester):
         frm.setvalue('name', name)
 
         res = self.submit(frm, tab)
+        self.h200(res)
         
         # Obtain the <tr> again
         tr = tbl[sels].only
