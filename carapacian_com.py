@@ -640,7 +640,6 @@ class ticketsspa(pom.spa):
             """ A handler for the onclick event of backlog card close
             buttons.
             """
-
             # Get the card
             card = eargs.html.first
 

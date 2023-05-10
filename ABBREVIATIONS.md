@@ -27,6 +27,7 @@ parenthesis:   paren
 parent:        rent
 pattern:       pat
 proprietor:    propr
+query:         qry
 remove:        rm
 result:        res
 return-value:  r
