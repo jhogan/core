@@ -221,8 +221,8 @@ class url(tester.tester):
     def it_sets_host(self):
         url = www.url()
         url.host = 'www.google.com'
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(url.host, url.name)
+        self.eq(url.host, str(url))
 
         url.scheme = 'http'
         self.eq('http://www.google.com', str(url))
@@ -237,15 +237,15 @@ class url(tester.tester):
         self.none(url.host)
         url.path = path
         self.eq(path, url.path)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq('/' + path, url.name)
+        self.eq('/' + path, str(url.name))
 
         url.host = host
         self.none(url.scheme)
         self.eq(path, url.path)
         self.eq(host, url.host)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(host + '/' + path, url.name)
+        self.eq(host + '/' + path, str(url))
 
         url.scheme = scheme
         self.eq(scheme, url.scheme)
@@ -266,12 +266,12 @@ class url(tester.tester):
         self.none(url.query)
         url.query = query
         self.eq(query, url.query)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq('?' + query, url.name)
+        self.eq('?' + query, str(url))
 
         url.scheme = scheme
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq('http://?herp=derp&gerp=cherp', url.name)
+        self.eq('http://?herp=derp&gerp=cherp', str(url))
 
         url.host = host
         self.eq(f'{scheme}://{host}?{query}', url.name)
@@ -421,20 +421,20 @@ class url(tester.tester):
         self.none(url.fragment)
         url.fragment = frag
         self.eq(frag, url.fragment)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq('#' + frag, url.name)
+        self.eq('#' + frag, str(url))
 
         url.scheme = scheme
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(scheme + '://#' + frag, url.name)
+        self.eq(scheme + '://#' + frag, str(url))
 
         url.path = path
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(scheme + ':///' + path + '#' + frag, url.name)
+        self.eq(scheme + ':///' + path + '#' + frag, str(url))
 
         url.query = query
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{scheme}:///{path}?{query}#{frag}', url.name)
+        self.eq(f'{scheme}:///{path}?{query}#{frag}', str(url))
 
         url.host = host
         self.eq(f'{scheme}://{host}/{path}?{query}#{frag}', url.name)
@@ -458,25 +458,30 @@ class url(tester.tester):
 
         url.username = username
         self.eq(username, url.username)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}@', url.name)
+        self.eq(f'{username}@', str(url))
 
         url.fragment = frag
         self.eq(frag, url.fragment)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}@#{frag}', url.name)
+        self.eq(f'{username}@#{frag}', str(url))
 
         url.scheme = scheme
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{scheme}://{username}@#{frag}', url.name)
+        self.eq(f'{scheme}://{username}@#{frag}', str(url))
 
         url.path = path
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{scheme}://{username}@/{path}#{frag}', url.name)
+        self.eq(f'{scheme}://{username}@/{path}#{frag}', str(url))
 
         url.query = query
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(
+            f'{scheme}://{username}@/{path}?{query}#{frag}', url.name
+        )
+        self.eq(
+            f'{scheme}://{username}@/{path}?{query}#{frag}', 
+            str(url)
+        )
 
         url.host = host
         self.eq(
@@ -509,30 +514,39 @@ class url(tester.tester):
 
         url.password = password
         self.eq(password, url.password)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f':{password}@', url.name)
+        self.eq(f':{password}@', str(url))
 
         url.username = username
         self.eq(username, url.username)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}:{password}@', url.name)
+        self.eq(f'{username}:{password}@', str(url))
 
         url.fragment = frag
         self.eq(frag, url.fragment)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}:{password}@#{frag}', url.name)
+        self.eq(f'{username}:{password}@#{frag}', str(url))
 
         url.scheme = scheme
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{scheme}://{username}:{password}@#{frag}', url.name)
+        self.eq(f'{scheme}://{username}:{password}@#{frag}', str(url))
 
         url.path = path
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(
+            f'{scheme}://{username}:{password}@/{path}#{frag}', url.name
+        )
+        self.eq(
+            f'{scheme}://{username}:{password}@/{path}#{frag}', str(url)
+        )
+
 
         url.query = query
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(
+            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', url.name
+        )
+        self.eq(
+            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', str(url)
+        )
 
         url.host = host
         expect = (
@@ -565,35 +579,53 @@ class url(tester.tester):
 
         url.port = port
         self.eq(port, url.port)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f':{port}', url.name)
+        self.eq(f':{port}', str(url))
 
         url.password = password
         self.eq(password, url.password)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f':{password}@:{port}', url.name)
+        self.eq(f':{password}@:{port}', str(url))
 
         url.username = username
         self.eq(username, url.username)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}:{password}@:{port}', url.name)
+        self.eq(f'{username}:{password}@:{port}', str(url))
 
         url.fragment = frag
         self.eq(frag, url.fragment)
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(f'{username}:{password}@:{port}#{frag}', url.name)
+        self.eq(f'{username}:{password}@:{port}#{frag}', str(url))
 
         url.scheme = scheme
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(
+            f'{scheme}://{username}:{password}@:{port}#{frag}', 
+            url.name
+        )
+        self.eq(
+            f'{scheme}://{username}:{password}@:{port}#{frag}', 
+            str(url.name)
+        )
+
 
         url.path = path
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        self.eq(
+            f'{scheme}://{username}:{password}@:{port}/{path}#{frag}', 
+            url.name
+        )
+        self.eq(
+            f'{scheme}://{username}:{password}@:{port}/{path}#{frag}', 
+            str(url.name)
+        )
 
         url.query = query
-        self.expect(ValueError, lambda: url.name)
-        self.expect(ValueError, lambda: str(url))
+        expect = (
+            f'{scheme}://{username}:{password}@:{port}'
+            f'/{path}?{query}#{frag}'
+        )
+
+        self.eq(expect, url.name)
+        self.eq(expect, str(url))
 
         url.host = host
         expect = (

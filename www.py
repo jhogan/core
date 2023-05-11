@@ -2805,6 +2805,11 @@ class url(entities.entity):
         >>> assert str(url) == 'https://www.google.com?s=Test'
         
     """
+
+    # XXX Explain
+    DummyScheme = '98a98061eb73489583f76a472eac5432'
+    DummyHost   = '49ce02ef5d594a95ba531ee5fe6d45fa'
+
     def __init__(self, name=None, *args, **kwargs):
         """ Create a URL object.
 
@@ -2833,19 +2838,16 @@ class url(entities.entity):
         from urllib.parse import urlunparse
 
         scheme = self.scheme
-        if not scheme:
-            raise ValueError('Must provide scheme')
 
-        if not self.host:
-            raise ValueError('Must provide host')
-
-        host = self.host
+        host = self.host or str()
 
         if uid := self.username:
             if pwd := self.password:
                 host = f'{uid}:{pwd}@{host}'
             else:
                 host = f'{uid}@{host}'
+        elif pwd := self.password:
+            host = f':{pwd}@{host}'
 
         if port := self.port:
             if scheme == 'http':
@@ -2854,16 +2856,26 @@ class url(entities.entity):
             elif scheme == 'https':
                 if port != 443:
                     host += f':{port}'
+            else:
+                host += f':{port}'
 
+        # XXX Explain
         tup = (
-            scheme,
-            host,
-            self.path or '',
+            scheme     or  self.DummyScheme,
+            host       or  self.DummyHost,
+            self.path  or  '',
             '',
             self.query,
             self.fragment,
         )
+
         r = urlunparse(tup)
+        
+        dummy = f'{self.DummyScheme}://'
+        r = r.replace(dummy, str(), 1)
+
+        dummy = self.DummyHost
+        r = r.replace(dummy, str(), 1)
         return  r
 
     @name.setter
@@ -2871,15 +2883,17 @@ class url(entities.entity):
         """ Set the URL string.
         """
         import urllib.parse
+
         prs = urllib.parse.urlparse(v)
-        self.scheme = prs.scheme
-        self.host = prs.hostname
-        self.path = prs.path
-        self.query = prs.query
-        self.fragment = prs.fragment
-        self.username = prs.username
-        self.password = prs.password
-        self.port = prs.port
+
+        self.scheme    =  prs.scheme
+        self.host      =  prs.hostname
+        self.path      =  prs.path
+        self.query     =  prs.query
+        self.fragment  =  prs.fragment
+        self.username  =  prs.username
+        self.password  =  prs.password
+        self.port      =  prs.port
         
     def __truediv__(self, other):
         """ Overrides the / operator to allow for path joining
