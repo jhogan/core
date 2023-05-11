@@ -689,7 +689,8 @@ class request(entities.entity):
 
     @property
     def arguments(self):
-        """ Returns the query string paramter as a dict.
+        """ Returns the query string parameters for this request object
+        as a dict.
         """
         import urllib
         d = urllib.parse.parse_qs(self.qs)

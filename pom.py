@@ -2981,15 +2981,15 @@ class crud(page):
 
     @property
     def detail(self):
-        """ Returns a class reference to the pom.page that contains the
-        details for an entity (which is usually contained in a table
-        row) presented on this pom.crud page..
+        """ Returns pom.page that contains the details for an entity
+        (which is usually contained in a table row) presented on this
+        pom.crud page.
         """
         return self._detail
 
     @detail.setter
     def detail(self, v):
-        """ Sets the detail class reference for this pom.crud page.
+        """ Sets the detail pom.crud page.
         """
         self._detail = v
 
@@ -3412,7 +3412,6 @@ class crud(page):
 
         # There should be zero or one
         if oncompletes.issingular:
-
             # Read path
             path = oncompletes.only.text
 
@@ -3463,6 +3462,8 @@ class crud(page):
                     # completion
                     return True
             else:
+                # XXX When this is encountered, the webpage shows the
+                # exception but not the message.
                 raise www.NotFoundError('Oncomplete not found')
 
         # No completion was found so return False
