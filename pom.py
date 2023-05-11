@@ -2999,7 +2999,13 @@ class crud(page):
         redirected to.
         """
         if not self._oncomplete:
-            return self.path
+            qs = www.application.current.request.url.qs
+
+            qry = str()
+            for kvp in qs:
+                qry += kvp.name + '=' + kvp.value
+
+            return self.path + '?' + qry
 
         return self._oncomplete
 
@@ -3413,7 +3419,7 @@ class crud(page):
         # There should be zero or one
         if oncompletes.issingular:
             # Read path
-            path = oncompletes.only.text
+            url = www.url(oncompletes.only.text)
 
             # Get the base, i.e., the object with the `pages` collection
             # where we can find the oncomplete page.
@@ -3423,13 +3429,15 @@ class crud(page):
             for pg in base.pages:
                 
                 # If we found a matching page
-                if pg.path == path:
+                print(pg.path, url.path)
+                if pg.path == url.path:
 
                     # Clear page
                     pg.clear()
 
                     # Run the page
-                    pg()
+                    B()
+                    pg(oncomplete=str(url))
 
                     # Get requested url
                     req = www.application.current.request
@@ -3634,12 +3642,23 @@ class crud(page):
                 el += dom.p('No items found.', class_="empty-state")
 
             if det := self.detail:
+                url = www.url()
+                url.path = det.path
+                url.qs['crud'] = 'create'
+
+                # XXX If `oncomplete` is None, should the assignment
+                # below just ignore it, or raise an error?
+                if self.oncomplete:
+                    url.qs['oncomplete'] = self.oncomplete
+
+                '''
                 # Create a path string to the details page
-                path = f'{det.path}?&crud=create'
-                path += f'&oncomplete={self.oncomplete}'
+                path = f'{det.path}?crud=create'
+                path += f'&oncomplete={oncomplete}'
+                '''
 
                 # Create the "Add New" link
-                el += dom.a('Add New', href=path, rel='create-form')
+                el += dom.a('Add New', href=url, rel='create-form')
 
                 # Add an Edit button to each card in the collection
                 cards = el['article.card']
@@ -3649,7 +3668,7 @@ class crud(page):
 
                     # Build path
                     path = f'{det.path}?id={id}&crud=update'
-                    path += f'&oncomplete={self.oncomplete}'
+                    path += f'&oncomplete={oncomplete}'
 
                     # Create Edit link
                     card += dom.a('Edit', href=path, rel='edit')
