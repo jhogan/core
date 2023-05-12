@@ -3426,7 +3426,9 @@ class crud(page):
         # There should be zero or one
         if oncompletes.issingular:
             # Read path
-            url = www.url(oncompletes.only.text)
+            path = oncompletes.only.text
+
+            url = www.url(path)
 
             # Get the base, i.e., the object with the `pages` collection
             # where we can find the oncomplete page.
@@ -3442,7 +3444,8 @@ class crud(page):
                     pg.clear()
 
                     # Run the page
-                    pg(oncomplete=str(url))
+                    # XXX Explain
+                    pg(eargs=None, **url.qs.dict())
 
                     # Get requested url
                     req = www.application.current.request
@@ -3456,7 +3459,9 @@ class crud(page):
                     # Set the URL object path property to the oncomplete
                     # page's path and instruct the browser to set the
                     # URL bar to this path.
-                    url.path = req.language + pg.path
+
+                    # XXX Use pg.resource
+                    url.path = req.language + pg.url.path + '?' + pg.url.query
 
                     # Set data-url. This will be used by the JavaScript
                     # to set the URL in the browser's location bar when
@@ -3654,8 +3659,13 @@ class crud(page):
 
                 # XXX If `oncomplete` is None, should the assignment
                 # below just ignore it, or raise an error?
-                if self.oncomplete:
-                    url.qs['oncomplete'] = self.oncomplete
+                req = www.application.current.request
+                
+                # XXX Replace with `url.getresource(lang=False)`
+                #oncomplete = req.url.getpath(lang=False) + '?' + req.url.query
+                oncomplete = str(self.url)
+                if oncomplete:
+                    url.qs['oncomplete'] = oncomplete
 
                 '''
                 # Create a path string to the details page
@@ -3755,12 +3765,15 @@ class crud(page):
                 btnedit.onclick += self.btnedit_onclick, card
 
         # If there is an oncomplete page to return to
-        if oncomplete:
+        if self.oncomplete:
             # Find the page
-            pg = self.site.pages[oncomplete]
+            pg = self.site.pages[self.oncomplete.path]
 
             # Add a "Back" button to that page
             a = dom.a('Back', href=pg.path)
+
+            # XXX We shouldn't be updating main in here in
+            # self.gethtml()
             self.main += a
 
         # Return whichever element we created (<form>, <article>, <table>)
