@@ -8309,19 +8309,40 @@ with book('Hacking Carapacian Core'):
       bill-to.
 
       We've still only scratched the surface of what the GEM can do for
-      order entry. Though we've only used three GEM modules, we can
-      easily imagine how other modules could be used to coordinate other
-      aspects of the order. For example, object models in the `shipping`
-      module could help us track shipments of the order, classes in the
-      `hr` module could help us properly compensate the sales person who
-      closed the sale with a commision, objects in the `invoice` module
-      would help us bill the customer, and the `account` module could be
-      used to post the transactions to a general ledger for appropriate
-      bookkeeping. 
+      order entry (or any other business function, for that matter).
+      Though we've only used three GEM modules, we can easily imagine
+      how other modules could be used to coordinate other aspects of the
+      order. For example, object models in the `shipping` module could
+      help us track shipments of the order, classes in the `hr` module
+      could help us properly compensate the sales person who closed the
+      sale with a commision, objects in the `invoice` module would help
+      us bill the customer, and the `account` module could be used to
+      post the transactions to a general ledger for appropriate
+      bookkeeping. It's truely hard to overemphasize how comprehensive
+      and univeral the GEM is.
     ''')
 
   with chapter("Authoring DOM objects", id='22ee9373') as sec:
-    ...
+    print('''
+      Though we take it for granted that web development on the
+      client-side has access to a very feature-rich and useful Document
+      Object Model (DOM), very few server-side frameworks offer a
+      similar model for interfacing with HTML documents. Most
+      server-side frameworks provide templating engines which allow the
+      developer to mix HTML, the server-side programming language and
+      JavaScript into the same source file which allows webpages to be
+      dynamically generated.
+
+      Core Framework takes a different approach. It provides a document
+      object model similar to the standard Document Object Model but
+      with conventions that will be more familiar to Python developers
+      and Core developers. Developers can use **this** DOM to create
+      dynamics webpages. It can also be used to parse and update
+      existing HTML. Since it provides an object model, and not just a
+      template to generate HTML, developers can extend the standard DOM
+      objects to create specialized object models to solve complex
+      problems in a non-redundent way.
+    ''')
 
   with chapter("Robotic process automation") as sec:
     ...
