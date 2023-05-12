@@ -3011,14 +3011,8 @@ class crud(page):
         """ Returns the path of the page that the user should be
         redirected to.
         """
-        if not self._oncomplete:
-            qs = www.application.current.request.url.qs
-
-            qry = str()
-            for kvp in qs:
-                qry += kvp.name + '=' + kvp.value
-
-            return self.path + '?' + qry
+        if self._oncomplete:
+            self._oncomplete = www.url(self._oncomplete)
 
         return self._oncomplete
 
