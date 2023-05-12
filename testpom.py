@@ -3141,6 +3141,18 @@ class profiles(pom.crud):
     def __init__(self, *args, **kwargs):
         super().__init__(e=persons, *args, **kwargs)
 
+    def main(self, 
+        id:str = None,     crud:str = 'retrieve', 
+        oncomplete = None, types:str = None,
+    ):
+        """ An override of pom.crud.main. The `types` parameter, if
+        given, will contain a comma seperated string of profile
+        types.
+        """
+        self.types = types
+
+        super().main(id=id, crud=crud, oncomplete=oncomplete)
+
     @property
     def detail(self):
         return self.site.pages['profile']
