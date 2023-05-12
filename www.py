@@ -2884,6 +2884,12 @@ class url(entities.entity):
         """
         import urllib.parse
 
+        # XXX Test instantiating www.url with a www.url as an argument
+        # to the constructor:
+        #
+        #     url = 'www.google.com'
+        #     url = www.url(url)
+        #     url = www.url(url)
         prs = urllib.parse.urlparse(v)
 
         self.scheme    =  prs.scheme

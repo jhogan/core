@@ -1818,6 +1818,7 @@ class pages(entities.entities):
 class page(dom.html):
     """ Represents a web page.
     """
+    # XXX Rename to AcceptedBooleanStrings
     ExceptedBooleansStrings = (
         ('false', '0', 'no', 'n'),
         ('true', '1', 'yes', 'y')
@@ -3429,14 +3430,12 @@ class crud(page):
             for pg in base.pages:
                 
                 # If we found a matching page
-                print(pg.path, url.path)
                 if pg.path == url.path:
 
                     # Clear page
                     pg.clear()
 
                     # Run the page
-                    B()
                     pg(oncomplete=str(url))
 
                     # Get requested url
@@ -3555,6 +3554,7 @@ class crud(page):
         if id:
             self.setattr('data-entity-id', id)
 
+        # XXX Do we need this now?
         self.oncomplete = oncomplete
 
         # Get the presentation mode for display: 'table' or 'cards'

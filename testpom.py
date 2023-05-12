@@ -3913,7 +3913,6 @@ class crud(tester.tester):
         per = pers.getrandom()
 
         for btn in ('submit', 'cancel'):
-
             # Get the <tr> for the random person
             sels = f'tr[data-entity-id="{per.id.hex}"]'
             tr = tbl[sels].only
