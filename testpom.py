@@ -3900,6 +3900,134 @@ class crud(tester.tester):
         # the entity and assert
         self.eq(name, per.orm.reloaded().name)
 
+    def it_navigates_to_entities_with_qs_clicks_add_new_and_submits(self):
+        """ XXX
+        """
+        ws = foonet()
+        tab = self.browser().tab()
+
+        # Get form
+        tab.navigate('/en/profiles?types=admin&types=tsr', ws)
+
+        tbl = tab['main table'].only
+
+        url = www.url(
+            'http://foo.net/en/profiles?types=admin&types=tsr'
+        )
+        self.eq(str(url), str(tab.url))
+
+        for btn in ('submit', 'cancel'):
+            # Get Add New anchor
+            a = tbl['a[rel~=create-form]'].only
+
+            # Click "Add New" go to the detail page
+            res = self.click(a, tab)
+            self.h200(res)
+
+            url1 = www.url('http://foo.net/en/profile?crud=create')
+
+            # XXX Replace with url.resource when available
+            url1.qs['oncomplete'] = url.getpath(lang=False) + '?' + url.query
+            self.eq(str(url1), str(tab.url))
+
+            # Get <main> from the detail page
+            main = tab['main'].only
+
+            frm = main['form'].only
+
+            # Set the name <input> in the <form> to a random value
+            name = uuid4().hex
+            frm.setvalue('name', name)
+
+            if btn == 'submit':
+                # Submit the <form>. This will "redirect" us (so to
+                # speak) back to the main, tabular page /profiles.
+                res = self.submit(frm, tab)
+            elif btn == 'cancel':
+                btncancel = frm['button:not([type=submit])'].only
+                res = self.click(btncancel, tab)
+
+            self.h200(res)
+
+            self.eq(str(url), str(tab.url))
+                
+            # Get the main page's <main> element
+            main = tab['main'].only
+
+            # Assert its attributes
+            self.eq('/profiles', main.getattr('data-path'))
+            self.none(main.getattr('spa-data-path'))
+
+            # Assert the table's attributes
+            tbl = main['table'].only
+            self.endswith('.person', tbl.getattr('data-entity'))
+
+            spans = tbl['tr td[data-entity-attribute=name] span.value']
+
+            for span in spans:
+                if span.text == name:
+                    break
+            else:
+                raise ValueError('Cannot find span')
+
+            tr = span.closest('tr')
+            self.endswith('.person', tr.getattr('data-entity'))
+
+            # Get the "id" <td> to make sure all of its attributes are
+            # correct
+            td = tr['td[data-entity-attribute=id]'].only
+
+            # Get the Quick Edit anchor
+            a = td['menu li a[rel~=edit][rel~=preview]'].only
+            self.eq('Quick Edit', a.text)
+
+            # We expect the rel attribute for the Quick Edit anchor to
+            # have 'edit' and 'preview'
+            rels = a.getattr('rel').split()
+            self.two(rels)
+            self.in_(rels, 'edit')
+            self.in_(rels, 'preview')
+
+            id = tr.getattr('data-entity-id')
+
+            self.eq(f'/en/profiles?id={id}&crud=update', a.href)
+
+            # Get the Edit anchor
+            a = td['menu li a[rel~=edit]:not([rel~=preview])'].only
+
+            self.eq('Edit', a.text)
+
+            # We expect the rel attribute for the Edit anchor to
+            # only have 'edit'
+            self.eq('edit', a.getattr('rel'))
+
+            expect = (
+                f'/en/profile?id={id}'
+                '&crud=update&oncomplete=/profiles')
+            self.eq(expect, a.href)
+            return
+
+            # Get the "name" <td>
+            td = tr['td[data-entity-attribute=name]'].only
+
+            # Finally, make sure the new name value is in the <tr>
+            if btn == 'submit':
+                self.eq(name, td.text)
+            elif btn == 'cancel':
+                self.eq(per1.name, td.text)
+
+            # TODO Test the anchor's data-click-handler and
+            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
+            # attributes.
+
+            if btn == 'submit':
+                # Make sure the name was updated in the database
+                per1 = per.orm.reloaded()
+                self.eq(name, per1.name)
+            elif btn == 'cancel':
+                # Make sure the name was not changed
+                self.eq(per1.name, per.orm.reloaded().name)
+
     def it_navigates_to_entities_clicks_edit_and_submits(self):
         """ Use the Edit feature of a pom.crud page to go to the detail
         page. Test submitting the form on the detail page. Test editing
