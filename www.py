@@ -2970,6 +2970,19 @@ class url(entities.entity):
         """
         self._path = v
 
+    def getpath(self, lang=True):
+        """ XXX
+        """
+        paths = [x for x in self.path.split('/') if x]
+
+        if not lang:
+            if paths:
+                # TODO Use pycountry to search for all ISO country codes
+                if paths[0] in ('en', 'es'):
+                    paths.pop(0)
+
+        return '/' + '/'.join(paths)
+
     @property
     def query(self):
         """ Returns a string representation of the query string in the
