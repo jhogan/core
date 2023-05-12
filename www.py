@@ -2890,6 +2890,8 @@ class url(entities.entity):
         #     url = 'www.google.com'
         #     url = www.url(url)
         #     url = www.url(url)
+
+        v = str(v)
         prs = urllib.parse.urlparse(v)
 
         self.scheme    =  prs.scheme
