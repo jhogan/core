@@ -2186,6 +2186,18 @@ class page(dom.html):
     def _arguments(self, v):
         self._args = v
 
+    @property
+    def url(self):
+        """ XXX
+        """
+        url = www.url()
+        url.path = self.path
+
+        for k, v in self._arguments.items():
+            url.qs[k] = v
+
+        return url
+
     def clear(self):
         """ Used to initialize the page's <main> element and set its
         data-path attribute to the path of the page. Also is used to
