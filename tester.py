@@ -942,11 +942,15 @@ class tester(entities.entity):
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onbeforeunload(self, eargs)
 
+                # XXX This means pg can now be www.url. Update docstring
+                # accordingly
+                pg = str(pg)
+
                 res = self.get(pg, ws)
                 self.html = res.html
 
                 self.url = www.url(
-                    f'http://{ws.host}/{pg.lstrip("/")}'
+                    f'http://{ws.host}:8000/{pg.lstrip("/")}'
                 )
 
                 eargs = www.browser.loadeventargs(url=self.url)

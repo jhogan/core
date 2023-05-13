@@ -3686,10 +3686,14 @@ class crud(page):
                 el += dom.a('Add New', href=url, rel='create-form')
 
                 # Add an Edit button to each card in the collection
-                cards = el['article.card']
-                for card in cards:
+                url = url.clone()
+                url.qs['crud'] = 'update'
+
+                # For each of the backlog cards
+                for card in el['article.card']:
                     # Get the entity id in the card
                     id = card.getattr('data-entity-id')
+                    url.qs['id'] = id
 
                     '''
                     # Build path
@@ -3698,7 +3702,7 @@ class crud(page):
                     '''
 
                     # Create Edit link
-                    card += dom.a('Edit', href=path, rel='edit')
+                    card += dom.a('Edit', href=url, rel='edit')
 
         # If the entity we are working with is an individual entity (as
         # opposed to a collectio), get the instance then return a
