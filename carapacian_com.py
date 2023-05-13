@@ -461,7 +461,6 @@ class ticketsspa(pom.spa):
             super().__init__(
                 e=effort.backlogs, presentation='cards', *args, **kwargs
             )
-            self._types = None
 
         def gethtml(self, id, crud, oncomplete):
             """ An override of pom.crud.gethtml to produces the HTML
@@ -599,7 +598,6 @@ class ticketsspa(pom.spa):
             given, will contain a comma seperated string of backlog
             status types to filter the backlog cards by.
             """
-            self.types = types
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
@@ -714,24 +712,26 @@ class ticketsspa(pom.spa):
             """ Returns the backlogstatustypes to filter on.
             """
 
-            # If no types were set, filter on all
-            if not self._types:
-                self._types = effort.backlogstatustypes.orm.all
+            try:
+                types = self._args['types']
+            except KeyError:
+                return effort.backlogstatustypes.orm.all
+            else:
+                if not isinstance(types, list):
+                    types = [types]
 
-            # If self._types is currently a str
-            elif isinstance(self._types, str):
-                self._types = self._types.split(',')
+                # I think this conditional could be remove with the
+                # resolution of TODO:ed0df12a
+                if ''.join(types) == str():
+                    return effort.backlogstatustypes.orm.all
 
-            if isinstance(self._types, list):
-                # Query backlogstatustypes based on the values found in
-                # self._types
-                args = self._types
+                args = types
+
+                # Query backlogstatustypes based on the values found
                 pred = 'name in (%s)'
                 pred %= ', '.join(['%s'] * len(args))
 
-                self._types = effort.backlogstatustypes(pred, args)
-
-            return self._types
+                return effort.backlogstatustypes(pred, args)
 
         @types.setter
         def types(self, v):
@@ -742,7 +742,19 @@ class ticketsspa(pom.spa):
             comma-seperated string of backlogstatustype names. Setting
             `types` to None implies we want all types.
             """
-            self._types = v
+            # XXX 
+            if isinstance(v, str):
+                v = v.split(',')
+            elif isinstance(v, effort.backlogstatustypes):
+                v = v.pluck('name')
+            elif isinstance(v, list):
+                pass
+            elif v is None:
+                v = list()
+            else:
+                raise TypeError('Invalid type for "types"')
+
+            self._args['types'] = v
 
         @property
         def instance(self):
