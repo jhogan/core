@@ -777,6 +777,8 @@ class tester(entities.entity):
                     main = res.html.only
                     replace(this='main', that=main)
                     self.listen(res.html)
+
+                    self.url = main.getattr('data-url')
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
