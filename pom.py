@@ -2080,6 +2080,18 @@ class page(dom.html):
 
             {'a': '1', 'b': '2'}
         """
+        # TODO:ed0df12a We should consider supporting lists. For
+        # example, given the following url:
+        #
+        #     example.com?a=1&a=2&a=3
+        #
+        # we should be able to do this:
+        # 
+        #     def main(self, a:list):
+        #         assert type(a) is list
+        #         assert [1, 2, 3] == a
+        #
+
         # If a parameter is required by the page (it's in `params`) but
         # was not given by the client in the query string, ensure that
         # the parameter is in the args and set to None. If this is not
@@ -3329,6 +3341,7 @@ class crud(page):
 
         # Get the requested url
         req = www.application.current.request
+        # XXX Shoudl we clone this
         url = req.url
 
         # Process completion. Return early if completion is processed.
@@ -3448,6 +3461,7 @@ class crud(page):
                     pg(eargs=None, **url.qs.dict())
 
                     # Get requested url
+                    # XXX Should we clone this?
                     req = www.application.current.request
                     url = req.url
 
@@ -3667,12 +3681,6 @@ class crud(page):
                 if oncomplete:
                     url.qs['oncomplete'] = oncomplete
 
-                '''
-                # Create a path string to the details page
-                path = f'{det.path}?crud=create'
-                path += f'&oncomplete={oncomplete}'
-                '''
-
                 # Create the "Add New" link
                 el += dom.a('Add New', href=url, rel='create-form')
 
@@ -3682,9 +3690,11 @@ class crud(page):
                     # Get the entity id in the card
                     id = card.getattr('data-entity-id')
 
+                    '''
                     # Build path
                     path = f'{det.path}?id={id}&crud=update'
                     path += f'&oncomplete={oncomplete}'
+                    '''
 
                     # Create Edit link
                     card += dom.a('Edit', href=path, rel='edit')
@@ -3770,6 +3780,7 @@ class crud(page):
             pg = self.site.pages[self.oncomplete.path]
 
             # Add a "Back" button to that page
+            # XXX Make sure the back button goes to the filtered page
             a = dom.a('Back', href=pg.path)
 
             # XXX We shouldn't be updating main in here in

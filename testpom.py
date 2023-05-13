@@ -3970,6 +3970,8 @@ class crud(tester.tester):
             else:
                 raise ValueError('Cannot find span')
 
+            ''' Test the newly created entity as a row in the non-detail
+            page '''
             tr = span.closest('tr')
             self.endswith('.person', tr.getattr('data-entity'))
 

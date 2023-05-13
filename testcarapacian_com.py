@@ -21,6 +21,7 @@ import pom
 import primative
 import random
 import tester
+import www
 
 class sites(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -352,7 +353,7 @@ class ticketsspa_backlogs(tester.tester):
 
             self.one(tbl['p.empty-state'])
 
-            # Add Nwe 
+            # Add New 
             a = tbl['a[rel=create-form]'].only
             expect = (
                 '/en/ticketsspa/story'
@@ -647,7 +648,6 @@ class ticketsspa_backlogs(tester.tester):
                 flts[1] = True
 
         self.eq([True] * 2, flts)
-
 
     def it_closes_backlog(self):
         ws = carapacian_com.site()

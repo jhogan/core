@@ -746,6 +746,7 @@ class tester(entities.entity):
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
 
+                # XXX Explain
                 eargs.preventDefault()
 
                 # Create a JSON object to send in the XHR request
@@ -1060,7 +1061,9 @@ class tester(entities.entity):
                 :param: hdrs www.headers: A collection of headers to be
                 appended to the request.
                 """
+
                 arg_hdrs = www.headers(hdrs) if hdrs else None
+
 
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):

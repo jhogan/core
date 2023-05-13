@@ -737,7 +737,7 @@ class ticketsspa(pom.spa):
         def types(self, v):
             """ Set the backlogstatustypes to filter on.
 
-            :param: v str|effort.backlogstatustypes|None: The
+            :param: v str|list|effort.backlogstatustypes|None: The
             backlogstatustypes. If str, it will be considered a
             comma-seperated string of backlogstatustype names. Setting
             `types` to None implies we want all types.
