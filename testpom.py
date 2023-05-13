@@ -3912,7 +3912,7 @@ class crud(tester.tester):
         tbl = tab['main table'].only
 
         url = www.url(
-            'http://foo.net/en/profiles?types=admin&types=tsr'
+            'http://foo.net:8000/en/profiles?types=admin&types=tsr'
         )
         self.eq(str(url), str(tab.url))
 
@@ -3924,7 +3924,7 @@ class crud(tester.tester):
             res = self.click(a, tab)
             self.h200(res)
 
-            url1 = www.url('http://foo.net/en/profile?crud=create')
+            url1 = www.url('http://foo.net:8000/en/profile?crud=create')
 
             # XXX Replace with url.resource when available
             url1.qs['oncomplete'] = url.getpath(lang=False) + '?' + url.query
@@ -3943,13 +3943,19 @@ class crud(tester.tester):
                 # Submit the <form>. This will "redirect" us (so to
                 # speak) back to the main, tabular page /profiles.
                 res = self.submit(frm, tab)
+                self.h200(res)
+
+                # Test that the person was created in the database
+                self.one(persons(name=name))
             elif btn == 'cancel':
                 btncancel = frm['button:not([type=submit])'].only
                 res = self.click(btncancel, tab)
+                self.h200(res)
 
-            self.h200(res)
+                # Test that no person was created in the database
+                self.zero(persons(name=name))
 
-            self.eq(str(url), str(tab.url))
+            self.eq(str(url), str(tab.url), f'For button {btn}')
                 
             # Get the main page's <main> element
             main = tab['main'].only
@@ -3961,6 +3967,13 @@ class crud(tester.tester):
             # Assert the table's attributes
             tbl = main['table'].only
             self.endswith('.person', tbl.getattr('data-entity'))
+
+            # The rest of this loop assums the successful creation of a
+            # person through submission of the form...
+            if btn == 'cancel':
+                # ... therefore, skip it if we had clicked the cancel
+                # button
+                continue
 
             spans = tbl['tr td[data-entity-attribute=name] span.value']
 
@@ -4007,28 +4020,13 @@ class crud(tester.tester):
                 f'/en/profile?id={id}'
                 '&crud=update&oncomplete=/profiles')
             self.eq(expect, a.href)
-            return
 
             # Get the "name" <td>
             td = tr['td[data-entity-attribute=name]'].only
 
-            # Finally, make sure the new name value is in the <tr>
-            if btn == 'submit':
-                self.eq(name, td.text)
-            elif btn == 'cancel':
-                self.eq(per1.name, td.text)
-
-            # TODO Test the anchor's data-click-handler and
-            # data-click-fragments="#x8nMAagjHTRKQDSklK82fSQ"
-            # attributes.
-
-            if btn == 'submit':
-                # Make sure the name was updated in the database
-                per1 = per.orm.reloaded()
-                self.eq(name, per1.name)
-            elif btn == 'cancel':
-                # Make sure the name was not changed
-                self.eq(per1.name, per.orm.reloaded().name)
+    def it_filters_then_adds_and_edits(self):
+        """ XXX
+        """
 
     def it_navigates_to_entities_clicks_edit_and_submits(self):
         """ Use the Edit feature of a pom.crud page to go to the detail
