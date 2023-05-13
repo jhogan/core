@@ -2612,7 +2612,9 @@ class browser(entities.entity):
 
         @property
         def url(self):
-            """ XXX
+            """ Return a `www.url` object that represents the url this
+            `tab` is pointing to. Analogous to the location bar in a
+            browser.
             """
             # Make sure we always return a www.url even if self._url was
             # set to a str
@@ -2809,7 +2811,9 @@ class url(entities.entity):
         
     """
 
-    # XXX Explain
+    # These dummy scheme and host constants help us parse URL's that
+    # don't have those parts. For example, if we only want to parse the
+    # path portion of a URL, these variable can used with `urlunparse`.
     DummyScheme = '98a98061eb73489583f76a472eac5432'
     DummyHost   = '49ce02ef5d594a95ba531ee5fe6d45fa'
 
@@ -2840,10 +2844,13 @@ class url(entities.entity):
         """
         from urllib.parse import urlunparse
 
+        # Get scheme
         scheme = self.scheme
 
+        # Get host
         host = self.host or str()
 
+        # Deal with username and passwords
         if uid := self.username:
             if pwd := self.password:
                 host = f'{uid}:{pwd}@{host}'
@@ -2862,7 +2869,7 @@ class url(entities.entity):
             else:
                 host += f':{port}'
 
-        # XXX Explain
+        # Create a tuple to pass to urlunparse
         tup = (
             scheme     or  self.DummyScheme,
             host       or  self.DummyHost,
@@ -2872,13 +2879,16 @@ class url(entities.entity):
             self.fragment,
         )
 
+        # Convert tuple into a url string
         r = urlunparse(tup)
         
+        # Remove any of the dummy data
         dummy = f'{self.DummyScheme}://'
         r = r.replace(dummy, str(), 1)
 
         dummy = self.DummyHost
         r = r.replace(dummy, str(), 1)
+
         return  r
 
     @name.setter
@@ -2974,7 +2984,11 @@ class url(entities.entity):
         self._path = v
 
     def getpath(self, lang=True):
-        """ XXX
+        """ Return the path portion of this `url`. By default, the
+        behavior is identical to self.path.
+
+        :param: lang bool: If False, return a path with the language
+        code removed.
         """
         paths = [x for x in self.path.split('/') if x]
 

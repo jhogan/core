@@ -742,7 +742,6 @@ class ticketsspa(pom.spa):
             comma-seperated string of backlogstatustype names. Setting
             `types` to None implies we want all types.
             """
-            # XXX 
             if isinstance(v, str):
                 v = v.split(',')
             elif isinstance(v, effort.backlogstatustypes):

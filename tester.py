@@ -746,7 +746,7 @@ class tester(entities.entity):
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
 
-                # XXX Explain
+                # Cancel default event handling
                 eargs.preventDefault()
 
                 # Create a JSON object to send in the XHR request
@@ -936,7 +936,8 @@ class tester(entities.entity):
                 tab's internal DOM (self.html). The www.response object
                 is returned if needed.
 
-                :param: pg pom.page|str: The page to GET.
+                :param: pg www.url|pom.page|str: The page, or url of the
+                page, to GET.
 
                 :param: ws pom.site: The site to get the page from.
                 """
@@ -944,8 +945,6 @@ class tester(entities.entity):
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onbeforeunload(self, eargs)
 
-                # XXX This means pg can now be www.url. Update docstring
-                # accordingly
                 pg = str(pg)
 
                 res = self.get(pg, ws)

@@ -10275,7 +10275,8 @@ class eventargs(entities.eventargs):
         return self.html.only
 
     def preventDefault(self):
-        """ TODO
+        """ Cancels the normal event handling of the browser. This is
+        analogue to JavaScripts `event.preventDefault()` method.
         """
         self.cancel = True
 
