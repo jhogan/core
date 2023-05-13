@@ -496,6 +496,91 @@ class ticketsspa_backlogs(tester.tester):
             else:
                 self.true(bl.inplanning)
 
+    def it_filters_then_adds_and_edits(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bls = testeffort.backlog.getvalid(4)
+
+        # Ensure that the backlog status types exist
+        effort.backlogstatustype(name='closed')
+        effort.backlogstatustype(name='planning')
+
+        url = www.url('/en/ticketsspa/backlogs')
+
+        # Filter on nothing
+        res = tab.navigate(url, ws)
+        self.h200(res)
+
+        self.eq(url.path, tab.url.path)
+
+        self.endswith('/en/ticketsspa/backlogs', str(tab.url))
+
+        flt = tab['div.cards form.filter'].only
+
+        types = None, 'planning', 'closed', 'both'
+
+        for type in types:
+            chkinplanning = flt['[name=planning]'].only
+            chkisclosed = flt['[name=closed]'].only
+
+            if type is None:
+                self.click(chkinplanning, tab)
+                self.click(chkisclosed, tab)
+                chkisclosed = flt['[name=closed]'].only
+
+
+
+            btnadd = tab['div.cards a[rel=create-form]'].only
+
+            res = self.click(btnadd, tab)
+            self.h200(res)
+
+            ''' Create new '''
+            frm = tab['form'].only
+
+            name = uuid4().hex
+
+            frm.setvalue('name', name)
+
+            res = self.submit(frm, tab)
+            self.h200(res)
+
+            bl = effort.backlogs(name = name).only
+
+            spans = tab['article.card [data-entity-attribute=name] span']
+
+            for span in spans:
+                if span.text == name:
+                    break
+            else:
+                self.fail('Cannot find span')
+
+            btnedit = span.closest('article')['a[rel=edit]'].only
+            res = self.click(btnedit, tab)
+            self.h200(res)
+
+            ''' Edit the newly created '''
+            frm = tab['form'].only
+
+            name = uuid4().hex
+
+            frm.setvalue('name', name)
+
+            res = self.submit(frm, tab)
+            self.h200(res)
+
+            spans = tab['article.card [data-entity-attribute=name] span']
+
+            for span in spans:
+                if span.text == name:
+                    break
+            else:
+                self.fail('Cannot find span')
+
+
+
     def it_filters(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
