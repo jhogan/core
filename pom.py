@@ -3475,7 +3475,8 @@ class crud(page):
                     # URL bar to this path.
 
                     # XXX Use pg.resource
-                    url.path = req.language + pg.url.path + '?' + pg.url.query
+                    url.path = req.language + pg.url.path
+                    url.query = pg.url.query
 
                     # Set data-url. This will be used by the JavaScript
                     # to set the URL in the browser's location bar when
