@@ -2612,14 +2612,17 @@ class browser(entities.entity):
 
         @property
         def url(self):
+            """ XXX
+            """
+            # Make sure we always return a www.url even if self._url was
+            # set to a str
+            if self._url is not None:
+                self._url = url(self._url)
+
             return self._url
 
         @url.setter
         def url(self, v):
-            if v is not None:
-                if not isinstance(v, url):
-                    raise TypeError('url is of wrong type')
-
             self._url = v
 
         @property
