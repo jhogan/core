@@ -532,6 +532,16 @@ class tester(entities.entity):
 
             :abbr: tab
             """
+
+            @property
+            def page(self):
+                return self._page
+
+            @page.setter
+            def page(self, v):
+                print(type(v))
+                self._page = v
+                
             def __init__(self, tabs):
                 """ Create a new test browser tab.
                 """
