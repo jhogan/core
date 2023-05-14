@@ -1157,6 +1157,16 @@ class tester(entities.entity):
 
                 pg and pg.clear()
 
+                # XXX Explain
+                changed = False
+                def pg_onafterpagechange(src, eargs):
+                    nonlocal changed
+                    changed = True
+
+                    self.page = eargs.page
+                    
+                pg.onafterpagechange += pg_onafterpagechange
+
                 if meth == 'POST':
                     if body:
                         if isa(body, str):
@@ -1271,7 +1281,10 @@ class tester(entities.entity):
 
                 self.referer = req.url
 
-                self.page = pg
+                # XXX Explain
+                if not changed:
+                    self.page = pg
+
                 self.site = ws
                 return res
 

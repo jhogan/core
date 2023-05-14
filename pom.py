@@ -1866,6 +1866,21 @@ class page(dom.html):
         self.clear()
 
     @property
+    def onafterpagechange(self):
+        """ XXX
+        """
+        if not hasattr(self, '_onafterpagechange'):
+            self._onafterpagechange = entities.event()
+
+        return self._onafterpagechange
+
+    @onafterpagechange.setter
+    def onafterpagechange(self, v):
+        """ XXX
+        """
+        self._onafterpagechange = v
+
+    @property
     def spa(self):
         """ If this `page` object is a subpage of a SPA, return its SPA
         `page`. Otherwise, return None.
@@ -3490,6 +3505,12 @@ class crud(page):
                         pg.main.setattr('spa-data-path', path)
 
                     eargs.html = pg.main
+
+                    # XXX Explain
+                    # XXX Replace with a specialized eventargs
+                    eargs = entities.eventargs()
+                    eargs.page = pg
+                    self.onafterpagechange(self, eargs)
 
                     # Return True because we successfully processed the
                     # completion
