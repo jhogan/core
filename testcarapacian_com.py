@@ -516,20 +516,46 @@ class ticketsspa_backlogs(tester.tester):
 
         self.endswith('/en/ticketsspa/backlogs', str(tab.url))
 
-        flt = tab['div.cards form.filter'].only
-
-        types = None, 'planning', 'closed', 'both'
+        types = 'planning', 'closed', 'both', None
 
         for type in types:
+            flt = tab['div.cards form.filter'].only
             chkinplanning = flt['[name=planning]'].only
             chkisclosed = flt['[name=closed]'].only
 
-            if type is None:
+            if type == 'planning':
+                res = self.click(chkisclosed, tab)
+                self.h200(res)
+
+                assert chkinplanning.checked
+                assert not chkisclosed.checked
+
+            elif type == 'closed':
                 self.click(chkinplanning, tab)
+                self.h200(res)
                 self.click(chkisclosed, tab)
-                chkisclosed = flt['[name=closed]'].only
+                self.h200(res)
 
+                assert not chkinplanning.checked
+                assert chkisclosed.checked
 
+            elif type == 'both':
+                self.click(chkinplanning, tab)
+                self.h200(res)
+
+                assert chkinplanning.checked
+                assert chkisclosed.checked
+
+            elif type is None:
+                self.click(chkinplanning, tab)
+                self.h200(res)
+                self.click(chkisclosed, tab)
+                self.h200(res)
+
+                assert not chkinplanning.checked
+                assert not chkisclosed.checked
+            else:
+                assert False, 'Invalid type'
 
             btnadd = tab['div.cards a[rel=create-form]'].only
 
