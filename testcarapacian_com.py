@@ -501,7 +501,6 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         import testeffort
-        bls = testeffort.backlog.getvalid(4)
 
         # Ensure that the backlog status types exist
         effort.backlogstatustype(name='closed')
@@ -509,7 +508,7 @@ class ticketsspa_backlogs(tester.tester):
 
         url = www.url('/en/ticketsspa/backlogs')
 
-        # Filter on nothing
+        # Navigate to unfiltered page
         res = tab.navigate(url, ws)
         self.h200(res)
 
@@ -578,6 +577,7 @@ class ticketsspa_backlogs(tester.tester):
                     break
             else:
                 self.fail('Cannot find span')
+
 
 
 

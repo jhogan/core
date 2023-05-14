@@ -1069,7 +1069,6 @@ class tester(entities.entity):
 
                 arg_hdrs = www.headers(hdrs) if hdrs else None
 
-
                 isa = isinstance
                 if not isa(pg, str) and not isa(pg, pom.page):
                     raise TypeError(
