@@ -3750,6 +3750,8 @@ class crud(page):
                     # send back a form so users can update an entity
                     # object.
                     frm = True
+                else:
+                    raise ValueError('Invalid crud')
             else:
                 if crud == 'create':
                     # If CRUD is 'create' and we have no id, we want to
@@ -3767,6 +3769,8 @@ class crud(page):
                         'Cannot create when given an id'
                     )
 
+                else:
+                    raise ValueError('Invalid crud')
             if frm:
                 # If frm is True, add a <form> for the entity to the
                 # page's <main>
