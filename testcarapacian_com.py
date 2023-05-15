@@ -518,51 +518,73 @@ class ticketsspa_backlogs(tester.tester):
 
         types = 'planning', 'closed', 'both', None
 
-        for type in types:
+        def get_checkboxes():
             flt = tab['div.cards form.filter'].only
             chkinplanning = flt['[name=planning]'].only
             chkisclosed = flt['[name=closed]'].only
+            return chkinplanning, chkisclosed
+            
+        prev = None
+        for type in types:
+            chkinplanning, chkisclosed = get_checkboxes()
 
             if type == 'planning':
                 res = self.click(chkisclosed, tab)
                 self.h200(res)
 
-                assert chkinplanning.checked
-                assert not chkisclosed.checked
+                chkinplanning, chkisclosed = get_checkboxes()
+
+                self.true(chkinplanning.checked)
+                self.false(chkisclosed.checked)
 
             elif type == 'closed':
                 self.click(chkinplanning, tab)
                 self.h200(res)
-                self.click(chkisclosed, tab)
+
+                chkinplanning, chkisclosed = get_checkboxes()
+                self.true(chkinplanning.checked)
+                self.true(chkisclosed.checked)
+
+
+                self.click(chkinplanning, tab)
                 self.h200(res)
 
-                assert not chkinplanning.checked
-                assert chkisclosed.checked
+                chkinplanning, chkisclosed = get_checkboxes()
+                self.false(chkinplanning.checked)
+                self.true(chkisclosed.checked)
 
             elif type == 'both':
                 self.click(chkinplanning, tab)
                 self.h200(res)
 
-                assert chkinplanning.checked
-                assert chkisclosed.checked
+                chkinplanning, chkisclosed = get_checkboxes()
+
+                self.true(chkinplanning.checked)
+                self.true(chkisclosed.checked)
 
             elif type is None:
                 self.click(chkinplanning, tab)
                 self.h200(res)
+
+                chkinplanning, chkisclosed = get_checkboxes()
+                self.false(chkinplanning.checked)
+                self.true(chkisclosed.checked)
+
                 self.click(chkisclosed, tab)
                 self.h200(res)
 
-                assert not chkinplanning.checked
-                assert not chkisclosed.checked
+                chkinplanning, chkisclosed = get_checkboxes()
+                self.true(chkinplanning.checked)
+                self.true(chkisclosed.checked)
             else:
                 assert False, 'Invalid type'
 
-            btnadd = tab['div.cards a[rel=create-form]'].only
+            ''' Create new '''
+            btnadd = tab['div.cards>a[rel=create-form]'].only
 
             res = self.click(btnadd, tab)
             self.h200(res)
 
-            ''' Create new '''
             frm = tab['form'].only
 
             name = uuid4().hex
@@ -572,22 +594,38 @@ class ticketsspa_backlogs(tester.tester):
             res = self.submit(frm, tab)
             self.h200(res)
 
-            bl = effort.backlogs(name = name).only
+            bl = effort.backlogs(name=name).only
 
-            spans = tab['article.card [data-entity-attribute=name] span']
+            if prev:
+                # Make sure the new bl doesn't match the previously
+                # created one. This bug cropped up because
+                # pom.crud.clear() did not delete the page's
+                # data-entity-id attribute.
+                self.ne(bl.id, prev.id)
+
+            prev = bl
+
+            spans = tab[
+                'article.card [data-entity-attribute=name] span'
+            ]
 
             for span in spans:
                 if span.text == name:
                     break
             else:
-                self.fail('Cannot find span')
+                if chkinplanning.checked:
+                    self.fail(f'Cannot find span for type "{type}"')
 
+                continue
+
+            ''' Edit the newly created '''
             btnedit = span.closest('article')['a[rel=edit]'].only
             res = self.click(btnedit, tab)
             self.h200(res)
 
-            ''' Edit the newly created '''
             frm = tab['form'].only
+
+            self.eq(bl.name, frm.getvalue('name'))
 
             name = uuid4().hex
 
@@ -602,10 +640,9 @@ class ticketsspa_backlogs(tester.tester):
                 if span.text == name:
                     break
             else:
-                self.fail('Cannot find span')
+                self.fail(f'Cannot find span for type {type}')
 
-
-
+            print(tab)
 
     def it_filters(self):
         ws = carapacian_com.site()
