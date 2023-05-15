@@ -2970,6 +2970,7 @@ class crud(page):
         crud.page.
         """
         self._instance = None
+        self.delattr('data-entity-id')
         super().clear()
 
     @property
