@@ -609,14 +609,13 @@ class tester(entities.entity):
 
             @property
             def page(self):
-                """ XXX
+                """ Return the pom.page object this browser tab is
+                currently requesting.
                 """
                 return self._page
 
             @page.setter
             def page(self, v):
-                """ XXX
-                """
                 self._page = v
 
             def element_event(self, src, eargs):
@@ -1169,17 +1168,19 @@ class tester(entities.entity):
 
                 pg and pg.clear()
 
-                # XXX Explain
-                # XXX Clean up
+                # If the pom.page calls into another pom.page, such as
+                # when the page redirects, this test browser tab should
+                # become aware of this and change self.page. This event
+                # handling loging captures that this.
+                # page will become the 
                 changed = False
                 def pg_onafterpagechange(src, eargs):
-                    """ XXX
-                    """
                     nonlocal changed
                     changed = True
 
                     self.page = eargs.page
                     
+                # Subscribe to event
                 pg.onafterpagechange += pg_onafterpagechange
 
                 if meth == 'POST':
@@ -1296,7 +1297,7 @@ class tester(entities.entity):
 
                 self.referer = req.url
 
-                # XXX Explain
+                # If the page was not changed by a redirect (see above)
                 if not changed:
                     self.page = pg
 

@@ -1867,7 +1867,7 @@ class page(dom.html):
 
     @property
     def onafterpagechange(self):
-        """ XXX
+        """ An event to raise when the page redirects to another page.
         """
         if not hasattr(self, '_onafterpagechange'):
             self._onafterpagechange = entities.event()
@@ -1876,8 +1876,6 @@ class page(dom.html):
 
     @onafterpagechange.setter
     def onafterpagechange(self, v):
-        """ XXX
-        """
         self._onafterpagechange = v
 
     @property
@@ -2215,7 +2213,8 @@ class page(dom.html):
 
     @property
     def url(self):
-        """ XXX
+        """ The path and query string of this pom.page in a www.url
+        object.
         """
         url = www.url()
         url.path = self.path
@@ -3357,7 +3356,8 @@ class crud(page):
 
         # Get the requested url
         req = www.application.current.request
-        # XXX Shoudl we clone this
+
+        # XXX should we clone this
         url = req.url
 
         # Process completion. Return early if completion is processed.
@@ -3473,7 +3473,6 @@ class crud(page):
                     pg.clear()
 
                     # Run the page
-                    # XXX Explain
                     pg(eargs=None, **url.qs.dict())
 
                     # Get requested url
@@ -3507,7 +3506,9 @@ class crud(page):
 
                     eargs.html = pg.main
 
-                    # XXX Explain
+                    # Raise the onafterpagechange event to indicate
+                    # (mostry to the testing framework) that the pgae
+                    # has been changed.
                     # XXX Replace with a specialized eventargs
                     eargs = entities.eventargs()
                     eargs.page = pg
