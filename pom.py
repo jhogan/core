@@ -3710,13 +3710,14 @@ class crud(page):
                 el += dom.a('Add New', href=url, rel='create-form')
 
                 # Add an Edit button to each card in the collection
-                url = url.clone()
-                url.qs['crud'] = 'update'
 
                 # For each of the backlog cards
                 for card in el['article.card']:
                     # Get the entity id in the card
                     id = card.getattr('data-entity-id')
+
+                    url = url.clone()
+                    url.qs['crud'] = 'update'
                     url.qs['id'] = id
 
                     '''
