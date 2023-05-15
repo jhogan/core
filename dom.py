@@ -2375,6 +2375,9 @@ class element(entities.entity):
         # TODO Write tests
         return attr in self.attributes
 
+    def delattr(self, attr):
+        del self.attributes[attr]
+
     def __contains__(self, el):
         return el in self.elements
 
