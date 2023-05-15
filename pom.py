@@ -2226,8 +2226,8 @@ class page(dom.html):
         return url
 
     def clear(self):
-        """ Used to initialize the page's <main> element and set its
-        data-path attribute to the path of the page. Also is used to
+        """ Used to initialize this pom.page's <main> element and set
+        its data-path attribute to the path of the page. Also is used to
         clear any state data that may continue to exist between calls to
         the same page.
         """
@@ -2966,8 +2966,8 @@ class crud(page):
         super().__init__(name=name, pgs=None, *args, **kwargs)
 
     def clear(self):
-        """ Overrides `page.clear` to set the `instance` to None so it
-        is reloaded when necessary.
+        """ Overrides `page.clear` to clear any stata data for this
+        crud.page.
         """
         self._instance = None
         super().clear()
@@ -3510,6 +3510,8 @@ class crud(page):
                     # XXX Replace with a specialized eventargs
                     eargs = entities.eventargs()
                     eargs.page = pg
+
+                    # XXX Maybe this should be change to onaftercomplete
                     self.onafterpagechange(self, eargs)
 
                     # Return True because we successfully processed the

@@ -533,15 +533,6 @@ class tester(entities.entity):
             :abbr: tab
             """
 
-            @property
-            def page(self):
-                return self._page
-
-            @page.setter
-            def page(self, v):
-                print(type(v))
-                self._page = v
-                
             def __init__(self, tabs):
                 """ Create a new test browser tab.
                 """
@@ -615,6 +606,18 @@ class tester(entities.entity):
                 if isinstance(eargs.src, dom.a):
                     pg = src.attributes['href'].value
                     self.navigate(pg=pg, ws=self.site)
+
+            @property
+            def page(self):
+                """ XXX
+                """
+                return self._page
+
+            @page.setter
+            def page(self, v):
+                """ XXX
+                """
+                self._page = v
 
             def element_event(self, src, eargs):
                 """ This event handler catches all events that happen to
@@ -1167,8 +1170,11 @@ class tester(entities.entity):
                 pg and pg.clear()
 
                 # XXX Explain
+                # XXX Clean up
                 changed = False
                 def pg_onafterpagechange(src, eargs):
+                    """ XXX
+                    """
                     nonlocal changed
                     changed = True
 
