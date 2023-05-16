@@ -651,5 +651,75 @@ class url(tester.tester):
 
         self.eq(expect, repr(url))
 
+    def it_calls__eq__(self):
+        ''' Scheme '''
+        url = www.url('http://')
+        url1 = www.url('https://')
+
+        self.ne(url, url1)
+
+        # TODO:8ae59b01 
+        #self.two(set([url, url1]))
+
+        url = www.url('https://')
+        url1 = www.url('https://')
+
+        self.eq(url, url1)
+
+        # TODO:8ae59b01 Implement __hash__ so this will work.
+        #self.one(set([url, url1]))
+
+        ''' Scheme and host'''
+        url.host = 'example.org'
+        url1.host = 'example.com'
+
+        self.ne(url, url1)
+
+        url.host = 'example.com'
+
+        self.eq(url, url1)
+
+        ''' Scheme, host and port'''
+        url.port = 80
+        url1.port = 8080
+
+        self.ne(url, url1)
+
+        url1.port = 80
+
+        self.eq(url, url1)
+
+        ''' Scheme, host, port and path'''
+        url.path = 'index.html'
+        url1.path = 'INDEX.HTML'
+
+        self.ne(url, url1)
+
+        url1.path = 'index.html'
+
+        self.eq(url, url1)
+
+        ''' Scheme, host, port, path and query string'''
+
+        # Count
+        url.query = 'a=1&b=1'
+        url1.query = 'b=1'
+
+        self.ne(url, url1)
+
+        url1.query = 'a=1&b=1'
+
+        self.eq(url, url1)
+
+        # Values
+        url.query = 'a=1&b=1'
+        url1.query = 'a=1&b=2'
+
+
+        self.ne(url, url1)
+
+        url1.query = 'a=1&b=1'
+
+        self.eq(url, url1)
 if __name__ == '__main__':
     tester.cli().run()

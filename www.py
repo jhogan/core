@@ -3165,6 +3165,40 @@ class url(entities.entity):
         # property
         self.qs = src.dict()
 
+    def __eq__(self, url):
+        """ XXX
+        """
+        if self.scheme != url.scheme:
+            return False
+
+        if self.host != url.host:
+            return False
+
+        if self.port != url.port:
+            return False
+
+        if self.path != url.path:
+            return False
+
+        kvps = self.qs
+        kvps1 = url.qs
+
+        if kvps.count != kvps1.count:
+            return False
+
+        for kvp in kvps:
+            try:
+                v = kvps1[kvp.name]
+            except KeyError:
+                return False
+            else:
+                if kvp.value != v:
+                    return False
+            
+
+
+        return True
+
     def __str__(self):
         """ Return the URL string.
         """
