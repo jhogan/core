@@ -332,11 +332,11 @@ class ticketsspa_backlogs(tester.tester):
 
             # Edit
             a = card['a[rel=edit]'].only
-            expect = (
+            expect = www.url(
                 '/en/ticketsspa/backlog'
                 f'?id={id}&crud=update&oncomplete=/ticketsspa/backlogs'
             )
-            self.eq(expect, a.href)
+            self.eq(expect, www.url(a.href))
 
 
             tbl = card['table'].only
