@@ -642,8 +642,6 @@ class ticketsspa_backlogs(tester.tester):
             else:
                 self.fail(f'Cannot find span for type {type}')
 
-            print(tab)
-
     def it_filters(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
