@@ -3168,37 +3168,65 @@ class url(entities.entity):
     def __eq__(self, url):
         """ XXX
         """
-        if self.scheme != url.scheme:
-            return False
 
-        if self.host != url.host:
-            return False
+        return self.normal == url.normal
 
-        if self.port != url.port:
-            return False
+    @property
+    def normal(self):
+        """ XXX
+        """
+        r = str()
 
-        if self.path != url.path:
-            return False
+        from socket import getservbyname, getservbyport
+
+        if scheme := self.scheme:
+            scheme = scheme.casefold()
+
+            if port := self.port:
+                pass
+            else:
+                with suppress(OSError):
+                    port = getservbyname(scheme, 'tcp')
+                    
+        else:
+            if port := self.port:
+                with suppress(OSError):
+                    scheme = getservbyport(scheme, 'tcp')
+
+        if scheme:
+            r += scheme.casefold() + '://'
+
+        if host := self.host:
+            r += host.casefold()
+
+            if port:
+                r += ':' + str(port)
+
+        if path := self.path:
+            r +=  path
 
         kvps = self.qs
-        kvps1 = url.qs
 
-        if kvps.count != kvps1.count:
-            return False
+        kvps.sort('name')
 
-        for kvp in kvps:
-            try:
-                v = kvps1[kvp.name]
-            except KeyError:
-                return False
-            else:
-                if kvp.value != v:
-                    return False
-            
+        for i, kvp in kvps.enumerate():
+            if i.first:
+                r += '?'
 
+            vs = kvp.value
+            if not isinstance(vs, list):
+                vs = [vs]
 
-        return True
+            for j, v in enumerate(sorted(vs)):
+                r += kvp.name + '=' + v
 
+                if j + 1 < len(vs) or not i.last:
+                    r += '&'
+
+        if self.fragment:
+            r += '#' + self.fragment
+
+        return r
     def __str__(self):
         """ Return the URL string.
         """

@@ -651,6 +651,69 @@ class url(tester.tester):
 
         self.eq(expect, repr(url))
 
+    def it_calls_normal(self):
+        """ XXX
+        """
+        url = www.url('HTtp://')
+        self.eq('http://', url.normal)
+
+        url = www.url('HTtp://eXample.org')
+        self.eq('http://example.org:80', url.normal)
+
+        url = www.url('HTtp://eXample.org:8181')
+        self.eq('http://example.org:8181', url.normal)
+
+        url = www.url('HTtp://eXample.org:8181/Index.html')
+        self.eq('http://example.org:8181/Index.html', url.normal)
+
+        url = www.url('HTtp://eXample.org:8181/Index.html')
+        self.eq('http://example.org:8181/Index.html', url.normal)
+
+        url = www.url('HTtp://eXample.org:8181/Path/Index.html')
+        self.eq('http://example.org:8181/Path/Index.html', url.normal)
+
+        url = www.url('HTtp://eXample.org:8181/Path/Index.html?a=1')
+        self.eq(
+            'http://example.org:8181/Path/Index.html?a=1', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181/Path/Index.html?a=1&b=2')
+        self.eq(
+            'http://example.org:8181/Path/Index.html?a=1&b=2', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181/Path/Index.html?b=2&a=1')
+        self.eq(
+            'http://example.org:8181/Path/Index.html?a=1&b=2', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181?b=2&a=1&a=3')
+        self.eq(
+            'http://example.org:8181?a=1&a=3&b=2', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181?b=2&a=3&a=1')
+        self.eq(
+            'http://example.org:8181?a=1&a=3&b=2', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181?B=2&a=3&a=1')
+        self.eq(
+            'http://example.org:8181?B=2&a=1&a=3', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181?B=2&a=3&a=1#frag')
+        self.eq(
+            'http://example.org:8181?B=2&a=1&a=3#frag', 
+            url.normal
+        )
+
     def it_calls__eq__(self):
         ''' Scheme '''
         url = www.url('http://')
@@ -662,7 +725,7 @@ class url(tester.tester):
         #self.two(set([url, url1]))
 
         url = www.url('https://')
-        url1 = www.url('https://')
+        url1 = www.url('HTTPS://')
 
         self.eq(url, url1)
 
@@ -675,7 +738,7 @@ class url(tester.tester):
 
         self.ne(url, url1)
 
-        url.host = 'example.com'
+        url.host = 'EXAMPLE.COM'
 
         self.eq(url, url1)
 
@@ -721,5 +784,19 @@ class url(tester.tester):
         url1.query = 'a=1&b=1'
 
         self.eq(url, url1)
+
+        # Order of query params should not matter
+        url.query = 'a=1&b=2'
+        url1.query = 'b=2&a=1'
+
+        self.eq(url, url1)
+
+        # Order of query parameter "arrays" should not matter
+        url.query = 'a=1&b=2&b=1&b=0'
+        url1.query = 'b=0&b=1&b=2&a=1'
+
+        B()
+        self.eq(url, url1)
+
 if __name__ == '__main__':
     tester.cli().run()
