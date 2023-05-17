@@ -3166,14 +3166,58 @@ class url(entities.entity):
         self.qs = src.dict()
 
     def __eq__(self, url):
-        """ XXX
+        """ Returns True if `url` is equivalent to this www.url.
+
+        Equivalence is case-insensitive with regard to scheme and host,
+        but the resource (i.e., path, query string parameters, query
+        string paramter values, fragments) is case-sensitive.
+
+        The sequence of query string parameters is irrelevant to
+        equivalence. The sequence of query string paramter array is
+        relevent to equivalent.
+
+        The following URLs are equivalent:
+
+            url('HTtp://eXample.org:8181?a=1&a=3&B=2')
+
+            url('http://example.org:8181?B=2&a=1&a=3')
+
+        whereas the following is not equal due to mismatch in the
+        ordering of the array parameter a's values.
+
+            url('http://example.org:8181?B=2&a=3&a=1')
+
+            url('http://example.org:8181?B=2&a=1&a=3')
+
+        Note that port numbers are infered from the scheme if not given
+        so the following URLs will be equivalent:
+
+            url('http://example.org')
+
+            url('http://example.org:80')
         """
 
         return self.normal == url.normal
 
     @property
     def normal(self):
-        """ XXX
+        """ Return a normalized version of this `www.url` object as a
+        string.
+
+            * The scheme and host are lowercased.
+
+            * Port numbers are always included. If the port number was
+              not provided, it will be infered from the scheme.
+
+            * Case in path names are preserved.
+
+            * Query parameters returned are alphabetized. For example:
+                
+                url = www.url('example.org?b=1&a=2')
+                assert 'example.org?a=2&b=1' == url.normal
+
+        Note that __eq__ uses `normal` because it assumes if two `url`
+        objects normalize to the same string, they must be equivalent.
         """
         r = str()
 
