@@ -5,6 +5,7 @@ description:   desc
 entities:      es
 entity:        e
 field          fld
+fragment:      frag
 fulltext:      ft
 function:      f
 handler:       hnd
