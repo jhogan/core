@@ -8323,83 +8323,123 @@ with book('Hacking Carapacian Core'):
     ''')
 
   with chapter("Authoring DOM objects", id='22ee9373') as sec:
-    print('''
-      Though we take it for granted that client-side web development
-      provides us with a feature-rich and useful Document
-      Object Model (DOM), very few server-side frameworks offer a
-      similar model for interfacing with HTML documents. Most
-      server-side frameworks provide templating engines which allow the
-      developer to mix HTML, the server-side programming language, and
-      JavaScript into the same source file allowing pages to be
-      dynamically generated.
+    with section('Introduction to DOM objects'):
+      print('''
+        Though we take it for granted that client-side web development
+        provides us with a feature-rich and useful Document
+        Object Model (DOM), very few server-side frameworks offer a
+        similar model for interfacing with HTML documents. Most
+        server-side frameworks provide templating engines which allow the
+        developer to mix HTML, the server-side programming language, and
+        JavaScript into the same source file allowing pages to be
+        dynamically generated.
 
-      Core Framework takes a different approach. It provides a document
-      object model similar to the standard Document Object Model
-      provided by web browsers, but with an API that will be familiar to
-      Python developers and Core developers. Developers can use **this**
-      DOM to create dynamics webpages on the server-side. It can also be
-      used to parse and update existing HTML. Since it provides an
-      object model, and not just a template to generate HTML, developers
-      can extend the standard DOM objects to create specialized object
-      models to solve complex problems in a non-redundent way.
+        Core Framework takes a different approach. It provides a document
+        object model similar to the standard Document Object Model
+        provided by web browsers, but with an API that will be familiar to
+        Python developers and Core developers. Developers can use **this**
+        DOM to create dynamics webpages on the server-side. It can also be
+        used to parse and update existing HTML. Since it provides an
+        object model, and not just a template to generate HTML, developers
+        can extend the standard DOM objects to create specialized object
+        models to solve complex problems in a non-redundent way.
 
-      Before we get to deep into the DOM, let's see a simple example to
-      get a handle on the basics of building HTML with it.
-    ''')
+        Before we get to deep into the DOM, let's see a simple example to
+        get a handle on the basics of building HTML with it.
+      ''')
 
-    with listing('Using the DOM to create a simple Hello, World'):
-      import dom
-      p = dom.p('Hello, World')
-      eq('<p>Hello, World</p>', p.html)
+      with listing('Using the DOM to create a simple Hello, World'):
+        import dom
+        p = dom.p('Hello, World')
+        eq('<p>Hello, World</p>', p.html)
 
-    print('''
-      The first thing to note is that we `import` the `dom` module. This
-      module contains all the basic DOM objects. In this example we
-      instantiate its `p` class which is a representation of the `<p>`
-      HTML element. The `dom` module strives to be fully compliant with
-      HTML5. There is a class in the `dom` module for all valid,
-      non-defunct HTML5 elements.
+      print('''
+        The first thing to note is that we `import` the `dom` module. This
+        module contains all the basic DOM objects. In this example we
+        instantiate its `p` class which is a representation of the `<p>`
+        HTML element. The `dom` module strives to be fully compliant with
+        HTML5. There is a class in the `dom` module for all valid,
+        non-defunct HTML5 elements.
 
-      We then pass the string "Hello, World" as the first argument to
-      `dom.p`'s constructor.  As you can see, the value of this argument
-      becomes the body of the `<p>` element. This is a common feature of
-      all the HTML5 element classes.
+        We then pass the string "Hello, World" as the first argument to
+        `dom.p`'s constructor.  As you can see, the value of this argument
+        becomes the body of the `<p>` element. This is a common feature of
+        all the HTML5 element classes.
 
-      The `html` property of the `dom` element returns the HTML that the
-      DOM element represents. The `html` property won't contain
-      extraneous linefeeds or indentations to make the HTML easier to
-      read. It is intended for consumption by the browser or some other
-      HTML parser. You can use the `pretty` property to render a
-      pretty-printed version of the HTML:
+        The `html` property of the `dom` element returns the HTML that the
+        DOM element represents. The `html` property won't contain
+        extraneous linefeeds or indentations that would make the HTML
+        easier to read. The HTML returned from the `html` property is
+        intended for consumption by the browser or some other HTML parser.
+        However, you can use the `pretty` property to render a
+        pretty-printed version of the HTML:
 
-        >>> print(p.pretty)
-        <p>
-          Hello, World
-        </p>
+          >>> print(p.pretty)
+          <p>
+            Hello, World
+          </p>
 
-      The `pretty` property is useful for debugging large DOM objects.
-      However, due to the nature of HTML, it will produces HTML with
-      whitespace that isn't desired, such as when using the `pre`
-      element (`dom.pre`), and so it should only when visual parsing of
-      HTML needs to be made easier. 
+        The `pretty` property is useful for debugging large DOM objects.
+        However, due to the nature of HTML, it will produces HTML with
+        whitespace that isn't desired, such as when using the `pre`
+        element (`dom.pre`), and so it should only when visual parsing of
+        HTML needs to be made easier. 
 
-      Also note that an easier way to have writen the above code would
-      have been:
+        Also note that an easier way to have writen the above code would
+        have been:
 
-        >>> print(p)
-        <p>
-          Hello, World
-        </p>
+          >>> print(p)
+          <p>
+            Hello, World
+          </p>
 
-      All the elements have there `__str__` property acting as wrappers
-      to the `pretty` property so we can just print `p` instead of
-      writing out the property name..
-    ''')
+        All the elements have their `__str__` property acting as wrappers
+        to the `pretty` property so we can just print `p` instead of
+        writing out the property name..
+      ''')
 
-    with listing('Pretty printing the HTML'):
-      import dom
-      p = dom.p('Hello, World')
-      eq('<p>Hello, World</p>', p.html)
+    with section('Appending elements to a DOM object'):
+      print('''
+        HTML documents are characterized their deeply structured nature.
+        Let's append some elements to the `dom.p` element we created
+        above.
+      ''')
+
+      with listing('Appending elements')
+        one(p.elements)
+        type(dom.text, p.elements.only)
+
+        # Create a <span>
+        span = dom.span('Can I assist you today?')
+
+        # Put the <span> in the <p>
+        p += span
+
+        # Now the `p` has two elements
+        two(p.elements)
+        type(dom.span, p.elements.last)
+
+        # Assert `p`'s HTML
+        eq(
+          '<p>Hello, World<span>Can I assist you today?</span></p>', 
+          p.html
+        )
+
+
+
+
+
+      print('''
+        Here, we create a new `span` element. We then append the `span`
+        element to the `p` element thus placing it inside the `p`. We
+        can see this in the HTML produced by `p.html`.
+
+        We intruce a new property called `elements`. This is the
+        collection of child elements each element has. `p` starts off
+        with one, i.e., the text node created for the body "Hello,
+        World". Adding the `span` then brings the number of elements to
+        `two`.
+      ''')
 
 
   with chapter("Robotic process automation") as sec:
