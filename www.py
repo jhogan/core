@@ -2822,6 +2822,11 @@ class url(entities.entity):
 
         :param: name str: The URL string.
         """
+        self._clear()
+        self.name       =  name
+        super().__init__(*args, **kwargs)
+
+    def _clear(self):
         self._scheme    =  None
         self._host      =  None
         self._path      =  None
@@ -2830,8 +2835,6 @@ class url(entities.entity):
         self._username  =  None
         self._password  =  None
         self._port      =  None
-        self.name       =  name
-        super().__init__(*args, **kwargs)
 
     def clone(self):
         """ Return a new `url` instance equivalent to this `url`.
@@ -2889,6 +2892,9 @@ class url(entities.entity):
         dummy = self.DummyHost
         r = r.replace(dummy, str(), 1)
 
+        if not r:
+            return None
+
         return  r
 
     @name.setter
@@ -2903,6 +2909,10 @@ class url(entities.entity):
         #     url = 'www.google.com'
         #     url = www.url(url)
         #     url = www.url(url)
+
+        if not v:
+            self._clear()
+            return
 
         v = str(v)
         prs = urllib.parse.urlparse(v)
@@ -3261,7 +3271,7 @@ class url(entities.entity):
             if not isinstance(vs, list):
                 vs = [vs]
 
-            for j, v in enumerate(sorted(vs)):
+            for j, v in enumerate(vs):
                 r += kvp.name + '=' + v
 
                 if j + 1 < len(vs) or not i.last:

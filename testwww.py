@@ -542,10 +542,12 @@ class url(tester.tester):
 
         url.query = query
         self.eq(
-            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', url.name
+            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', 
+            url.name
         )
         self.eq(
-            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', str(url)
+            f'{scheme}://{username}:{password}@/{path}?{query}#{frag}', 
+            str(url)
         )
 
         url.host = host
@@ -698,21 +700,36 @@ class url(tester.tester):
 
         url = www.url('HTtp://eXample.org:8181?b=2&a=3&a=1')
         self.eq(
-            'http://example.org:8181?a=1&a=3&b=2', 
+            'http://example.org:8181?a=3&a=1&b=2', 
             url.normal
         )
 
         url = www.url('HTtp://eXample.org:8181?B=2&a=3&a=1')
+        self.ne(
+            'http://example.org:8181?B=2&a=1&a=3', 
+            url.normal
+        )
+
+        url = www.url('HTtp://eXample.org:8181?a=1&a=3&B=2')
         self.eq(
             'http://example.org:8181?B=2&a=1&a=3', 
             url.normal
         )
 
+
         url = www.url('HTtp://eXample.org:8181?B=2&a=3&a=1#frag')
-        self.eq(
+        self.ne(
             'http://example.org:8181?B=2&a=1&a=3#frag', 
             url.normal
         )
+
+    def it_sets_name(self):
+        url = www.url()
+        url.name = 'http://example.org:8181?b=2&a=3&a=1#frag'
+        self.eq('http://example.org:8181?b=2&a=3&a=1#frag', url.name)
+
+        url.name = None
+        self.none(url.name)
 
     def it_calls__eq__(self):
         ''' Scheme '''
@@ -791,12 +808,16 @@ class url(tester.tester):
 
         self.eq(url, url1)
 
-        # Order of query parameter "arrays" should not matter
+        # Order of query parameter "arrays" should matter
         url.query = 'a=1&b=2&b=1&b=0'
+        url1.query = 'b=2&b=1&b=0&a=1'
+
+        self.eq(url, url1)
+
         url1.query = 'b=0&b=1&b=2&a=1'
 
-        B()
-        self.eq(url, url1)
+        self.ne(url, url1)
+
 
 if __name__ == '__main__':
     tester.cli().run()
