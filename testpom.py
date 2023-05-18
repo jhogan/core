@@ -3901,7 +3901,10 @@ class crud(tester.tester):
         self.eq(name, per.orm.reloaded().name)
 
     def it_navigates_to_entities_with_qs_clicks_add_new_and_submits(self):
-        """ XXX
+        """ Make sure we can navigate to a entities-based crud page with
+        query string parameters, click Add New, submit/cancel, then
+        return the the entities-based crud page and ensure the original
+        query stings are restored to the location bar (tab.url).
         """
         ws = foonet()
         tab = self.browser().tab()

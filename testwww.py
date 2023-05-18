@@ -654,8 +654,6 @@ class url(tester.tester):
         self.eq(expect, repr(url))
 
     def it_calls_normal(self):
-        """ XXX
-        """
         url = www.url('HTtp://')
         self.eq('http://', url.normal)
 
