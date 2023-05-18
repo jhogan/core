@@ -1326,6 +1326,9 @@ class request(entities.entity):
             except Exception as ex:
                 logs.exception(f"Can't get HTTP_REFERER: {ex}")
             else:
+                if url is None:
+                    return None
+
                 url = str(url)
 
             self._referer = ecommerce.url(address=url)
