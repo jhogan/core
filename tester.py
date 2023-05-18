@@ -1166,22 +1166,22 @@ class tester(entities.entity):
                     path = f'/{pg.language}{pg.path}'
                     qs = str()
 
-                pg and pg.clear()
+                if pg:
+                    pg.clear()
+                    # If the pom.page calls into another pom.page, such as
+                    # when the page redirects, this test browser tab should
+                    # become aware of this and change self.page. This event
+                    # handling loging captures that this.
+                    # page will become the 
+                    changed = False
+                    def pg_onafterpagechange(src, eargs):
+                        nonlocal changed
+                        changed = True
 
-                # If the pom.page calls into another pom.page, such as
-                # when the page redirects, this test browser tab should
-                # become aware of this and change self.page. This event
-                # handling loging captures that this.
-                # page will become the 
-                changed = False
-                def pg_onafterpagechange(src, eargs):
-                    nonlocal changed
-                    changed = True
-
-                    self.page = eargs.page
-                    
-                # Subscribe to event
-                pg.onafterpagechange += pg_onafterpagechange
+                        self.page = eargs.page
+                        
+                    # Subscribe to event
+                    pg.onafterpagechange += pg_onafterpagechange
 
                 if meth == 'POST':
                     if body:
@@ -1297,8 +1297,9 @@ class tester(entities.entity):
 
                 self.referer = req.url
 
-                # If the page was not changed by a redirect (see above)
-                if not changed:
+                # If there was a page passed in and the page was not
+                # changed by a redirect (see above).
+                if pg and not changed:
                     self.page = pg
 
                 self.site = ws
