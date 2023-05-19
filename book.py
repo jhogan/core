@@ -8393,19 +8393,20 @@ with book('Hacking Carapacian Core'):
             Hello, World
           </p>
 
-        All the elements have their `__str__` property acting as wrappers
+        All DOM elements have their `__str__` property acting as wrappers
         to the `pretty` property so we can just print `p` instead of
         writing out the property name..
       ''')
 
     with section('Appending elements to a DOM object'):
       print('''
-        HTML documents are characterized their deeply structured nature.
-        Let's append some elements to the `dom.p` element we created
-        above.
+        HTML documents are characterized by their deeply structured
+        nature.  Let's append some elements to the `dom.p` element we
+        created above.
       ''')
 
       with listing('Appending elements')
+        # `p` only has the one text node we created above
         one(p.elements)
         type(dom.text, p.elements.only)
 
@@ -8425,21 +8426,55 @@ with book('Hacking Carapacian Core'):
           p.html
         )
 
-
-
-
-
       print('''
         Here, we create a new `span` element. We then append the `span`
         element to the `p` element thus placing it inside the `p`. We
         can see this in the HTML produced by `p.html`.
 
-        We intruce a new property called `elements`. This is the
+        Here we demonstrate a new property called `elements`. This is the
         collection of child elements each element has. `p` starts off
-        with one, i.e., the text node created for the body "Hello,
+        with one, i.e., the text node created for the body: "Hello,
         World". Adding the `span` then brings the number of elements to
         `two`.
+
+        Now that we know how to create DOM elements and append elements
+        to them, we have everything we need to know to create entire
+        HTML documents in an object oriented fasion. However, to use
+        HTML to its fullest, we will want to know how to add attributes.
+        We discuss attributes in the next section.
       ''')
+
+      with section('DOM attributes'):
+        print('''
+          Each DOM element class in the `dom` module hs  property
+          methods for the official, HTML5 attributes for the given
+          class. All DOM element classes have property methods for the
+          HTML5 global methods (such as `id` and `title`). These
+          property methods are readable and writable (i.e., getters and
+          setters).
+        ''')
+
+        with listing('Add attributes'):
+          # Create an <img> object
+          img = dom.img()
+
+          # The <img> initially contains no attributes
+          zero(img.attributes)
+
+          # Assign to the global attribute `id`
+          img.id = 'A1B2C2'
+
+          # Assign to <img>'s attribute `src`
+          img.src = 'path/to/image.jpeg'
+
+          # Assert .html property
+          eq('<img id="A1B2C2" src="path/to/image.jpeg">', img.html)
+
+          # Now there are two attributes in the `attributes` collection
+          two(img.attributes)
+
+          # Nonstandard attributes don't exist as property methods
+          expect(AttributeError, lambda: img.align)
 
 
   with chapter("Robotic process automation") as sec:
