@@ -3005,6 +3005,17 @@ class url(entities.entity):
 
         return '/' + '/'.join(paths)
 
+    def getresource(self, lang=True):
+        """ XXX
+        """
+
+        r = url()
+        r.path = self.getpath(lang=lang)
+        r.query = self.query
+        r.fragment = self.fragment
+
+        return r.normal
+
     @property
     def query(self):
         """ Returns a string representation of the query string in the
