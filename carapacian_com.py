@@ -558,14 +558,18 @@ class ticketsspa(pom.spa):
                 # sting without knowing it. This approach would reequire
                 # that the www.url class can deal with URL path's
                 # without the need for a scheme or domain name.
-                a.href += '&backlogid=' + card.getattr('data-entity-id')
+                url = www.url(a.href)
+                url.qs['backlogid'] = card.getattr('data-entity-id')
+                url.qs['oncomplete'] = self.path
+
+                a.href = url.normal
 
                 # Get each Edit element's href
                 as_ = tbl['a[rel~=edit]']
 
                 # Update each Edit elements href
                 for a in as_:
-                    url = www.url(f'http://example.com/{a.href}')
+                    url = www.url(a.href)
 
                     try:
                         id = UUID(url.qs['id'])
@@ -577,7 +581,8 @@ class ticketsspa(pom.spa):
                                 url.qs['id']          =  bs.story.id
                                 url.qs['backlogid']   =  bl.id.hex
                                 url.qs['oncomplete']  =  self.path
-                                a.href = url.path + '?' + url.query
+
+                                a.href = url.normal
 
                                 break
                         else:

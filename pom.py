@@ -3357,8 +3357,7 @@ class crud(page):
         # Get the requested url
         req = www.application.current.request
 
-        # XXX should we clone this
-        url = req.url
+        url = req.url.clone()
 
         # Process completion. Return early if completion is processed.
         if self.complete(el, eargs):
@@ -3476,9 +3475,8 @@ class crud(page):
                     pg(eargs=None, **url.qs.dict())
 
                     # Get requested url
-                    # XXX Should we clone this?
                     req = www.application.current.request
-                    url = req.url
+                    url = req.url.clone()
 
                     # Remove the url's query string parameters
                     for k in ('id', 'crud', 'oncomplete'):

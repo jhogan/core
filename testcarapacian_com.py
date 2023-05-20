@@ -355,13 +355,13 @@ class ticketsspa_backlogs(tester.tester):
 
             # Add New 
             a = tbl['a[rel=create-form]'].only
-            expect = (
+            expect = www.url(
                 '/en/ticketsspa/story'
-                '?&crud=create'
+                '?crud=create'
                 '&oncomplete=/ticketsspa/backlogs'
                 f'&backlogid={bl.id.hex}'
             )
-            self.eq(expect, a.href)
+            self.eq(expect, www.url(a.href))
 
     def it_gets_filter_form(self):
         ws = carapacian_com.site()

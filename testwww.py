@@ -114,6 +114,9 @@ class url(tester.tester):
         self.eq('query=test',      url.query)
         self.eq('frag',            url.fragment)
 
+        url1 = www.url(url)
+        self.eq(url, url1)
+
         ''' Without name '''
         url = www.url()
         self.none(url.scheme)
@@ -638,6 +641,8 @@ class url(tester.tester):
         self.eq(expect, url.name)
         self.eq(expect, str(url))
 
+        self.eq(url.normal, repr(url))
+        '''
         expect = (
             'url('
                 'scheme="http", '
@@ -652,6 +657,7 @@ class url(tester.tester):
         )
 
         self.eq(expect, repr(url))
+        '''
 
     def it_calls_normal(self):
         url = www.url('HTtp://')

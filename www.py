@@ -3293,6 +3293,8 @@ class url(entities.entity):
         """ Return a programmer-friendly representation of this URL
         object.
         """
+        return self.normal
+
         r = type(self).__name__ 
 
         attrs = (

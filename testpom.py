@@ -3929,8 +3929,7 @@ class crud(tester.tester):
 
             url1 = www.url('http://foo.net:8000/en/profile?crud=create')
 
-            # XXX Replace with url.resource when available
-            url1.qs['oncomplete'] = url.getpath(lang=False) + '?' + url.query
+            url1.qs['oncomplete'] = url.getresource(lang=False)
             self.eq(str(url1), str(tab.url))
 
             # Get <main> from the detail page
