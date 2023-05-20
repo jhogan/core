@@ -3601,9 +3601,6 @@ class crud(page):
         if id:
             self.setattr('data-entity-id', id)
 
-        # XXX Do we need this now?
-        self.oncomplete = oncomplete
-
         # Get the presentation mode for display: 'table' or 'cards'
         pres = self.presentation
 
@@ -3695,10 +3692,6 @@ class crud(page):
 
                 # XXX If `oncomplete` is None, should the assignment
                 # below just ignore it, or raise an error?
-                req = www.application.current.request
-                
-                # XXX Replace with `url.getresource(lang=False)`
-                #oncomplete = req.url.getpath(lang=False) + '?' + req.url.query
                 oncomplete = str(self.url)
                 if oncomplete:
                     url.qs['oncomplete'] = oncomplete
