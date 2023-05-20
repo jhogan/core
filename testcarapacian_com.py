@@ -338,7 +338,6 @@ class ticketsspa_backlogs(tester.tester):
             )
             self.eq(expect, www.url(a.href))
 
-
             tbl = card['table'].only
 
             self.eq('effort.backlog_story', tbl.getattr('data-entity'))

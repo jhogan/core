@@ -1818,8 +1818,7 @@ class pages(entities.entities):
 class page(dom.html):
     """ Represents a web page.
     """
-    # XXX Rename to AcceptedBooleanStrings
-    ExceptedBooleansStrings = (
+    AcceptedBooleanStrings = (
         ('false', '0', 'no', 'n'),
         ('true', '1', 'yes', 'y')
     )
@@ -2155,7 +2154,7 @@ class page(dom.html):
                     # False.
                     if isinstance(arg, str):
                         arg = arg.casefold()
-                        expected = self.ExceptedBooleansStrings
+                        expected = self.AcceptedBooleanStrings
 
                         flattened = list(itertools.chain(*expected))
                         str_flattened = ', '.join(flattened)
@@ -3487,7 +3486,6 @@ class crud(page):
                     # page's path and instruct the browser to set the
                     # URL bar to this path.
 
-                    # XXX Use pg.resource
                     url.path = req.language + pg.url.path
                     url.query = pg.url.query
 

@@ -1224,7 +1224,6 @@ class request(entities.entity):
 
         return self._url.path
 
-
     def getpath(self, lang=False):
         """ Get the path. By default get the path with the language code
         removed.
@@ -2905,13 +2904,6 @@ class url(entities.entity):
         """ Set the URL string.
         """
         import urllib.parse
-
-        # XXX Test instantiating www.url with a www.url as an argument
-        # to the constructor:
-        #
-        #     url = 'www.google.com'
-        #     url = www.url(url)
-        #     url = www.url(url)
 
         if not v:
             self._clear()
