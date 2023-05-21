@@ -3801,8 +3801,7 @@ class crud(page):
             pg = self.site.pages[self.oncomplete.path]
 
             # Add a "Back" button to that page
-            # XXX Make sure the back button goes to the filtered page
-            a = dom.a('Back', href=pg.path)
+            a = dom.a('Back', href=self.oncomplete)
 
             el += a
 
