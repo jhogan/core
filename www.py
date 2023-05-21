@@ -2815,8 +2815,10 @@ class url(entities.entity):
         >>> url.host = 'www.google.com'
         >>> url.query = 's=Test'
         >>> assert str(url) == 'https://www.google.com?s=Test'
-        
     """
+
+    # NOTE The following may be useful for standardization efforts:
+    # https://url.spec.whatwg.org/
 
     # These dummy scheme and host constants help us parse URL's that
     # don't have those parts. For example, if we only want to parse the
@@ -3172,7 +3174,6 @@ class url(entities.entity):
     def _kvps_onafterset(self, src, eargs):
         """ Handles the kvps' onafterset event.
         """
-
         # Whenever an item is set or added to the kvps collection,
         # convert the kvps (src) into a `dict` and assin it to this
         # `url`'s qs property
@@ -3292,6 +3293,7 @@ class url(entities.entity):
             r += '#' + self.fragment
 
         return r
+
     def __str__(self):
         """ Return the URL string.
         """

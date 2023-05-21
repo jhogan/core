@@ -443,6 +443,10 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}?{query}#{frag}', url.name)
         self.eq(f'{scheme}://{host}/{path}?{query}#{frag}', str(url))
 
+        
+
+
+
     def it_sets_username(self):
         scheme = 'http'
         host = 'www.google.com'
@@ -821,8 +825,6 @@ class url(tester.tester):
         url1.query = 'b=0&b=1&b=2&a=1'
 
         self.ne(url, url1)
-
-
 
 if __name__ == '__main__':
     tester.cli().run()

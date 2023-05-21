@@ -3453,6 +3453,8 @@ class crud(page):
         or canceled.
         """
         # Search for elements with the data-complete atttribute
+
+        # TODO:fc6cd242
         oncompletes = el['[data-oncomplete]']
 
         # There should be zero or one
@@ -3508,7 +3510,7 @@ class crud(page):
                     eargs.html = pg.main
 
                     # Raise the onafterpagechange event to indicate
-                    # (mostry to the testing framework) that the pgae
+                    # (mostly to the testing framework) that the pgae
                     # has been changed.
                     # XXX Replace with a specialized eventargs
                     eargs = entities.eventargs()
@@ -3713,12 +3715,6 @@ class crud(page):
                     url.qs['crud'] = 'update'
                     url.qs['id'] = id
 
-                    '''
-                    # Build path
-                    path = f'{det.path}?id={id}&crud=update'
-                    path += f'&oncomplete={oncomplete}'
-                    '''
-
                     # Create Edit link
                     card += dom.a('Edit', href=url, rel='edit')
 
@@ -3777,6 +3773,11 @@ class crud(page):
                 btncancel.onclick += self.btncancel_onclick, el
                 el += btncancel
 
+                # TODO:fc6cd242 I'm not sure if we need to create a
+                # <span> with a data-oncomplete. The `oncomplete` value
+                # is passed as a query sting parameter to the page which
+                # will be accessible by crud.oncomplete.
+
                 # If oncomplete path was passed in as a query parameter
                 if oncomplete:
                     # Put the path in a hidden <span>
@@ -3801,7 +3802,7 @@ class crud(page):
                 # so the entity can be updated.
                 btnedit.onclick += self.btnedit_onclick, card
 
-        # If there is an oncomplete page to return to
+        # If there is an oncomplete page to return to...
         if self.oncomplete:
             # Find the page
             pg = self.site.pages[self.oncomplete.path]
