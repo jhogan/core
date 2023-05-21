@@ -716,7 +716,6 @@ class ticketsspa(pom.spa):
         def types(self):
             """ Returns the backlogstatustypes to filter on.
             """
-
             try:
                 types = self._args['types']
             except KeyError:

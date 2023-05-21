@@ -443,10 +443,6 @@ class url(tester.tester):
         self.eq(f'{scheme}://{host}/{path}?{query}#{frag}', url.name)
         self.eq(f'{scheme}://{host}/{path}?{query}#{frag}', str(url))
 
-        
-
-
-
     def it_sets_username(self):
         scheme = 'http'
         host = 'www.google.com'

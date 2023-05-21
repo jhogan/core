@@ -3013,15 +3013,45 @@ class url(entities.entity):
         return '/' + '/'.join(paths)
 
     def getresource(self, lang=True):
-        """ XXX
-        """
+        """ Return a string containing everything after the host name
+        and port of the URL. The query string and fragments are included
+        if they are available. The string will be in normalized URL
+        form.
 
+            Given:
+                
+                http://example.org/my/path/?a=3&a=1&B=2#frag
+
+            The return will be:
+
+                /my/path?B=2&a=3&a=1#frag
+
+        :param: lang bool: If False, remove the ISO language code from
+        the path. If True, preserve the language code.
+        """
         r = url()
         r.path = self.getpath(lang=lang)
         r.query = self.query
         r.fragment = self.fragment
 
         return r.normal
+
+    @property
+    def resource(self):
+        """ Return a string containing everything after the host name
+        and port of the URL. The query string and fragments are included
+        if they are available. The string will be in normalized URL
+        form.
+
+            Given:
+                
+                http://example.org/my/path/?a=3&a=1&B=2#frag
+
+            The return will be:
+
+                /my/path?B=2&a=3&a=1#frag
+        """
+        return self.getresource()
 
     @property
     def query(self):

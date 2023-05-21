@@ -3146,7 +3146,7 @@ class profiles(pom.crud):
         oncomplete = None, types:str = None,
     ):
         """ An override of pom.crud.main. The `types` parameter, if
-        given, will contain a comma seperated string of profile
+        given, will contain a comma-seperated string of profile
         types.
         """
         self.types = types
@@ -4025,10 +4025,6 @@ class crud(tester.tester):
 
             # Get the "name" <td>
             td = tr['td[data-entity-attribute=name]'].only
-
-    def it_filters_then_adds_and_edits(self):
-        """ XXX
-        """
 
     def it_navigates_to_entities_clicks_edit_and_submits(self):
         """ Use the Edit feature of a pom.crud page to go to the detail
