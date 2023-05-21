@@ -3512,11 +3512,7 @@ class crud(page):
                     # Raise the onafterpagechange event to indicate
                     # (mostly to the testing framework) that the pgae
                     # has been changed.
-                    # XXX Replace with a specialized eventargs
-                    eargs = entities.eventargs()
-                    eargs.page = pg
-
-                    # XXX Maybe this should be change to onaftercomplete
+                    eargs = pagechangeeventargs(pg=pg)
                     self.onafterpagechange(self, eargs)
 
                     # Return True because we successfully processed the
@@ -3949,3 +3945,12 @@ class dialog(dom.dialog):
 
         self += frm
         super().__init__(*args, **kwargs)
+
+class pagechangeeventargs(entities.eventargs):
+    def __init__(self, pg, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        
+        self.page = pg
+
+
