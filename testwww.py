@@ -221,6 +221,16 @@ class url(tester.tester):
         url = www.url('herpderp://www.google.com')
         self.none(url.port)
 
+    def it_gets_resource(self):
+        url = www.url(
+            'HTtp://eXample.org:8181/my/path/?&a=3&a=1&B=2#frag'
+        )
+
+        self.eq(
+            '/my/path?B=2&a=3&a=1#frag', 
+            url.resource
+        )
+
     def it_sets_host(self):
         url = www.url()
         url.host = 'www.google.com'
