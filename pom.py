@@ -3691,10 +3691,7 @@ class crud(page):
                 url.path = det.path
                 url.qs['crud'] = 'create'
 
-                # XXX If `oncomplete` is None, should the assignment
-                # below just ignore it, or raise an error?
-                oncomplete = str(self.url)
-                if oncomplete:
+                if oncomplete := str(self.url):
                     url.qs['oncomplete'] = oncomplete
 
                 # Create the "Add New" link
