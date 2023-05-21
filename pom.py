@@ -2781,7 +2781,7 @@ class message(dom.article):
         ex = msg = None
         if isinstance(self.message, Exception):
             ex = self.message
-            msg = str(ex)
+            msg = str(self)
         elif isinstance(self.message, str):
             msg = self.message
 
@@ -3516,9 +3516,7 @@ class crud(page):
                     # completion
                     return True
             else:
-                # XXX When this is encountered, the webpage shows the
-                # exception but not the message.
-                raise www.NotFoundError('Oncomplete not found')
+                raise www.NotFoundError(url)
 
         # No completion was found so return False
         return False

@@ -2095,7 +2095,12 @@ class ForbiddenError(HttpError):
 class NotFoundError(HttpError):
     def __init__(self, resource, msg=None):
         self.resource = resource
-        super().__init__(msg)
+        msg0 =  str(self.resource)
+        if msg0:
+            if msg:
+                msg0 += ' - ' + msg
+            
+        super().__init__(msg=msg0)
 
     status = 404
 
