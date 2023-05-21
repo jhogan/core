@@ -3037,8 +3037,13 @@ class crud(page):
         """ Returns the path of the page that the user should be
         redirected to.
         """
-        if self._oncomplete:
-            self._oncomplete = www.url(self._oncomplete)
+        if not self._oncomplete:
+            try:
+                oncomplete = self._args['oncomplete']
+            except KeyError:
+                pass
+            else:
+                self._oncomplete = www.url(oncomplete)
 
         return self._oncomplete
 
