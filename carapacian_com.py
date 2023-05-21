@@ -907,10 +907,6 @@ a{
     color: #2ba74a !important;
 }
 
-p{
-    text-align: justify;
-}
-
 section#contact-us p{
     text-align: initial;
 }
