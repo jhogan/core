@@ -3804,9 +3804,7 @@ class crud(page):
             # XXX Make sure the back button goes to the filtered page
             a = dom.a('Back', href=pg.path)
 
-            # XXX We shouldn't be updating main in here in
-            # self.gethtml()
-            self.main += a
+            el += a
 
         # Return whichever element we created (<form>, <article>, <table>)
         # to <main>.
