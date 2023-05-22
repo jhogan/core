@@ -8432,26 +8432,25 @@ with book('Hacking Carapacian Core'):
         can see this in the HTML produced by `p.html`.
 
         Here we demonstrate a new property called `elements`. This is the
-        collection of child elements each element has. `p` starts off
+        collection of child elements each element has. `p` started off
         with one, i.e., the text node created for the body: "Hello,
         World". Adding the `span` then brings the number of elements to
         `two`.
 
         Now that we know how to create DOM elements and append elements
         to them, we have everything we need to know to create entire
-        HTML documents in an object oriented fasion. However, to use
-        HTML to its fullest, we will want to know how to add attributes.
-        We discuss attributes in the next section.
+        HTML documents in an object-oriented fasion. However, to use
+        HTML to its fullest, we need to use attributes. The next section
+        will show you how to add attributes to elements.
       ''')
 
       with section('DOM attributes'):
         print('''
-          Each DOM element class in the `dom` module hs  property
+          Each DOM element class in the `dom` module has property
           methods for the official, HTML5 attributes for the given
-          class. All DOM element classes have property methods for the
+          given. All DOM element classes have property methods for the
           HTML5 global methods (such as `id` and `title`). These
-          property methods are readable and writable (i.e., getters and
-          setters).
+          property methods can be read and written to.
         ''')
 
         with listing('Add attributes'):
@@ -8475,7 +8474,6 @@ with book('Hacking Carapacian Core'):
 
           # Nonstandard attributes don't exist as property methods
           expect(AttributeError, lambda: img.align)
-
 
   with chapter("Robotic process automation") as sec:
     ...
