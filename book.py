@@ -8475,6 +8475,68 @@ with book('Hacking Carapacian Core'):
           # Nonstandard attributes don't exist as property methods
           expect(AttributeError, lambda: img.align)
 
+        print('''
+          Here we see how to used the `img`'s `id` and `src` methods to
+          assign it attribute values. These assignments are reflected in
+          the output of the `html` property. We also see that element's,
+          such as `img`, have an `attributes` collection which tracks
+          the element's attributes.
+
+          The DOM API encorages the use of standard HTML5. However,
+          there are times when we need to bypass this retriction and use
+          arbitrary attributes. By using the elment`s `attributes`
+          collection, we can add arbitrary elements. 
+
+          The above example demonstrates that the `img` element has no
+          `align` property. The `align` attribute is no longed
+          considered standard by HTML5. We can get around this by doing
+          the following:
+        ''')
+
+        with listing('Using non-standard attributes'):
+          # Assign 'top' to the align property
+          img.attributes['align'].value = 'top'
+
+          # Assert that the HTML has the align property
+          eq(
+            '<img id="A1B2C2" src="path/to/image.jpeg" align="top">', 
+            img.html
+          )
+
+          # Assert tha we are able to retrieve the value of the align
+          # property
+          eq('top', img.attributes['align'].value)
+
+        print('''
+          As you can see from the above example, it is easy to add
+          non-standard attributes to elements by accessing the
+          `attributes` collection directly.
+
+          However the above idioms for accessing and retrieve attribute
+          values aren't recommend for most use cases since they are
+          somewhat verbose. We can and shousd use the `setattr` and
+          `getattr` methods to achive the above with less typing:
+        ''')
+
+        with listing('Using non-standard attributes the correct way'):
+          # Assign 'top' to the align property
+          img.setattr('align', 'top')
+
+          # Assert that the HTML has the align property
+          eq(
+            '<img id="A1B2C2" src="path/to/image.jpeg" align="top">', 
+            img.html
+          )
+
+          # Assert tha we are able to retrieve the value of the align
+          # property
+          eq('top', img.getattr('align'))
+
+        print('''
+          The `getattr` and `setattr` are easier to type require less
+          for the programmer to remember. 
+        ''')
+
   with chapter("Robotic process automation") as sec:
     ...
 
