@@ -1885,6 +1885,31 @@ class element(entities.entity):
         self.attributes['id'] = v
 
     @property
+    def draggable(self):
+        """ An enumerated attribute indicating whether the element can
+        be dragged, using the Drag and Drop API. It can have the
+        following values:
+
+            * 'true', which indicates that the element may be dragged
+
+            * 'false', which indicates that the element may not be
+            dragged.
+        """
+        return self.attributes['draggable'].value
+
+    @draggable.setter
+    def draggable(self, v):
+        if not isinstance(v, str):
+            raise TypeError('draggable must be a string')
+            
+        if v not in ('true', 'false'):
+            raise ValueError(
+                'draggable must be either "true" or "false"'
+            )
+            
+        self.attributes['draggable'] = v
+
+    @property
     def dir(self):
         """ Returns the value of the the dir global attribute. dir is an
         enumerated attribute that indicates the directionality of the
