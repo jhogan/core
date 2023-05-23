@@ -1429,7 +1429,7 @@ class element(entities.entity):
     Triggers = 'click', 'focus', 'blur', 'input', 'submit', 'dragstart'
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
-    # keydown/onkeydown), Make sure you add the trigger to the
+    # keydown/onkeydown), make sure you add the trigger to the
     # Triggers tuple above.
 
     @property
