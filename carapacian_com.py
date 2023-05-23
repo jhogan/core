@@ -588,6 +588,11 @@ class ticketsspa(pom.spa):
                         else:
                             raise ValueError('Cannot find story')
 
+                for tr in tbl['tr']:
+                    tr.draggable = 'true'
+                    tr.ondragstart += self.tr_ondragstart, tbl
+
+
                 # Remove the table's parent so we can make `card` its
                 # new parent
                 tbl.orphan()
@@ -605,6 +610,9 @@ class ticketsspa(pom.spa):
             """
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+        def tr_ondragstart(self, src, eargs):
+            print(eargs)
 
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
