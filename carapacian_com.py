@@ -624,6 +624,12 @@ class ticketsspa(pom.spa):
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
         def tr_ondragstart(self, src, eargs):
+            pass
+
+        def tr_ondragover(self, src, eargs):
+            pass
+
+        def tr_ondrop(self, src, eargs):
             print(eargs)
 
 
