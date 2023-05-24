@@ -798,8 +798,26 @@ function ajax(e){
         }
     }
 
-    // At this point, preventDefault() because it's all AJAX from here. 
-    e.preventDefault()
+    if (trigger == 'dragstart'){
+        // Don't preventDefault() if dragstart because doing so makes
+        // the dragged item invisible.
+    }else{
+        // At this point, preventDefault() because it's all AJAX from
+        // here. 
+        e.preventDefault()
+    }
+
+    if (trigger == 'dragover'){
+        // When we encounter a dragover event, we really just want
+        // e.preventDefault() from executing. Whenever a dropzone has an
+        // item being drug over it, the dragover event executes each
+        // time the mouse moves over a pixel, so this will happen a lot.
+        // We don't don't any XHR reuests for this 
+
+        // XXX Remove trace code
+        console.log('Begin ajax()')
+        return
+    }
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
