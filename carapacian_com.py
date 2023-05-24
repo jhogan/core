@@ -621,11 +621,11 @@ class ticketsspa(pom.spa):
             given, will contain a comma seperated string of backlog
             status types to filter the backlog cards by.
             """
-
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
         def tr_ondragstart(self, src, eargs):
             print(eargs)
+
 
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status

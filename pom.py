@@ -787,14 +787,14 @@ function ajax(e){
             if (!isspanav){
                 // If we are in SPA mode but not in the Spa menu, allow
                 // for traditional navigation.
-                return;
+                return
             }
 
         }else{
             // If the user clicked a nav link, but we aren't in SPA
             // mode, allow the browser to navigate to the link in the
             // traditional (non AJAX) way.
-            return;
+            return
         }
     }
 
