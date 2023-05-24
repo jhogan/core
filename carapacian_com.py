@@ -592,6 +592,19 @@ class ticketsspa(pom.spa):
                     tr.draggable = 'true'
                     tr.ondragstart += self.tr_ondragstart, tbl
 
+                    # XXX It looks like all we need to do at the moment
+                    # for this event handler is have the JS call
+                    # preventDefault(). If that's the case, it would be
+                    # nice if we could subscribe a null-handler (like an
+                    # empty lambda or something) that would prevent a
+                    # trip back to the server. I believe the
+                    # preventDefault() default would be called by
+                    # default in ajax().
+                    tr.ondragover += self.tr_ondragover, tbl
+
+                    tr.ondrop += self.tr_ondrop, tbl, tr
+
+                    tr += dom.span('x', class_='handle');
 
                 # Remove the table's parent so we can make `card` its
                 # new parent
