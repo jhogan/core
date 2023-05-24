@@ -588,7 +588,7 @@ class ticketsspa(pom.spa):
                         else:
                             raise ValueError('Cannot find story')
 
-                for tr in tbl['tr']:
+                for tr in tbl['tbody tr']:
                     tr.draggable = 'true'
                     tr.ondragstart += self.tr_ondragstart, tbl
 
