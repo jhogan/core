@@ -8431,14 +8431,14 @@ with book('Hacking Carapacian Core'):
         element to the `p` element thus placing it inside the `p`. We
         can see this in the HTML produced by `p.html`.
 
-        Here we demonstrate a new property called `elements`. This is the
-        collection of child elements each element has. `p` started off
-        with one, i.e., the text node created for the body: "Hello,
-        World". Adding the `span` then brings the number of elements to
+        Here we demonstrate a new property called `elements`. This is
+        the collection of child elements each element has. `p` started
+        off with one: the text node created for the body: "Hello,
+        World". Adding the `span` brings the number of elements to
         `two`.
 
         Now that we know how to create DOM elements and append elements
-        to them, we have everything we need to know to create entire
+        to them, we know everything we need to know to create entire
         HTML documents in an object-oriented fasion. However, to use
         HTML to its fullest, we need to use attributes. The next section
         will show you how to add attributes to elements.
@@ -8447,8 +8447,8 @@ with book('Hacking Carapacian Core'):
       with section('DOM attributes'):
         print('''
           Each DOM element class in the `dom` module has property
-          methods for the official, HTML5 attributes for the given
-          given. All DOM element classes have property methods for the
+          methods for the official HTML5 attributes for the given
+          element. All DOM element classes have property methods for the
           HTML5 global methods (such as `id` and `title`). These
           property methods can be read and written to.
         ''')
@@ -8476,9 +8476,9 @@ with book('Hacking Carapacian Core'):
           expect(AttributeError, lambda: img.align)
 
         print('''
-          Here we see how to used the `img`'s `id` and `src` methods to
+          Here we see how to use `img`'s `id` and `src` properties to
           assign it attribute values. These assignments are reflected in
-          the output of the `html` property. We also see that element's,
+          the output of the `html` property. We also see that elements,
           such as `img`, have an `attributes` collection which tracks
           the element's attributes.
 
@@ -8503,7 +8503,7 @@ with book('Hacking Carapacian Core'):
             img.html
           )
 
-          # Assert tha we are able to retrieve the value of the align
+          # Assert that we are able to retrieve the value of the align
           # property
           eq('top', img.attributes['align'].value)
 
@@ -8514,7 +8514,7 @@ with book('Hacking Carapacian Core'):
 
           However the above idioms for accessing and retrieve attribute
           values aren't recommend for most use cases since they are
-          somewhat verbose. We can and shousd use the `setattr` and
+          somewhat verbose. We can and should use the `setattr` and
           `getattr` methods to achive the above with less typing:
         ''')
 
@@ -8528,14 +8528,56 @@ with book('Hacking Carapacian Core'):
             img.html
           )
 
-          # Assert tha we are able to retrieve the value of the align
+          # Assert that we are able to retrieve the value of the align
           # property
           eq('top', img.getattr('align'))
 
         print('''
           The `getattr` and `setattr` are easier to type require less
           for the programmer to remember. 
+
+          Note that any attribute that starts with `data-` is considered
+          standard HTML5. We can use `setattr` and `getattr` to
+          manipulate these attributes as well:
         ''')
+
+        with listing('`data-*` attributes'):
+          div = dom.div()
+
+          div.setattr('data-my-attr', 'my-value')
+
+          eq('<div data-my-attr="my-value"></div>', div.html)
+
+          eq('my-value', div.getattr('data-my-attr'))
+
+        print('''
+          The `class` attributes is a common attributes to all elements.
+          However, we use the `+=` 
+        ''')
+
+        with listing('Using the `class` attribute'):
+          # Create an article
+          art = dom.article()
+
+          # Add two classes
+          art.classes += 'my-class'
+          art.classes += 'my-other-class'
+
+          # Assert equality
+          eq(
+            '<article class="my-class my-other-class"></article>', 
+            art.html
+          )
+
+          # Remove one of the classes
+          art.classes -= 'my-class'
+
+          # Assert equality
+          eq(
+            '<article class="my-other-class"></article>', 
+            art.html
+          )
+
 
   with chapter("Robotic process automation") as sec:
     ...
@@ -8545,14 +8587,10 @@ with book('Hacking Carapacian Core'):
       ...
 
   with chapter("Logging") as sec:
-    
-    ..
+    ...
 
   with chapter("Third-party integration") as sec:
     ..
 
   with chapter("File system") as sec:
     ..
-
-    
-    
