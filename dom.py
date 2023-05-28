@@ -1427,8 +1427,9 @@ class element(entities.entity):
     # methods, such as element.focus(), which trigger a corresponding
     # event (onfocus).
     Triggers = (
-        'click',      'focus',     'blur',  'input',  'submit',
-        'dragstart',  'dragover',  'drop'
+        'click',      'focus',     'blur',  'input',      'submit',
+        'dragstart',  'dragover',  'drop',  'dragenter',  'dragleave',
+        'dragover',
     )
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
@@ -1519,6 +1520,36 @@ class element(entities.entity):
     @ondrop.setter
     def ondrop(self, v):
         setattr(self, '_ondrop', v)
+
+    @property
+    def ondragenter(self):
+        """ XXX
+        """
+        return self._on('dragenter')
+
+    @ondragenter.setter
+    def ondragenter(self, v):
+        setattr(self, '_ondragenter', v)
+
+    @property
+    def ondragleave(self):
+        """ XXX
+        """
+        return self._on('dragleave')
+
+    @ondragleave.setter
+    def ondragleave(self, v):
+        setattr(self, '_ondragleave', v)
+
+    @property
+    def ondragover(self):
+        """ XXX
+        """
+        return self._on('dragover')
+
+    @ondragover.setter
+    def ondragover(self, v):
+        setattr(self, '_ondragover', v)
 
     def input(self):
         """ Triggers the `input` event for this element.
