@@ -701,6 +701,8 @@ function is_nav_link(e){
     /* Returns true if the element `e` is a "nav link",
     i.e., it is an anchor tag nested within a <nav>.
     */
+
+    // XXX Can we use `e.closest()` here?
     var rent = e.parentNode
 
     var found = false
@@ -775,6 +777,7 @@ function ajax(e){
     // Is the element a page link
     var ispg = !isnav && is_page_link(src)
 
+    // XXX Can we move this into the (isnav) consequence block?
     var nav = src.closest('nav');
 
     // If the element being clicked is a nav link
@@ -1056,7 +1059,6 @@ function listen(el){
 
     // For each of the standard triggers (click, blur, submit, etc.)
     for(var trig of TRIGGERS){
-        
         // Create a CSS selector to find elements that have the
         // data-<trigger>-handler. These will be are subjects of the
         // event.

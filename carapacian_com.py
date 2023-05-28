@@ -641,7 +641,6 @@ class ticketsspa(pom.spa):
         def tr_ondrop(self, src, eargs):
             print(eargs)
 
-
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
             type filters.
