@@ -765,17 +765,24 @@ function ajax(e){
 
     /* Process the event for the given control.  */
 
+    console.group('ajax()')
+
     // The event trigger (e.g., "blur", "click", etc.)
     var trigger = e.type
 
+    console.debug('on' + trigger)
+
     // The control that the event happened to
     var src = e.target
+    console.debug(src)
 
     // Is the element a navigation link
     var isnav = is_nav_link(src)
 
     // Is the element a page link
     var ispg = !isnav && is_page_link(src)
+
+    console.debug('isnav: ' + isnav + ', ispg: ' + ispg)
 
     // XXX Can we move this into the (isnav) consequence block?
     var nav = src.closest('nav');
@@ -986,6 +993,8 @@ function ajax(e){
     xhr.open("POST", pg)
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.send(JSON.stringify(d))
+
+    console.groupEnd()
 }
 '''
         r += f'const TRIGGERS = {list(dom.element.Triggers)}'
@@ -1055,7 +1064,7 @@ function listen(el){
      * `click` events are subscribed to the the `ajax` handler.
     */
 
-    console.group('listen')
+    console.group('listen()')
 
     // For each of the standard triggers (click, blur, submit, etc.)
     for(var trig of TRIGGERS){
