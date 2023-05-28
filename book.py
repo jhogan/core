@@ -8493,7 +8493,7 @@ with book('Hacking Carapacian Core'):
           the following:
         ''')
 
-        with listing('Using non-standard attributes'):
+        with listing('Using nonstandard attributes'):
           # Assign 'top' to the align property
           img.attributes['align'].value = 'top'
 
@@ -8509,16 +8509,16 @@ with book('Hacking Carapacian Core'):
 
         print('''
           As you can see from the above example, it is easy to add
-          non-standard attributes to elements by accessing the
+          nonstandard attributes to elements by accessing the
           `attributes` collection directly.
 
           However the above idioms for accessing and retrieve attribute
           values aren't recommend for most use cases since they are
           somewhat verbose. We can and should use the `setattr` and
-          `getattr` methods to achive the above with less typing:
+          `getattr` methods to achieve the above with less typing:
         ''')
 
-        with listing('Using non-standard attributes the correct way'):
+        with listing('Using nonstandard attributes the correct way'):
           # Assign 'top' to the align property
           img.setattr('align', 'top')
 
@@ -8533,8 +8533,8 @@ with book('Hacking Carapacian Core'):
           eq('top', img.getattr('align'))
 
         print('''
-          The `getattr` and `setattr` are easier to type require less
-          for the programmer to remember. 
+          The `getattr` and `setattr` are easier to type and require
+          less for the programmer to remember. 
 
           Note that any attribute that starts with `data-` is considered
           standard HTML5. We can use `setattr` and `getattr` to
@@ -8551,6 +8551,42 @@ with book('Hacking Carapacian Core'):
           eq('my-value', div.getattr('data-my-attr'))
 
         print('''
+          To remove an attribute, we can do use the `del` operator on
+          the `attributes` collection or, more preferably, call the
+          `element.delattr`) method:
+        ''')
+
+        with listing ('Removing attributes'):
+          # Create a div with a data-my-attr
+          div = dom.div()
+          div.setattr('data-my-attr', 'my-value')
+
+          # Use the `hasattr` method `in` operator to assert that the
+          # attribute exists
+          true(div.hasattr('data-my-attr'))
+          true('data-my-attr' in div.attributes)
+
+          # Remove the attribute 
+          div.delattr('data-my-attr')
+
+          # Alternatively, we could use:
+          #
+          #     del div.attributes['data-my-attr']
+          #
+
+          # Assert the attribute has been removed
+          false(div.hasattr('data-my-attr'))
+          false('data-my-attr' in div.attributes)
+
+        print('''
+          The above code also illustartes how to use the `hasattr` and
+          `in` operator to determine if an attribute exists.
+        ''')
+
+        with listing('Boolean attributes'):
+          ...
+
+        print('''
           The `class` attributes is a common attributes to all elements.
           However, we use the `+=` 
         ''')
@@ -8563,7 +8599,7 @@ with book('Hacking Carapacian Core'):
           art.classes += 'my-class'
           art.classes += 'my-other-class'
 
-          # Assert equality
+          # Assert art.html
           eq(
             '<article class="my-class my-other-class"></article>', 
             art.html
@@ -8572,11 +8608,18 @@ with book('Hacking Carapacian Core'):
           # Remove one of the classes
           art.classes -= 'my-class'
 
-          # Assert equality
+          # Assert art.html
           eq(
             '<article class="my-other-class"></article>', 
             art.html
           )
+
+        print('''
+          If you try to add a class that is already in the classes
+          collection, you will get a `dom.ClassExistsError`. If you
+          remove a class that doesn't exist, you will get (somewhat
+          asymmetrically) an `IndexError`.
+        ''')
 
 
   with chapter("Robotic process automation") as sec:
