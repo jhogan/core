@@ -937,8 +937,18 @@ body{
     color: #000;
 }
 
+td .handle{
+    cursor: move
+}
+
 a{
     color: #2ba74a !important;
+}
+
+tr[data-dragentered] {
+    color: red;
+    border-top-color: blue;
+    
 }
 
 section#contact-us p{
