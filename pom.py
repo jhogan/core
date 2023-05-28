@@ -817,17 +817,20 @@ function ajax(e){
         e.preventDefault()
     }
 
-    if (trigger == 'dragover'){
-        // When we encounter a dragover event, we really just want
-        // e.preventDefault() from executing. Whenever a dropzone has an
-        // item being drug over it, the dragover event executes each
-        // time the mouse moves over a pixel, so this will happen a lot.
-        // We don't don't any XHR reuests for this 
-
-        // XXX Remove trace code
-        console.log('Begin ajax()')
-        return
+    switch(trigger){
+        case 'dragover':
+            e.currentTarget.setAttribute('data-dragentered', true)
+            console.groupEnd()
+            return
+        case 'drop':
+            e.currentTarget.removeAttribute('data-dragentered')
+            break
+        case 'dragleave':
+            e.currentTarget.removeAttribute('data-dragentered')
+            console.groupEnd()
+            return
     }
+
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
