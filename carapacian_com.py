@@ -592,8 +592,6 @@ class ticketsspa(pom.spa):
                 tbl['thead tr'].only << dom.th(class_='handle')
 
                 for tr in tbl['tbody tr']:
-                    tr.draggable = 'true'
-                    tr.ondragstart += self.tr_ondragstart, tbl
 
                     # XXX It looks like all we need to do at the moment
                     # for this event handler is have the JS call
@@ -603,11 +601,19 @@ class ticketsspa(pom.spa):
                     # trip back to the server. I believe the
                     # preventDefault() default would be called by
                     # default in ajax().
-                    tr.ondragover += self.tr_ondragover, tbl
+                    tr.ondragover += self.tr_dragover, tr
+                    tr.ondragleave += self.tr_dragleave, tr
 
                     tr.ondrop += self.tr_ondrop, tbl, tr
 
-                    tr += dom.span('x', class_='handle');
+                    td = dom.td(class_='handle')
+                    span = dom.span('☰', class_='handle');
+                    span.draggable = 'true'
+                    td += span
+                    tr << td
+
+
+
 
                 # Remove the table's parent so we can make `card` its
                 # new parent
@@ -626,10 +632,10 @@ class ticketsspa(pom.spa):
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
-        def tr_ondragstart(self, src, eargs):
+        def tr_dragover(self, src, eargs):
             pass
 
-        def tr_ondragover(self, src, eargs):
+        def tr_dragleave(self, src, eargs):
             pass
 
         def tr_ondrop(self, src, eargs):
