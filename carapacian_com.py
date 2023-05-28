@@ -588,6 +588,9 @@ class ticketsspa(pom.spa):
                         else:
                             raise ValueError('Cannot find story')
 
+                # Add column for span handle
+                tbl['thead tr'].only << dom.th(class_='handle')
+
                 for tr in tbl['tbody tr']:
                     tr.draggable = 'true'
                     tr.ondragstart += self.tr_ondragstart, tbl
