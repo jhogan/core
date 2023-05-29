@@ -611,7 +611,11 @@ class ticketsspa(pom.spa):
 
                     td = dom.td(class_='handle')
                     span = dom.span('☰', class_='handle');
+                    span.setattr('data-drag-target', tr.id)
                     span.draggable = 'true'
+                    # This should be a null handler
+                    span.ondragstart += self.span_ondragstart
+
                     td += span
                     tr << td
 
@@ -634,6 +638,10 @@ class ticketsspa(pom.spa):
             status types to filter the backlog cards by.
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+        # XXX s/def tr_dr/def tr_ondr/
+        def span_ondragstart(self, src, eargs):
+            pass
 
         def tr_dragover(self, src, eargs):
             pass
