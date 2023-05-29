@@ -811,6 +811,8 @@ function ajax(e){
     if (trigger == 'dragstart'){
         // Don't preventDefault() if dragstart because doing so makes
         // the dragged item invisible.
+        // XXX Update comment
+
     }else{
         // At this point, preventDefault() because it's all AJAX from
         // here. 
@@ -822,9 +824,11 @@ function ajax(e){
             e.currentTarget.setAttribute('data-dragentered', true)
             console.groupEnd()
             return
+
         case 'drop':
             e.currentTarget.removeAttribute('data-dragentered')
             break
+
         case 'dragleave':
             e.currentTarget.removeAttribute('data-dragentered')
             console.groupEnd()

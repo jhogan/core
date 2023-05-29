@@ -601,6 +601,9 @@ class ticketsspa(pom.spa):
                     # trip back to the server. I believe the
                     # preventDefault() default would be called by
                     # default in ajax().
+
+                    # XXX Consider creating an element.dragonize()
+                    # method.
                     tr.ondragover += self.tr_dragover, tr
                     tr.ondragleave += self.tr_dragleave, tr
 
