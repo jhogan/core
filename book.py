@@ -8561,8 +8561,8 @@ with book('Hacking Carapacian Core'):
           div = dom.div()
           div.setattr('data-my-attr', 'my-value')
 
-          # Use the `hasattr` method `in` operator to assert that the
-          # attribute exists
+          # Use the `hasattr` method and `in` operator to assert that
+          # the attribute exists
           true(div.hasattr('data-my-attr'))
           true('data-my-attr' in div.attributes)
 
@@ -8581,10 +8581,53 @@ with book('Hacking Carapacian Core'):
         print('''
           The above code also illustartes how to use the `hasattr` and
           `in` operator to determine if an attribute exists.
+
+          In HTML5, a boolean attribute is denoted by its presence,
+          i.e., if the attribute exists, it is considered true, no
+          matter what it's value is. If it doesn't exist, it is
+          considered false.
+
+          In Python, we like to denote truthhood with the `True`
+          constant and falsehood with the `False constant.
         ''')
 
         with listing('Boolean attributes'):
-          ...
+          # Create a checkbox
+          inp = dom.input(type='checkbox')
+
+          # Its checked attribute defaults to False
+          false(inp.checked)
+
+          # Its checked attribute's `value`, however, is None
+          none(inp.attributes['checked'].value)
+
+          # Assert the .html attribute
+          eq('<input type="checkbox">', inp.html)
+
+          # Set the `checked` attribute to True
+          inp.checked = True
+
+          # Assert that it is True
+          true(inp.checked)
+
+          # Assert that the `checked` attribute is present
+          eq('<input type="checkbox" checked>', inp.html)
+
+          # Note that the `checked` attribute's value is now True
+          true(inp.attributes['checked'].value)
+
+          # Use an old fashion way of denoting that `checked` is true
+          inp.attributes['checked'].value = 'checked'
+
+          # Assert that it is still True
+          true(inp.checked)
+
+          # Note that the attribute's `value` is True and not 'checked'
+          true(inp.attributes['checked'].value)
+
+          # Assert that the `checked` attribute is present
+          eq('<input type="checkbox" checked="checked">', inp.html)
+
 
         print('''
           The `class` attributes is a common attributes to all elements.
