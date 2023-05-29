@@ -773,7 +773,8 @@ function ajax(e){
     console.debug('on' + trigger)
 
     // The control that the event happened to
-    var src = e.target
+    // XXX This is experimental. Thoroughly test.
+    var src = e.currentTarget
     console.debug(src)
 
     // Is the element a navigation link
