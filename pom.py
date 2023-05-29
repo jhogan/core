@@ -814,6 +814,11 @@ function ajax(e){
         // the dragged item invisible.
         // XXX Update comment
 
+        // TODO What if there is no data-drag-target
+        let id = e.target.getAttribute('data-drag-target')
+        let target = document.getElementById(id)
+
+        e.dataTransfer.setData('text/html', target.outerHTML)
     }else{
         // At this point, preventDefault() because it's all AJAX from
         // here. 
@@ -890,6 +895,15 @@ function ajax(e){
         wake(els)
         for(el of els){
             html += el.outerHTML
+        }
+
+        // XXX Comment
+        if (trigger == 'drop'){
+            // NOTE e.dataTransfer can sometimes be null here when
+            // debugging step-by-step: 
+            //     https://stackoverflow.com/questions/43180248/firefox-ondrop-event-datatransfer-is-null-after-update-to-version-52
+            let target = e.dataTransfer.getData('text/html')
+            html += target
         }
 
         pg = window.location.href
