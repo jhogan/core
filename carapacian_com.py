@@ -650,8 +650,12 @@ class ticketsspa(pom.spa):
             pass
 
         def tr_ondrop(self, src, eargs):
-            print(eargs)
+            trdrop     =  src
+            tbl        =  eargs.html.first
+            trdragged  =  eargs.html.last
 
+            bldragged = trdragged.entity
+            bldrop = bldropped.entity
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
             type filters.
