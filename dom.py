@@ -4179,16 +4179,6 @@ class img(element):
 images = imgs
 image = img
 
-class trs(elements):
-    """ A class used to contain a collection of ``trs`` elements.
-    """
-
-class tr(element):
-    """ The <tr> HTML element defines a row of cells in a table. The
-    row's cells can then be established using a mix of <td> (data cell)
-    and <th> (header cell) elements.
-    """
-
 class objects(elements):
     """ A class used to contain a collection of ``trs`` elements.
     """
