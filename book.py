@@ -8582,13 +8582,14 @@ with book('Hacking Carapacian Core'):
           The above code also illustartes how to use the `hasattr` and
           `in` operator to determine if an attribute exists.
 
-          In HTML5, a boolean attribute is denoted by its presence,
+          In HTML5, a Boolean attribute is denoted by its presence,
           i.e., if the attribute exists, it is considered true, no
-          matter what it's value is. If it doesn't exist, it is
+          matter what its value is. If it doesn't exist, it is
           considered false.
 
           In Python, we like to denote truthhood with the `True`
-          constant and falsehood with the `False constant.
+          constant and falsehood with the `False constant. Thus we use
+          these constants with the DOM API to set Boolean attributes:
         ''')
 
         with listing('Boolean attributes'):
@@ -8622,12 +8623,47 @@ with book('Hacking Carapacian Core'):
           # Assert that it is still True
           true(inp.checked)
 
-          # Note that the attribute's `value` is True and not 'checked'
-          true(inp.attributes['checked'].value)
+          # However, the attribute's `value` is 'checked'
+          eq(inp.attributes['checked'].value, 'checked')
 
           # Assert that the `checked` attribute is present
           eq('<input type="checkbox" checked="checked">', inp.html)
 
+        print('''
+          Above we see we can assign the value of `True` to
+          `inp.checked` to cause the `checked` attribute to show up it
+          the HTML output:
+
+            <input type="checkbox" checked>
+
+          If we set `checked` to False, it is remove.
+
+          Boolean values can also be used this way with
+          `element.setattr()` and `element.getattr()`.
+
+          We also see that the `attributes` collection works
+          differently. Elements in the `attributes` have a `value` of
+          `None` until something has been assigned to them. The
+          `attribute` objects themselves are generic and they can't
+          distinguish between Boolean and regular attributes. If an
+          attribute has not been set, it's `value` is therefore None
+          &mdash; meaning it doesn't exist. The getter for
+          `input.checked` does a little work to ensure you get a Boolean
+          value instead because it knows it should be a Boolean
+          attribute. It should be noted that `element.getattr()` would,
+          for the same reason, return `None`, until a value has been
+          assigned to it. 
+
+          We also see that we can, if we choose, assign string values to
+          Boolean attributes. For example:
+
+            <input type="checkbox" checked="checked">
+
+          This is an old, XML-conformant way of setting Boolean
+          attributes. It's good to know that the API allows us to do
+          this, but this style is no longer necessary or encouraged.
+
+        ''')
 
         print('''
           The `class` attributes is a common attributes to all elements.
