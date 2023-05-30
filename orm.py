@@ -10550,6 +10550,14 @@ class orm:
             self.isloaded = True
             self.isloading = False
 
+    def produce(self, id):
+        """ XXX
+        """
+        try:
+            return self.entity(id)
+        except db.RecordNotFoundError:
+            return self.entity(id=id)
+
     @property
     def abbreviation(self):
         """ Return a unique abbreviation of the entity. This is useful
