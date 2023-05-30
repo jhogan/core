@@ -492,13 +492,13 @@ class attribute(entities.entity):
         """ Returns the value of the attribute.
 
         The value will be the string that the attribute was
-        assigned. If the attribute is a boolean value, True will be
+        assigned. If the attribute is a Boolean value, True will be
         returned if the attribute exists. Otherwise, None will be
         returned.
         """
         if self.isdef:
             # If value is None but the attribute is "defined", it must
-            # be a boolean value so return True.
+            # be a Boolean value so return True.
             if self._value is None:
                 return True
 
@@ -582,7 +582,7 @@ class attribute(entities.entity):
 
     @property
     def isboolean(self):
-        """ Returns True if the attribute is a boolean.
+        """ Returns True if the attribute is a Boolean.
         """
         return self.value is True
 
@@ -2937,15 +2937,15 @@ class form(element):
 
     @property
     def novalidate(self):
-        """ This boolean attribute indicates that the form shouldn't be
+        """ This Boolean attribute indicates that the form shouldn't be
         validated when submitted. If this attribute is not set (and
         therefore the form is validated), it can be overridden by a
         formnovalidate attribute on a <button>, <input type="submit">,
         or <input type="image"> element belonging to the form.
         """
-        # TODO:369795a1 @property's for boolean attribute should return
+        # TODO:369795a1 @property's for Boolean attribute should return
         # True or False and their setters should accept only True and
-        # False. If a user really wants to violate the boolean nature of
+        # False. If a user really wants to violate the Boolean nature of
         # an attribute (e.g., <form novalidate="novalidate">) then they
         # can use the attributes collection directly
         # (frm.attributes['novalidate'] = 'novalidate').
@@ -3575,7 +3575,7 @@ class fieldset(element):
 
     @property
     def disabled(self):
-        """ If this boolean attribute is set, all form controls that are
+        """ If this Boolean attribute is set, all form controls that are
         descendants of the <fieldset>, are disabled, meaning they are
         not editable and won't be submitted along with the <form>. They
         won't receive any browsing events, like mouse clicks or
@@ -3996,7 +3996,7 @@ class img(element):
 
     @property
     def ismap(self):
-        """ This boolean attribute indicates that the image is part of a
+        """ This Boolean attribute indicates that the image is part of a
         server-side map. If so, the coordinates where the user clicked
         on the image are sent to the server.
         """
@@ -4566,7 +4566,7 @@ class command(element):
 
     @property
     def checked(self):
-        """ The checked attribute is a boolean attribute that, if
+        """ The checked attribute is a Boolean attribute that, if
         present, indicates that the command is selected. The attribute
         must be omitted unless the type attribute is in either the
         Checkbox state or the Radio state.
@@ -5176,7 +5176,7 @@ class textarea(element):
         more information, see the autocomplete attribute in <form>.
         """
 
-        # TODO Convert this property to a boolean one, such that it only
+        # TODO Convert this property to a Boolean one, such that it only
         # accepts and returns only True or False. The actual value for
         # the attribute would still be 'off' and 'on'.
         return self.attributes['autocomplete'].value
@@ -6730,7 +6730,7 @@ class script(element):
         scripts before continuing to parse. defer has a similar effect
         in this case.
 
-        This is a boolean attribute: the presence of a boolean attribute
+        This is a Boolean attribute: the presence of a Boolean attribute
         on an element represents the true value, and the absence of the
         attribute represents the false value.
         """
@@ -7071,7 +7071,7 @@ class html(element):
                     
                     # If value is an empty string...
                     if v == '':
-                        # We want to support boolean attributes that are
+                        # We want to support Boolean attributes that are
                         # declared with an empty string assignment.
                         #
                         #     <input hidden="">
@@ -8347,7 +8347,7 @@ class selectors(entities.entities):
                     if attr:
                         # Set key and value of attribute. Note that some
                         # attribute selectors only have a key because
-                        # they are selecting for boolean attributes:
+                        # they are selecting for Boolean attributes:
                         #
                         #     <p hidden lang="en">
                         #
