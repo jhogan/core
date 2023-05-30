@@ -6357,6 +6357,28 @@ class tr(element):
     and <th> (header cell) elements.
     """
 
+    @property
+    def entity(self):
+        """ XXX
+        """
+        # XXX Test
+
+        if not (cls := self.getattr('data-entity')):
+            raise ValueError('Missing data-entity attributes')
+
+        if not (id := self.getattr('data-entity-id')):
+            raise ValueError('Missing data-entity-id attributes')
+
+        mod, cls = cls.split('.')
+
+        import importlib
+        mod = importlib.import_module(mod)
+
+        cls = getattr(mod, cls)
+
+        return cls.orm.produce(id)
+
+
 class selects(elements):
     """ A class used to contain a collection of ``tr`` elements."""
 
