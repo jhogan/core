@@ -869,6 +869,19 @@ class ticketsspa(pom.spa):
                 )
             return self._select
 
+        @property
+        def instance(self):
+            """ XXX
+            """
+            # XXX Test to ensure stories are always sorted by rank
+            inst = super().instance
+            inst.sort('rank')
+            return inst
+
+        @instance.setter
+        def instance(self, v):
+            self._instance = v
+
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.story, *args, **kwargs)
