@@ -9746,7 +9746,6 @@ class orm:
                 )
             )
         '''
-        
         # The top entity in the tree
         top = None
 

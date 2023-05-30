@@ -1055,6 +1055,7 @@ class backlog(orm.entity):
 
         for bss in self.backlog_stories:
             sts += bss.story
+
         return sts
 
     ''' Accessability '''
