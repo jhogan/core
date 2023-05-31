@@ -672,6 +672,25 @@ class ticketsspa(pom.spa):
             src = tbody.elements.pop(trsrc.id)
             ix = tbody.elements.getindex(trdest.id)
             tbody.elements.insert(ix, src)
+
+            bss = bl.backlog_stories
+
+            # For each <tr> in the table
+            for tr in tbody['tr']:
+                # Get the backlog that corresponds to the tr
+                id = tr.getattr('data-entity-id')
+                bs = bss[UUID(id)]
+
+                # Get the 'rank' <td>
+                td = tr['td[data-entity-attribute=rank]'].only
+
+                # Get the <span> that holds the value for rank
+                span = td['span.value'].only
+
+                # Set the rank
+                span.text = bs.rank
+                span.text += 'XXX'
+
     
 
         def chkfilters_onclick(self, src, eargs):
