@@ -1216,6 +1216,12 @@ class backlog(tester.tester):
                 sts = bss.pluck('story')
                 self.eq(st5.id, sts[i].id, str(i))
 
+        # XXX:e79ea06f All the above tests are replacements. But an
+        # "insert" isn't a replacement, it is an unshift at an arbitrary
+        # point in a list. backlog.insert needs to change to reflect
+        # this and we need more test to ensure insert works as an
+        # unshift.
+
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
         st = story.getvalid()

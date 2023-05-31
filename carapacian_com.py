@@ -675,6 +675,17 @@ class ticketsspa(pom.spa):
 
             bss = bl.backlog_stories
 
+
+            # XXX Given:
+            # 
+            #     A
+            #     B
+            #     C
+            #
+            # If we move A to B, we are not doing anything. Make sure we
+            # detect this and do nothing in response.
+
+
             # For each <tr> in the table
             for tr in tbody['tr']:
                 # Get the backlog that corresponds to the tr

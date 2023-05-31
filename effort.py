@@ -941,10 +941,11 @@ class backlog(orm.entity):
         to the database.
 
         The `rank` parameter contains the rank the story should have in
-        the backlog. For example, the following creates a backlog and
-        a story and inserts the story into the backlog at index 3:
+        the backlog. For example, the following gets an existing backlog
+        and, creates a story, and inserts the story into the backlog at
+        index 3:
             
-            bl = backlog()
+            bl = backlog(id=blid)
             st = story()
             bl.insert(3, st)
 
