@@ -661,7 +661,9 @@ class ticketsspa(pom.spa):
             bsdest  =  trdest.entity
             bl      =  bsdest.backlog
 
-            bl.insert(bsdest.rank, bssrc)
+            # XXX:e79ea06f This currertly replaces but does not unshift.
+            # Some more work needs to be done here.
+            bl.insert(bsdest.rank, bssrc.story)
 
             bl.save()
 
