@@ -8586,10 +8586,6 @@ with book('Hacking Carapacian Core'):
           i.e., if the attribute exists, it is considered true, no
           matter what its value is. If it doesn't exist, it is
           considered false.
-
-          In Python, we like to denote truthhood with the `True`
-          constant and falsehood with the `False constant. Thus we use
-          these constants with the DOM API to set Boolean attributes:
         ''')
 
         with listing('Boolean attributes'):
@@ -8630,8 +8626,8 @@ with book('Hacking Carapacian Core'):
           eq('<input type="checkbox" checked="checked">', inp.html)
 
         print('''
-          Above we see we can assign the value of `True` to
-          `inp.checked` to cause the `checked` attribute to show up it
+          Above we see that we can assign the value of `True` to
+          `inp.checked` to cause the `checked` attribute to show up in
           the HTML output:
 
             <input type="checkbox" checked>
@@ -8646,13 +8642,12 @@ with book('Hacking Carapacian Core'):
           `None` until something has been assigned to them. The
           `attribute` objects themselves are generic and they can't
           distinguish between Boolean and regular attributes. If an
-          attribute has not been set, it's `value` is therefore None
-          &mdash; meaning it doesn't exist. The getter for
-          `input.checked` does a little work to ensure you get a Boolean
-          value instead because it knows it should be a Boolean
-          attribute. It should be noted that `element.getattr()` would,
-          for the same reason, return `None`, until a value has been
-          assigned to it. 
+          attribute has not been set, its `value` defaults to None
+          meaning it doesn't exist. The getter for `input.checked` does
+          a little work to ensure you get a Boolean value instead
+          because it knows it should be a Boolean attribute. It should
+          be noted that `element.getattr()` would, for the same reason,
+          return `None`, until a value has been assigned to it. 
 
           We also see that we can, if we choose, assign string values to
           Boolean attributes. For example:
@@ -8661,13 +8656,34 @@ with book('Hacking Carapacian Core'):
 
           This is an old, XML-conformant way of setting Boolean
           attributes. It's good to know that the API allows us to do
-          this, but this style is no longer necessary or encouraged.
+          this, but this style is no longer useful or encouraged.
 
+          We can also pass arbitrary arguments to the element`s
+          constructor to set attributes.
         ''')
 
+        with listing('Using the constructor to assign attributes'):
+          # Create a checkbox
+          inp = dom.input(
+            type='checkbox', class_='class1 class2', checked=True
+          )
+
+          eq(
+            '<input type="checkbox" checked class="class1 class2">',
+            inp.html
+          )
+
         print('''
-          The `class` attributes is a common attributes to all elements.
-          However, we use the `+=` 
+          We used the standard string attribute `type`, the standard
+          Booleans attribute `checked` and we used `class_` ta assign
+          classes to the element's `class` attribute. So we can make
+          most attributes assignments this way, however, we cannot
+          assign attributes with hyphens (such as `data-my-attributes`)
+          in the constructor (at least, not at the moment).
+
+          Above, we used the `class_` parameter of the constructor to
+          assign classes to an element.  We can also assign and remove
+          classes of an element using its `classes` attribute:
         ''')
 
         with listing('Using the `class` attribute'):
