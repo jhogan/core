@@ -8644,10 +8644,10 @@ with book('Hacking Carapacian Core'):
           distinguish between Boolean and regular attributes. If an
           attribute has not been set, its `value` defaults to None
           meaning it doesn't exist. The getter for `input.checked` does
-          a little work to ensure you get a Boolean value instead
-          because it knows it should be a Boolean attribute. It should
-          be noted that `element.getattr()` would, for the same reason,
-          return `None`, until a value has been assigned to it. 
+          a little work to ensure you get a `bool` value instead because
+          it knows it should be a Boolean attribute. It should be noted
+          that `element.getattr()` would, for the same reason, return
+          `None`, until a value has been assigned to it. 
 
           We also see that we can, if we choose, assign string values to
           Boolean attributes. For example:
@@ -8659,7 +8659,7 @@ with book('Hacking Carapacian Core'):
           this, but this style is no longer useful or encouraged.
 
           We can also pass arbitrary arguments to the element`s
-          constructor to set attributes.
+          constructor to set attributes:
         ''')
 
         with listing('Using the constructor to assign attributes'):
@@ -8674,12 +8674,18 @@ with book('Hacking Carapacian Core'):
           )
 
         print('''
-          We used the standard string attribute `type`, the standard
-          Booleans attribute `checked` and we used `class_` ta assign
-          classes to the element's `class` attribute. So we can make
-          most attributes assignments this way, however, we cannot
-          assign attributes with hyphens (such as `data-my-attributes`)
-          in the constructor (at least, not at the moment).
+          In the constructor, we were abe to assign a value to the
+          standard string attribute `type`. We were the able to assigne
+          the standard Booleans attribute `checked` a value of `True`. 
+          We were also able to us the `class_` parameter to assign
+          classes to the element's `class` attribute. The `class_`
+          parameter must be used since `class` is obviously a reserved
+          word in Python.
+
+          We can make most attributes assignments this way. However, we
+          cannot assign attributes with hyphens (such as
+          `data-my-attributes`) in the constructor since that would
+          violate Python's syntax rules.
 
           Above, we used the `class_` parameter of the constructor to
           assign classes to an element.  We can also assign and remove
@@ -8714,6 +8720,18 @@ with book('Hacking Carapacian Core'):
           collection, you will get a `dom.ClassExistsError`. If you
           remove a class that doesn't exist, you will get (somewhat
           asymmetrically) an `IndexError`.
+        ''')
+
+      with section('CSS Selectors'):
+        print('''
+          I very useful feature of the DOM is its ability to use CSS
+          selectors to search the DOM for elements that match the
+          selector. The full CSS3 standard was implemented except for
+          some pseudoclasses such as `:hover` and `:vistited` since they
+          only make sense in a browser environment. (Note that newer CSS
+          keywords may have been added to the standard that may have not
+          yet been implemented by the DOM. For example, the pseudoclass
+          `:has` has not been implemented at the time of this writing.
         ''')
 
 
