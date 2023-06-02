@@ -2253,6 +2253,7 @@ class element(entities.entity):
     def next(self):
         """ Return the immediately following sibling.
         """
+        # XXX Write tests
         # NOTE The below may work but has not been tested
         sibs = self.getsiblings(accompany=True)
         ix = sibs.getindex(self)
