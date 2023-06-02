@@ -619,9 +619,6 @@ class ticketsspa(pom.spa):
                     td += span
                     tr << td
 
-
-
-
                 # Remove the table's parent so we can make `card` its
                 # new parent
                 tbl.orphan()
@@ -675,17 +672,6 @@ class ticketsspa(pom.spa):
 
             bss = bl.backlog_stories
 
-
-            # XXX Given:
-            # 
-            #     A
-            #     B
-            #     C
-            #
-            # If we move A to B, we are not doing anything. Make sure we
-            # detect this and do nothing in response.
-
-
             # For each <tr> in the table
             for tr in tbody['tr']:
                 # Get the backlog that corresponds to the tr
@@ -701,8 +687,6 @@ class ticketsspa(pom.spa):
                 # Set the rank
                 span.text = bs.rank
                 span.text += 'XXX'
-
-    
 
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status

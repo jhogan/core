@@ -932,6 +932,8 @@ function ajax(e){
                 // return. Usually, events will return HTML, however it
                 // is possible that, in some cases, they will choose not
                 // to.
+
+                // XXX if this.status == 204, do nothing
                 if(!xhr.responseText){
                     console.info('No response')
                     return
