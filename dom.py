@@ -10224,7 +10224,13 @@ class event(entities.event):
             # Get the element's attirbutes collection
             attrs = self.element.attributes
 
-            hnd = f.__func__.__name__
+            # XXX Comment on
+            if f is None:
+                hnd = 'None'
+                f = lambda: None
+            else:
+                hnd = f.__func__.__name__
+
             attrs[f'data-{self.name}-handler'] = hnd
 
             if els:

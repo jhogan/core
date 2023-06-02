@@ -613,8 +613,9 @@ class ticketsspa(pom.spa):
                     span = dom.span('☰', class_='handle');
                     span.setattr('data-drag-target', tr.id)
                     span.draggable = 'true'
-                    # This should be a null handler
-                    span.ondragstart += self.span_ondragstart
+
+                    # XXX This should be a null handler
+                    span.ondragstart += None
 
                     td += span
                     tr << td

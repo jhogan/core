@@ -841,6 +841,13 @@ function ajax(e){
             return
     }
 
+    // Get the name of the event handler of the trigger
+    var hnd = src.getAttribute('data-' + trigger + '-handler')
+
+    // XXX Comment
+    if (hnd == 'None'){
+        return
+    }
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
