@@ -879,8 +879,6 @@ function ajax(e){
         }
     }
 
-    // Get the name of the event handler of the trigger
-    var hnd = src.getAttribute('data-' + trigger + '-handler')
 
     var html = null
     var pg
