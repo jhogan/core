@@ -655,6 +655,25 @@ class ticketsspa(pom.spa):
             trsrc   =  eargs.html.last
             trdest  =  src
 
+            tbody = tbl['tbody'].only
+
+            trs = tbody['tr']
+
+            # Given:
+            # 
+            #     Story A
+            #     Story B
+            #     Story C
+            #
+            # If we drag Story A and drop on Story  B, nothing should
+            # happen. The following code detects this type of situaton
+            # and does nothing in response.
+            for tr in trs:
+                if tr.id == trsrc.id:
+                    if tr.next.id == trdest.id:
+                        www.application.current.response.status = 204
+                        return
+                    
             bssrc   =  trsrc.entity
             bsdest  =  trdest.entity
             bl      =  bsdest.backlog
