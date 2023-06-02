@@ -8724,14 +8724,46 @@ with book('Hacking Carapacian Core'):
 
       with section('CSS Selectors'):
         print('''
-          I very useful feature of the DOM is its ability to use CSS
-          selectors to search the DOM for elements that match the
+          A very useful feature of the DOM is its ability to use CSS
+          selectors to search DOM trees for elements that match the
           selector. The full CSS3 standard was implemented except for
           some pseudoclasses such as `:hover` and `:vistited` since they
-          only make sense in a browser environment. (Note that newer CSS
-          keywords may have been added to the standard that may have not
-          yet been implemented by the DOM. For example, the pseudoclass
-          `:has` has not been implemented at the time of this writing.
+          only make sense in a browser environment. (Note that
+          additions are made to the CSS3 standard all the time and the
+          DOM will therefore occasionally not fully support CSS3).
+
+          The following CSS patterns are currently supported:
+
+          | CSS Selector           | Description                                                                     |
+          | ---------------------- | ------------------------------------------------------------------------------- |
+          | E                      | An element of type E                                                            |
+          | .c                     | All elements with class="c"                                                     |
+          | #id                    | An element with id="id"                                                         |
+          | E F                    | An F element descendant of an E element                                         |
+          | E > F                  | An F element child of an E element                                              |
+          | E + F                  | An F element immediately preceded by an E                                       |
+          | E ~ F                  | An F element preceded by an E                                                   |
+          | E[attribute]           | An E element with a specified attribute                                         |
+          | E[attribute=value]     | An E element whose attribute has a specific value                               |
+          | lang(language)         | An element with a specific language attribute                                   |
+          | E[attribute~=value]    | An E element with an attribute containing a word                                |
+          | E[attribute^=value]    | An E element with an attribute starting with a value                            |
+          | E[attribute$=value]    | An E element with an attribute ending with a value                              |
+          | E[attribute*=value]    | An E element with an attribute containing a value                               |
+          | E[attribute\|=value]   | An E element with an attribute starting with a value                            |
+          | :root                  | The root element of the document                                                |
+          | :nth-child(n)          | An element that is the nth child of its parent                                  |
+          | :nth-last-child(n)     | An element that is the nth child, counting from the last child                  |
+          | :nth-of-type(n)        | An element that is the nth sibling of its type                                  |
+          | :nth-last-of-type(n)   | An element that is the nth sibling of its type, counting from the last sibling  |
+          | :first-child           | An element that is the first child of its parent                                |
+          | :last-child            | An element that is the last child of its parent                                 |
+          | :first-of-type         | An element that is the first sibling of its type                                |
+          | :last-of-type          | An element that is the last sibling of its type                                 |
+          | :only-child            | An element that is the only child of its parent                                 |
+          | :only-of-type          | An element that is the only sibling of its type                                 |
+          | :empty                 | An element that has no children or whitespace-only content                      |
+          | :not(selector)         | An element that does not match the specified selector                           |
         ''')
 
 
