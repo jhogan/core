@@ -684,8 +684,6 @@ class ticketsspa(pom.spa):
 
             bl.save()
 
-            tbody = tbl['tbody'].only
-
             src = tbody.elements.pop(trsrc.id)
             ix = tbody.elements.getindex(trdest.id)
             tbody.elements.insert(ix, src)
