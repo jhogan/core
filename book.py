@@ -8734,7 +8734,7 @@ with book('Hacking Carapacian Core'):
 
           The following CSS patterns are currently supported:
 
-          | CSS Selector           | Description                                                                     |
+          | Pattern                | Description                                                                     |
           | ---------------------- | ------------------------------------------------------------------------------- |
           | E                      | An element of type E                                                            |
           | .c                     | All elements with class="c"                                                     |
@@ -8764,6 +8764,8 @@ with book('Hacking Carapacian Core'):
           | :only-of-type          | An element that is the only sibling of its type                                 |
           | :empty                 | An element that has no children or whitespace-only content                      |
           | :not(selector)         | An element that does not match the specified selector                           |
+          | selector1, selector2   | Selects multiple elements that match either selector1 or selector2              |
+
         ''')
 
 
