@@ -564,6 +564,20 @@ class element(tester.tester):
 
         ps = html['body>p']
         self.zero(ps)
+    
+    def it_calls_next(self):
+        html = dom.html('''
+            <ul>
+                <li>0</li>
+                <li>1</li>
+                <li>2</li>
+            </ul>
+        ''')
+
+        li = html['li:first-of-type'].only
+        self.eq('1', li.next.text)
+        self.eq('2', li.next.next.text)
+        self.none(li.next.next.next)
 
 class comment(tester.tester):
     def it_calls_html(self):
