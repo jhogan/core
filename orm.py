@@ -10554,7 +10554,12 @@ class orm:
         try:
             return self.entity(id)
         except db.RecordNotFoundError:
-            return self.entity(id=id)
+            e = self.entity()
+
+            # TODO If we assign id a str that is a valid UUID, it should
+            # return the id as a UUID type, not a str. 
+            e.id = UUID(id)
+            return e
 
     @property
     def abbreviation(self):
