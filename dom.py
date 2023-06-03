@@ -1493,7 +1493,7 @@ class element(entities.entity):
 
     @property
     def ondragstart(self):
-        """ XXX
+        """ Returns the `oninput` event for this element.
         """
         return self._on('dragstart')
 
@@ -1503,7 +1503,7 @@ class element(entities.entity):
 
     @property
     def ondragover(self):
-        """ XXX
+        """ Returns the `ondragover` event for this element.
         """
         return self._on('dragover')
 
@@ -1513,7 +1513,7 @@ class element(entities.entity):
 
     @property
     def ondrop(self):
-        """ XXX
+        """ Returns the `ondrop` event for this element.
         """
         return self._on('drop')
 
@@ -1523,7 +1523,7 @@ class element(entities.entity):
 
     @property
     def ondragenter(self):
-        """ XXX
+        """ Returns the `ondragenter` event for this element.
         """
         return self._on('dragenter')
 
@@ -1533,7 +1533,7 @@ class element(entities.entity):
 
     @property
     def ondragleave(self):
-        """ XXX
+        """ Returns the `ondragleave` event for this element.
         """
         return self._on('dragleave')
 
@@ -1543,7 +1543,7 @@ class element(entities.entity):
 
     @property
     def ondragover(self):
-        """ XXX
+        """ Returns the `ondragover` event for this element.
         """
         return self._on('dragover')
 
@@ -2657,7 +2657,63 @@ class element(entities.entity):
         handle       =  None,
         target       =  None,
     ):
-        """ XXX
+        """ Prepares this `element` for a drag-and-drop gesture using
+        the HTML Drag and Drop API
+        (https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API)
+
+        The Event Handler Parameters
+        ----------------------------
+        The parameters that start with `on` are the event handlers for
+        the event. They all can be None, a tuple, or a reference to the
+        handler itself. 
+
+        If they are None, a null handler will be assigned to the event.
+        This means that the browser will catch the event a call
+        `preventDefault()` on the element, but no XHR request will be
+        made.
+
+        If an event handler parameter is a tuple, the first element in
+        the tuple will be the event handler. The rest of the element in
+        the tuple will be the dom.elements that should be sent to the
+        event handler in the XHR request.
+
+        If the event handler paramter in a callable, that callable will
+        be assumed to be the event handler itself. 
+
+        Below is an example to illustrate dragonization.
+
+            tr.dragonize(
+                ondrop = (self.tr_ondrop, tbl, tr),
+                ondragstart = self.tr_ondragstart
+            )
+
+        The `ondrop` will event will be handle by `self.tr_ondrop` and
+        `tbl` and `tr` will be sent to the event handler. `ondragstart`
+        will be handled by `self.tr_ondragstart`. No `dom.elements` will
+        be sent to this event handler. The rest of the event handler
+        parameters will default to None (null) so browsers will call
+        `preventDefault` on the elements but will not make XHR calls.
+
+        :param: ondrop tuple|NoneType|callable: The event handler for
+        this element's ondrop event. 
+
+        :param: ondragover tuple|NoneType|callable: The event handler
+        for this element's ondragover event. 
+
+        :param: ondragleave tuple|NoneType|callable: The event handler
+        for this element's ondragleave event. 
+
+        :param: ondragstart tuple|NoneType|callable: The event handler
+        for this element's ondragstart event. 
+
+        :param: handle dom.element: The element that will be used as the
+        handle for the user to drag this element around. Its
+        `ondragleave` will be given a null handler and the 'handle'
+        class will be added to its class attribute. `handle`'s
+        'draggable' attribute will be set to 'true'.
+
+        :param: target str: The id of the element that the `handle` will
+        drag around.
         """
         # XXX Test
         self.ondrop       +=  ondrop
@@ -2674,6 +2730,7 @@ class element(entities.entity):
                 handle.setattr('data-drag-target', target)
 
             handle.draggable = 'true'
+
     def __str__(self):
         return self.pretty
 

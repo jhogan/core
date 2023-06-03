@@ -10549,8 +10549,26 @@ class orm:
             self.isloading = False
 
     def produce(self, id):
-        """ XXX
+        """ Return a new instance of the entity using `id`. If the
+        entity exists in the database, that entity will be loaded from
+        the database and returned. If the entity with that `id` is not
+        found, a new entity will be instanciated, assigned an id of
+        `id`, and returned. Note that this new instance will not be
+        saved to the database.
+
+        Etymology
+        ---------
+        "Produce" has two meaning is every day speech. Produce can mean
+        to make something. It can also mean to present something to
+        person that already exists (consider the sentence "He produced a
+        piece of silver from his pocket"). This dual meaning captures the
+        intention of this method since the method can return an entity
+        that already exist, or it can make a new one.
+
+        :param: id str|UUID: The id of the entity that the caller
+        intends to be produced.
         """
+        # XXX Test
         try:
             return self.entity(id)
         except db.RecordNotFoundError:
