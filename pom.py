@@ -814,6 +814,8 @@ function ajax(e){
         // the dragged item invisible.
         // XXX Update comment
 
+        // XXX Should this be called data-drag-source or
+        // data-drag-subject?
         // TODO What if there is no data-drag-target
         let id = e.target.getAttribute('data-drag-target')
         let target = document.getElementById(id)

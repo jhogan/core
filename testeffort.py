@@ -21,19 +21,19 @@ from func import enumerate, getattr
 from pprint import pprint
 from primative import datetime, date
 from uuid import uuid4, UUID
+import asset
 import builtins
-import tester
+import db
 import ecommerce
+import effort
+import order
 import orm
 import party
-import order
-import db
-import effort
-import sys
-import testproduct
 import product
 import shipment
-import asset
+import sys
+import tester
+import testproduct
 
 class effort_(tester.tester):
     def __init__(self, *args, **kwargs):

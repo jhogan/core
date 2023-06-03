@@ -4,7 +4,7 @@ import apriori; apriori.model()
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
 import dom, www
 import html as htmlmod
 import party

@@ -858,7 +858,6 @@ class joins(entitiesmod.entities):
         self.entities = es
         super().__init__(initial=initial)
 
-    # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
         """ Return the table name for this ``joins`` collection. 
@@ -10279,7 +10278,6 @@ class orm:
 
         return res
 
-    # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
         """ Returns a ``db.table`` object representing the entity's
