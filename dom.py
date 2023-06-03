@@ -6378,13 +6378,10 @@ class tr(element):
     row's cells can then be established using a mix of <td> (data cell)
     and <th> (header cell) elements.
     """
-
     @property
     def entity(self):
         """ XXX
         """
-        # XXX Test
-
         if not (cls := self.getattr('data-entity')):
             raise ValueError('Missing data-entity attributes')
 

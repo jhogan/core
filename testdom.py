@@ -656,6 +656,20 @@ class p(tester.tester):
 
         self.eq(expect, p.text)
 
+class tr(tester.tester):
+    def it_class_entity(self):
+        from test import artist, artists
+
+        artist.orm.recreate()
+        arts = artists()
+        for i in range(2):
+            arts += artist.getvalid()
+
+        ids = arts.pluck('id')
+        for tr in arts.orm.table['tbody tr']:
+            art1 = tr.entity
+            self.in_(ids, art1.id)
+
 class text(tester.tester):
     def it_calls_html(self):
         txt = self.dedent('''
