@@ -2651,6 +2651,31 @@ class element(entities.entity):
     def isplurality(self):
         return self.elements.isplurality
 
+    def dragonize(self, 
+        ondrop       =  None,
+        ondragover   =  None,
+        ondragleave  =  None,
+        ondragstart  =  None,
+        handle       =  None,
+        target       =  None,
+    ):
+        """ XXX
+        """
+        # XXX Test
+        self.ondrop       +=  ondrop
+        self.ondragover   +=  ondragover
+        self.ondragleave  +=  ondragleave
+
+        if handle:
+            handle.ondragstart += None
+
+            with suppress(ClassExistsError):
+                handle.classes += 'handle'
+
+            if target:
+                handle.setattr('data-drag-target', target)
+
+            handle.draggable = 'true'
     def __str__(self):
         return self.pretty
 

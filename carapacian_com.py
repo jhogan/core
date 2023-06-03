@@ -592,30 +592,13 @@ class ticketsspa(pom.spa):
                 tbl['thead tr'].only << dom.th(class_='handle')
 
                 for tr in tbl['tbody tr']:
-
-                    # XXX It looks like all we need to do at the moment
-                    # for this event handler is have the JS call
-                    # preventDefault(). If that's the case, it would be
-                    # nice if we could subscribe a null-handler (like an
-                    # empty lambda or something) that would prevent a
-                    # trip back to the server. I believe the
-                    # preventDefault() default would be called by
-                    # default in ajax().
-
-                    # XXX Consider creating an element.dragonize()
-                    # method.
-                    tr.ondragover += self.tr_dragover, tr
-                    tr.ondragleave += self.tr_dragleave, tr
-
-                    tr.ondrop += self.tr_ondrop, tbl, tr
-
                     td = dom.td(class_='handle')
-                    span = dom.span('☰', class_='handle');
-                    span.setattr('data-drag-target', tr.id)
-                    span.draggable = 'true'
-
-                    # XXX This should be a null handler
-                    span.ondragstart += None
+                    span = dom.span('☰') 
+                    tr.dragonize(
+                        ondrop = (self.tr_ondrop, tbl, tr),
+                        handle = span,
+                        target = tr.id,
+                    )
 
                     td += span
                     tr << td
@@ -636,16 +619,6 @@ class ticketsspa(pom.spa):
             status types to filter the backlog cards by.
             """
             super().main(id=id, crud=crud, oncomplete=oncomplete)
-
-        # XXX s/def tr_dr/def tr_ondr/
-        def span_ondragstart(self, src, eargs):
-            pass
-
-        def tr_dragover(self, src, eargs):
-            pass
-
-        def tr_dragleave(self, src, eargs):
-            pass
 
         def tr_ondrop(self, src, eargs):
             """ XXX
