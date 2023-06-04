@@ -1179,7 +1179,7 @@ class backlog(tester.tester):
         self.is_(st0, bss.first.story)
         self.is_(st1, bss.second.story)
 
-        # Persist; reload and try again
+        # Persist, reload and try again
         bl.save()
         bl = bl.orm.reloaded()
 
@@ -1206,7 +1206,9 @@ class backlog(tester.tester):
                 bss = bl.backlog_stories.sorted('rank')
 
                 sts = bss.pluck('story')
-                self.eq(st5.id, sts[i].id, str(i))
+                self.eq(
+                    st5.id, sts[i].id, f'Sequence: {str(i)}; org: {ord}'
+                )
 
                 bl.save()
                 bl = bl.orm.reloaded()

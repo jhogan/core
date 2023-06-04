@@ -940,10 +940,10 @@ class backlog(orm.entity):
         `save()` method on this `backlog` in order to persist the changes
         to the database.
 
-        The `rank` parameter contains the rank the story should have in
-        the backlog. For example, the following gets an existing backlog
-        and, creates a story, and inserts the story into the backlog at
-        index 3:
+        The `rank` parameter contains the rank the story should have
+        within the backlog. For example, the following gets an existing
+        backlog and, creates a story, and inserts the story into the
+        backlog at index 3:
             
             bl = backlog(id=blid)
             st = story()
@@ -958,7 +958,7 @@ class backlog(orm.entity):
             #  Does the same as above.
             bl.insert(0, st)
 
-        It's possible to change the rank of story within a backlog by
+        It's possible to change the rank of a story within a backlog by
         reinserting. 
             
             # Insert at position 0
@@ -976,7 +976,6 @@ class backlog(orm.entity):
 
         :param: st story: The story to add or move.
         """
-
         # Implement the single-argument behavior
         if not st:
             st = rank
