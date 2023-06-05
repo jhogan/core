@@ -987,35 +987,52 @@ class backlog(orm.entity):
         # Get this backlogs collection of `backlog_stories 
         bss = self.backlog_stories
 
-        # Sort by rank
         bss.sort('rank')
-
-        # If the story exists in the collection, we are doing a
-        # replacement operation:
-        replacing = st.id in bss.pluck('story.id')
-
-        # If we are not replacing, we are adding the story to the
-        # collection.
-        adding = not replacing
-
+        promote = demote = add = False
         # Iterate over the backlog_stories collection.
         for bs in bss:
-            if replacing:
-                if bs.story.id == st.id:
-                    for bs1 in bss:
-                        if rank == bs1.rank:
+            if bs.story.id == st.id:
+                if rank == bs.rank:
+                    # XXX Test this condition
+                    return
+                elif rank > bs.rank:
+                    promote = True
+                elif rank < bs.rank:
+                    demote = True
 
-                            # Replace rank values
-                            bs1.rank, bs.rank = bs.rank, rank
-                            break
-            elif adding:
-                # Increment all rank greater than or equal to rank
-                if bs.rank >= rank:
+                target = bs
+                break
+        else:
+            add = True
+
+        if promote:
+            for bs in bss:
+                if bs.rank > target.rank:
+                    if bs.rank <= rank:
+                        bs.rank -= 1
+
+        elif demote:
+            for bs in bss:
+                if bs.rank < target.rank:
+                    if bs.rank >= rank:
+                        bs.rank += 1
+
+        elif add:
+            for bs in bss:
+                if rank <= bs.rank:
                     bs.rank += 1
 
-        # Add to the collection at `rank`
-        if adding:
-            bss += backlog_story(rank=rank, story=st)
+            ranks = bss.pluck('rank')
+
+            if ranks:
+                rank = min(max(ranks) + 1, rank)
+            else:
+                rank = 0
+
+            target = backlog_story(rank=rank, story=st)
+            bss += target
+
+        target.rank = rank
 
     def remove(self, st):
         """ Remove the story from this backlog. Returns a collection of
