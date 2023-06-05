@@ -976,6 +976,8 @@ class backlog(orm.entity):
 
         :param: st story: The story to add or move.
         """
+        # XXX Update comments
+
         # Implement the single-argument behavior
         if not st:
             st = rank
