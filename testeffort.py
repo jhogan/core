@@ -1366,13 +1366,14 @@ class backlog(tester.tester):
         for i, st in enumerate((st2, st3, st4)):
             bl.insert(i + 2, st)
 
-        # Move st5 from begining to end
+        # Move st5 from begining to end then back. 
         for ord in ('asc', 'desc'):
             if ord == 'asc':
                 seq = range(6)
             elif ord == 'desc':
                 seq = range(4, -1, -1)
 
+            # Use i to start the move from every rank
             for i in seq:
                 bl.insert(rank=i, st=st5)
                 bss = bl.backlog_stories.sorted('rank')

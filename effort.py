@@ -934,7 +934,8 @@ class backlog(orm.entity):
         return self.backlogstatustype.name == 'planning'
 
     def insert(self, rank, st=None):
-        """ Puts the story `st` into this `backlog`.
+        """ Puts the story `st` into this `backlog` at a certain
+        poistion (rank).
 
         Note that this operation is transient. You will need to call the
         `save()` method on this `backlog` in order to persist the changes
@@ -976,24 +977,28 @@ class backlog(orm.entity):
 
         :param: st story: The story to add or move.
         """
-        # XXX Update comments
-
         # Implement the single-argument behavior
         if not st:
             st = rank
             # Recurse using a default rank of 0
             return self.insert(rank=0, st=st)
 
-        # Get this backlogs collection of `backlog_stories 
+        # Get this backlog's collection of `backlog_stories`
         bss = self.backlog_stories
 
         bss.sort('rank')
+
         promote = demote = add = False
-        # Iterate over the backlog_stories collection.
+
+        # Iterate over the backlog_stories collection to determiine if
+        # we are promoting or demoting an existing stories rank within
+        # the backlog. This loop will also determine whether or not the
+        # story is new to the backlog.
         for bs in bss:
             if bs.story.id == st.id:
                 if rank == bs.rank:
-                    # XXX Test this condition
+                    # The story is already at the specified rank so
+                    # return
                     return
                 elif rank > bs.rank:
                     promote = True
@@ -1003,20 +1008,30 @@ class backlog(orm.entity):
                 target = bs
                 break
         else:
+            # Story was not found so add
             add = True
 
+        # If we are promoting a story, we will have to demote
+        # (decrement) the ranks of other stories to make room for the
+        # new ranking.
         if promote:
             for bs in bss:
                 if bs.rank > target.rank:
                     if bs.rank <= rank:
                         bs.rank -= 1
 
+        # If we are demoting a story, we will have to promote
+        # (increment) the ranks of other stories to make room for the
+        # new ranking.
         elif demote:
             for bs in bss:
                 if bs.rank < target.rank:
                     if bs.rank >= rank:
                         bs.rank += 1
 
+        # If we are adding a story, we will have to promote
+        # (increment) the ranks of other stories to make room for the
+        # new story and its rank.
         elif add:
             for bs in bss:
                 if rank <= bs.rank:
@@ -1025,13 +1040,16 @@ class backlog(orm.entity):
             ranks = bss.pluck('rank')
 
             if ranks:
+                # If we are inserting at a rank that is greater than the
+                # current maximum rank by any increment, normalize the
+                # rank so it is only one above the current max rank.
                 rank = min(max(ranks) + 1, rank)
-            else:
-                rank = 0
 
+            # Create an and new story association
             target = backlog_story(rank=rank, story=st)
             bss += target
 
+        # Finally, set the story associations rank
         target.rank = rank
 
     def remove(self, st):

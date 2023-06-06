@@ -6437,21 +6437,38 @@ class tr(element):
     """
     @property
     def entity(self):
-        """ XXX
+        """ Return a entity corresponding to this <tr>.
+
+        For the entity to be found, the <tr> must have a `data-entity`
+        and `data-entity-id` attribute so the entity can be found.
+
+        If the entity exists in the database, it will be loaded and
+        returned. If it doesn't yet exist in the database, a new entity
+        will be created and returned. Note that this entity the caller
+        will need to save this new entity to the database if persistence
+        is desired.
         """
+        # Get the 'data-entity' attribute. It contains the module and
+        # class name.
         if not (cls := self.getattr('data-entity')):
             raise ValueError('Missing data-entity attributes')
 
+        # Get the 'data-entity-id' attribute. It contains the UUID of
+        # the entity
         if not (id := self.getattr('data-entity-id')):
             raise ValueError('Missing data-entity-id attributes')
 
+        # Split the data-entity into module and class (mod, cls)
         mod, cls = cls.split('.')
 
+        # Import the module
         import importlib
         mod = importlib.import_module(mod)
 
+        # Get the class reference from the module
         cls = getattr(mod, cls)
 
+        # Return the persisted or transient entity
         return cls.orm.produce(id)
 
 
@@ -10274,8 +10291,12 @@ class event(entities.event):
         that DOM object will be sent back up to the server and then
         re-objectified into a DOM object.
 
-        :param: obj callable: A reference to the server-side event
-        handler (e.g. btnok_click).
+        :param: obj callable|NoneType: A reference to the server-side event
+        handler (e.g. btnok_click). If obj is None, a null handler will
+        be used. When the in-browser JavaScript detects a null
+        handler, preventDefault() will be called on the target element,
+        but no XHR request will be made to the server since there is no
+        handler defined to receive the request.
 
         :param: els tuple: The collection of dom.elements whose HTML
         representation will be sent to the server. This tuple can
@@ -10300,9 +10321,12 @@ class event(entities.event):
             # Get the element's attirbutes collection
             attrs = self.element.attributes
 
-            # XXX Comment on
+            # If a null-handler is being subscribed to
             if f is None:
+                # The data-{event}-handler will be set to 'None'
                 hnd = 'None'
+
+                # Pass an empty callable to super().append() below
                 f = lambda: None
             else:
                 hnd = f.__func__.__name__
