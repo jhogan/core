@@ -33,7 +33,6 @@ import product
 import shipment
 import sys
 import tester
-import testproduct
 
 class effort_(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -76,6 +75,7 @@ class effort_(tester.tester):
         """ Deliverables here means assets, products and deliverables
         attached to a work ``requirement``.
         """
+        import testproduct
 
         # Create work requirement types
         run = effort.requirementtype(name='Production run')
@@ -615,6 +615,8 @@ class effort_(tester.tester):
             self.eq(rt.ratetype.name, rt1.ratetype.name)
 
     def it_associates_effort_with_inventory_items(self):
+        import testproduct
+
         # Create work effort
         tsk = effort.task(name='Assemble pencil components')
 
@@ -755,6 +757,8 @@ class effort_(tester.tester):
         self.eq('Active', ap1.asset_partystatustype.name)
 
     def it_creates_standards(self):
+        import testproduct
+
         ''' Test good standard '''
         # Create effort type
         pencil = effort.type(name='Large production run of pencils')
