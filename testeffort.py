@@ -1379,27 +1379,35 @@ class backlog(tester.tester):
 
             # Use i to start the move from every rank
             for i in seq:
-                bl.insert(rank=i, st=st5)
-                bss = bl.backlog_stories.sorted('rank')
 
-                sts = bss.pluck('story')
-                self.eq(
-                    st5.id, sts[i].id, f'Sequence: {str(i)}; org: {ord}'
-                )
+                # Use j to move st5 one rank at a time, two at a time,
+                # three and so on. 
+                for j in range(6):
+                    # Revert to i
+                    bl.insert(rank=i, st=st5)
 
-                bl.save()
-                bl = bl.orm.reloaded()
+                    # Move to j
+                    bl.insert(rank=j, st=st5)
 
-                bss = bl.backlog_stories.sorted('rank')
+                    bl.save()
+                    bl = bl.orm.reloaded()
+                    bss = bl.backlog_stories.sorted('rank')
 
-                sts = bss.pluck('story')
-                self.eq(st5.id, sts[i].id, str(i))
+                    sts = bss.pluck('story')
+                    self.eq(
+                        list(range(6)), bss.pluck('rank'),
+                        f'{(i,j)} {ord}'
+                    )
+                    self.eq(st5.id, sts[j].id, f'{(i,j)} {ord}')
 
-        # XXX:e79ea06f All the above tests are replacements. But an
-        # "insert" isn't a replacement, it is an unshift at an arbitrary
-        # point in a list. backlog.insert needs to change to reflect
-        # this and we need more test to ensure insert works as an
-        # unshift.
+                    bl.save()
+                    bl = bl.orm.reloaded()
+
+                    bss = bl.backlog_stories.sorted('rank')
+
+                    sts = bss.pluck('story')
+
+                    self.eq(st5.id, sts[j].id, f'{(i,j)} {ord}')
 
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
