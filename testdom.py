@@ -579,6 +579,45 @@ class element(tester.tester):
         self.eq('2', li.next.next.text)
         self.none(li.next.next.next)
 
+    def it_calls_dragonize(self):
+        html = dom.html('''
+            <ul>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+            </ul>
+        ''')
+
+        def ondrop(self, src, eargs):
+            pass
+
+        def ondragstart(self, src, eargs):
+            pass
+
+        for div in html['ul>div']:
+            hnd = div['span'].only
+            div.identify()
+            div.dragonize(
+                ondrop       =  ondrop,
+                ondragstart  =  (ondragstart,  html),
+                handle       =  hnd,
+                target       =  div.id,
+            )
+            self.eq('ondrop', div.getattr('data-drop-handler'))
+            self.eq('None', div.getattr('data-dragover-handler'))
+            self.eq('None', div.getattr('data-dragleave-handler'))
+            self.eq(hnd.getattr('data-drag-target'), div.id)
+            self.in_(hnd.classes, 'handle')
+
 class comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
