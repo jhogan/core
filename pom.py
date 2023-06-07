@@ -702,23 +702,12 @@ function is_nav_link(e){
     i.e., it is an anchor tag nested within a <nav>.
     */
 
-    // XXX Can we use `e.closest()` here?
-    var rent = e.parentNode
-
-    var found = false
-    while (rent){
-        if (rent.tagName == 'NAV'){
-            found = true
-            break
-        }
-        rent = rent.parentNode
-    }
-
-    if (found){
+    const nav = e.closest('nav')
+    if (nav){
 '''
 
         r += f'''
-        as = rent.querySelectorAll('{page.IsNavSelector}')
+        as = nav.querySelectorAll('{page.IsNavSelector}')
 '''
 
         r += '''
