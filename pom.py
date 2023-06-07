@@ -925,7 +925,13 @@ function ajax(e){
                 // is possible that, in some cases, they will choose not
                 // to.
 
-                // XXX if this.status == 204, do nothing
+                if (this.status == 204){
+                    console.info(
+                        'Page patch abandoned; 204 No Content detected'
+                    )
+                    return
+                }
+
                 if(!xhr.responseText){
                     console.info('No response')
                     return
