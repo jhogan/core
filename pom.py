@@ -772,13 +772,12 @@ function ajax(e){
 
     console.debug('isnav: ' + isnav + ', ispg: ' + ispg)
 
-    // XXX Can we move this into the (isnav) consequence block?
-    var nav = src.closest('nav');
-
     // If the element being clicked is a nav link
     if (isnav){
         // If we are in SPA mode
         if (inspa){
+            let nav = src.closest('nav');
+
             // Is the link from the Spa menu
             var isspanav = nav.getAttribute('aria-label') == 'Spa';
 
