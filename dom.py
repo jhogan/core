@@ -10328,7 +10328,7 @@ class event(entities.event):
                 # Pass an empty callable to super().append() below
                 f = lambda: None
             else:
-                hnd = f.__func__.__name__
+                hnd = f.__name__
 
             attrs[f'data-{self.name}-handler'] = hnd
 
