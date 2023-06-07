@@ -779,7 +779,7 @@ function ajax(e){
             let nav = src.closest('nav');
 
             // Is the link from the Spa menu
-            var isspanav = nav.getAttribute('aria-label') == 'Spa';
+            let isspanav = nav.getAttribute('aria-label') == 'Spa';
 
             if (!isspanav){
                 // If we are in SPA mode but not in the Spa menu, allow
