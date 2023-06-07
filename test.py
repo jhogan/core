@@ -15283,6 +15283,26 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.eq(getattr(pres, attr), span.text)
             self.eq(lbl.for_, span.id)
 
+    def it_calls_produce(self):
+        ids = uuid4(), uuid4().hex
+
+        for id in ids:
+            art = artist.orm.produce(id)
+            self.true(art.orm.isnew)
+
+            self.expect(db.RecordNotFoundError, art.orm.reloaded)
+
+        art = artist.getvalid()
+        art.save()
+
+        ids = art.id, art.id.hex
+
+        for id in ids:
+            art = artist.orm.produce(id)
+            self.false(art.orm.isnew)
+
+            self.expect(None, art.orm.reloaded)
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -10568,7 +10568,6 @@ class orm:
         :param: id str|UUID: The id of the entity that the caller
         intends to be produced.
         """
-        # XXX Test
         try:
             return self.entity(id)
         except db.RecordNotFoundError:
@@ -10576,7 +10575,12 @@ class orm:
 
             # TODO If we assign id a str that is a valid UUID, it should
             # return the id as a UUID type, not a str. 
-            e.id = UUID(id)
+            if isinstance(id, UUID):
+                pass
+            elif isinstance(id, str):
+                id = UUID(hex=id)
+
+            e.id = id
             return e
 
     @property
