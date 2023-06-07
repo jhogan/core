@@ -773,9 +773,7 @@ function ajax(e){
     console.debug('on' + trigger)
 
     // The control that the event happened to
-    // XXX This is experimental. Thoroughly test.
     var src = e.currentTarget
-    console.debug(src)
 
     // Is the element a navigation link
     var isnav = is_nav_link(src)
@@ -880,7 +878,6 @@ function ajax(e){
             els.push(document.querySelector(frag))
         }
     }
-
 
     var html = null
     var pg

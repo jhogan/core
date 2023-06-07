@@ -10351,7 +10351,6 @@ class event(entities.event):
                 # attribute a valid CSS selector, which will be useful later
                 # on.
                 attrs[f'data-{self.name}-fragments'] = ', '.join(ids)
-
         else:
             # Conventional event subscription.
             f = obj

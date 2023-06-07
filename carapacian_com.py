@@ -643,6 +643,8 @@ class ticketsspa(pom.spa):
             # and does nothing in response.
             for tr in trs:
                 if tr.id == trsrc.id:
+                    # XXX There is a null reference bug here when we move B
+                    # to A
                     if tr.next.id == trdest.id:
                         www.application.current.response.status = 204
                         return
@@ -651,10 +653,7 @@ class ticketsspa(pom.spa):
             bsdest  =  trdest.entity
             bl      =  bsdest.backlog
 
-            # XXX:e79ea06f This currertly replaces but does not unshift.
-            # Some more work needs to be done here.
             bl.insert(bsdest.rank, bssrc.story)
-
             bl.save()
 
             src = tbody.elements.pop(trsrc.id)
