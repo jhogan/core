@@ -8,6 +8,7 @@ field          fld
 fragment:      frag
 fulltext:      ft
 function:      f
+handle:        hnd
 handler:       hnd
 index:         ix
 input:         inp

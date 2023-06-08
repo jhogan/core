@@ -796,12 +796,9 @@ function ajax(e){
     }
 
     if (trigger == 'dragstart'){
-        // Don't preventDefault() if dragstart because doing so makes
-        // the dragged item invisible.
-        // XXX Update comment
+        // Don't preventDefault() on dragstart because doing so stops
+        // the native drag chain event on the element. 
 
-        // XXX Should this be called data-drag-source or
-        // data-drag-subject?
         // TODO What if there is no data-drag-target
         let id = e.target.getAttribute('data-drag-target')
         let target = document.getElementById(id)

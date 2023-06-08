@@ -621,12 +621,17 @@ class ticketsspa(pom.spa):
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
         def tr_ondrop(self, src, eargs):
-            """ XXX
+            """ The event handler for this `backlogs` to handle a story
+            being moved within the backlog.
             """
-            # XXX Add test
-            tbl     =  eargs.html.first
-            trsrc   =  eargs.html.last
-            trdest  =  src
+            # Get the table of stories
+            tbl = eargs.html.first
+
+            # Get the element being dropped
+            trsrc = eargs.html.last
+
+            # Get the element that the above is being dropped on
+            trdest = src
 
             tbody = tbl['tbody'].only
 
@@ -638,7 +643,7 @@ class ticketsspa(pom.spa):
             #     Story B
             #     Story C
             #
-            # If we drag Story A and drop on Story  B, nothing should
+            # If we drag Story A and drop on Story B, nothing should
             # happen. The following code detects this type of situaton
             # and does nothing in response.
             for tr in trs:
@@ -649,13 +654,21 @@ class ticketsspa(pom.spa):
                         www.application.current.response.status = 204
                         return
                     
-            bssrc   =  trsrc.entity
-            bsdest  =  trdest.entity
-            bl      =  bsdest.backlog
+            # Get the backlog_story entities associated with the source
+            # and estication
+            bssrc = trsrc.entity
+            bsdest = trdest.entity
 
+            # Get the destinations backlog
+            bl = bsdest.backlog
+
+            # Insert the story to change its ranking within the backlog
+            # and save.
             bl.insert(bsdest.rank, bssrc.story)
             bl.save()
 
+            # Move the <tr>s within the table so they reflect the
+            # reassignment of the story's rank
             src = tbody.elements.pop(trsrc.id)
             ix = tbody.elements.getindex(trdest.id)
             tbody.elements.insert(ix, src)
@@ -877,7 +890,7 @@ class ticketsspa(pom.spa):
 
         @property
         def instance(self):
-            """ XXX
+            """ Return the instance of this `backlog_stories` page.
             """
             # XXX Test to ensure stories are always sorted by rank
             inst = super().instance
