@@ -10610,3 +10610,6 @@ class eventargs(entities.eventargs):
         return r
 
 
+class transfer:
+    """ XXX
+    """
