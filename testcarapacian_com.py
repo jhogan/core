@@ -967,5 +967,39 @@ class ticketsspa_backlogs(tester.tester):
         else:
             self.fail('Cannot find story')
 
+    def it_moves_stories_within_backlog(self):
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bl = testeffort.backlog.getvalid()
+
+        for i in range(5):
+            st = testeffort.story.getvalid()
+            bl.insert(st)
+
+        bls.save()
+        
+        # Load the backlogs page
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        card = res[f'cards article.card[data-entity-id="{bl.id}"]'].only
+
+        tbl = card['table[data-entity=backlog_story]'].only
+
+        trs = tbl['tbody tr']
+
+        hnd = tr.last['.handle'].only
+
+        with hnd.dragstart() as tx:
+            trs.first.drop(tx.getdata('text/html'))
+
+            
+        
+
+    def it_moves_stories_between_backlogs(self):
+        """ XXX
+        """
+
 if __name__ == '__main__':
     tester.cli().run()
