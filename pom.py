@@ -829,7 +829,11 @@ function ajax(e){
     // Get the name of the event handler of the trigger
     var hnd = src.getAttribute('data-' + trigger + '-handler')
 
-    // XXX Comment
+    // If hnd equals 'None', the handler is null, meaning that there are
+    // no server-side events handlers for this event. Null event
+    // handlers are used to ensure that preventDefault() is called
+    // (which it will have been at this point). Nothing further needs to
+    // be done.
     if (hnd == 'None'){
         return
     }
@@ -881,16 +885,28 @@ function ajax(e){
     }else{
         // Concatenate the fragment's HTML
         html = ''
+
+        // Wake up any <form> data 
         wake(els)
+
+        // Create the HTML string to be sent to the server
         for(el of els){
             html += el.outerHTML
         }
 
-        // XXX Comment
+        // When an item is dropped in a drag-and-drop operation, we want
+        // to get element that was dragged (called the `target` below)
+        // and add it as the *last* element to the HTML that will be
+        // sent to the server in the XHR request. The serer-side event
+        // handler should expect to receive this element as the last
+        // entry in the `html` elements collection it is receiving (i.e,
+        // `eargs.html.last`).
         if (trigger == 'drop'){
             // NOTE e.dataTransfer can sometimes be null here when
-            // debugging step-by-step: 
+            // using DevTools to do step-by-step debugging. See:
+            //
             //     https://stackoverflow.com/questions/43180248/firefox-ondrop-event-datatransfer-is-null-after-update-to-version-52
+            //
             let target = e.dataTransfer.getData('text/html')
             html += target
         }

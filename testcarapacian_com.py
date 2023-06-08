@@ -995,10 +995,8 @@ class ticketsspa_backlogs(tester.tester):
             trs.first.drop(tx.getdata('text/html'))
 
             
-        
-
     def it_moves_stories_between_backlogs(self):
-        """ XXX
+        """ Test moving a story from one backlog to another.
         """
 
 if __name__ == '__main__':
