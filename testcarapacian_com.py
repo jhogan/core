@@ -978,22 +978,23 @@ class ticketsspa_backlogs(tester.tester):
             st = testeffort.story.getvalid()
             bl.insert(st)
 
-        bls.save()
+        bl.save()
         
         # Load the backlogs page
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
 
-        card = res[f'cards article.card[data-entity-id="{bl.id}"]'].only
+        card = res[
+            f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
+        ].only
 
-        tbl = card['table[data-entity=backlog_story]'].only
+        tbl = card['table[data-entity="effort.backlog_story"]'].only
 
         trs = tbl['tbody tr']
 
-        hnd = tr.last['.handle'].only
+        hnd = trs.last['span.handle '].only
 
-        with hnd.dragstart() as tx:
-            trs.first.drop(tx.getdata('text/html'))
-
+        with self.dragstart(hnd, tab):
+            tab.drop(trs.first)
             
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
