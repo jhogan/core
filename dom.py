@@ -10598,3 +10598,18 @@ class eventargs(entities.eventargs):
 class transfer:
     """ XXX
     """
+    def __init__(self):
+        # NOTE A full implementation would model _items on the
+        # DataTransferItem class.
+        # https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem
+        self._items = {}
+
+    def __getitem__(self, fmt):
+        with suppress(KeyError):
+            return self._items[fmt]
+
+        return None
+
+    def __setitem__(self, fmt, v):
+        self._items[fmt] = _items
+
