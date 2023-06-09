@@ -764,6 +764,11 @@ class tester(entities.entity):
                 # Cancel default event handling
                 eargs.preventDefault()
 
+                # XXX Comment
+                B()
+                if eargs.handler == 'None':
+                    return
+
                 # Create a JSON object to send in the XHR request
                 body = {
                     'hnd':      eargs.handler,
