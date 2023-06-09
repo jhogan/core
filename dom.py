@@ -1497,25 +1497,10 @@ class element(entities.entity):
         """
         return self._on('dragstart')
 
-    @contextmanager
-    def dragstart(self, cm=False):
+    def dragstart(self):
         """ XXX
         """
-        if cm:
-            tx = transfer()
-            ishnd = 'handle' in self.classes
-
-            if ishnd:
-                id = self.getattr('data-drag-target')
-                target = self.root['#' + id]
-                tx.set('text/html', target.html)
-
-        e = self._trigger('dragstart')()
-
-        if cm:
-            yield tx
-        else:
-            return e
+        return self._trigger('dragstart')()
                 
     @ondragstart.setter
     def ondragstart(self, v):

@@ -1852,6 +1852,27 @@ class tester(entities.entity):
 
         return None
 
+    @contextmanager
+    def dragstart(self, e, tab, count=1):
+        """ XXX
+        """
+        tab.transfer = dom.transfer()
+        tx = tab.transfer
+
+        B()
+        yield self._trigger('dragstart', e, tab, count)
+
+        ishnd = 'handle' in self.classes
+
+        if ishnd:
+            id = e.getattr('data-drag-target')
+            target = self.root['#' + id]
+            tx.set('text/html', target.html)
+
+        yield tx
+
+        self.transfer = None
+
     def submit(self, e, tab, count=1):
         """ Call the click() trigger method on a form (`e`). Return the
         last response the browser recorded.
