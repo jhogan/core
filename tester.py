@@ -1881,6 +1881,13 @@ class tester(entities.entity):
 
         self.transfer = None
 
+    def drop(self, zone):
+        """ XXX
+        """
+        src = tx.get('text/html')
+        src = dom.html(src)
+        zone.drop(src)
+                    
     def submit(self, e, tab, count=1):
         """ Call the click() trigger method on a form (`e`). Return the
         last response the browser recorded.
