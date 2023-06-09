@@ -8726,13 +8726,8 @@ with book('Hacking Carapacian Core'):
         print('''
           A very useful feature of the DOM is its ability to use CSS
           selectors to search DOM trees for elements that match the
-          selector. The full CSS3 standard was implemented except for
-          some pseudoclasses such as `:hover` and `:vistited` since they
-          only make sense in a browser environment. (Note that
-          additions are made to the CSS3 standard all the time and the
-          DOM will therefore occasionally not fully support CSS3).
-
-          The following CSS patterns are currently supported:
+          selector. The following table shows the types of selector
+          patterns currently supported.
 
           | Pattern                | Description                                                                     |
           | ---------------------- | ------------------------------------------------------------------------------- |
@@ -8766,6 +8761,34 @@ with book('Hacking Carapacian Core'):
           | :not(selector)         | An element that does not match the specified selector                           |
           | selector1, selector2   | Selects multiple elements that match either selector1 or selector2              |
 
+          Using CSS selectors is fairly easy. We put the CSS selector
+          into square brackets following an element or collection of
+          elements. THe response is a colection of elements that match
+          the selector:
+        ''')
+
+        with listing('Using CSS selectors on elements'):
+          # Get all <em>'s in the DOM tree
+          ems = ps['em']
+
+          # The return value is collection of elements
+          type(dom.elements, ems)
+
+          # Only one <em> was found
+          one(ems)
+          em = ems.only
+
+          # Assert that the <em> is of type dom.em
+          type(dom.em, em)
+
+          # Assert the em's text property
+          eq('emphasize this enough', em.text)
+
+        print('''
+          In the above example, we hav a collection of elements (`ps`).
+          We want to obtain any `<em>` elements within it. We were able
+          to obtain a collection of one `<em>` by using the CSS selector
+          'em'.
         ''')
 
 
