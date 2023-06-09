@@ -542,6 +542,9 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
+                # XXX
+                self.transfer  = None
+
                 # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
                 # like a global JavaScript variable. The user may be
