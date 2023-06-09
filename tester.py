@@ -1333,7 +1333,7 @@ class tester(entities.entity):
                     yield msgs
                 finally:
                     self.messages.onadd -= messages_onadd
-                    
+
         ''' Class members of browser'''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
