@@ -764,8 +764,8 @@ class tester(entities.entity):
                 # Cancel default event handling
                 eargs.preventDefault()
 
-                # XXX Comment
-                B()
+                # If eargs.handler is 'None', we hav a null handler. No
+                # XHR request should, therefore, be made so return.
                 if eargs.handler == 'None':
                     return
 
