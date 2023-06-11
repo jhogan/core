@@ -10621,5 +10621,5 @@ class transfer:
         return None
 
     def __setitem__(self, fmt, v):
-        self._items[fmt] = _items
+        self._items[fmt] = v
 
