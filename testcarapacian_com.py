@@ -981,9 +981,9 @@ class ticketsspa_backlogs(tester.tester):
         bl.save()
         
         # Load the backlogs page
-        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        tab.navigate('/en/ticketsspa/backlogs', ws)
 
-        card = res[
+        card = tab[
             f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
         ].only
 
@@ -991,10 +991,48 @@ class ticketsspa_backlogs(tester.tester):
 
         trs = tbl['tbody tr']
 
-        hnd = trs.last['span.handle '].only
+        hnd = trs.last['span.handle'].only
 
-        with self.dragstart(hnd, tab):
-            tab.drop(trs.first)
+        zone = trs.first
+
+        with self.dragstart(hnd, tab) as res:
+            # No XHR request is made on dragstart events
+            self.none(res)
+
+            res = self.dragover(zone, tab)
+            self.true(zone.getattr('data-dragentered'))
+
+            # No XHR request is made on dragover events
+            self.none(res)
+
+            res = self.drop(zone, tab)
+            self.h200(res)
+
+        card = tab[
+            f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
+        ].only
+
+        tbl = card['table[data-entity="effort.backlog_story"]'].only
+
+        trs = tbl['tbody tr']
+
+        for i, tr in trs.enumerate():
+            B()
+            self.none(zone.getattr('data-dragentered'))
+
+            if i.first:
+                self.eq(
+                    hnd.closest('tr').getattr('data-entity-id'),
+                    tr.getattr('data-entity-id')
+                )
+
+            if i.second:
+                self.eq(
+                    zone.getattr('data-entity-id'),
+                    tr.getattr('data-entity-id')
+                )
+
+
             
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
