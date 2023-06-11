@@ -647,7 +647,10 @@ class ticketsspa(pom.spa):
             # If we drag Story A and drop on Story B, nothing should
             # happen. The following code detects this type of situaton
             # and does nothing in response.
-            for tr in trs:
+            for i, tr in trs.enumerate():
+                if tr.last:
+                    break
+
                 if tr.id == trsrc.id:
                     if tr.next.id == trdest.id:
                         www.application.current.response.status = 204
