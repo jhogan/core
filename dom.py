@@ -1516,6 +1516,11 @@ class element(entities.entity):
     def ondragover(self, v):
         setattr(self, '_ondragover', v)
 
+    def dragover(self):
+        """ XXX
+        """
+        return self._trigger('dragover')()
+                
     @property
     def ondrop(self):
         """ Returns the `ondrop` event for this element.
@@ -1525,6 +1530,11 @@ class element(entities.entity):
     @ondrop.setter
     def ondrop(self, v):
         setattr(self, '_ondrop', v)
+
+    def drop(self):
+        """ XXX
+        """
+        return self._trigger('drop')()
 
     @property
     def ondragenter(self):
