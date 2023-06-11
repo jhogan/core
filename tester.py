@@ -761,13 +761,33 @@ class tester(entities.entity):
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
 
+                # XXX Comment
+                if eargs.trigger == 'dragstart':
+                    id = src.getattr('data-drag-target')
+                    target = self['#' + id].only
+                    self.transfer['text/html'] = target.html
+
                 # Cancel default event handling
                 eargs.preventDefault()
+
+                # XXX Comment
+                if eargs.trigger == 'dragover':
+                    src.setattr('data-dragentered', True)
+
+                elif eargs.trigger == 'drop':
+                    src.delattr('data-dragentered')
+
+                elif eargs.trigger == 'dragleave':
+                    src.delattr('data-dragentered')
 
                 # If eargs.handler is 'None', we hav a null handler. No
                 # XHR request should, therefore, be made so return.
                 if eargs.handler == 'None':
                     return
+
+                # XXX Comment
+                if eargs.trigger == 'drop':
+                    html += self.transfer['text/html']
 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -1862,33 +1882,30 @@ class tester(entities.entity):
         return None
 
     @contextmanager
-    def dragstart(self, e, tab, count=1):
+    def dragstart(self, e, tab, cnt=0):
         """ XXX
         """
-        tab.transfer = dom.transfer()
-        tx = tab.transfer
+        try:
+            tab.transfer = dom.transfer()
+            tx = tab.transfer
 
-        B()
-        yield self._trigger('dragstart', e, tab, count)
+            yield self._trigger('dragstart', e, tab, cnt)
 
-        ishnd = 'handle' in self.classes
+        finally:
+            print('finally')
+            self.transfer = None
 
-        if ishnd:
-            id = e.getattr('data-drag-target')
-            target = self.root['#' + id]
-            tx.set('text/html', target.html)
-
-        yield tx
-
-        self.transfer = None
-
-    def drop(self, zone):
+    def dragover(self, e, tab, cnt=0):
         """ XXX
         """
-        src = tx.get('text/html')
-        src = dom.html(src)
-        zone.drop(src)
-                    
+        return self._trigger('dragover', e, tab, cnt)
+
+    def drop(self, e, tab, cnt=1):
+        """ XXX
+        """
+        return self._trigger('drop', e, tab, cnt)
+
+    # TODO We should change the name of the `count` parameter to `cnt`.
     def submit(self, e, tab, count=1):
         """ Call the click() trigger method on a form (`e`). Return the
         last response the browser recorded.
