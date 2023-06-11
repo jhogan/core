@@ -799,7 +799,8 @@ function ajax(e){
         // Don't preventDefault() on dragstart because doing so stops
         // the native drag chain event on the element. 
 
-        // TODO What if there is no data-drag-target
+        // TODO What if there is no data-drag-target; for example, in
+        // the case of non handle elements (:not(span.handle)).
         let id = e.target.getAttribute('data-drag-target')
         let target = document.getElementById(id)
 
@@ -814,6 +815,9 @@ function ajax(e){
         case 'dragover':
             e.currentTarget.setAttribute('data-dragentered', true)
             console.groupEnd()
+
+            // XXX Now that we have null handlers, we can remove these
+            // `return` statements.
             return
 
         case 'drop':

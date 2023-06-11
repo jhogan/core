@@ -1257,8 +1257,8 @@ class tester(entities.entity):
                 # Create request. Associate with app.
                 req = www.request(app)
 
+                # Record the request/response in a `message` object 
                 msg = tester._browser.message(req=req)
-
                 self.messages += msg
 
                 app.breakonexception = \
@@ -1837,12 +1837,13 @@ class tester(entities.entity):
         :param: trig str: The name of the trigger, e.g., 'click',
         'submit', 'blur', etc.
 
+        :param e dom.element: The target of the event.
+
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
         :param: count int: The number of HTTP requests that the trigger
         is intended to cause.
-
         """
         trig = getattr(e, trig)
 

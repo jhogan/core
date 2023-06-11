@@ -1,6 +1,7 @@
 carapacian:    car    cara
-context:       ctx
 checkbox:      chk
+context:       ctx
+count:         cnt
 description:   desc
 entities:      es
 entity:        e

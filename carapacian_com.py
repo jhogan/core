@@ -631,6 +631,7 @@ class ticketsspa(pom.spa):
             trsrc = eargs.html.last
 
             # Get the element that the above is being dropped on
+            # XXX s/trdest/trzone
             trdest = src
 
             tbody = tbl['tbody'].only
@@ -648,8 +649,6 @@ class ticketsspa(pom.spa):
             # and does nothing in response.
             for tr in trs:
                 if tr.id == trsrc.id:
-                    # XXX There is a null reference bug here when we move B
-                    # to A
                     if tr.next.id == trdest.id:
                         www.application.current.response.status = 204
                         return
