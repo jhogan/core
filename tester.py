@@ -1841,6 +1841,12 @@ class tester(entities.entity):
             
             self._failures += failure()
 
+    def h204(self, res):
+        if res.status != 204:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
     def h500(self, res):
         if res.status != 500:
             msg = f'Actual status: {res.status}'
