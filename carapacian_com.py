@@ -653,7 +653,7 @@ class ticketsspa(pom.spa):
             # happen. The following code detects this type of situaton
             # and does nothing in response.
             for i, tr in trs.enumerate():
-                if tr.last:
+                if i.last:
                     break
 
                 if tr.id == trsrc.id:
