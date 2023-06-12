@@ -6497,6 +6497,18 @@ class tr(element):
         # Return the persisted or transient entity
         return cls.orm.produce(id)
 
+    @property
+    def handle(self):
+        """ XXX
+        """
+        return self['span.handle'].only
+
+    @property
+    def entityid(self):
+        """ XXX
+        """
+        return self.getattr('data-entity-id')
+
 
 class selects(elements):
     """ A class used to contain a collection of ``tr`` elements."""
