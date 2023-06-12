@@ -2745,6 +2745,12 @@ class element(entities.entity):
 
             handle.draggable = 'true'
 
+    @property
+    def dragentered(self):
+        """ XXX
+        """
+        return self.getattr('data-dragentered') is True
+
     def __str__(self):
         return self.pretty
 
