@@ -1898,7 +1898,6 @@ class tester(entities.entity):
             yield self._trigger('dragstart', e, tab, cnt)
 
         finally:
-            print('finally')
             self.transfer = None
 
     def dragover(self, e, tab, cnt=0):
