@@ -638,6 +638,11 @@ class ticketsspa(pom.spa):
 
             trs = tbody['tr']
 
+            # XXX Comment
+            if trsrc.id == trdest.id:
+                www.application.current.response.status = 204
+                return
+
             # Given:
             # 
             #     Story A
