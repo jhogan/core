@@ -968,13 +968,24 @@ class ticketsspa_backlogs(tester.tester):
             self.fail('Cannot find story')
 
     def it_moves_stories_within_backlog(self):
+        XXX = print
+        def get_table():
+            """ XXX
+            """
+            card = tab[
+                f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
+            ].only
+
+            tbl = card['table[data-entity="effort.backlog_story"]'].only
+            return tbl
+
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
         import testeffort
         bl = testeffort.backlog.getvalid()
 
-        for i in range(5):
+        for i in range(4):
             st = testeffort.story.getvalid()
             bl.insert(st)
 
@@ -983,57 +994,61 @@ class ticketsspa_backlogs(tester.tester):
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
-        card = tab[
-            f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
-        ].only
+        tbl = get_table()
+        trs = tbl.trs
 
-        tbl = card['table[data-entity="effort.backlog_story"]'].only
+        XXX(trs.pluck('entityid'))
+        for i in range(trs.count):
+            tr = trs[i]
+            hnd = tr.handle
 
-        trs = tbl['tbody tr']
+            for j in range(trs.count):
+                zone = trs[j]
+                B(i == 1 and j == 1)
+                XXX(f'\n({i},{j}) {tr.entityid} -> {zone.entityid}\n')
 
-        hnd = trs.last['span.handle'].only
+                with self.dragstart(hnd, tab) as res:
+                    # No XHR request is made on dragstart events
+                    self.none(res)
 
-        zone = trs.first
+                    res = self.dragover(zone, tab)
+                    self.true(zone.dragentered)
 
-        with self.dragstart(hnd, tab) as res:
-            # No XHR request is made on dragstart events
-            self.none(res)
+                    # No XHR request is made on dragover events
+                    self.none(res)
 
-            res = self.dragover(zone, tab)
-            self.true(zone.getattr('data-dragentered'))
+                    XXX(trs.pluck('entityid'))
+                    res = self.drop(zone, tab)
+                    XXX(get_table().trs.pluck('entityid'))
 
-            # No XHR request is made on dragover events
-            self.none(res)
+                if i == j or i == j -1:
+                    self.h204(res)
+                    continue
 
-            res = self.drop(zone, tab)
-            self.h200(res)
+                self.h200(res)
 
-        card = tab[
-            f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
-        ].only
+                tbl = get_table()
 
-        tbl = card['table[data-entity="effort.backlog_story"]'].only
+                trs = tbl.trs
 
-        trs = tbl['tbody tr']
+                for k, tr in trs.enumerate():
+                    #XXX self.false(tr.dragentered)
 
-        for i, tr in trs.enumerate():
-            B()
-            self.none(zone.getattr('data-dragentered'))
+                    if k == j - 1:
+                        # XXX
+                        if hnd.closest('tr').entityid != tr.entityid:
+                            print('XXX')
 
-            if i.first:
-                self.eq(
-                    hnd.closest('tr').getattr('data-entity-id'),
-                    tr.getattr('data-entity-id')
-                )
-
-            if i.second:
-                self.eq(
-                    zone.getattr('data-entity-id'),
-                    tr.getattr('data-entity-id')
-                )
+                        self.eq(
+                            hnd.closest('tr').entityid, tr.entityid
+                        )
+                        
+                    if k == j + 1:
+                        self.eq(
+                            zone.entityid, tr.entityid
+                        )
 
 
-            
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
         """
