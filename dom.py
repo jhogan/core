@@ -6447,6 +6447,12 @@ class table(element):
     and columns of cells containing data.
     """
 
+    @property
+    def trs(self):
+        """ XXX
+        """
+        return self['tbody tr']
+
 class trs(elements):
     """ A class used to contain a collection of ``tr`` elements."""
 
