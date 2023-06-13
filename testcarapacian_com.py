@@ -970,7 +970,8 @@ class ticketsspa_backlogs(tester.tester):
     def it_moves_stories_within_backlog(self):
         XXX = print
         def get_table():
-            """ XXX
+            """ Return the <table> that corresponds to the backlog,
+            `bl`, from the browser `tab`.
             """
             card = tab[
                 f'div.cards article.card[data-entity-id="{bl.id.hex}"]'

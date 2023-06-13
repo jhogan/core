@@ -1498,7 +1498,7 @@ class element(entities.entity):
         return self._on('dragstart')
 
     def dragstart(self):
-        """ XXX
+        """ Trigger the `dragstart` event for this element.
         """
         return self._trigger('dragstart')()
                 
@@ -1517,7 +1517,7 @@ class element(entities.entity):
         setattr(self, '_ondragover', v)
 
     def dragover(self):
-        """ XXX
+        """ Trigger the `dragover` event for this element.
         """
         return self._trigger('dragover')()
                 
@@ -1532,7 +1532,7 @@ class element(entities.entity):
         setattr(self, '_ondrop', v)
 
     def drop(self):
-        """ XXX
+        """ XdragstartXX
         """
         return self._trigger('drop')()
 
@@ -2747,14 +2747,19 @@ class element(entities.entity):
 
     @property
     def dragentered(self):
-        """ XXX
+        """ Trigger the `dragentered` event for this element.
         """
         return self.getattr('data-dragentered') is True
 
     def __str__(self):
+        """ Return a pretty-printed representation of the HTML in this
+        `element`.
+        """
         return self.pretty
 
     def __repr__(self):
+        """ Return a representation of this `element`.
+        """
         r = '%s(%s)'
         attrs = ', '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
@@ -6449,7 +6454,10 @@ class table(element):
 
     @property
     def trs(self):
-        """ XXX
+        """ Return the collection of `tr` records in this table's body.
+
+        Note that this only returns th `tr` records in the <tbody>. Any
+        <tr> records in the <thead> will be excluded.
         """
         return self['tbody tr']
 
@@ -6499,13 +6507,45 @@ class tr(element):
 
     @property
     def handle(self):
-        """ XXX
+        """ Return the handle element of this `tr` object. Handle
+        elements are elements that users click to perform drag-and-drop
+        operations:
+            
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="handle">☰</span>
+                        </td>
+                        <td>
+                            Drag me
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+        In the above examle, the <span> in the first <td> would be used
+        to drag the entire <tr>.
         """
         return self['span.handle'].only
 
     @property
     def entityid(self):
-        """ XXX
+        """ Return the value of the `data-entity-id` attribute of this
+        `tr` element.
+
+        The `data-entity-id` is a common attribute used by the framework
+        to denote the ORM entity that a DOM element is associated with.
+        In the below example, the <tr> would represent the data in an
+        `backlog' object with an id of dca9304489c74e15888b83fdcb09a3c8:
+
+            <tr data-entity="effort.backlog" 
+                data-entity-id="dca9304489c74e15888b83fdcb09a3c8">
+
+                <td>
+                    ...
+                </td>
+            </tr>
         """
         return self.getattr('data-entity-id')
 
@@ -10628,22 +10668,66 @@ class eventargs(entities.eventargs):
         r += ')'
         return r
 
-
 class transfer:
-    """ XXX
+    """ The `transfer` class is a Python implementation of the
+    JavaScript DataTransfer object:
+
+        https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
+
+    It is mainly used in the testing framework, and will probably never
+    be needed for regurlar application development.
+
+    The API is analogous to the JavaScript version, but uses Pythonic
+    idioms:
+        
+        JavaScript version:
+
+            var tx = new DataTransfer()
+            tx.setData("text/plain", 'my data')
+            var mydata = tx.getData('text/plain')
+        
+        Python version
+
+            tx = transfer()
+            tx['text/plain'] = 'my data'
+            mydata = tx['text/plain']
+
+    Note that currently this is a partial implementation.
     """
     def __init__(self):
+        """ Create a new `transfer` object.
+        """
         # NOTE A full implementation would model _items on the
         # DataTransferItem class.
         # https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem
         self._items = {}
 
     def __getitem__(self, fmt):
+        """ Return the data stored in this `transfer` object for the
+        given format. 
+
+        This is analogous to the `getData` method of the JavaScript
+        version.
+
+        :param fmt str: A string representing the type of data to
+        retrieve.
+        """
         with suppress(KeyError):
             return self._items[fmt]
 
         return None
 
     def __setitem__(self, fmt, v):
+        """ Return the data stored in this `transfer` object for the
+        given format. 
+
+        This is analogous to the `setData` method of the JavaScript
+        version.
+
+        :param fmt str: The type of drag data to add to the drag object.
+
+        :param v str: The data to add to the drag object.
+        """
+
         self._items[fmt] = v
 

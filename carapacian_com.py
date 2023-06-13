@@ -638,7 +638,7 @@ class ticketsspa(pom.spa):
 
             trs = tbody['tr']
 
-            # XXX Comment
+            # If the source is the same as the destination, do nothing.
             if trsrc.id == trdest.id:
                 www.application.current.response.status = 204
                 return
