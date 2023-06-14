@@ -542,7 +542,9 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
-                # XXX
+                # The data transfer object (dom.transfer). This will be
+                # assigned an instance of a new `dom.transfer` object
+                # when a drag-and-drop operation is initiated.
                 self.transfer  = None
 
                 # We are not in SPA mode by default. The `inspa`
@@ -761,8 +763,13 @@ class tester(entities.entity):
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
 
-                # XXX Comment
+                # If this is a dragstart dom event
                 if eargs.trigger == 'dragstart':
+                    # Assume src is a handle (see dom.tr.handle). Its
+                    # data-drag-target attribute will have the ID of the
+                    # element that is being dragged by the handle. Get
+                    # its HTML and put it in the data transfer object
+                    # (self.transfer).
                     id = src.getattr('data-drag-target')
                     target = self['#' + id].only
                     self.transfer['text/html'] = target.html
@@ -770,7 +777,13 @@ class tester(entities.entity):
                 # Cancel default event handling
                 eargs.preventDefault()
 
-                # XXX Comment
+                # For the various drag-and-drop events, we want to make
+                # sure the `data-dragentered` Boolean attribute is set
+                # correctly to indicate whether or not something is
+                # being drug over (dragover) an element. In a real
+                # browser, this is done by the JavaScript so CSS can
+                # indicate to the user that a drag zone has drag data
+                # hovering above it.
                 if eargs.trigger == 'dragover':
                     src.setattr('data-dragentered', True)
 
@@ -785,7 +798,11 @@ class tester(entities.entity):
                 if eargs.handler == 'None':
                     return
 
-                # XXX Comment
+                # If we are in a drag-and-drop operation, and a drop is
+                # finally made, get the drop data (usually an element
+                # being drug) from the transfer objects. Append this
+                # data to the end of the HTML. The server-side handler
+                # will be expecting this to be the last element.
                 if eargs.trigger == 'drop':
                     html += self.transfer['text/html']
 
@@ -1889,7 +1906,36 @@ class tester(entities.entity):
 
     @contextmanager
     def dragstart(self, e, tab, cnt=0):
-        """ XXX
+        """ A context manager that calls the dragstart() trigger method
+        on `e`. A data transfer object (self.transfer) is created for
+        the duration of the drag-and-drop opereration.  Return the last
+        response the browser recorded. 
+
+            # Initiate the dragstart on the handler hnd
+            with self.dragstart(hnd, tab) as res:
+                # Ensure that the server-side event handle for the
+                # dragstart event returned 200. If there was no event
+                # handler declared to respond because it was set to a
+                # null handler, `res` will be None.
+                self.h200(res)
+
+                # Drag oven the `zone` element and test reselt
+                res = self.dragover(zone, tab)
+                self.none(res)
+
+                # Drop zone and test result
+                res = self.drop(zone, tab)
+                self.h200(res)
+
+        :param: e dom.element: The element on which to invoke the
+        trigger.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause. Typically, the dragstart event will have a
+        null handler so 0 responses are expected by default.
         """
         try:
             tab.transfer = dom.transfer()
@@ -1901,12 +1947,34 @@ class tester(entities.entity):
             self.transfer = None
 
     def dragover(self, e, tab, cnt=0):
-        """ XXX
+        """ Call the dragover() trigger method on an element (`e`).
+        Return the last response the browser recorded.
+
+        :param: e dom.element: The element dropped.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause. This is default because dragover events
+        should probably alwasy have null handlers. Real browsers call
+        the the `dragover` event several times a second during a drag.
+        That would be too many XHR calls to the server from the browser
+        to deal will efficiently.
         """
         return self._trigger('dragover', e, tab, cnt)
 
     def drop(self, e, tab, cnt=1):
-        """ XXX
+        """ Call the drop() trigger method on an element (`e`). Return
+        the last response the browser recorded.
+
+        :param: e dom.element: The element droped.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: count int: The number of HTTP requests that the trigger
+        is intended to cause.
         """
         return self._trigger('drop', e, tab, cnt)
 
