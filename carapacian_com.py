@@ -676,9 +676,9 @@ class ticketsspa(pom.spa):
 
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
-            src = tbody.elements.pop(trsrc.id)
-            ix = tbody.elements.getindex(trdest.id)
-            tbody.elements.insert(ix, src)
+            trsrc = tbody.elements['#' + trsrc.id].only
+            destix = tbody.elements.getindex(trdest.id)
+            tbody.elements.move(destix, trsrc)
 
             bss = bl.backlog_stories
 
