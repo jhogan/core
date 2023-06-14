@@ -986,7 +986,8 @@ class ticketsspa_backlogs(tester.tester):
         import testeffort
         bl = testeffort.backlog.getvalid()
 
-        for i in range(4):
+        Count = 4
+        for i in range(Count):
             st = testeffort.story.getvalid()
             bl.insert(st)
 
@@ -995,17 +996,16 @@ class ticketsspa_backlogs(tester.tester):
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
-        tbl = get_table()
-        trs = tbl.trs
+        for i in range(Count):
+            for j in range(Count):
+                ij = str((i, j))
+                tbl = get_table()
+                trs = tbl.trs
 
-        XXX(trs.pluck('entityid'))
-        for i in range(trs.count):
-            tr = trs[i]
-            hnd = tr.handle
+                tr = trs[i]
+                hnd = tr.handle
 
-            for j in range(trs.count):
                 zone = trs[j]
-                B(i == 1 and j == 1)
                 XXX(f'\n({i},{j}) {tr.entityid} -> {zone.entityid}\n')
 
                 with self.dragstart(hnd, tab) as res:
@@ -1028,12 +1028,8 @@ class ticketsspa_backlogs(tester.tester):
 
                 self.h200(res)
 
-                tbl = get_table()
-
-                trs = tbl.trs
-
                 for k, tr in trs.enumerate():
-                    #XXX self.false(tr.dragentered)
+                    #self.false(tr.dragentered, ij)
 
                     if k == j - 1:
                         # XXX
@@ -1041,13 +1037,11 @@ class ticketsspa_backlogs(tester.tester):
                             print('XXX')
 
                         self.eq(
-                            hnd.closest('tr').entityid, tr.entityid
+                            hnd.closest('tr').entityid, tr.entityid, ij
                         )
                         
                     if k == j + 1:
-                        self.eq(
-                            zone.entityid, tr.entityid
-                        )
+                        self.eq(zone.entityid, tr.entityid, ij)
 
 
     def it_moves_stories_between_backlogs(self):
