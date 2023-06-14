@@ -1182,7 +1182,13 @@ class entities:
 
         :param: e entity: The entity to move.
         """
-        raise NotImplementedError('TODO')
+        eix = self.getindex(e)
+        self.pop(eix)
+        
+        if eix <= ix:
+            ix -= 1
+
+        self.insert(ix, e)
 
     def moveafter(self, ix, e):
         """ Remove ``e`` from the collection, causing the onremove event to
