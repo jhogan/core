@@ -814,11 +814,7 @@ function ajax(e){
     switch(trigger){
         case 'dragover':
             e.currentTarget.setAttribute('data-dragentered', true)
-            console.groupEnd()
-
-            // XXX Now that we have null handlers, we can remove these
-            // `return` statements.
-            return
+            break
 
         case 'drop':
             e.currentTarget.removeAttribute('data-dragentered')
@@ -826,8 +822,7 @@ function ajax(e){
 
         case 'dragleave':
             e.currentTarget.removeAttribute('data-dragentered')
-            console.groupEnd()
-            return
+            break
     }
 
     // Get the name of the event handler of the trigger
@@ -839,6 +834,7 @@ function ajax(e){
     // (which it will have been at this point). Nothing further needs to
     // be done.
     if (hnd == 'None'){
+        console.groupEnd()
         return
     }
 
