@@ -1051,6 +1051,7 @@ class ticketsspa_backlogs(tester.tester):
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
         """
+        # XXX
 
 if __name__ == '__main__':
     tester.cli().run()

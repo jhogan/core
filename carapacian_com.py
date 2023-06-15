@@ -898,8 +898,9 @@ class ticketsspa(pom.spa):
         def instance(self):
             """ Return the instance of this `backlog_stories` page.
             """
-            # XXX Test to ensure stories are always sorted by rank
             inst = super().instance
+
+            # NOTE Sorting is tested in it_moves_stories_within_backlog
             inst.sort('rank')
             return inst
 
