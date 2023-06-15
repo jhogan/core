@@ -1002,6 +1002,14 @@ class ticketsspa_backlogs(tester.tester):
                 tbl = get_table()
                 trs = tbl.trs
 
+                # Test to ensure stories are always presented in the
+                # order in which they are rank in the database
+                bl = bl.orm.reloaded()
+                for k, tr in trs.enumerate():
+                    bss = bl.backlog_stories.sorted('rank')
+                    bs = bss[k]
+                    self.eq(k, bs.rank)
+
                 tr = trs[i]
                 hnd = tr.handle
 
@@ -1020,7 +1028,11 @@ class ticketsspa_backlogs(tester.tester):
 
                     XXX(trs.pluck('entityid'))
                     res = self.drop(zone, tab)
-                    XXX(get_table().trs.pluck('entityid'))
+
+                    tbl = get_table()
+                    trs = tbl.trs
+
+                    XXX(trs.pluck('entityid'))
 
                 if i == j or i == j -1:
                     self.h204(res)
@@ -1028,20 +1040,12 @@ class ticketsspa_backlogs(tester.tester):
 
                 self.h200(res)
 
-                for k, tr in trs.enumerate():
-                    #self.false(tr.dragentered, ij)
+                src = hnd.closest('tr')
 
-                    if k == j - 1:
-                        # XXX
-                        if hnd.closest('tr').entityid != tr.entityid:
-                            print('XXX')
-
-                        self.eq(
-                            hnd.closest('tr').entityid, tr.entityid, ij
-                        )
-                        
-                    if k == j + 1:
-                        self.eq(zone.entityid, tr.entityid, ij)
+                if j > i:
+                    self.eq(trs[j - 1].entityid, src.entityid, ij)
+                elif i < j:
+                    self.eq(trs[j].entityid, src.entityid, ij)
 
 
     def it_moves_stories_between_backlogs(self):

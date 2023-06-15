@@ -631,15 +631,14 @@ class ticketsspa(pom.spa):
             trsrc = eargs.html.last
 
             # Get the element that the above is being dropped on
-            # XXX s/trdest/trzone
-            trdest = src
+            trzone = src
 
             tbody = tbl['tbody'].only
 
             trs = tbody['tr']
 
             # If the source is the same as the destination, do nothing.
-            if trsrc.id == trdest.id:
+            if trsrc.id == trzone.id:
                 www.application.current.response.status = 204
                 return
 
@@ -657,14 +656,14 @@ class ticketsspa(pom.spa):
                     break
 
                 if tr.id == trsrc.id:
-                    if tr.next.id == trdest.id:
+                    if tr.next.id == trzone.id:
                         www.application.current.response.status = 204
                         return
                     
             # Get the backlog_story entities associated with the source
             # and estication
             bssrc = trsrc.entity
-            bsdest = trdest.entity
+            bsdest = trzone.entity
 
             # Get the destinations backlog
             bl = bsdest.backlog
@@ -677,7 +676,7 @@ class ticketsspa(pom.spa):
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
             trsrc = tbody.elements['#' + trsrc.id].only
-            destix = tbody.elements.getindex(trdest.id)
+            destix = tbody.elements.getindex(trzone.id)
             tbody.elements.move(destix, trsrc)
 
             bss = bl.backlog_stories
