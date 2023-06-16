@@ -787,11 +787,8 @@ class tester(entities.entity):
                 if eargs.trigger == 'dragover':
                     src.setattr('data-dragentered', True)
 
-                elif eargs.trigger == 'drop':
-                    src.delattr('data-dragentered')
-
-                elif eargs.trigger == 'dragleave':
-                    src.delattr('data-dragentered')
+                elif eargs.trigger in ('drop', 'dragleave'):
+                    del src.attributes['data-dragentered']
 
                 # If eargs.handler is 'None', we hav a null handler. No
                 # XHR request should, therefore, be made so return.
