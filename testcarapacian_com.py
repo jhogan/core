@@ -1033,6 +1033,7 @@ class ticketsspa_backlogs(tester.tester):
                     trs = tbl.trs
 
                     XXX(trs.pluck('entityid'))
+                    self.false(zone.dragentered, ij)
 
                 if i == j or i == j -1:
                     self.h204(res)

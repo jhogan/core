@@ -1016,10 +1016,11 @@ class entities:
         else:
             rms = [e]
 
-        for i in range(self.count - 1, -1, -1):
+        ls = self._ls
+        for i in range(len(ls) - 1, -1, -1):
             for rm in rms:
-                if rm is self[i]:
-                    del self._ls[i]
+                if rm is ls[i]:
+                    del ls[i]
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
