@@ -628,10 +628,10 @@ class ticketsspa(pom.spa):
             tbl = eargs.html.first
 
             # Get the element being dropped
-            trsrc = eargs.html.last
+            trsrc = eargs.html.pop()
 
             # Get the element that the above is being dropped on
-            trzone = src
+            trzone = eargs.html.pop()
 
             tbody = tbl['tbody'].only
 
