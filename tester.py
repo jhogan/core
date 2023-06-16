@@ -841,11 +841,14 @@ class tester(entities.entity):
 
                     # Get the fragement of html in the tab that is the
                     # subject of the event from the tab's DOM (.html)
-                    ids = list('#' + x.id for x in eargs.html)
-                    for i, id in enumerate(ids):
-                        el = res.html[i]
-                        replace(id, res.html[i])
-                        exec(el)
+                    ids = list(x.id for x in eargs.html)
+                    for id in ids:
+                        for el in res.html:
+                            if id != el.id:
+                                continue
+
+                            replace('#' + id, el)
+                            exec(el)
 
                     self.listen(res.html)
 
