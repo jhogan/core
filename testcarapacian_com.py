@@ -968,7 +968,6 @@ class ticketsspa_backlogs(tester.tester):
             self.fail('Cannot find story')
 
     def it_moves_stories_within_backlog(self):
-        XXX = print
         def get_table():
             """ Return the <table> that corresponds to the backlog,
             `bl`, from the browser `tab`.
@@ -1014,7 +1013,6 @@ class ticketsspa_backlogs(tester.tester):
                 hnd = tr.handle
 
                 zone = trs[j]
-                XXX(f'\n({i},{j}) {tr.entityid} -> {zone.entityid}\n')
 
                 with self.dragstart(hnd, tab) as res:
                     # No XHR request is made on dragstart events
@@ -1026,13 +1024,11 @@ class ticketsspa_backlogs(tester.tester):
                     # No XHR request is made on dragover events
                     self.none(res)
 
-                    XXX(trs.pluck('entityid'))
                     res = self.drop(zone, tab)
 
                     tbl = get_table()
                     trs = tbl.trs
 
-                    XXX(trs.pluck('entityid'))
                     self.false(zone.dragentered, ij)
 
                 if i == j or i == j -1:
@@ -1047,7 +1043,6 @@ class ticketsspa_backlogs(tester.tester):
                     self.eq(trs[j - 1].entityid, src.entityid, ij)
                 elif i < j:
                     self.eq(trs[j].entityid, src.entityid, ij)
-
 
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
