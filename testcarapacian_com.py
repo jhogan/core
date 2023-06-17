@@ -1047,7 +1047,52 @@ class ticketsspa_backlogs(tester.tester):
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
         """
-        # XXX
+        def get_table(bl):
+            """ Return the <table> that corresponds to the backlog,
+            `bl`, from the browser `tab`.
+            """
+            card = tab[
+                f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
+            ].only
+
+            tbl = card['table[data-entity="effort.backlog_story"]'].only
+            return tbl
+
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bl, bl1 = testeffort.backlog.getvalid(2)
+
+        Count = 4
+        for i in range(Count):
+            st = testeffort.story.getvalid()
+            bl.insert(st)
+
+        bl.save(bl1)
+        
+        # Load the backlogs page
+        tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        tbl = get_table(bl)
+        tbl1 = get_table(bl1)
+
+        dock = tbl1['.dock'].only
+
+        for tr in tbl.trs:
+            hnd = tr.handle
+            with self.dragstart(hnd, tab) as res:
+                self.none(res)
+
+                res = self.dragover(dock, tab)
+                self.true(dock.dragentered)
+
+                # No XHR request is made on dragover events
+                self.none(res)
+
+                res = self.drop(dock, tab)
+
+                self.false(dock.dragentered)
 
 if __name__ == '__main__':
     tester.cli().run()
