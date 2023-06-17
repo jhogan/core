@@ -603,11 +603,24 @@ class ticketsspa(pom.spa):
                     td += span
                     tr << td
 
+                # XXX Add comments
+                tfoot = dom.tfoot()
+                tr = dom.tr(class_='dock')
+                tr.dragonize(
+                    ondrop = (self.tr_ondrop, tbl, tr),
+                )
+
+                tbl += tfoot
+                tfoot += tr
+                tr += dom.td('XXX')
+
+
                 # Remove the table's parent so we can make `card` its
                 # new parent
                 tbl.orphan()
 
                 card += tbl
+
             return div
 
         def main(self, 
