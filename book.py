@@ -8763,15 +8763,25 @@ with book('Hacking Carapacian Core'):
 
           Using CSS selectors is fairly easy. We put the CSS selector
           into square brackets following an element or collection of
-          elements. THe response is a colection of elements that match
+          elements. The response is a colection of elements that match
           the selector:
         ''')
 
         with listing('Using CSS selectors on elements'):
+          # Parse a string of HTML
+          ps = dom.html('''
+            <p>
+              Important notice!
+            </p>
+            <p>
+              I can't <em>emphasize this enough</em>.
+            </p>
+          ''')
+
           # Get all <em>'s in the DOM tree
           ems = ps['em']
 
-          # The return value is collection of elements
+          # The return value is a collection of elements
           type(dom.elements, ems)
 
           # Only one <em> was found
@@ -8785,13 +8795,70 @@ with book('Hacking Carapacian Core'):
           eq('emphasize this enough', em.text)
 
         print('''
-          In the above example, we hav a collection of elements (`ps`).
-          We want to obtain any `<em>` elements within it. We were able
-          to obtain a collection of one `<em>` by using the CSS selector
-          'em'.
+          In the above example, we parse some literal HTML into a
+          collection of elements (`ps`).  We want to obtain any `<em>`
+          elements within it. We were able to obtain a collection of one
+          `<em>` by using the CSS selector 'em'.
+
+          The type selector 'em' serves a very basic example of CSS
+          selection. Let's try a slightly more complex CSS selector.
         ''')
+      
+        with listing('Using a more complex CSS selector'):
+            # Parse a string of HTML
+            els = dom.html('''
+              <section>
+                <div class="my-class">
+                  <p>Select me</p>
+                  <div>
+                    <p>But not me</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="select-me">
+                    Select me, too
+                  </p>
+                </div>
+              </section>
+            ''')
 
+            # Get the <section> element from the els collection
+            section = els.only
 
+            # Select the two <p>'s whose texts state that they want to be
+            # selected
+            ps = section['div.my-class>p, .select-me']
+
+            # Assert we obtained two elements
+            two(ps)
+
+            # Assert we selected the correct <p>s
+            eq('Select me', ps.first.text)
+            eq('Select me, too', ps.second.text)
+
+        print('''
+          The selector we used in this example is actually two
+          selectors seperated by the `,`:
+
+            ps = section['div.my-class>p, .select-me']
+
+          The first selector, `div.my-class>p,` says: return all `<p>`
+          elements that are direct directly beneath any `<div>` that has
+          a class of 'my-class'. The second selector `.select-me` say:
+          return all elements that have a class of `select-me`. The
+          comma acts as a disjuctive operator. That is to say, if an
+          element matches the selector on either side of the comma, then
+          it is considered a match and will therefore be returned. Thus,
+          using this expression, we are able to be very precise in which
+          elements we want returned.
+
+          Note also that in this example, we passed the CSS selector to
+          a single element, `section`, whereas before we passed the CSS
+          selector to a collection of elements. This demonstrates that
+          both elements and collections of elements can be queried in
+          the same way.
+        ''')
+        
   with chapter("Robotic process automation") as sec:
     ...
 
