@@ -3875,12 +3875,12 @@ class selectors(tester.tester):
 
     def it_selects_nth_of_type(self):
         html = dom.html('''
-		<section>
-		   <h1>Words</h1>
-		   <p>Little</p>
-		   <p>Piggy</p>
-		</section>
-		''')
+          <section>
+            <h1>Words</h1>
+            <p>Little</p>
+            <p>Piggy</p>
+          </section>
+        ''')
 
         els = html('p:nth-child(2)')
         self.one(els)
@@ -3894,15 +3894,14 @@ class selectors(tester.tester):
         self.one(els)
         self.eq('Piggy', els.first.elements.first.html)
 
-
         html = dom.html('''
-            <section>
-               <h1>Words</h1>
-               <h2>Words</h2>
-               <p>Little</p>
-               <p>Piggy</p>
-            </section>
-		''')
+          <section>
+            <h1>Words</h1>
+            <h2>Words</h2>
+            <p>Little</p>
+            <p>Piggy</p>
+          </section>
+        ''')
 
         els = html('p:nth-child(2)')
         self.zero(els)
