@@ -8843,7 +8843,7 @@ with book('Hacking Carapacian Core'):
             ps = section['div.my-class>p, .select-me']
 
           The first selector, `div.my-class>p,` says: return all `<p>`
-          elements that are direct directly beneath any `<div>` that has
+          elements that are directly beneath any `<div>` that has
           a class of 'my-class'. The second selector `.select-me` say:
           return all elements that have a class of `select-me`. The
           comma acts as a disjuctive operator. That is to say, if an
@@ -8859,6 +8859,9 @@ with book('Hacking Carapacian Core'):
           the same way.
         ''')
         
+  with chapter("Creating websites") as sec:
+    ...
+
   with chapter("Robotic process automation") as sec:
     ...
 
