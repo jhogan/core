@@ -530,6 +530,8 @@ class ticketsspa(pom.spa):
                 # dom.MoveError. Ideally, we would be able to do this.
                 tbl = pg.main['table'].only
 
+                tbl.setattr('data-backlog-entity-id', bl.id.hex)
+
                 # Remove Quick Edit. Quick Edits are designed to use the
                 # current page (self), but since these Quick Edits are
                 # from a differnt page (pg), their href confuses the
