@@ -1079,7 +1079,8 @@ class ticketsspa_backlogs(tester.tester):
 
         dock = tbl1['.dock'].only
 
-        for tr in tbl.trs:
+        for i in range(tbl.count):
+            tr = tbl.trs[i]
             hnd = tr.handle
             with self.dragstart(hnd, tab) as res:
                 self.none(res)
@@ -1094,6 +1095,26 @@ class ticketsspa_backlogs(tester.tester):
                 res = self.drop(dock, tab)
 
                 self.false(dock.dragentered)
+
+                tbl = get_table(bl)
+                tbl1 = get_table(bl1)
+
+                bsid = tr.getattr('data-entity-id')
+
+                # Ensure it was remove from the source table
+                for tr1 in tbl.trs:
+                     self.ne(bsid, tr1.getattr('data-entity-id'))
+
+                # Ensure it was added to the destination table
+                for tr1 in tbl1.trs:
+                     bsid1 = tr1.getattr('data-entity-id')
+                     if bsid == bsid1:
+                        break
+                else:
+                    self.fail(
+                        '<tr> was not found in destination table: ' +
+                        repr(tr)
+                    )
 
 if __name__ == '__main__':
     tester.cli().run()
