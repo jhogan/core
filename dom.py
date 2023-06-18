@@ -1635,7 +1635,13 @@ class element(entities.entity):
             # an element and it removes itself from the DOM.
             return self.parent.remove(self)
 
-    def identify(self, recursive=False):
+    def reidentify(self, recursive=False):
+        """ XXX
+        """
+
+        self.identify(recursive=recursive, override=True)
+
+    def identify(self, recursive=False, override=False):
         """ Assigns a new, random values to the id attribute of this
         HTML5 elements and all of its descendants. The id value is a
         UUID encoded in Base64 with an 'x' prepended to it.
@@ -1645,7 +1651,7 @@ class element(entities.entity):
         untested functionality.
         """
 
-        if not self.id:
+        if override or not self.id:
             # Set to a random identifier. Prepend an x because HTML5's
             # specification dosen't allow id attributes to start with
             # numbers.
