@@ -684,21 +684,38 @@ class ticketsspa(pom.spa):
             # Get the backlog_story entities associated with the source
             # and estication
             bssrc = trsrc.entity
-            bsdest = trzone.entity
 
-            # Get the destinations backlog
-            bl = bsdest.backlog
+            # XXX Comment
+            if 'dock' in trzone.classes:
+                bsid = tbl.getattr('data-backlog-entity-id')
+                bl = effort.backlog(bsid)
+                rank = 0
+                mv = True
+            else:
+                bsdest = trzone.entity
+                rank = bsdest.rank
+
+                # Get the destinations backlog
+                bl = bsdest.backlog
+
+                mv = bssrc.backlog.id != bl.id
 
             # Insert the story to change its ranking within the backlog
             # and save.
-            bl.insert(bsdest.rank, bssrc.story)
+            bl.insert(rank, bssrc.story)
             bl.save()
 
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
-            trsrc = tbody.elements['#' + trsrc.id].only
-            destix = tbody.elements.getindex(trzone.id)
-            tbody.elements.move(destix, trsrc)
+            # XXX Comment
+            if mv:
+                eargs.remove(trsrc)
+                trsrc.reidentify()
+                tbody.elements.insert(rank, trsrc)
+            else:
+                trsrc = tbody.elements['#' + trsrc.id].only
+                destix = tbody.elements.getindex(trzone.id)
+                tbody.elements.move(destix, trsrc)
 
             bss = bl.backlog_stories
 
