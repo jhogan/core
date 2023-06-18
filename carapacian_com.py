@@ -640,6 +640,11 @@ class ticketsspa(pom.spa):
             being moved within the backlog.
             """
             # XXX Update docstring
+
+            B()
+            if eargs.html.count != 3:
+                raise ValueError(f'Unexpected elements count')
+
             # Get the table of stories
             tbl = eargs.html.first
 
