@@ -13,38 +13,38 @@
 
 Bots are autonomous programs typically run as background process.
 
-All bots inherit from the ``bot`` class. Currently, one class called
-``sendbot`` has been implemented. It is intended to run as a background
+All bots inherit from the `bot` class. Currently, one class called
+`sendbot` has been implemented. It is intended to run as a background
 process which monitors the message dispatch queue. When a dispatch is
 placed in the queue, sendbot picks it up and sends it to the
-``dispatcher`` effectively sending the message out to the recipients.
+`dispatcher` effectively sending the message out to the recipients.
 
 At the moment, other bots are planned, such as a sysadmin bot which
 will monitor production and development environments, and a
 configuration manager bot which will automate the task of setting up
 environments and deploying code to production.
 
-A ``bot`` is an ``ecommerce.agents`` and therefore ultimately derives
-from ``party.party``. Bots have their own user account (bot.user) under
+A `bot` is an `ecommerce.agents` and therefore ultimately derives
+from `party.party`. Bots have their own user account (bot.user) under
 which most of their activities are run.
 
 Bots log their activity to the database via the apriori.log entity. The
-``verbosity`` argument controls how much is logged.
+`verbosity` argument controls how much is logged.
 
 Bots are intended to be run as their own process, typically through
 systemd, so they are invoked like any other program, e.g., 
 
     ./bot.py --iterations 1 --verbosity 5 sendbot
 
-Here, the bot.py binary is being run. At the end, we can see that
-'sendbot' is being run. The global argument --iteration is set to 1,
-meaning the sendbot will check and process the dispatch queue 1 time and
-then exit. This is typical for debugging purposes; in production we
-would not set iterations in order that sendobt iterates continuously.
-The verbosity is set to 5 because we want to see all the output. In
-production, that much logging may be unnecessary. Note that when
-logging, the bot will print log messages to the screen and record them
-to the database at the same time.
+Here, the bot.py binary is being run. At the end, we can see that a
+particual bot, 'sendbot', is being invoked. The global argument
+--iteration is set to 1, meaning the sendbot will check and process the
+dispatch queue 1 time and then exit. This is typical for debugging
+purposes; in production we would not set `iterations` in order that
+sendobt iterates indefinately.  The verbosity is set to 5 because we
+want to see all the output. In production, that much logging may be
+unnecessary. Note that when logging, the bot will print log messages to
+the screen and record them to the database at the same time.
 """
 
 from dbg import B
@@ -77,10 +77,13 @@ class addlogeventargs(entities.eventargs):
         self.level = lvl
 
 class bots(ecommerce.agents):
+    """ A collection of bots.
+    """
+
     @classproperty
     def bots(cls):
-        """ Return each class that inherits from directly or indirectly
-        from ``bot``.
+        """ Return each class that inherits directly or indirectly from
+        ``bot``.
         """
 
         r = list()
@@ -98,14 +101,14 @@ class bots(ecommerce.agents):
 
 class bot(ecommerce.agent):
     """ Bots are autonomous programs typically run as background
-    process. All bots inherit from the ``bot`` class. 
+    process. All bots inherit from the `bot` class. 
 
-    A ``bot`` is an ``ecommerce.agents`` and therefore ultimately derives
-    from ``party.party``. Bots have their own user account (bot.user) under
+    A `bot` is an `ecommerce.agents` and therefore ultimately derives
+    from `party.party`. Bots have their own user account (bot.user) under
     which most of their activities are run.
 
     Bots log their activity to the database via the apriori.log entity. The
-    ``verbosity`` argument controls how much is logged.
+    `verbosity` argument controls how much is logged.
 
     Bots are intended to be run as their own process, typically through
     systemd, so they are invoked like any other program, e.g., 
@@ -139,6 +142,8 @@ class bot(ecommerce.agent):
         """
 
         # The event handler for the onlog event
+        # TODO There should be a :param: entry for onlog in the
+        # docstring
         onlog = kwargs.pop('onlog', None)
 
         # The number of iterations.
@@ -166,7 +171,7 @@ class bot(ecommerce.agent):
         appended. This is intended to prevent a huge but unnecessary
         load of logs from the database.
         """
-        # HACK:8210b80c We want ``bot`` to have a ``logs`` constituent
+        # HACK:8210b80c We want `bot` to have a `logs` constituent
         # that we can add to but we don't want to load every log the bot
         # has ever recorded. So set .isloaded = True to prevent that. A
         # better solution to this problem is discussed in a TODO with
@@ -204,7 +209,7 @@ class bot(ecommerce.agent):
         """
         
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Treat cls as an instance of bot so ``user`` can be used as
+        # Treat cls as an instance of bot so ``user` can be used as
         # both a @classproperty and a "@staticproperty" at the same
         # time.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -376,8 +381,8 @@ class bot(ecommerce.agent):
         msg += end
 
         try:
-            # Sometimes, empty debug messages will be used cause a line
-            # feed. No need to log those. Logs with empty message
+            # Sometimes, empty debug messages will be used to cause a
+            # line feed. No need to log those. Logs with empty message
             # attributes are invalid anyway.
             if msg.strip():
                 log = apriori.log(
@@ -415,6 +420,8 @@ class bot(ecommerce.agent):
 
     @verbosity.setter
     def verbosity(self, v):
+        """ Set the verbosity level.
+        """
         possible = list(range(7)) + [None]
 
         if v not in possible:
