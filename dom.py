@@ -6457,7 +6457,7 @@ class table(element):
         """ Return the collection of `tr` records in this table's body.
 
         Note that this only returns th `tr` records in the <tbody>. Any
-        <tr> records in the <thead> will be excluded.
+        <tr> records in the <thead> or <tfoot> will be excluded.
         """
         return self['tbody tr']
 
@@ -10543,6 +10543,8 @@ class eventargs(entities.eventargs):
 
         Note that, at the moment, this method assumes there is only one
         element sent to by the browser.
+
+        :param: el dom.element: The element to be removed.
         """
         from pom import instructions, remove
 

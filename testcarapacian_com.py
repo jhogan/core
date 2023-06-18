@@ -1090,6 +1090,7 @@ class ticketsspa_backlogs(tester.tester):
                 # No XHR request is made on dragover events
                 self.none(res)
 
+                print(repr(hnd.closest('tr')))
                 res = self.drop(dock, tab)
 
                 self.false(dock.dragentered)

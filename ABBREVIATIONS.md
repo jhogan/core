@@ -21,6 +21,7 @@ list:          ls
 mapping:       map
 mappings:      maps
 message:       msg
+move:          mv
 object:        obj
 operation:     op
 ordinal:       ord

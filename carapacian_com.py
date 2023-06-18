@@ -637,6 +637,7 @@ class ticketsspa(pom.spa):
             """ The event handler for this `backlogs` to handle a story
             being moved within the backlog.
             """
+            # XXX Update docstring
             # Get the table of stories
             tbl = eargs.html.first
 
@@ -694,6 +695,8 @@ class ticketsspa(pom.spa):
 
             bss = bl.backlog_stories
 
+            # XXX
+            return
             # For each <tr> in the table
             for tr in tbody['tr']:
                 # Get the backlog that corresponds to the tr

@@ -2974,7 +2974,7 @@ class set(instruction):
 class remove(instruction):
     """ A remove instruction to be sent to the browser.
 
-    Remove instruction instruct the JavaScript to remove the element
+    `remove` instructions instruct the JavaScript to remove the element
     defined by self.element.
     """
     def __init__(self, el, *args, **kwargs):
