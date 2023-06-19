@@ -10558,7 +10558,7 @@ class eventargs(entities.eventargs):
 
         instrs += remove(el)
 
-        self.html += instrs
+        el += instrs
 
     @property
     def element(self):
