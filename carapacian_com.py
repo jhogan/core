@@ -616,7 +616,6 @@ class ticketsspa(pom.spa):
                 tfoot += tr
                 tr += dom.td('XXX')
 
-
                 # Remove the table's parent so we can make `card` its
                 # new parent
                 tbl.orphan()
@@ -641,7 +640,6 @@ class ticketsspa(pom.spa):
             """
             # XXX Update docstring
 
-            B()
             if eargs.html.count != 3:
                 raise ValueError(f'Unexpected elements count')
 
@@ -712,6 +710,7 @@ class ticketsspa(pom.spa):
                 eargs.remove(trsrc)
                 trsrc.reidentify()
                 tbody.elements.insert(rank, trsrc)
+                print(repr(eargs.html.first['#' + trsrc.id]))
             else:
                 trsrc = tbody.elements['#' + trsrc.id].only
                 destix = tbody.elements.getindex(trzone.id)
