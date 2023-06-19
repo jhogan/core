@@ -734,9 +734,6 @@ class tester(entities.entity):
                                 el = self['#' + id].only
                                 el.remove()
 
-                    # XXX Experiemental
-                    instrss.remove()
-
                 ''' Method logic '''
 
                 isnav = is_nav_link(src)
