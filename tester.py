@@ -848,6 +848,12 @@ class tester(entities.entity):
                                 continue
 
                             replace('#' + id, el)
+
+                    for id in ids:
+                        for el in res.html:
+                            if id != el.id:
+                                continue
+
                             exec(el)
 
                     self.listen(res.html)
