@@ -1079,8 +1079,9 @@ class ticketsspa_backlogs(tester.tester):
 
         dock = tbl1['.dock'].only
 
-        for i in range(tbl.count):
-            tr = tbl.trs[i]
+        cnt = tbl.trs.count
+        for i in range(cnt):
+            tr = tbl.trs.first
             hnd = tr.handle
             with self.dragstart(hnd, tab) as res:
                 self.none(res)
@@ -1100,6 +1101,9 @@ class ticketsspa_backlogs(tester.tester):
                 tbl1 = get_table(bl1)
 
                 bsid = tr.getattr('data-entity-id')
+
+                self.count(cnt - i - 1, tbl.trs)
+                self.count(i + 1, tbl1.trs)
 
                 # Ensure it was remove from the source table
                 for tr1 in tbl.trs:

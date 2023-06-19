@@ -646,11 +646,11 @@ class ticketsspa(pom.spa):
             # Get the table of stories
             tbl = eargs.html.first
 
-            # Get the element being dropped
-            trsrc = eargs.html.pop()
-
             # Get the element that the above is being dropped on
-            trzone = eargs.html.pop()
+            trzone = eargs.html.second
+
+            # Get the element being dropped
+            trsrc = eargs.html.third
 
             tbody = tbl['tbody'].only
 
@@ -708,7 +708,30 @@ class ticketsspa(pom.spa):
             # XXX Comment
             if mv:
                 eargs.remove(trsrc)
+                print(repr(trsrc))
+
+                # XXX We should pop this and explain why.
+                del eargs.html[2]
                 trsrc.reidentify()
+
+                # XXX Clean up. Put logic in dragonize()
+                for attr in trsrc.attributes:
+                    if attr.name.startswith('data-drag'):
+                        pass
+                    elif attr.name.startswith('data-drop'):
+                        pass
+                    else:
+                        continue
+
+                    del trsrc.attributes[attr]
+
+                trsrc.dragonize(
+                    ondrop = (self.tr_ondrop, tbl, trsrc),
+                    handle = trsrc.handle,
+                    target = trsrc.id,
+                )
+
+                print(repr(trsrc))
                 tbody.elements.insert(rank, trsrc)
                 print(repr(eargs.html.first['#' + trsrc.id]))
             else:
