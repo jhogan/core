@@ -1246,9 +1246,9 @@ class story(requirement):
         :param: to backlog: The backlog to which the story should be
         moved.
         """
-        for bss in from_.backlog_stories:
-            if bss.story.id == self.id:
-                from_.backlog_stories.remove(bss)
+        for bs in from_.backlog_stories:
+            if bs.story.id == self.id:
+                from_.backlog_stories.remove(bs)
 
         to.insert(rank=rank, st=self)
 
