@@ -983,9 +983,8 @@ class ticketsspa_backlogs(tester.tester):
             tbl = card['table[data-entity="effort.backlog_story"]'].only
             return tbl
 
-        ws = carapacian_com.site()
-        tab = self.browser().tab()
-
+        ''' Seed data '''
+        # Create a backlog with some stories in it
         import testeffort
         bl = testeffort.backlog.getvalid()
 
@@ -996,6 +995,11 @@ class ticketsspa_backlogs(tester.tester):
 
         bl.save()
         
+        ''' Navigate to /backlogs page '''
+
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
@@ -1111,6 +1115,115 @@ class ticketsspa_backlogs(tester.tester):
         # Get the dock <tr> zrop zone to append bl rows to
         dock = tbl1['.dock'].only
 
+        ''' Move all bl tr rows from the source table (tbl) to the end
+        of the destination table (tbl1).
+        '''
+
+        cnt = tbl.trs.count
+        for i in range(cnt):
+            # Get the first exist <tr> from src table
+            tr = tbl.trs.first
+
+            testid = uuid4().hex
+            tr.setattr('data-test-id', testid)
+
+            hnd = tr.handle
+
+            # Start the drag operation
+            with self.dragstart(hnd, tab) as res:
+                # Ensure the dragstart event didn't result in an XHR
+                self.none(res)
+
+                # Trigger the dragover event on the `dock` drop zone of
+                # the destination table
+                res = self.dragover(dock, tab)
+
+                # Make sure the data-dragentered attribute is true
+                self.true(dock.dragentered)
+
+                # No XHR request is made on dragover events
+                self.none(res)
+
+                # Drop the source row on the destinations table's .dock
+                # <tr>
+                res = self.drop(dock, tab)
+
+                # Make sure the data-dragentered attribute is false
+                self.false(dock.dragentered)
+
+                # Get updated references to the source (tbl) and
+                # destination (tbl1) tables.
+                tbl = get_table(bl)
+                tbl1 = get_table(bl1)
+
+                # Get the effort.backlog id of the <tr> that was moved
+                bsid = tr.getattr('data-entity-id')
+
+                # Test the counts of the source and destination tables
+                # rows.
+                self.count(cnt - i - 1, tbl.trs)
+                self.count(i + 1, tbl1.trs)
+
+                # Ensure the <tr> was removed from the source table
+                for tr1 in tbl.trs:
+                     self.ne(bsid, tr1.getattr('data-entity-id'))
+
+                # Ensure it was added to the destination table
+                for tr1 in tbl1.trs:
+                    testid1 = tr1.getattr('data-test-id')
+                    if testid == testid1:
+                        break
+                else:
+                    self.fail(
+                        '<tr> was not found in destination table: ' +
+                        repr(tr)
+                    )
+
+                ''' Test that <table>s match database '''
+                # Reload from database
+                bl = bl.orm.reloaded()
+                bl1 = bl1.orm.reloaded()
+
+                bss = bl.backlog_stories.sorted('rank')
+                bss1 = bl1.backlog_stories.sorted('rank')
+
+                self.eq(tbl.trs.count, bss.count)
+                self.eq(tbl1.trs.count, bss1.count)
+
+                print(bss1.pluck('id'))
+
+                for bs, tr in zip(bss, tbl.trs):
+                    self.eq(
+                        bs.id.hex, tr.getattr('data-entity-id'), str(i)
+                    )
+
+                for bs, tr in zip(bss1, tbl1.trs):
+                    self.eq(
+                        bs.id.hex, tr.getattr('data-entity-id'), str(i)
+                    )
+
+        ''' Repopulate source table '''
+        Count = 4
+        for i in range(Count):
+            st = testeffort.story.getvalid()
+            bl.insert(st)
+
+        bl.save(bl1)
+        
+        ''' Reload /backlogs page '''
+
+        # Load the backlogs page
+        tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        # Get the source (tbl) and destination (tbl1) tables from the
+        # current browser tab.
+        tbl = get_table(bl)
+        tbl1 = get_table(bl1)
+
+        ''' Move all bl tr rows from the source table (tbl) to arbitrary
+        locations in the destination table (tbl1).
+        '''
+
         cnt = tbl.trs.count
 
         #XXX
@@ -1135,7 +1248,13 @@ class ticketsspa_backlogs(tester.tester):
                 # No XHR request is made on dragover events
                 self.none(res)
 
-                print(repr(hnd.closest('tr')))
+                # Drop the source row on the destinations table's .dock
+                # <tr> `j` will be the destination index. Make sure we
+                # test inserting at the first, second, penultimate and
+                # last destintation <tr>.
+                j = i - cnt
+                tr1 = tbl1.trs[j]
+
                 res = self.drop(dock, tab)
 
                 # Make sure the data-dragentered attribute is false
