@@ -1045,7 +1045,7 @@ class backlog(orm.entity):
                 # rank so it is only one above the current max rank.
                 rank = min(max(ranks) + 1, rank)
 
-            # Create an and new story association
+            # Create and new story association
             target = backlog_story(rank=rank, story=st)
             bss += target
 
@@ -1239,6 +1239,12 @@ class story(requirement):
         Note that this operation is transient. You will need to call the
         `save()` method on this `story` in order to persist the changes
         to the database.
+
+        :param: from_ backlog: The backlog from which the story should
+        be moved:
+
+        :param: to backlog: The backlog to which the story should be
+        moved.
         """
         for bss in from_.backlog_stories:
             if bss.story.id == self.id:
