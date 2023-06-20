@@ -1245,7 +1245,12 @@ class story(requirement):
 
         :param: to backlog: The backlog to which the story should be
         moved.
+        
+        :param: rank int: The rank where the story should be moved to.
         """
+
+        # NOTE The `rank` parameter is new and not fully tested.
+        # TODO Add tests for the rank parameter
         for bs in from_.backlog_stories:
             if bs.story.id == self.id:
                 from_.backlog_stories.remove(bs)
