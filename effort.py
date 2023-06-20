@@ -1232,7 +1232,7 @@ class story(requirement):
 
         return None
 
-    def move(self, from_, to):
+    def move(self, from_, to, rank=0):
         """ Move this `story` object from the `from_` backlog, to the
         `to` backlog.
 
@@ -1250,7 +1250,7 @@ class story(requirement):
             if bss.story.id == self.id:
                 from_.backlog_stories.remove(bss)
 
-        to.insert(self)
+        to.insert(rank=rank, st=self)
 
 class backlog_story(orm.association):
     """ Assoicates a `backlog` with a `story`.
