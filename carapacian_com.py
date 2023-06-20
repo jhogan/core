@@ -685,8 +685,8 @@ class ticketsspa(pom.spa):
 
             # XXX Comment
             if 'dock' in trzone.classes:
-                bsid = tbl.getattr('data-backlog-entity-id')
-                bl = effort.backlog(bsid)
+                blid = tbl.getattr('data-backlog-entity-id')
+                bl = effort.backlog(blid)
                 rank = 0
                 mv = True
             else:
@@ -698,17 +698,29 @@ class ticketsspa(pom.spa):
 
                 mv = bssrc.backlog.id != bl.id
 
-            # Insert the story to change its ranking within the backlog
-            # and save.
-            bl.insert(rank, bssrc.story)
-            bl.save()
-
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
             # XXX Comment
             if mv:
+                # Move the story to the new backlog
+
+                # Get source backlog
+                st = bssrc.story
+                bl = bssrc.backlog
+
+                # Get destination backlog
+                blid = tbl.getattr('data-backlog-entity-id')
+                bl1 = effort.backlog(blid)
+
+                def bss_onadd(src, eargs):
+                    trsrc.setattr('data-entity-id', eargs.entity.id.hex)
+
+                bl1.backlog_stories.onadd += bss_onadd
+
+                st.move(from_=bl, to=bl1, rank=rank)
+                st.save(bl, bl1)
+
                 eargs.remove(trsrc)
-                print(repr(trsrc))
 
                 # XXX We should pop this and explain why.
                 del eargs.html[2]
@@ -725,16 +737,21 @@ class ticketsspa(pom.spa):
 
                     del trsrc.attributes[attr]
 
+                # Redragonize trsrc so it knows which tbl it needs to
+                # send.
                 trsrc.dragonize(
                     ondrop = (self.tr_ondrop, tbl, trsrc),
                     handle = trsrc.handle,
                     target = trsrc.id,
                 )
 
-                print(repr(trsrc))
                 tbody.elements.insert(rank, trsrc)
-                print(repr(eargs.html.first['#' + trsrc.id]))
             else:
+                # Insert the story to change its ranking within the
+                # backlog and save.
+                bl.insert(rank, bssrc.story)
+                bl.save()
+
                 trsrc = tbody.elements['#' + trsrc.id].only
                 destix = tbody.elements.getindex(trzone.id)
                 tbody.elements.move(destix, trsrc)
