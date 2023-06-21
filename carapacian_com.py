@@ -605,7 +605,12 @@ class ticketsspa(pom.spa):
                     td += span
                     tr << td
 
-                # XXX Add comments
+                # Create a <tfoot> to contain a "dock" <tr>. This will
+                # be used to append new <tr>s that are dropped on it.
+                # The <tr> drop zones created above are used for
+                # inserting, i.e., if a <tr> is dropped on one of those
+                # drop zones, the <tr> will be inserted directly before
+                # the drop zone.
                 tfoot = dom.tfoot()
                 tr = dom.tr(class_='dock')
                 tr.dragonize(
@@ -636,9 +641,10 @@ class ticketsspa(pom.spa):
 
         def tr_ondrop(self, src, eargs):
             """ The event handler for this `backlogs` to handle a story
-            being moved within the backlog.
+            being moved within the backlog. This event handler will also
+            handle `stories` that are being dragged from different
+            backlogs.
             """
-            # XXX Update docstring
 
             if eargs.html.count != 3:
                 raise ValueError(f'Unexpected elements count')
@@ -683,8 +689,9 @@ class ticketsspa(pom.spa):
             # and estication
             bssrc = trsrc.entity
 
-            # XXX Comment
+            # If the trzone drop zone is a 'dock'
             if 'dock' in trzone.classes:
+                # Get the <table>'s backlog
                 blid = tbl.getattr('data-backlog-entity-id')
                 bl = effort.backlog(blid)
                 rank = 0
@@ -713,7 +720,11 @@ class ticketsspa(pom.spa):
                 bl1 = effort.backlog(blid)
 
                 def bss_onadd(src, eargs):
-                    """ XXX
+                    """ An event handelr to capture the moment the
+                    st.move() method below adds a new `backlog_story`
+                    to `bl1.backlog_stories`. When this happens, we
+                    capture the backlog_story here (`eargs.entity`) and
+                    assign it to trsrc's data-entity-id attribute.
                     """
                     trsrc.setattr('data-entity-id', eargs.entity.id.hex)
 

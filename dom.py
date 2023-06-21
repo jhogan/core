@@ -1636,7 +1636,15 @@ class element(entities.entity):
             return self.parent.remove(self)
 
     def reidentify(self, recursive=False):
-        """ XXX
+        """ Assigns a new, random values to the id attribute of this
+        HTML5 elements and all of its descendants. The id value is a
+        UUID encoded in Base64 with an 'x' prepended to it. If the
+        element already has an id, that id will be overwritten. Compare
+        `element.identify()`.
+
+        :param: recursive bool: If True, walk the DOM tree and run
+        `reidentify` on each element. Note that this is currently untested
+        functionality.
         """
 
         self.identify(recursive=recursive, override=True)
@@ -1644,11 +1652,17 @@ class element(entities.entity):
     def identify(self, recursive=False, override=False):
         """ Assigns a new, random values to the id attribute of this
         HTML5 elements and all of its descendants. The id value is a
-        UUID encoded in Base64 with an 'x' prepended to it.
+        UUID encoded in Base64 with an 'x' prepended to it. If an id
+        already exists on the element, nothing will happen. However, if
+        `override` is True, the id will be overwritten. Compare
+        `element.reidentify()`.
 
         :param: recursive bool: If True, walk the DOM tree run
         `identify` on each element. Note that this is currently
         untested functionality.
+
+        :param: override bool: If True, overwrite an existing id's value
+        if one exist. If False, do nothing if an id already exists.
         """
 
         if override or not self.id:
@@ -1662,6 +1676,7 @@ class element(entities.entity):
 
         for el in self.walk():
             # NOTE untested
+            # TODO Pass in `override` argument
             el.identify()
         
     @property

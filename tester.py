@@ -1693,7 +1693,26 @@ class tester(entities.entity):
             self._failures += failure()
 
     def zip(self, *iters, msg=None):
-        """ XXX
+        """ A wrapper around builtins.zip. If all the iterators in
+        *iters don't have the same length, a `failure` is recorded.
+
+        A very common pattern in tests is to compare two iterators. But
+        first the tests have to assert that the iterators have the same
+        number of olements:
+
+            self.three(ls)
+            self.three(ls1)
+
+            for e, e1 in zip(ls, ls1):
+                self.eq(e, e1)
+
+        To shorten this, we can user tester.zip without the count
+        assertions:
+
+            for e, e1 in self.zip(ls, ls1):
+                self.eq(e, e1)
+
+        A failure will be recorded if ls and ls1 are not the same size.
         """
 
         lens = list()
