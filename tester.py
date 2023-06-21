@@ -1692,6 +1692,24 @@ class tester(entities.entity):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
 
+    def zip(self, *iters, msg=None):
+        """ XXX
+        """
+
+        lens = list()
+        for iter in iters:
+            lens.append(len(iter))
+
+        if len(set(lens)) != 1:
+            if msg is None:
+                msg = str()
+
+            msg += 'All iterables must be of the same length'
+            self._failures += failure()
+            return
+
+        return zip(*iters)
+            
     @contextmanager
     def brokentest(self, brs):
         def test2str(attr, type, e, msg=None):
