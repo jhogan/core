@@ -8,7 +8,7 @@
 import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
-from dbg import B, PM
+from dbg import *
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 from decimal import Decimal as dec

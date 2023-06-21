@@ -110,3 +110,14 @@ def profile(callable):
     B()
 
 PR = profile
+    
+# XXX Comment
+# Update readme.md file
+XXX = print
+
+def XXXr(msg, end='\n'):
+    """ XXX
+    """
+    print(repr(msg), end=end)
+        
+    
