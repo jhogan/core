@@ -1180,6 +1180,7 @@ class ticketsspa_backlogs(tester.tester):
                     )
 
                 ''' Test that <table>s match database '''
+
                 # Reload from database
                 bl = bl.orm.reloaded()
                 bl1 = bl1.orm.reloaded()
@@ -1189,8 +1190,6 @@ class ticketsspa_backlogs(tester.tester):
 
                 self.eq(tbl.trs.count, bss.count)
                 self.eq(tbl1.trs.count, bss1.count)
-
-                print(bss1.pluck('id'))
 
                 for bs, tr in zip(bss, tbl.trs):
                     self.eq(
@@ -1213,6 +1212,7 @@ class ticketsspa_backlogs(tester.tester):
         ''' Reload /backlogs page '''
 
         # Load the backlogs page
+        # XXX Can we add and use a tab.reload() method here?
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
         # Get the source (tbl) and destination (tbl1) tables from the

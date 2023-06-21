@@ -713,11 +713,17 @@ class ticketsspa(pom.spa):
                 bl1 = effort.backlog(blid)
 
                 def bss_onadd(src, eargs):
+                    """ XXX
+                    """
                     trsrc.setattr('data-entity-id', eargs.entity.id.hex)
 
                 bl1.backlog_stories.onadd += bss_onadd
 
                 st.move(from_=bl, to=bl1, rank=rank)
+
+                # TODO We shouldn't have to pass in bl, and bl1 to
+                # .save(). Discover why this is necessary at the moment
+                # and seek to correct it.
                 st.save(bl, bl1)
 
                 eargs.remove(trsrc)
