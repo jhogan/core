@@ -1124,8 +1124,8 @@ class ticketsspa_backlogs(tester.tester):
             # Get the first exist <tr> from src table
             tr = tbl.trs.first
 
-            testid = uuid4().hex
-            tr.setattr('data-test-id', testid)
+            tracker = uuid4().hex
+            tr.setattr('data-tracker', tracker)
 
             hnd = tr.handle
 
@@ -1170,8 +1170,8 @@ class ticketsspa_backlogs(tester.tester):
 
                 # Ensure it was added to the destination table
                 for tr1 in tbl1.trs:
-                    testid1 = tr1.getattr('data-test-id')
-                    if testid == testid1:
+                    tracker = tr1.getattr('data-tracker')
+                    if tracker == tracker:
                         break
                 else:
                     self.fail(
@@ -1224,13 +1224,14 @@ class ticketsspa_backlogs(tester.tester):
         locations in the destination table (tbl1).
         '''
 
-        cnt = tbl.trs.count
+        cnt1 = tbl.trs.count
 
-        #XXX
-        return
-        for i in range(cnt):
+        for i in range(cnt1):
             # Get the first exist <tr> from src table
             tr = tbl.trs.first
+
+            tr.setattr('data-tracker', tracker)
+
             hnd = tr.handle
 
             # Start the drag operation
@@ -1238,27 +1239,27 @@ class ticketsspa_backlogs(tester.tester):
                 # Ensure the dragstart event didn't result in an XHR
                 self.none(res)
 
-                # Trigger the dragover event on the `dock` drop zone of
+                # Drop the source row on a destinations table's <tr>.
+                # `j` will be the destination index. Make sure we test
+                # inserting at the first, second, penultimate and final
+                # destintation <tr>.
+                j = i - cnt1
+                tr1 = tbl1.trs[j]
+
+                # Trigger the dragover event on the `tr1` drop zone of
                 # the destination table
-                res = self.dragover(dock, tab)
+                res = self.dragover(tr1, tab)
 
                 # Make sure the data-dragentered attribute is true
-                self.true(dock.dragentered)
+                self.true(tr1.dragentered)
 
                 # No XHR request is made on dragover events
                 self.none(res)
 
-                # Drop the source row on the destinations table's .dock
-                # <tr> `j` will be the destination index. Make sure we
-                # test inserting at the first, second, penultimate and
-                # last destintation <tr>.
-                j = i - cnt
-                tr1 = tbl1.trs[j]
-
-                res = self.drop(dock, tab)
+                res = self.drop(tr1, tab)
 
                 # Make sure the data-dragentered attribute is false
-                self.false(dock.dragentered)
+                self.false(tr1.dragentered)
 
                 # Get updated references to the source (tbl) and
                 # destination (tbl1) tables.
@@ -1270,8 +1271,8 @@ class ticketsspa_backlogs(tester.tester):
 
                 # Test the counts of the source and destination tables
                 # rows.
-                self.count(cnt - i - 1, tbl.trs)
-                self.count(i + 1, tbl1.trs)
+                self.count(cnt1 - i - 1, tbl.trs)
+                self.count(cnt  + i + 1, tbl1.trs)
 
                 # Ensure the <tr> was removed from the source table
                 for tr1 in tbl.trs:
@@ -1279,13 +1280,33 @@ class ticketsspa_backlogs(tester.tester):
 
                 # Ensure it was added to the destination table
                 for tr1 in tbl1.trs:
-                     bsid1 = tr1.getattr('data-entity-id')
-                     if bsid == bsid1:
+                    tracker = tr1.getattr('data-tracker')
+                    if tracker == tracker:
                         break
                 else:
                     self.fail(
                         '<tr> was not found in destination table: ' +
                         repr(tr)
                     )
+
+                ''' Test that <table>s match database '''
+
+                # Reload from database
+                bl = bl.orm.reloaded()
+                bl1 = bl1.orm.reloaded()
+
+                bss = bl.backlog_stories.sorted('rank')
+                bss1 = bl1.backlog_stories.sorted('rank')
+
+                for bs, tr in self.zip(bss, tbl.trs):
+                    self.eq(
+                        bs.id.hex, tr.getattr('data-entity-id'), str(i)
+                    )
+
+                for bs, tr in self.zip(bss1, tbl1.trs):
+                    self.eq(
+                        bs.id.hex, tr.getattr('data-entity-id'), str(i)
+                    )
+
 if __name__ == '__main__':
     tester.cli().run()
