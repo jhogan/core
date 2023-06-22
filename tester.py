@@ -1714,10 +1714,7 @@ class tester(entities.entity):
 
         A failure will be recorded if ls and ls1 are not the same size.
         """
-
-        lens = list()
-        for iter in iters:
-            lens.append(len(iter))
+        lens = [len(x) for x in iters]
 
         if len(set(lens)) != 1:
             if msg is None:
