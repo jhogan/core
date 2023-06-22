@@ -645,7 +645,6 @@ class ticketsspa(pom.spa):
             handle `stories` that are being dragged from different
             backlogs.
             """
-
             if eargs.html.count != 3:
                 raise ValueError(f'Unexpected elements count')
 

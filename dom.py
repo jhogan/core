@@ -23,6 +23,7 @@ import primative
 import re
 import string
 import sys
+import www
 import uuid
 
 "The Web is a detail."

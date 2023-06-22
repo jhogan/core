@@ -1156,7 +1156,8 @@ class ticketsspa_backlogs(tester.tester):
                 tbl = get_table(bl)
                 tbl1 = get_table(bl1)
 
-                # Get the effort.backlog id of the <tr> that was moved
+                # Get the effort.backlog_story id of the <tr> that was
+                # moved
                 bsid = tr.getattr('data-entity-id')
 
                 # Test the counts of the source and destination tables
@@ -1266,7 +1267,8 @@ class ticketsspa_backlogs(tester.tester):
                 tbl = get_table(bl)
                 tbl1 = get_table(bl1)
 
-                # Get the effort.backlog id of the <tr> that was moved
+                # Get the effort.backlog_story id of the <tr> that was
+                # moved
                 bsid = tr.getattr('data-entity-id')
 
                 # Test the counts of the source and destination tables
