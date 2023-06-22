@@ -1310,5 +1310,90 @@ class ticketsspa_backlogs(tester.tester):
                         bs.id.hex, tr.getattr('data-entity-id'), str(i)
                     )
 
+    def it_moves_story_between_backlog_and_edits_story(self):
+        """ Test moving a story from one backlog to another the editing
+        the story.
+        """
+
+        def get_table(bl):
+            """ Return the <table> that corresponds to the backlog,
+            `bl`, from the browser `tab`.
+            """
+            card = tab[
+                f'div.cards article.card[data-entity-id="{bl.id.hex}"]'
+            ].only
+
+            tbl = card['table[data-entity="effort.backlog_story"]'].only
+            return tbl
+
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+
+        ''' Seed test data '''
+
+        # Create two backlogs and associate stories with the first one.
+        # The other will wil start off with no stories
+        bl, bl1 = testeffort.backlog.getvalid(2)
+
+        Count = 2
+        for i in range(Count):
+            st = testeffort.story.getvalid()
+            bl.insert(st)
+
+        bl.save(bl1)
+        
+        ''' Navigate to /backlogs page '''
+
+        # Load the backlogs page
+        tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        # Get the source (tbl) and destination (tbl1) tables from the
+        # current browser tab.
+        tbl = get_table(bl)
+        tbl1 = get_table(bl1)
+
+        # Get the dock <tr> zrop zone to append bl rows to
+        dock = tbl1['.dock'].only
+
+        ''' Move all bl tr rows from the source table (tbl) to the end
+        of the destination table (tbl1).
+        '''
+
+        cnt = tbl.trs.count
+        for i in range(cnt):
+            # Get the first exist <tr> from src table
+            tr = tbl.trs.first
+
+            tracker = uuid4().hex
+            tr.setattr('data-tracker', tracker)
+
+            hnd = tr.handle
+
+            # Start the drag operation
+            with self.dragstart(hnd, tab) as res:
+                # Drop the source row on a destinations table's <tr>.
+                res = self.drop(dock, tab)
+                self.h200(res)
+
+
+            # Get updated references to the source (tbl) and destination
+            # (tbl1) tables.
+            tbl = get_table(bl)
+            tbl1 = get_table(bl1)
+
+            tr1 = tbl1.trs[f'[data-tracker="{tracker}"]'].only
+
+
+            a = tr1['a[rel="edit"]'].only
+
+            self.eq(a.url.qs['backlogid'], bl1.id.hex)
+
+            self.click(a, tab)
+            return
+
+
+
 if __name__ == '__main__':
     tester.cli().run()
