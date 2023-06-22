@@ -3953,6 +3953,18 @@ class a(element):
         self.attributes['href'].value = v
 
     @property
+    def url(self):
+        """ XXX
+        """
+        return www.url(self.href)
+
+    @url.setter
+    def url(self, v):
+        """ XXX
+        """
+        self.href = str(v)
+
+    @property
     def download(self):
         """ Prompts the user to save the linked URL instead of
         navigating to it.

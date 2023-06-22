@@ -761,6 +761,11 @@ class ticketsspa(pom.spa):
                     target = trsrc.id,
                 )
 
+                for a in trsrc['a']:
+                    qs = a.url.qs
+                    if 'backlogid' in qs:
+                        qs['backlogid'] = bl1.id.hex
+
                 tbody.elements.insert(rank, trsrc)
             else:
                 # Insert the story to change its ranking within the

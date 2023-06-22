@@ -709,6 +709,41 @@ class tr(tester.tester):
             art1 = tr.entity
             self.in_(ids, art1.id)
 
+class a(tester.tester):
+    def it_gets_url(self):
+        a = dom.a('Click Here')
+        a.href = 'http://www.example.com'
+        self.eq('http://www.example.com', str(a.url))
+
+    def it_sets_url(self):
+        a = dom.a('Click Here')
+
+        a.url = 'http://www.example.com'
+        self.eq('http://www.example.com', a.href)
+        self.eq('http://www.example.com', str(a.url))
+
+        a.url = www.url('http://www.example.org')
+        self.eq('http://www.example.org', a.href)
+        self.eq('http://www.example.org', str(a.url))
+
+    def it_sets_url_properties(self):
+        a = dom.a('Click Here')
+
+        a.href = 'http://www.example.com'
+        a.url.scheme = 'https'
+
+    def it_sets_url_qs(self):
+        a = dom.a('Click Here')
+
+        a.url = 'http://www.example.com'
+        a.url.qs['herp'] = 'derp'
+        self.eq('http://www.example.com?herp=derp', a.href)
+        self.eq('http://www.example.com?herp=derp', str(a.url))
+
+        a.url.qs['herp'] = 'gerp'
+        self.eq('http://www.example.com?herp=gerp', a.href)
+        self.eq('http://www.example.com?herp=gerp', str(a.url))
+
 class text(tester.tester):
     def it_calls_html(self):
         txt = self.dedent('''

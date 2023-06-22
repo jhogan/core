@@ -2958,7 +2958,8 @@ class url(entities.entity):
     def scheme(self, v):
         """ Set the scheme.
         """
-        self._scheme = v
+        B()
+        self._setvalue('_scheme', v, 'scheme')
 
     @property
     def host(self):
