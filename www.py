@@ -2832,7 +2832,7 @@ class url(entities.entity):
         :param: name str: The URL string.
         """
         self._clear()
-        self.name       =  name
+        self.name = name
         super().__init__(*args, **kwargs)
 
     def _clear(self):
