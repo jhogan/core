@@ -2041,7 +2041,7 @@ class tester(entities.entity):
             
         return self._trigger('submit', e, tab, count)
 
-    def click(self, e, tab, count=1):
+    def click(self, e, tab, count=1, st=200, msg=None):
         """ Call the click() trigger method on `e`. Return the last
         response the browser recorded.
 
@@ -2057,7 +2057,16 @@ class tester(entities.entity):
         :param: count int: The number of HTTP requests that the trigger
         is intended to cause.
         """
-        return self._trigger('click', e, tab, count)
+        # XXX Update docstring for st
+        res = self._trigger('click', e, tab, count)
+
+        if res.status != st:
+            msg = self.dedent(f'''
+                Wrong HTTP status:
+                    expected: {st}
+                    actual:   {res.status}
+            ''')
+            self._failures += failure()
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
