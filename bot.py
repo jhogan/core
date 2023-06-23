@@ -610,13 +610,22 @@ class sendbots(bots):
     """
 
 class sendbot(bot):
-    """ When called, sendbot keeps an eye on the message dispatch queue
+    """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
+    for messsages and sends them to external sytems.
+
+    ``sendbot`` is responsible for ensuring that email, SMS, text
+    messages, and so on leave the core system and are delivered to
+    their intended recipients. ``sendbot`` continually polls the
+    database for new dispatches. However, if the ``interations``
+    argument is given, it will only poll the database for that
+    many ``iterations``.
+
+    When called, sendbot keeps an eye on the message dispatch queue
     and ensures that messages are delivered to third party API's. For
     example, if there is a dispatch for an email, sendbot will take the
     message and ensure that it gets to an SMTP server. (Note that sendbot
     uses classes in the third.py module for actual API interaction.)
     """
-    # TODO Use UUID classes here instead of strings
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # The id of the sendbot.
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -680,7 +689,7 @@ class sendbot(bot):
             frm = fi.frame
 
             try:
-                # Dose the frame contain the magic constant __class__
+                # Does the frame contain the magic constant __class__
                 cls1 = frm.f_locals['__class__']
             except KeyError:
                 # If not, continue to the next frame
@@ -735,22 +744,14 @@ class sendbot(bot):
                 return super(sendbot, cls).__new__(cls)
 
             return b
+
         finally:
             cls._isin__new__ = False
 
     def __init__(self, *args, **kwargs):
-        """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
-        for messsages and sends them to external sytems.
-
-        ``sendbot`` is responsible for ensuring that email, SMS, text
-        messages, and so on leave the core system and are delivered to
-        their intended recipients. ``sendbot`` continually polls the
-        database for new dispatches. However, if the ``interations``
-        argument is given, it will only poll the database for that
-        many ``iterations``.
+        """ Create a new sendbot.
         """
-        # TODO The docstring should be at the class level
-        # TODO Do we need to delet this contructor
+        # TODO Do we need to delete this constructor
 
         try:
             kwargs.pop('from__new__')
@@ -767,7 +768,6 @@ class sendbot(bot):
         certain tests to indicate a desire to break out of a simulated
         test environment, such as one provided by a third party API.
         """
-
         # Log some debug stuff
         if self.iteration == 0:
             self.info('dispatching:')
@@ -785,6 +785,7 @@ class sendbot(bot):
             time.sleep(1)
 
     def _dispatch(self, exsimulate=False):
+        # TODO Add docstring
         # Get queued dispatches
         diss = message.dispatches(status='queued')
 
