@@ -832,5 +832,59 @@ class url(tester.tester):
 
         self.ne(url, url1)
 
+    def it_handles_onchange(self):
+        url = www.url('http://example.org')
+
+        def onaftervaluechange(src, eargs):
+            nonlocal url1
+            url1 = eargs.entity
+
+        url1 = None
+        url.onaftervaluechange += onaftervaluechange
+        url.scheme = 'https'
+        self.is_(url, url1)
+        self.eq('https', url1.scheme)
+
+        url1 = None
+        url.host = 'www.example'
+        self.is_(url, url1)
+        self.eq('www.example', url1.host)
+
+        url1 = None
+        url.port = 8080
+        self.is_(url, url1)
+        self.eq(8080, url1.port)
+
+        url1 = None
+        url.username = 'jhogan'
+        self.is_(url, url1)
+        self.eq('jhogan', url1.username)
+
+        url1 = None
+        url.password = 'mypwd'
+        self.is_(url, url1)
+        self.eq('mypwd', url1.password)
+
+        url1 = None
+        url.path = '/my/path'
+        self.is_(url, url1)
+        self.eq('/my/path', url1.path)
+
+        url1 = None
+        url.query = 'a=1'
+        self.is_(url, url1)
+        self.eq('a=1', url1.query)
+
+        url1 = None
+        url.qs['b'] = 2
+        self.is_(url, url1)
+        self.eq('1', url1.qs['a'])
+        self.eq('2', url1.qs['b'])
+
+        url1 = None
+        url.fragment = 'derp'
+        self.is_(url, url1)
+        self.eq('derp', url1.fragment)
+
 if __name__ == '__main__':
     tester.cli().run()

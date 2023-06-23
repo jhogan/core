@@ -3956,7 +3956,14 @@ class a(element):
     def url(self):
         """ XXX
         """
-        return www.url(self.href)
+        url = www.url(self.href)
+
+        def onaftervaluechange(src, eargs):
+            self.href = str(eargs.entity)
+
+        url.onaftervaluechange += onaftervaluechange
+
+        return url
 
     @url.setter
     def url(self, v):

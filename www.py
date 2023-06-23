@@ -2974,7 +2974,7 @@ class url(entities.entity):
     def host(self, v):
         """ Set the host.
         """
-        self._host = v
+        self._setvalue('_host', v, 'host')
 
     @property
     def path(self):
@@ -2994,7 +2994,7 @@ class url(entities.entity):
     def path(self, v):
         """ Set the path.
         """
-        self._path = v
+        self._setvalue('_path', v, 'path')
 
     def getpath(self, lang=True):
         """ Return the path portion of this `url`. By default, the
@@ -3070,7 +3070,7 @@ class url(entities.entity):
     def query(self, v):
         """ Set the query string.
         """
-        self._query = v
+        self._setvalue('_query', v, 'query')
 
     @property
     def fragment(self):
@@ -3084,7 +3084,7 @@ class url(entities.entity):
 
     @fragment.setter
     def fragment(self, v):
-        self._fragment = v
+        self._setvalue('_fragment', v, 'fragment')
 
     @property
     def username(self):
@@ -3099,7 +3099,7 @@ class url(entities.entity):
     def username(self, v):
         """ Set the username portion of the URL.
         """
-        self._username = v
+        self._setvalue('_username', v, 'username')
 
     @property
     def password(self):
@@ -3114,7 +3114,7 @@ class url(entities.entity):
     def password(self, v):
         """ Set the password portion of the URL.
         """
-        self._password = v
+        self._setvalue('_password', v, 'password')
 
     @property
     def port(self):
@@ -3135,7 +3135,7 @@ class url(entities.entity):
     def port(self, v):
         """ Set the port portion of the url.
         """
-        self._port = v
+        self._setvalue('_port', v, 'port')
 
     @property
     def paths(self):
