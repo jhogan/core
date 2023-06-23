@@ -1377,7 +1377,6 @@ class ticketsspa_backlogs(tester.tester):
                 res = self.drop(dock, tab)
                 self.h200(res)
 
-
             # Get updated references to the source (tbl) and destination
             # (tbl1) tables.
             tbl = get_table(bl)
@@ -1385,12 +1384,13 @@ class ticketsspa_backlogs(tester.tester):
 
             tr1 = tbl1.trs[f'[data-tracker="{tracker}"]'].only
 
-
             a = tr1['a[rel="edit"]'].only
 
             self.eq(a.url.qs['backlogid'], bl1.id.hex)
 
             self.click(a, tab)
+
+            # XXX
             return
 
 
