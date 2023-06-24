@@ -23,7 +23,6 @@ import primative
 import re
 import string
 import sys
-import www
 import uuid
 
 "The Web is a detail."
@@ -3956,6 +3955,7 @@ class a(element):
     def url(self):
         """ XXX
         """
+        import www
         url = www.url(self.href)
 
         def onaftervaluechange(src, eargs):
