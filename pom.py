@@ -955,6 +955,9 @@ function ajax(e){
                 temp.innerHTML = xhr.responseText
                 els = temp.content.children
 
+                // XXX Explain
+                els = [...els]
+
                 // If a <main> tag was returned, we are doing an SPA
                 // page load.
                 if(els[0].tagName == 'MAIN'){
