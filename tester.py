@@ -1913,7 +1913,7 @@ class tester(entities.entity):
             
             self._failures += failure()
 
-    def _trigger(self, trig, e, tab, count):
+    def _trigger(self, trig, e, tab, cnt):
         """ A private method to call the `trig` trigger method on `e`.
         Return the last response the browser recorded.
 
@@ -2037,9 +2037,15 @@ class tester(entities.entity):
         # XXX Update docstring for st and msg
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
-            return self.click(e, tab, count)
+            res = self.click(e, tab, cnt, st, msg)
+        else:
+            res = self._trigger('submit', e, tab, cnt)
+
+            if res.status != st:
+                msg = self._stmsg(res, st, msg)
+                self.failure += failure()
             
-        return self._trigger('submit', e, tab, count)
+        return res
 
     def click(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on `e`. Return the last
@@ -2061,12 +2067,25 @@ class tester(entities.entity):
         res = self._trigger('click', e, tab, cnt)
 
         if res.status != st:
-            msg = self.dedent(f'''
-                Wrong HTTP status:
-                    expected: {st}
-                    actual:   {res.status}
-            ''')
+            msg = self._stmsg(res, st, msg)
             self._failures += failure()
+
+        return res
+
+    @staticmethod
+    def _stmsg(res, st, msg):
+        if msg is None:
+            msg = str()
+        else:
+            msg += ' - '
+
+        msg += tester.dedent(f'''
+            Wrong HTTP status:
+                expected: {st}
+                actual:   {res.status}
+        ''')
+
+        return msg
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
