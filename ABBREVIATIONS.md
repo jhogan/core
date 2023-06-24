@@ -38,6 +38,7 @@ return-value:  r
 segment:       seg
 selector:      sel
 selectors:     sels
+status:        st
 switch-user:   su
 trigger:       trig
 tuple:         tup

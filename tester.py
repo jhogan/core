@@ -1928,7 +1928,7 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
         """
         trig = getattr(e, trig)
@@ -1936,10 +1936,10 @@ class tester(entities.entity):
         with tab.capture() as msgs:
             trig()
 
-        if msgs.count != count:
+        if msgs.count != cnt:
             raise ValueError(
                 'Incorrect HTTP messages count. '
-                f'Expected: {count} Actual: {msgs.count}'
+                f'Expected: {cnt} Actual: {msgs.count}'
             )
 
         if last := msgs.last:
@@ -1976,7 +1976,7 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause. Typically, the dragstart event will have a
         null handler so 0 responses are expected by default.
         """
@@ -1998,7 +1998,7 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause. This is default because dragover events
         should probably alwasy have null handlers. Real browsers call
         the the `dragover` event several times a second during a drag.
@@ -2016,13 +2016,12 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
         """
         return self._trigger('drop', e, tab, cnt)
 
-    # TODO We should change the name of the `count` parameter to `cnt`.
-    def submit(self, e, tab, count=1):
+    def submit(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on a form (`e`). Return the
         last response the browser recorded.
 
@@ -2032,16 +2031,17 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
         """
+        # XXX Update docstring for st and msg
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
             return self.click(e, tab, count)
             
         return self._trigger('submit', e, tab, count)
 
-    def click(self, e, tab, count=1, st=200, msg=None):
+    def click(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on `e`. Return the last
         response the browser recorded.
 
@@ -2054,11 +2054,11 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
         """
         # XXX Update docstring for st
-        res = self._trigger('click', e, tab, count)
+        res = self._trigger('click', e, tab, cnt)
 
         if res.status != st:
             msg = self.dedent(f'''

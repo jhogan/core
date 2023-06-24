@@ -9,7 +9,7 @@
 ########################################################################
 
 from contextlib import suppress
-from dbg import B, PM
+from dbg import *
 from uuid import UUID, uuid4
 from entities import classproperty
 from func import getattr
