@@ -958,6 +958,8 @@ function ajax(e){
                 // XXX Explain
                 els = [...els]
 
+                console.debug('els length: ' + els.length)
+
                 // If a <main> tag was returned, we are doing an SPA
                 // page load.
                 if(els[0].tagName == 'MAIN'){
@@ -1266,7 +1268,7 @@ function exec(els){
                         var main = document.querySelector('main')
                         var url = instr.getAttribute('content')
 
-                        console.debug('pushState to ' + url)
+                        console.info('pushState to ' + url)
 
                         window.history.pushState(
                             main.outerHTML, null, url
@@ -1276,6 +1278,7 @@ function exec(els){
                     // Process a remove instruction
                     var id = instr.getAttribute('content')
                     el = document.getElementById(id)
+                    console.info('remove ' + id, el)
                     el.remove()
                 }
             }
