@@ -2786,6 +2786,26 @@ class element(entities.entity):
         r %= type(self).__name__, attrs
         return r
 
+    @property
+    def entityid(self):
+        """ Return the value of the `data-entity-id` attribute of this
+        element.
+
+        The `data-entity-id` is a common attribute used by the framework
+        to denote the ORM entity that a DOM element is associated with.
+        In the below example, the <tr> would represent the data in an
+        `backlog' object with an id of dca9304489c74e15888b83fdcb09a3c8:
+
+            <tr data-entity="effort.backlog" 
+                data-entity-id="dca9304489c74e15888b83fdcb09a3c8">
+
+                <td>
+                    ...
+                </td>
+            </tr>
+        """
+        return self.getattr('data-entity-id')
+
 class headers(elements):
     """ A class used to contain a collection of ``header`` elements.
     """
@@ -6569,27 +6589,6 @@ class tr(element):
         to drag the entire <tr>.
         """
         return self['span.handle'].only
-
-    @property
-    def entityid(self):
-        """ Return the value of the `data-entity-id` attribute of this
-        `tr` element.
-
-        The `data-entity-id` is a common attribute used by the framework
-        to denote the ORM entity that a DOM element is associated with.
-        In the below example, the <tr> would represent the data in an
-        `backlog' object with an id of dca9304489c74e15888b83fdcb09a3c8:
-
-            <tr data-entity="effort.backlog" 
-                data-entity-id="dca9304489c74e15888b83fdcb09a3c8">
-
-                <td>
-                    ...
-                </td>
-            </tr>
-        """
-        return self.getattr('data-entity-id')
-
 
 class selects(elements):
     """ A class used to contain a collection of ``tr`` elements."""
