@@ -1000,12 +1000,16 @@ function ajax(e){
 
                         // Get the id of the element. `el.id` doesn't
                         // work here.
-                        let id = el.getAttribute('id')
 
-                        // Use the fragment's id to find and replace
-                        let old = document.querySelector('#' + id)
-                        old.parentNode.replaceChild(el, old)
+                        let id
+                        if (id = el.getAttribute('id')){
+                            // Use the fragment's id to find and replace
+                            let old = document.querySelector('#' + id)
+                            old.parentNode.replaceChild(el, old)
+                        }
+                    }
 
+                    for(el of els){
                         // Execute any .instructions in the HTML. If
                         // there is a set-url instruction, the URL will
                         // be set using a history.pushState.
