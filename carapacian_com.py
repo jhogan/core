@@ -580,9 +580,9 @@ class ticketsspa(pom.spa):
                     else:
                         for bs in bl.backlog_stories:
                             if bs.id == id:
-                                url.qs['id']          =  bs.story.id
-                                url.qs['backlogid']   =  bl.id.hex
-                                url.qs['oncomplete']  =  self.path
+                                url.qs['id']         = bs.story.id.hex
+                                url.qs['backlogid']  = bl.id.hex
+                                url.qs['oncomplete'] = self.path
 
                                 a.href = url.normal
 
