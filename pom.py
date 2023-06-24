@@ -1247,7 +1247,11 @@ function exec(els){
     for (el of els){
         
         // Get all <article class='instructions'>
-        var instrss = el.querySelectorAll('.instructions')
+        var instrss = [...el.querySelectorAll('.instructions')]
+
+        if (el.classList.contains('instructions')){
+            instrss.push(el)
+        }
 
         // For each instruction set
         for (var instrs of instrss){
