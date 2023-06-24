@@ -6566,6 +6566,11 @@ class tr(element):
         # Return the persisted or transient entity
         return cls.orm.produce(id)
 
+    def getvalue(self, name):
+        """ XXX
+        """
+        return self[f'td[data-entity-attribute={name}] span.value'].text
+
     @property
     def handle(self):
         """ Return the handle element of this `tr` object. Handle
