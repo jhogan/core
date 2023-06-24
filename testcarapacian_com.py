@@ -1349,17 +1349,14 @@ class ticketsspa_backlogs(tester.tester):
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
-        # Get the source (tbl) and destination (tbl1) tables from the
-        # current browser tab.
-        tbl = get_table(bl)
-        tbl1 = get_table(bl1)
-
-        # Get the dock <tr> zrop zone to append bl rows to
-        dock = tbl1['.dock'].only
 
         ''' Move all bl tr rows from the source table (tbl) to the end
         of the destination table (tbl1).
         '''
+        # Get the source (tbl) and destination (tbl1) tables from the
+        # current browser tab.
+        tbl = get_table(bl)
+        tbl1 = get_table(bl1)
 
         cnt = tbl.trs.count
         for i in range(cnt):
@@ -1373,6 +1370,9 @@ class ticketsspa_backlogs(tester.tester):
 
             # Start the drag operation
             with self.dragstart(hnd, tab) as res:
+                # Get the dock <tr> zrop zone to append bl rows to
+                dock = tbl1['.dock'].only
+
                 # Drop the source row on a destinations table's <tr>.
                 res = self.drop(dock, tab)
                 self.h200(res)
@@ -1390,10 +1390,24 @@ class ticketsspa_backlogs(tester.tester):
 
             self.click(a, tab)
 
-            # XXX
-            return
+            frm = tab['form'].only
 
+            self.eq(a.url.qs['id'], frm.entityid)
 
+            name = uuid4().hex
+
+            frm.setvalue('name', name)
+
+            bs = tr1.entity
+
+            self.submit(frm, tab)
+
+            tbl = get_table(bl)
+            tbl1 = get_table(bl1)
+
+            tr1 = tbl1.trs[f'[data-entity-id="{tr1.entityid}"]'].only
+
+            self.eq(name, tr1.getvalue('name'))
 
 if __name__ == '__main__':
     tester.cli().run()
