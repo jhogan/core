@@ -3973,21 +3973,46 @@ class a(element):
 
     @property
     def url(self):
-        """ XXX
+        """ Returns a `www.url` object that matches the value in
+        `self.href`. Properties of the `url` can be interrogated get
+        parts of the `href`. `self.href` can also be manipulated by
+        manipulating the properties of the `url` object.
+
+            # Create anchor
+            a = dom.a('Click Here', href='http://example.com')
+
+            # Assert host
+            assert a.url.host == 'example.com'
+
+            # Change host
+            a.url.host = 'example.org'
+            assert a.url.host == 'example.org'
+
+            # Add a query string parameter
+            a.url.qs['a'] = '1'
+            assert a.href == 'http://example.org?a=1'
         """
         import www
         url = www.url(self.href)
 
         def onaftervaluechange(src, eargs):
+            """ An event handler to capture changes to the `url`. We
+            update the `href` here when any changes are made.
+            """
             self.href = str(eargs.entity)
 
+        # Subscribe to the event handler
         url.onaftervaluechange += onaftervaluechange
 
         return url
 
     @url.setter
     def url(self, v):
-        """ XXX
+        """ Set the 'url'. 
+
+        :param: v str|www.url: The object to set the url to, If it is a
+        string, then it should be the URL you want `href` to be. You can
+        also use a `www.url` object.
         """
         self.href = str(v)
 
@@ -6566,10 +6591,14 @@ class tr(element):
         # Return the persisted or transient entity
         return cls.orm.produce(id)
 
-    def getvalue(self, name):
-        """ XXX
+    def getvalue(self, attr):
+        """ Return the value in the <td> of this `tr` that has a
+        `data-entity-attribute` of `attr'. 
+
+        :param: attr str: The name of the entity's attribute whose value
+        you want to obtain.
         """
-        return self[f'td[data-entity-attribute={name}] span.value'].text
+        return self[f'td[data-entity-attribute={attr}] span.value'].text
 
     @property
     def handle(self):

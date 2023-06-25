@@ -955,10 +955,12 @@ function ajax(e){
                 temp.innerHTML = xhr.responseText
                 els = temp.content.children
 
-                // XXX Explain
+                // Convert the HTMLCollection `els` into a regurlar
+                // array. The .replaceChild() method below will remove
+                // the elements from `els` if `els` is an HTMLCollection
+                // beause HTMLCollections are "live". However, we don't
+                // want elements from `els` removed.
                 els = [...els]
-
-                console.debug('els length: ' + els.length)
 
                 // If a <main> tag was returned, we are doing an SPA
                 // page load.

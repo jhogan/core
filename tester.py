@@ -2033,8 +2033,11 @@ class tester(entities.entity):
 
         :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
+
+        :param: st int: The HTTP status code that is expected. If the
+        last HTTP response of the event has a different status code, an
+        assertion failure is recorded.
         """
-        # XXX Update docstring for st and msg
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
             res = self.click(e, tab, cnt, st, msg)
@@ -2062,8 +2065,11 @@ class tester(entities.entity):
 
         :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
+
+        :param: st int: The HTTP status code that is expected. If the
+        last HTTP response of the event has a different status code, an
+        assertion failure is recorded.
         """
-        # XXX Update docstring for st
         res = self._trigger('click', e, tab, cnt)
 
         if res.status != st:

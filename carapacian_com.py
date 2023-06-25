@@ -706,7 +706,6 @@ class ticketsspa(pom.spa):
 
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
-            # XXX Comment
             if mv:
                 # Move the story to the new backlog
 
