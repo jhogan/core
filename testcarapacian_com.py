@@ -1071,6 +1071,55 @@ class ticketsspa_backlogs(tester.tester):
                 # XXX Ensure the rankings in the table match the
                 # rankings in the database
 
+        ''' It demotes stories to the very bottom. '''
+        for i in range(Count):
+            tbl = get_table()
+            tr = trs[i]
+            hnd = tr.handle
+
+            # To demote to the very bottom, we drop on the <tr
+            # class="dock"> in the <tfoot>.
+            dock = tbl['tfoot tr.dock'].only
+
+            # Initiate drag-and-drop operation by triggering
+            # dragstart event on source handle
+            with self.dragstart(hnd, tab) as res:
+                # No XHR request is made on dragstart events
+                self.none(res)
+
+                # Trigger dragover event on drop `dock`.
+                res = self.dragover(dock, tab)
+                self.true(dock.dragentered)
+
+                # No XHR request is made on dragover events
+                self.none(res)
+
+                # Trigger drop event on drop `dock`.
+                res = self.drop(dock, tab)
+
+            if i == Count - 1:
+                self.h204(res)
+            else:
+                # Ensure XHR from `drop` trigger returned 200
+                self.h200(res)
+
+            # Get update reference to table from `tab`
+            tbl = get_table()
+            trs = tbl.trs
+
+            # Ensure the source demoted to bottom
+            self.eq(tr.entityid, trs[-1].entityid)
+
+            dock = tbl['tfoot tr.dock'].only
+            self.false(dock.dragentered)
+
+            bl = bl.orm.reloaded()
+            bss = bl.backlog_stories.sorted('rank')
+            for tr, bs in self.zip(tbl.trs, bss):
+                self.eq(tr.entityid, bs.id.hex)
+
+            self.eq(list(range(Count)), bss.pluck('rank'))
+
     def it_moves_stories_between_backlogs(self):
         """ Test moving a story from one backlog to another.
         """
@@ -1170,16 +1219,9 @@ class ticketsspa_backlogs(tester.tester):
                 for tr1 in tbl.trs:
                      self.ne(bsid, tr1.getattr('data-entity-id'))
 
-                # Ensure it was added to the destination table
-                for tr1 in tbl1.trs:
-                    tracker = tr1.getattr('data-tracker')
-                    if tracker == tracker:
-                        break
-                else:
-                    self.fail(
-                        '<tr> was not found in destination table: ' +
-                        repr(tr)
-                    )
+                # Ensure it was added to to the bottom of the
+                # destination table
+                self.eq(tracker, tbl1.trs.last.getattr('data-tracker'))
 
                 ''' Test that <table>s match database '''
 
@@ -1281,16 +1323,9 @@ class ticketsspa_backlogs(tester.tester):
                 for tr1 in tbl.trs:
                      self.ne(bsid, tr1.getattr('data-entity-id'))
 
-                # Ensure it was added to the destination table
-                for tr1 in tbl1.trs:
-                    tracker = tr1.getattr('data-tracker')
-                    if tracker == tracker:
-                        break
-                else:
-                    self.fail(
-                        '<tr> was not found in destination table: ' +
-                        repr(tr)
-                    )
+                # Ensure it was added to the destination table at the
+                # correct location
+                self.eq(tracker, tbl1.trs[j - 1].getattr('data-tracker'))
 
                 ''' Test that <table>s match database '''
 
