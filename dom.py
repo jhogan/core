@@ -2806,6 +2806,45 @@ class element(entities.entity):
         """
         return self.getattr('data-entity-id')
 
+    @property
+    def entity(self):
+        """ Return a entity corresponding to this <tr>.
+
+        For the entity to be found, the <tr> must have a `data-entity`
+        and `data-entity-id` attribute so the entity can be found.
+
+        If the entity exists in the database, it will be loaded and
+        returned. If it doesn't yet exist in the database, a new entity
+        will be created and returned. Note that this entity the caller
+        will need to save this new entity to the database if persistence
+        is desired.
+        """
+
+        # XXX Update comments now that we've moved to `element`.
+
+        # Get the 'data-entity' attribute. It contains the module and
+        # class name.
+        if not (cls := self.getattr('data-entity')):
+            raise ValueError('Missing data-entity attributes')
+
+        # Get the 'data-entity-id' attribute. It contains the UUID of
+        # the entity
+        if not (id := self.getattr('data-entity-id')):
+            raise ValueError('Missing data-entity-id attributes')
+
+        # Split the data-entity into module and class (mod, cls)
+        mod, cls = cls.split('.')
+
+        # Import the module
+        import importlib
+        mod = importlib.import_module(mod)
+
+        # Get the class reference from the module
+        cls = getattr(mod, cls)
+
+        # Return the persisted or transient entity
+        return cls.orm.produce(id)
+
 class headers(elements):
     """ A class used to contain a collection of ``header`` elements.
     """
@@ -6556,42 +6595,6 @@ class tr(element):
     row's cells can then be established using a mix of <td> (data cell)
     and <th> (header cell) elements.
     """
-    @property
-    def entity(self):
-        """ Return a entity corresponding to this <tr>.
-
-        For the entity to be found, the <tr> must have a `data-entity`
-        and `data-entity-id` attribute so the entity can be found.
-
-        If the entity exists in the database, it will be loaded and
-        returned. If it doesn't yet exist in the database, a new entity
-        will be created and returned. Note that this entity the caller
-        will need to save this new entity to the database if persistence
-        is desired.
-        """
-        # Get the 'data-entity' attribute. It contains the module and
-        # class name.
-        if not (cls := self.getattr('data-entity')):
-            raise ValueError('Missing data-entity attributes')
-
-        # Get the 'data-entity-id' attribute. It contains the UUID of
-        # the entity
-        if not (id := self.getattr('data-entity-id')):
-            raise ValueError('Missing data-entity-id attributes')
-
-        # Split the data-entity into module and class (mod, cls)
-        mod, cls = cls.split('.')
-
-        # Import the module
-        import importlib
-        mod = importlib.import_module(mod)
-
-        # Get the class reference from the module
-        cls = getattr(mod, cls)
-
-        # Return the persisted or transient entity
-        return cls.orm.produce(id)
-
     def getvalue(self, attr):
         """ Return the value in the <td> of this `tr` that has a
         `data-entity-attribute` of `attr'. 
