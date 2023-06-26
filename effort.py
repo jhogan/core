@@ -1052,6 +1052,9 @@ class backlog(orm.entity):
         # Finally, set the story associations rank
         target.rank = rank
 
+        # Make sure there ranks a perfectly sequential: 0, 1, 2, ...
+        bss._rerank()
+
     def remove(self, st):
         """ Remove the story from this backlog. Returns a collection of
         stories that were successfully removed.
