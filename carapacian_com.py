@@ -688,21 +688,43 @@ class ticketsspa(pom.spa):
             # and estication
             bssrc = trsrc.entity
 
-            # If the trzone drop zone is a 'dock'
-            if 'dock' in trzone.classes:
+            # Get destination backlog
+            blid = tbl.getattr('data-backlog-entity-id')
+            bl1 = effort.backlog(blid)
+
+            within = (
+                UUID(trsrc.entityid) in bl1.backlog_stories.pluck('id')
+            )
+
+            # Is the <tr> a .dock
+            isdock = 'dock' in trzone.classes
+
+            # If we are moving within the same table
+            if within:
+                if isdock:
+                    if trsrc.id == tbl.trs.last.id:
+                        www.application.current.response.status = 204
+                        return
+                        
+                    rank = bl1.backlog_stories.count
+                else:
+                    bsdest = trzone.entity
+                    rank = bsdest.rank
+
+                mv = False
+
+            # Else, we are moving a story from one table to another
+            else:
                 # Get the <table>'s backlog
                 blid = tbl.getattr('data-backlog-entity-id')
                 bl = effort.backlog(blid)
-                rank = 0
+                if isdock:
+                    rank = tbl.trs.count
+                else:
+                    bsdest = trzone.entity
+                    rank = bsdest.rank
+
                 mv = True
-            else:
-                bsdest = trzone.entity
-                rank = bsdest.rank
-
-                # Get the destinations backlog
-                bl = bsdest.backlog
-
-                mv = bssrc.backlog.id != bl.id
 
             # Move the <tr>s within the table so they reflect the
             # reassignment of the story's rank
@@ -766,20 +788,22 @@ class ticketsspa(pom.spa):
                         qs['backlogid'] = bl1.id.hex
 
                 tbody.elements.insert(rank, trsrc)
-            else:
+            elif not mv:
                 # Insert the story to change its ranking within the
                 # backlog and save.
-                bl.insert(rank, bssrc.story)
-                bl.save()
+                bl1.insert(rank, bssrc.story)
+                bl1.save()
 
                 trsrc = tbody.elements['#' + trsrc.id].only
-                destix = tbody.elements.getindex(trzone.id)
+                if isdock:
+                    destix = tbl.trs.count
+                else:
+                    destix = tbody.elements.getindex(trzone.id)
+
                 tbody.elements.move(destix, trsrc)
 
-            bss = bl.backlog_stories
+            bss = bl1.backlog_stories
 
-            # XXX
-            return
             # For each <tr> in the table
             for tr in tbody['tr']:
                 # Get the backlog that corresponds to the tr
@@ -793,8 +817,7 @@ class ticketsspa(pom.spa):
                 span = td['span.value'].only
 
                 # Set the rank
-                span.text = bs.rank
-                span.text += 'XXX'
+                span.text = str(bs.rank) + ' XXX'
 
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
