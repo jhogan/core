@@ -984,6 +984,7 @@ class ticketsspa_backlogs(tester.tester):
             return tbl
 
         ''' Seed data '''
+
         # Create a backlog with some stories in it
         import testeffort
         bl = testeffort.backlog.getvalid()

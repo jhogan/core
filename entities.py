@@ -1173,11 +1173,9 @@ class entities:
         return self.count - 1
 
     def move(self, ix, e):
-        """ NOTE Currently not implemented.
-        
-        Remove ``e`` from the collection, causing the onremove event to
-        fire, then insert it before the element at index ``ix`` in the
-        collection.
+        """ Remove ``e`` from the collection, causing the onremove event
+        to fire, then insert it before the element at index ``ix`` in
+        the collection.
 
         :param: ix int: The index the element will be moved before.
 

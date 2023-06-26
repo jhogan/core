@@ -6547,6 +6547,7 @@ class table(element):
         """
         return self['tbody tr']
 
+
 class trs(elements):
     """ A class used to contain a collection of ``tr`` elements."""
 

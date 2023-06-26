@@ -735,6 +735,8 @@ class ticketsspa(pom.spa):
                 st = bssrc.story
                 bl = bssrc.backlog
 
+                # XXX We may be able to remove these lines since they
+                # are above as well
                 # Get destination backlog
                 blid = tbl.getattr('data-backlog-entity-id')
                 bl1 = effort.backlog(blid)
