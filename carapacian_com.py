@@ -1144,7 +1144,7 @@ a{
 }
 
 tr[data-dragentered] {
-    color: red;
+    background-color: red;
     border-top-color: blue;
     
 }
