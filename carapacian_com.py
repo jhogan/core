@@ -713,7 +713,7 @@ class ticketsspa(pom.spa):
 
                 mv = False
 
-            # Else, we are moving a story from one table to another
+            # else, we are moving a story from one table to another
             else:
                 # Get the <table>'s backlog
                 blid = tbl.getattr('data-backlog-entity-id')
