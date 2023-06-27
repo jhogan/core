@@ -1044,11 +1044,11 @@ class ticketsspa_backlogs(tester.tester):
                     # Trigger drop event on drop `zone`.
                     res = self.drop(zone, tab)
 
-                    # Get update reference to table from `tab`
-                    tbl = get_table()
-                    trs = tbl.trs
+                # Get update reference to table from `tab`
+                tbl = get_table()
+                trs = tbl.trs
 
-                    self.false(zone.dragentered, ij)
+                self.false(zone.dragentered, ij)
 
                 # The tab should not be updated if source and
                 # destination are the same or if destination is only one
