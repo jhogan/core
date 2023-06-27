@@ -619,7 +619,9 @@ class ticketsspa(pom.spa):
 
                 tbl += tfoot
                 tfoot += tr
-                tr += dom.td('XXX')
+                ls = list(x['td'].count for x in tbl.trs)
+                colspan = max(ls) if ls else 0
+                tr += dom.td(colspan=colspan)
 
                 # Remove the table's parent so we can make `card` its
                 # new parent
