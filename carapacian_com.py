@@ -743,12 +743,6 @@ class ticketsspa(pom.spa):
                 st = bssrc.story
                 bl = bssrc.backlog
 
-                # XXX We may be able to remove these lines since they
-                # are above as well
-                # Get destination backlog
-                blid = tbl.getattr('data-backlog-entity-id')
-                bl1 = effort.backlog(blid)
-
                 def bss_onadd(src, eargs):
                     """ An event handelr to capture the moment the
                     st.move() method below adds a new `backlog_story`
