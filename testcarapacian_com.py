@@ -1068,8 +1068,12 @@ class ticketsspa_backlogs(tester.tester):
                 elif i < j:
                     self.eq(trs[j].entityid, src.entityid, ij)
 
-                # XXX Ensure the rankings in the table match the
-                # rankings in the database
+                bl = bl.orm.reloaded()
+                bss = bl.backlog_stories.sorted('rank')
+                for tr, bs in self.zip(tbl.trs, bss):
+                    self.eq(tr.entityid, bs.id.hex, ij)
+
+                self.eq(list(range(Count)), bss.pluck('rank'))
 
         ''' It demotes stories to the very bottom. '''
         for i in range(Count):
