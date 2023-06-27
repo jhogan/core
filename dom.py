@@ -2808,20 +2808,17 @@ class element(entities.entity):
 
     @property
     def entity(self):
-        """ Return a entity corresponding to this <tr>.
+        """ Return a entity corresponding to this `element`.
 
-        For the entity to be found, the <tr> must have a `data-entity`
-        and `data-entity-id` attribute so the entity can be found.
+        For the entity to be found, this `element` must have a
+        `data-entity` and `data-entity-id` attribute so the entity can
+        be found.
 
         If the entity exists in the database, it will be loaded and
         returned. If it doesn't yet exist in the database, a new entity
-        will be created and returned. Note that this entity the caller
-        will need to save this new entity to the database if persistence
-        is desired.
+        will be created and returned. Note that the caller will need to
+        save this new entity to the database if persistence is desired.
         """
-
-        # XXX Update comments now that we've moved to `element`.
-
         # Get the 'data-entity' attribute. It contains the module and
         # class name.
         if not (cls := self.getattr('data-entity')):

@@ -1030,7 +1030,7 @@ class tester(entities.entity):
                 return res
 
             def reload(self):
-                """ XXX
+                """ Reload the page that the tab last navigated to.
                 """
                 self.navigate(pg=self._pg, ws=self._ws)
 
