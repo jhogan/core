@@ -1021,7 +1021,18 @@ class tester(entities.entity):
 
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onafterload(self, eargs)
+
+                # NOTE I kind of just added these lines so `self.reload`
+                # would work. Some more thought into improving the
+                # usefulness of these may be possible.
+                self._ws = ws
+                self._pg = pg
                 return res
+
+            def reload(self):
+                """ XXX
+                """
+                self.navigate(pg=self._pg, ws=self._ws)
 
             def get(self, pg, ws, hdrs=None):
                 """ Issues an HTTP GET request for the page `pg` to the

@@ -1260,8 +1260,7 @@ class ticketsspa_backlogs(tester.tester):
         ''' Reload /backlogs page '''
 
         # Load the backlogs page
-        # XXX Can we add and use a tab.reload() method here?
-        tab.navigate('/en/ticketsspa/backlogs', ws)
+        tab.reload()
 
         # Get the source (tbl) and destination (tbl1) tables from the
         # current browser tab.
