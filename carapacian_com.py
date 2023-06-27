@@ -711,6 +711,14 @@ class ticketsspa(pom.spa):
                     bsdest = trzone.entity
                     rank = bsdest.rank
 
+                    trs = tbl.trs
+                    ixsrc = trs.getindex(trsrc.id)
+                    ixdest = trs.getindex(trzone.id) 
+                    promote = ixsrc > ixdest
+
+                    if not promote:
+                        rank -= 1
+
                 mv = False
 
             # else, we are moving a story from one table to another
