@@ -776,17 +776,6 @@ class ticketsspa(pom.spa):
                 st.save(bl, bl1)
                 trsrc.reidentify()
 
-                # XXX Clean up. Put logic in dragonize()
-                for attr in trsrc.attributes:
-                    if attr.name.startswith('data-drag'):
-                        pass
-                    elif attr.name.startswith('data-drop'):
-                        pass
-                    else:
-                        continue
-
-                    del trsrc.attributes[attr]
-
                 # Redragonize trsrc so it knows which tbl it needs to
                 # send.
                 trsrc.dragonize(

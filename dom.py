@@ -2751,6 +2751,12 @@ class element(entities.entity):
         :param: target str: The id of the element that the `handle` will
         drag around.
         """
+
+        # XXX Explain
+        self.ondrop.clear()
+        self.ondragover.clear()
+        self.ondragleave.clear()
+
         self.ondrop       +=  ondrop
         self.ondragover   +=  ondragover
         self.ondragleave  +=  ondragleave
