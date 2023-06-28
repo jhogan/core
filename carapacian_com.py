@@ -664,7 +664,12 @@ class ticketsspa(pom.spa):
             # need to write one line instead of two here.
 
             # Get the element being dropped
-            trsrc = eargs.html.third
+            trsrc = eargs.html.pop()
+
+            # Cause a deletion of the trsrc by its id. When we drop the
+            # source, we need to remove the originl entirely. A specialy
+            # cloned version will be added to tbl later in the code. 
+            eargs.remove(trsrc)
 
             tbody = tbl['tbody'].only
 
@@ -769,11 +774,6 @@ class ticketsspa(pom.spa):
                 # .save(). Discover why this is necessary at the moment
                 # and seek to correct it.
                 st.save(bl, bl1)
-
-                eargs.remove(trsrc)
-
-                # XXX We should pop this and explain why.
-                del eargs.html[2]
                 trsrc.reidentify()
 
                 # XXX Clean up. Put logic in dragonize()
