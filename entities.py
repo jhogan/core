@@ -2896,11 +2896,10 @@ class event(entities):
             # Unsubscribe the handler from the onadd event
             es.onadd -= myhandler
 
-        :param: fn callable: The event handler that needs to be
+        :param: f callable: The event handler that needs to be
         unsubscribed.
         """
-        # TODO Rename fn to f to conform to conventions
-        if not callable(fn):
+        if not callable(f):
             # TODO Change to TypeError
             raise ValueError('Event must be callable')
 
@@ -2911,7 +2910,7 @@ class event(entities):
             # change over time.  However, an equality test does match
             # bound method which is why we use the equality operator
             # below.
-            if fn == self[i]:
+            if f == self[i]:
                 del self._ls[i]
                 break
 

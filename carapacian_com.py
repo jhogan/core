@@ -656,6 +656,13 @@ class ticketsspa(pom.spa):
             # Get the element that the above is being dropped on
             trzone = eargs.html.second
 
+            # TODO Belowe we pop() and then remove (using a remove
+            # instruction) an element given to us by the browser. We may
+            # want to consider using the html.element.onafterremove
+            # event to capture pops (and other removes) and issue a
+            # instruction in the event handler. That way we would only
+            # need to write one line instead of two here.
+
             # Get the element being dropped
             trsrc = eargs.html.third
 
