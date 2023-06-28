@@ -806,21 +806,6 @@ class ticketsspa(pom.spa):
 
             bss = bl1.backlog_stories
 
-            # For each <tr> in the table
-            for tr in tbody['tr']:
-                # Get the backlog that corresponds to the tr
-                id = tr.getattr('data-entity-id')
-                bs = bss[UUID(id)]
-
-                # Get the 'rank' <td>
-                td = tr['td[data-entity-attribute=rank]'].only
-
-                # Get the <span> that holds the value for rank
-                span = td['span.value'].only
-
-                # Set the rank
-                span.text = str(bs.rank) + ' XXX'
-
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
             type filters.
