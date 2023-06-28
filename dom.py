@@ -9,7 +9,7 @@
 ########################################################################
 
 from contextlib import suppress, contextmanager
-from dbg import B
+from dbg import *
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
