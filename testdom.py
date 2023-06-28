@@ -6160,6 +6160,41 @@ class selectors(tester.tester):
                 lambda: dom.selectors(sel),
            )
 
+class event(tester.tester):
+    def it_clears(self):
+        
+        def hnd(src, eargs):
+            pass
+
+        def hnd1(src, eargs):
+            pass
+
+        div = dom.div()
+        a = dom.a()
+        p = dom.p()
+        sec = dom.section()
+
+        div += a, p
+
+        a.onclick += hnd, p
+
+        a.onclick += hnd1, sec
+
+        # Double-check that the subscription is correct
+        self.eq(a.getattr('data-click-fragments')[1:], p.id)
+
+        # We should only have one event handler
+        self.one(a.onclick)
+
+        # Clear the event handler
+        a.onclick -= hnd
+
+        # We should only have one event handler
+        self.zero(a.onclick)
+
+        # The event's fragments attribute should be remove as well
+        self.false(a.hasattr('data-click-fragments'))
+
 TestHtml = tester.tester.dedent('''
 <html id="myhtml" arbit="trary">
   <!-- This is an HTML document -->

@@ -10516,6 +10516,18 @@ class event(entities.event):
 
         super().append(f)
 
+    def remove(self, f):
+        """ XXX
+        """
+        super().remove(f)
+        el = self.element
+
+        # Remove data-{event}-fragments and data-{event}-handler
+        # attributes from element
+        attr = 'data-' + self.name
+        el.delattr(attr + '-fragments')
+        el.delattr(attr + '-handler')
+
 class eventargs(entities.eventargs):
     """ The eventargs class for DOM events. This object is used to move
     data from the browser to the server-side event handler.
