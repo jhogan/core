@@ -2875,7 +2875,13 @@ class event(entities):
             
         self._ls.append(f)
 
-    def remove(self, fn):
+    def clear(self):
+        """ XXX
+        """
+        for hnd in self:
+            self.remove(hnd)
+
+    def remove(self, f):
         """ Unsubscribe an event handler from this event. Once the
         handler is unsubscribed, it will no longer be invoked when the
         event is fired.
