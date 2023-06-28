@@ -1532,7 +1532,7 @@ class element(entities.entity):
         setattr(self, '_ondrop', v)
 
     def drop(self):
-        """ XdragstartXX
+        """ Trigger the `drop` event for this element.
         """
         return self._trigger('drop')()
 
@@ -2752,7 +2752,8 @@ class element(entities.entity):
         drag around.
         """
 
-        # XXX Explain
+        # Unsubscribe any event handlers and remove their data-<event>-*
+        # attributes.
         self.ondrop.clear()
         self.ondragover.clear()
         self.ondragleave.clear()
@@ -10517,7 +10518,12 @@ class event(entities.event):
         super().append(f)
 
     def remove(self, f):
-        """ XXX
+        """ An override of entities.event.remove for this dom.event.
+        Clears data-<event>-fragments and data-<event>-handler
+        attributes of the element.
+
+        :param: f callable: The event handler that needs to be
+        unsubscribed.
         """
         super().remove(f)
         el = self.element

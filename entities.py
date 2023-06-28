@@ -2876,10 +2876,10 @@ class event(entities):
         self._ls.append(f)
 
     def clear(self):
-        """ XXX
+        """ Remove all event handlers in this event.
         """
-        for hnd in self:
-            self.remove(hnd)
+        for f in self:
+            self.remove(f)
 
     def remove(self, f):
         """ Unsubscribe an event handler from this event. Once the
