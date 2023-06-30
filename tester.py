@@ -742,6 +742,30 @@ class tester(entities.entity):
                 isnav = is_nav_link(src)
                 nav = src.closest('nav')
 
+                # If this is a dragstart dom event
+                if eargs.trigger == 'dragstart':
+                    # Assume src is a handle (see dom.tr.handle). Its
+                    # data-drag-target attribute will have the ID of the
+                    # element that is being dragged by the handle. Get
+                    # its HTML and put it in the data transfer object
+                    # (self.transfer).
+                    id = src.getattr('data-drag-target')
+                    target = self['#' + id].only
+                    self.transfer['text/html'] = target.html
+
+                # For the various drag-and-drop events, we want to make
+                # sure the `data-dragentered` Boolean attribute is set
+                # correctly to indicate whether or not something is
+                # being drug over (dragover) an element. In a real
+                # browser, this is done by the JavaScript so CSS can
+                # indicate to the user that a drag zone has drag data
+                # hovering above it.
+                if eargs.trigger == 'dragover':
+                    src.setattr('data-dragentered', True)
+
+                elif eargs.trigger in ('drop', 'dragleave'):
+                    del src.attributes['data-dragentered']
+
                 if isnav:
                     pg = src.attributes['href'].value
                     if self.inspa:
@@ -766,32 +790,8 @@ class tester(entities.entity):
                     html = eargs.html.html if eargs.html else None
                     pg = self.page
 
-                # If this is a dragstart dom event
-                if eargs.trigger == 'dragstart':
-                    # Assume src is a handle (see dom.tr.handle). Its
-                    # data-drag-target attribute will have the ID of the
-                    # element that is being dragged by the handle. Get
-                    # its HTML and put it in the data transfer object
-                    # (self.transfer).
-                    id = src.getattr('data-drag-target')
-                    target = self['#' + id].only
-                    self.transfer['text/html'] = target.html
-
                 # Cancel default event handling
                 eargs.preventDefault()
-
-                # For the various drag-and-drop events, we want to make
-                # sure the `data-dragentered` Boolean attribute is set
-                # correctly to indicate whether or not something is
-                # being drug over (dragover) an element. In a real
-                # browser, this is done by the JavaScript so CSS can
-                # indicate to the user that a drag zone has drag data
-                # hovering above it.
-                if eargs.trigger == 'dragover':
-                    src.setattr('data-dragentered', True)
-
-                elif eargs.trigger in ('drop', 'dragleave'):
-                    del src.attributes['data-dragentered']
 
                 # If eargs.handler is 'None', we hav a null handler. No
                 # XHR request should, therefore, be made so return.
