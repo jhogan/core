@@ -3634,11 +3634,9 @@ class crud(tester.tester):
 
         btn = frm['button[type=submit]'].only
         
-        res = self.click(btn, tab)
-
-        # NOTE Maybe this should be h422. For browsers it probably
+        # NOTE Maybe this should be st=422. For browsers it probably
         # doesn't matter that much, but for RPC it may.
-        self.h500(res)
+        res = self.click(btn, tab, st=500)
 
         type = tab['.exception span.type'].only.text
         self.eq('ValueError', type)
