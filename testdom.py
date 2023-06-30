@@ -6166,9 +6166,6 @@ class event(tester.tester):
         def hnd(src, eargs):
             pass
 
-        def hnd1(src, eargs):
-            pass
-
         div = dom.div()
         a = dom.a()
         p = dom.p()
@@ -6177,8 +6174,6 @@ class event(tester.tester):
         div += a, p
 
         a.onclick += hnd, p
-
-        a.onclick += hnd1, sec
 
         # Double-check that the subscription is correct
         self.eq(a.getattr('data-click-fragments')[1:], p.id)
