@@ -1034,7 +1034,6 @@ class panel:
         is associated with.
         """
         if not self._bot:
-            
             # Get command line arguments
             args = self._arguments
 
@@ -1058,7 +1057,9 @@ class panel:
                     except InputError as ex:
                         self.print(prs.format_usage())
                         self.print(f'{__file__.strip("./")}: error: {ex}')
+
                     break
+
         return self._bot
 
     @staticmethod
@@ -1173,7 +1174,6 @@ class panel:
 if __name__ == '__main__':
     # If bot.py is being executed, instantite and call a panel to read
     # the command line arguments and invoke the appropriate bot.
-
 
     # Load models
     import apriori; apriori.model()

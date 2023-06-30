@@ -8863,7 +8863,19 @@ with book('Hacking Carapacian Core'):
     ...
 
   with chapter("Robotic process automation") as sec:
-    ...
+
+    with section('What is robotic process automation (RPA)'):
+      ...
+
+    with section('What is a bot'):
+      ...
+
+    with section('Why use bots'):
+      ...
+
+    with section('The bots'):
+      ...
+
 
   with chapter("Crust", id='0227a7b7'):
     with section('Running migrations', id='8c9baa57'):

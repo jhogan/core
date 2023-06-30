@@ -93,11 +93,11 @@ class bot_(tester.tester):
             # Reload bot
             b1 = bot.sendbot(b.id)
 
-            # Ensure it does not lazy load prior logs. This is important
+            # Ensure it does not lazy-load prior logs. This is important
             # because we want to be able to use the ``logs`` property to
             # append new logs to the database, but we don't want the
-            # call to logs to load every log every commited because that
-            # would take to log. (NOTE This is currently accomplished
+            # call to logs to load every log ever commited because that
+            # would take to long. (NOTE This is currently accomplished
             # through a HACK:8210b80c that has a corresponding TODO).
             self.zero(b1.logs)
 
@@ -255,7 +255,6 @@ class test_sendbot(tester.tester):
                 )
 
                 dis.save()
-            
 
             b(exsimulate=True)
 
@@ -290,7 +289,6 @@ class test_sendbot(tester.tester):
                 )
 
                 dis.save()
-
 
             sec = orm.security()
             sec.proprietor = None
