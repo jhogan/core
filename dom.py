@@ -2775,7 +2775,7 @@ class element(entities.entity):
 
     @property
     def dragentered(self):
-        """ Trigger the `dragentered` event for this element.
+        """ Returns True if the data-dragentered attribute is present.
         """
         return self.getattr('data-dragentered') is True
 
