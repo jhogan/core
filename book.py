@@ -8865,13 +8865,48 @@ with book('Hacking Carapacian Core'):
   with chapter("Robotic process automation") as sec:
 
     with section('What is robotic process automation (RPA)'):
-      ...
+      print('''
+        **Robotic process automation (RPA) is the use of software to
+        perform automous tasks that would otherwise occupy the time of a
+        human operator. 
 
-    with section('What is a bot'):
-      ...
+        The Core Framework uses an RPA framework (centralized in
+        `bot.py`) to run bots on webservers. These bots automate common
+        tasks that server adminstrators, QA testers, etc. would normally
+        be tasked with.
 
-    with section('Why use bots'):
-      ...
+        Bots in the Core Framework take the place of Cron jobs in
+        typical server configurations. Bots offer signifigent benefits
+        over Cron jobs:
+          
+          * **Autonomy** Bots run in their own processes as daemons or
+          systemd services. 
+
+          * **Framework integration** Each bot is a self-ensuring ORM
+          entity. Bots can interact with the database through ORM
+          objects just like any other code in the framework can. They
+          are subject to the same validation rules and access
+          restrictions that other Framework code is. Bots can also
+          commuicate with third party APIs (`third.py`).
+
+          * **Security** They run under a user account
+           (`orm.security.user`) and belong to a certain proprietor
+           (`orm.security.proprietor`).  Thus, restriction can be put on
+           their ability to access data in the same way that other
+           actors, such as websites and user, are restricted .
+
+          * **Interprocess communication** Bots can communicate with one
+          another by sending each other messages via the database. Bots
+          are free to coordinate activities with one another.
+
+          * **Expressive** Since bots are written in Python using the
+          Framework, they can be designed to be significantly
+          expressive, doing anything from small, simple database
+          maintenence operation to to carrying out extremly
+          sophisticated artificial intelligence-based behaviours.
+
+          * **Logging** TODO
+      ''')
 
     with section('The bots'):
       ...
