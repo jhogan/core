@@ -221,8 +221,23 @@ class site(asset.asset):
                         continue
                     
                     # Move the value in wssup's map to sup's 
-                    v = wssup.orm.mappings[map.name].value
-                    sup.orm.mappings[map.name].value = v
+                    try:
+                        v = wssup.orm.mappings[map.name].value
+                    except db.RecordNotFoundError:
+                        # Sometimes during testing, a `pom.site` object
+                        # can have a FK reference to a `file.directory`
+                        # that no longer exists. Ideally, we would
+                        # recreate the object, but let's just ignore it
+                        # for now.
+                        if map.name == 'directory':
+                            logs.warning(
+                                'Was not able to load directory for '
+                                'site.'
+                            )
+                        else:
+                            raise
+                    else:
+                        sup.orm.mappings[map.name].value = v
 
                 # Make sure that self and its supers aren't flag as new,
                 # dirty or markedfordeletion
@@ -360,7 +375,14 @@ class site(asset.asset):
         method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
-        dir = attr()
+        try:
+            dir = attr()
+        except db.RecordNotFoundError:
+            # This will happen in testing when the `pom.site` object has
+            # a FK reference to a 'file.directory' object that no longer
+            # exists.
+            dir = None
+
         if dir is None:
             site = file.directories.site
             try:
