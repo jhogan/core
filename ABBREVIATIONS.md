@@ -1,6 +1,7 @@
 carapacian:    car    cara
-context:       ctx
 checkbox:      chk
+context:       ctx
+count:         cnt
 description:   desc
 entities:      es
 entity:        e
@@ -8,6 +9,7 @@ field          fld
 fragment:      frag
 fulltext:      ft
 function:      f
+handle:        hnd
 handler:       hnd
 index:         ix
 input:         inp
@@ -19,6 +21,7 @@ list:          ls
 mapping:       map
 mappings:      maps
 message:       msg
+move:          mv
 object:        obj
 operation:     op
 ordinal:       ord
@@ -35,6 +38,7 @@ return-value:  r
 segment:       seg
 selector:      sel
 selectors:     sels
+status:        st
 switch-user:   su
 trigger:       trig
 tuple:         tup

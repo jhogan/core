@@ -2,9 +2,9 @@
 import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
-from dbg import B
+from dbg import *
 from func import enumerate, getattr
-from uuid import uuid4
+from uuid import uuid4, UUID
 import dom, www
 import html as htmlmod
 import party
@@ -564,6 +564,59 @@ class element(tester.tester):
 
         ps = html['body>p']
         self.zero(ps)
+    
+    def it_calls_next(self):
+        html = dom.html('''
+            <ul>
+                <li>0</li>
+                <li>1</li>
+                <li>2</li>
+            </ul>
+        ''')
+
+        li = html['li:first-of-type'].only
+        self.eq('1', li.next.text)
+        self.eq('2', li.next.next.text)
+        self.none(li.next.next.next)
+
+    def it_calls_dragonize(self):
+        html = dom.html('''
+            <ul>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+                <div>
+                    <span>☰</span>
+                    <li>0</li>
+                </div>
+            </ul>
+        ''')
+
+        def ondrop(self, src, eargs):
+            pass
+
+        def ondragstart(self, src, eargs):
+            pass
+
+        for div in html['ul>div']:
+            hnd = div['span'].only
+            div.identify()
+            div.dragonize(
+                ondrop       =  ondrop,
+                ondragstart  =  (ondragstart,  html),
+                handle       =  hnd,
+                target       =  div.id,
+            )
+            self.eq('ondrop', div.getattr('data-drop-handler'))
+            self.eq('None', div.getattr('data-dragover-handler'))
+            self.eq('None', div.getattr('data-dragleave-handler'))
+            self.eq(hnd.getattr('data-drag-target'), div.id)
+            self.in_(hnd.classes, 'handle')
 
 class comment(tester.tester):
     def it_calls_html(self):
@@ -641,6 +694,55 @@ class p(tester.tester):
         ''')
 
         self.eq(expect, p.text)
+
+class tr(tester.tester):
+    def it_class_entity(self):
+        from test import artist, artists
+
+        artist.orm.recreate()
+        arts = artists()
+        for i in range(2):
+            arts += artist.getvalid()
+
+        ids = arts.pluck('id')
+        for tr in arts.orm.table['tbody tr']:
+            art1 = tr.entity
+            self.in_(ids, art1.id)
+
+class a(tester.tester):
+    def it_gets_url(self):
+        a = dom.a('Click Here')
+        a.href = 'http://www.example.com'
+        self.eq('http://www.example.com', str(a.url))
+
+    def it_sets_url(self):
+        a = dom.a('Click Here')
+
+        a.url = 'http://www.example.com'
+        self.eq('http://www.example.com', a.href)
+        self.eq('http://www.example.com', str(a.url))
+
+        a.url = www.url('http://www.example.org')
+        self.eq('http://www.example.org', a.href)
+        self.eq('http://www.example.org', str(a.url))
+
+    def it_sets_url_properties(self):
+        a = dom.a('Click Here')
+
+        a.href = 'http://www.example.com'
+        a.url.scheme = 'https'
+
+    def it_sets_url_qs(self):
+        a = dom.a('Click Here')
+
+        a.url = 'http://www.example.com'
+        a.url.qs['herp'] = 'derp'
+        self.eq('http://www.example.com?herp=derp', a.href)
+        self.eq('http://www.example.com?herp=derp', str(a.url))
+
+        a.url.qs['herp'] = 'gerp'
+        self.eq('http://www.example.com?herp=gerp', a.href)
+        self.eq('http://www.example.com?herp=gerp', str(a.url))
 
 class text(tester.tester):
     def it_calls_html(self):
@@ -6056,6 +6158,36 @@ class selectors(tester.tester):
                 dom.CssSelectorParseError, 
                 lambda: dom.selectors(sel),
            )
+
+class event(tester.tester):
+    def it_clears(self):
+        
+        def hnd(src, eargs):
+            pass
+
+        div = dom.div()
+        a = dom.a()
+        p = dom.p()
+        sec = dom.section()
+
+        div += a, p
+
+        a.onclick += hnd, p
+
+        # Double-check that the subscription is correct
+        self.eq(a.getattr('data-click-fragments')[1:], p.id)
+
+        # We should only have one event handler
+        self.one(a.onclick)
+
+        # Clear the event handler
+        a.onclick -= hnd
+
+        # We should only have one event handler
+        self.zero(a.onclick)
+
+        # The event's fragments attribute should be remove as well
+        self.false(a.hasattr('data-click-fragments'))
 
 TestHtml = tester.tester.dedent('''
 <html id="myhtml" arbit="trary">

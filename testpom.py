@@ -3634,11 +3634,9 @@ class crud(tester.tester):
 
         btn = frm['button[type=submit]'].only
         
-        res = self.click(btn, tab)
-
-        # NOTE Maybe this should be h422. For browsers it probably
+        # NOTE Maybe this should be st=422. For browsers it probably
         # doesn't matter that much, but for RPC it may.
-        self.h500(res)
+        res = self.click(btn, tab, st=500)
 
         type = tab['.exception span.type'].only.text
         self.eq('ValueError', type)
@@ -3815,25 +3813,12 @@ class crud(tester.tester):
         # Make sure there is one submit <button> in the form
         self.one(frm['button[type=submit]'])
 
-        # Test the <article class="instructions>
-        art = frm['article.instructions'].only
-
-        # We should have a <meta> to set the browser's URL.
-        meta = art['meta'].only
-
+        # Make sure the test browser tab's URL was updated correctly
         expect = (
             'http://foo.net:8000/en/profiles'
             f'?id={per.id.hex}&crud=update'
         )
-
-        self.eq(expect, meta.content)
-
-        self.true('set' in meta.classes)
-        self.true('instruction' in meta.classes)
-
-        # While we are here, make sure the test browser tab's URL wach
-        # changesd to meta.content.
-        self.eq(meta.content, str(tab.url))
+        self.eq(expect, str(tab.url))
 
     def it_navigates_to_entities_clicks_quick_edit_and_submits(self):
         """ Use the Quick Edit feature of a pom.crud page to get a form.

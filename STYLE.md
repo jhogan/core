@@ -448,6 +448,8 @@ to use these in the framework.
         # an integer. Type checking needs to be used here to avoid data
         # loss.
 
+      (See also dbg.XXX and dbg.XXXr.)
+
     * Bomb-comments are used to flag sensitive areas of source code.
       They are intended to bring attention to changes made to these
       parts of the source code when viewed in `git-log`, `git-diff` and

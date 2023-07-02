@@ -530,6 +530,8 @@ class ticketsspa(pom.spa):
                 # dom.MoveError. Ideally, we would be able to do this.
                 tbl = pg.main['table'].only
 
+                tbl.setattr('data-backlog-entity-id', bl.id.hex)
+
                 # Remove Quick Edit. Quick Edits are designed to use the
                 # current page (self), but since these Quick Edits are
                 # from a differnt page (pg), their href confuses the
@@ -578,9 +580,9 @@ class ticketsspa(pom.spa):
                     else:
                         for bs in bl.backlog_stories:
                             if bs.id == id:
-                                url.qs['id']          =  bs.story.id
-                                url.qs['backlogid']   =  bl.id.hex
-                                url.qs['oncomplete']  =  self.path
+                                url.qs['id']         = bs.story.id.hex
+                                url.qs['backlogid']  = bl.id.hex
+                                url.qs['oncomplete'] = self.path
 
                                 a.href = url.normal
 
@@ -588,11 +590,45 @@ class ticketsspa(pom.spa):
                         else:
                             raise ValueError('Cannot find story')
 
+                # Add column for span handle
+                tbl['thead tr'].only << dom.th(class_='handle')
+
+                for tr in tbl['tbody tr']:
+                    td = dom.td(class_='handle')
+                    span = dom.span('☰') 
+                    tr.dragonize(
+                        ondrop = (self.tr_ondrop, tbl, tr),
+                        handle = span,
+                        target = tr.id,
+                    )
+
+                    td += span
+                    tr << td
+
+                # Create a <tfoot> to contain a "dock" <tr>. This will
+                # be used to append new <tr>s that are dropped on it.
+                # The <tr> drop zones created above are used for
+                # inserting, i.e., if a <tr> is dropped on one of those
+                # drop zones, the <tr> will be inserted directly before
+                # the drop zone.
+                tfoot = dom.tfoot()
+                tr = dom.tr(class_='dock')
+                tr.dragonize(
+                    ondrop = (self.tr_ondrop, tbl, tr),
+                )
+
+                tbl += tfoot
+                tfoot += tr
+                ls = list(x['td'].count for x in tbl.trs)
+                colspan = max(ls) if ls else 0
+                tr += dom.td(colspan=colspan)
+
                 # Remove the table's parent so we can make `card` its
                 # new parent
                 tbl.orphan()
 
                 card += tbl
+
             return div
 
         def main(self, 
@@ -603,8 +639,172 @@ class ticketsspa(pom.spa):
             given, will contain a comma seperated string of backlog
             status types to filter the backlog cards by.
             """
-
             super().main(id=id, crud=crud, oncomplete=oncomplete)
+
+        def tr_ondrop(self, src, eargs):
+            """ The event handler for this `backlogs` to handle a story
+            being moved within the backlog. This event handler will also
+            handle `stories` that are being dragged from different
+            backlogs.
+            """
+            if eargs.html.count != 3:
+                raise ValueError(f'Unexpected elements count')
+
+            # Get the table of stories
+            tbl = eargs.html.first
+
+            # Get the element that the above is being dropped on
+            trzone = eargs.html.second
+
+            # TODO Belowe we pop() and then remove (using a remove
+            # instruction) an element given to us by the browser. We may
+            # want to consider using the html.element.onafterremove
+            # event to capture pops (and other removes) and issue a
+            # instruction in the event handler. That way we would only
+            # need to write one line instead of two here.
+
+            # Get the element being dropped
+            trsrc = eargs.html.pop()
+
+            # Cause a deletion of the trsrc by its id. When we drop the
+            # source, we need to remove the originl entirely. A specialy
+            # cloned version will be added to tbl later in the code. 
+            eargs.remove(trsrc)
+
+            tbody = tbl['tbody'].only
+
+            trs = tbody['tr']
+
+            # If the source is the same as the destination, do nothing.
+            if trsrc.id == trzone.id:
+                www.application.current.response.status = 204
+                return
+
+            # Given:
+            # 
+            #     Story A
+            #     Story B
+            #     Story C
+            #
+            # If we drag Story A and drop on Story B, nothing should
+            # happen. The following code detects this type of situaton
+            # and does nothing in response.
+            for i, tr in trs.enumerate():
+                if i.last:
+                    break
+
+                if tr.id == trsrc.id:
+                    if tr.next.id == trzone.id:
+                        www.application.current.response.status = 204
+                        return
+                    
+            # Get the backlog_story entities associated with the source
+            # and estication
+            bssrc = trsrc.entity
+
+            # Get destination backlog
+            blid = tbl.getattr('data-backlog-entity-id')
+            bl1 = effort.backlog(blid)
+
+            within = (
+                UUID(trsrc.entityid) in bl1.backlog_stories.pluck('id')
+            )
+
+            # Is the <tr> a .dock
+            isdock = 'dock' in trzone.classes
+
+            # If we are moving within the same table
+            if within:
+                if isdock:
+                    if trsrc.id == tbl.trs.last.id:
+                        www.application.current.response.status = 204
+                        return
+                        
+                    rank = bl1.backlog_stories.count
+                else:
+                    bsdest = trzone.entity
+                    rank = bsdest.rank
+
+                    trs = tbl.trs
+                    ixsrc = trs.getindex(trsrc.id)
+                    ixdest = trs.getindex(trzone.id) 
+                    promote = ixsrc > ixdest
+
+                    if not promote:
+                        rank -= 1
+
+                mv = False
+
+            # else, we are moving a story from one table to another
+            else:
+                # Get the <table>'s backlog
+                blid = tbl.getattr('data-backlog-entity-id')
+                bl = effort.backlog(blid)
+                if isdock:
+                    rank = tbl.trs.count
+                else:
+                    bsdest = trzone.entity
+                    rank = bsdest.rank
+
+                mv = True
+
+            # Move the <tr>s within the table so they reflect the
+            # reassignment of the story's rank
+            if mv:
+                # Move the story to the new backlog
+
+                # Get source backlog
+                st = bssrc.story
+                bl = bssrc.backlog
+
+                def bss_onadd(src, eargs):
+                    """ An event handelr to capture the moment the
+                    st.move() method below adds a new `backlog_story`
+                    to `bl1.backlog_stories`. When this happens, we
+                    capture the backlog_story here (`eargs.entity`) and
+                    assign it to trsrc's data-entity-id attribute.
+                    """
+                    trsrc.setattr('data-entity-id', eargs.entity.id.hex)
+
+                bl1.backlog_stories.onadd += bss_onadd
+
+                st.move(from_=bl, to=bl1, rank=rank)
+
+                # TODO We shouldn't have to pass in bl, and bl1 to
+                # .save(). Discover why this is necessary at the moment
+                # and seek to correct it.
+                st.save(bl, bl1)
+                trsrc.reidentify()
+
+                # Redragonize trsrc so it knows which tbl it needs to
+                # send.
+                trsrc.dragonize(
+                    ondrop = (self.tr_ondrop, tbl, trsrc),
+                    handle = trsrc.handle,
+                    target = trsrc.id,
+                )
+
+                for a in trsrc['a']:
+                    qs = a.url.qs
+                    if 'backlogid' in qs:
+                        qs['backlogid'] = bl1.id.hex
+
+                tbody.elements.insert(rank, trsrc)
+            elif not mv:
+                # Insert the story to change its ranking within the
+                # backlog and save.
+                bl1.insert(rank, bssrc.story)
+                bl1.save()
+
+                trsrc = tbody.elements['#' + trsrc.id].only
+                if isdock:
+                    destix = tbl.trs.count
+                else:
+                    destix = tbody.elements.getindex(trzone.id)
+
+                tbody.elements.move(destix, trsrc)
+
+            bss = bl1.backlog_stories
 
         def chkfilters_onclick(self, src, eargs):
             """ A handler for the onclick event of the backlog status
@@ -803,6 +1003,20 @@ class ticketsspa(pom.spa):
                 )
             return self._select
 
+        @property
+        def instance(self):
+            """ Return the instance of this `backlog_stories` page.
+            """
+            inst = super().instance
+
+            # NOTE Sorting is tested in it_moves_stories_within_backlog
+            inst.sort('rank')
+            return inst
+
+        @instance.setter
+        def instance(self, v):
+            self._instance = v
+
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=effort.story, *args, **kwargs)
@@ -902,8 +1116,18 @@ body{
     color: #000;
 }
 
+td .handle{
+    cursor: move
+}
+
 a{
     color: #2ba74a !important;
+}
+
+tr[data-dragentered] {
+    background-color: red;
+    border-top-color: blue;
+    
 }
 
 section#contact-us p{

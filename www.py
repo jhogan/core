@@ -2832,7 +2832,7 @@ class url(entities.entity):
         :param: name str: The URL string.
         """
         self._clear()
-        self.name       =  name
+        self.name = name
         super().__init__(*args, **kwargs)
 
     def _clear(self):
@@ -2958,7 +2958,7 @@ class url(entities.entity):
     def scheme(self, v):
         """ Set the scheme.
         """
-        self._scheme = v
+        self._setvalue('_scheme', v, 'scheme')
 
     @property
     def host(self):
@@ -2973,7 +2973,7 @@ class url(entities.entity):
     def host(self, v):
         """ Set the host.
         """
-        self._host = v
+        self._setvalue('_host', v, 'host')
 
     @property
     def path(self):
@@ -2993,7 +2993,7 @@ class url(entities.entity):
     def path(self, v):
         """ Set the path.
         """
-        self._path = v
+        self._setvalue('_path', v, 'path')
 
     def getpath(self, lang=True):
         """ Return the path portion of this `url`. By default, the
@@ -3069,7 +3069,7 @@ class url(entities.entity):
     def query(self, v):
         """ Set the query string.
         """
-        self._query = v
+        self._setvalue('_query', v, 'query')
 
     @property
     def fragment(self):
@@ -3083,7 +3083,7 @@ class url(entities.entity):
 
     @fragment.setter
     def fragment(self, v):
-        self._fragment = v
+        self._setvalue('_fragment', v, 'fragment')
 
     @property
     def username(self):
@@ -3098,7 +3098,7 @@ class url(entities.entity):
     def username(self, v):
         """ Set the username portion of the URL.
         """
-        self._username = v
+        self._setvalue('_username', v, 'username')
 
     @property
     def password(self):
@@ -3113,7 +3113,7 @@ class url(entities.entity):
     def password(self, v):
         """ Set the password portion of the URL.
         """
-        self._password = v
+        self._setvalue('_password', v, 'password')
 
     @property
     def port(self):
@@ -3134,7 +3134,7 @@ class url(entities.entity):
     def port(self, v):
         """ Set the port portion of the url.
         """
-        self._port = v
+        self._setvalue('_port', v, 'port')
 
     @property
     def paths(self):
@@ -3161,18 +3161,6 @@ class url(entities.entity):
             {'s': ['test']}
 
         """
-        # TODO:872fd252 Ideally, we should be able to use the qs
-        # property in a way that is similar to a dict:
-        #
-        #     id = url.qs['id']
-        #     del url.qs['id'[
-        #     url.qs['search'] = 'Men's shoes'
-        #
-        # This could be done by having this method return an object that
-        # overrides __getitem__ and __setitem__ and keeps the parameters
-        # in an internal data structure. We should be able to make it
-        # backwords compatible with the current inteface if done
-        # correctly.
         import urllib.parse
         kvps = entities.kvps()
 

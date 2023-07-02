@@ -110,3 +110,22 @@ def profile(callable):
     B()
 
 PR = profile
+    
+# Using these comment tags as function names for print() and
+# print(repr(msg)) helps us write ad hoc trace code into modules. Since
+# code with this triple-X comment tag aren't allowed in 'main', it is
+# easy to grep this trace code (along with triple-X comments) and remove
+# them.
+XXX = print
+
+def XXXr(msg, end='\n'):
+    """ Print the output of `repr(msg)` to stdout.
+
+    :param: msg str: The message to print whose representation will be
+    printed to stdout.
+
+    :param: end str: A string appended to `msg`.
+    """
+    print(repr(msg), end=end)
+        
+    

@@ -1016,10 +1016,11 @@ class entities:
         else:
             rms = [e]
 
-        for i in range(self.count - 1, -1, -1):
+        ls = self._ls
+        for i in range(len(ls) - 1, -1, -1):
             for rm in rms:
-                if rm is self[i]:
-                    del self._ls[i]
+                if rm is ls[i]:
+                    del ls[i]
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
@@ -1172,17 +1173,21 @@ class entities:
         return self.count - 1
 
     def move(self, ix, e):
-        """ NOTE Currently not implemented.
-        
-        Remove ``e`` from the collection, causing the onremove event to
-        fire, then insert it before the element at index ``ix`` in the
-        collection.
+        """ Remove ``e`` from the collection, causing the onremove event
+        to fire, then insert it before the element at index ``ix`` in
+        the collection.
 
         :param: ix int: The index the element will be moved before.
 
         :param: e entity: The entity to move.
         """
-        raise NotImplementedError('TODO')
+        eix = self.getindex(e)
+        self.pop(eix)
+        
+        if eix <= ix:
+            ix -= 1
+
+        self.insert(ix, e)
 
     def moveafter(self, ix, e):
         """ Remove ``e`` from the collection, causing the onremove event to
@@ -2870,7 +2875,13 @@ class event(entities):
             
         self._ls.append(f)
 
-    def remove(self, fn):
+    def clear(self):
+        """ Remove all event handlers in this event.
+        """
+        for f in self:
+            self.remove(f)
+
+    def remove(self, f):
         """ Unsubscribe an event handler from this event. Once the
         handler is unsubscribed, it will no longer be invoked when the
         event is fired.
@@ -2891,11 +2902,10 @@ class event(entities):
             # Unsubscribe the handler from the onadd event
             es.onadd -= myhandler
 
-        :param: fn callable: The event handler that needs to be
+        :param: f callable: The event handler that needs to be
         unsubscribed.
         """
-        # TODO Rename fn to f to conform to conventions
-        if not callable(fn):
+        if not callable(f):
             # TODO Change to TypeError
             raise ValueError('Event must be callable')
 
@@ -2906,7 +2916,7 @@ class event(entities):
             # change over time.  However, an equality test does match
             # bound method which is why we use the equality operator
             # below.
-            if fn == self[i]:
+            if f == self[i]:
                 del self._ls[i]
                 break
 

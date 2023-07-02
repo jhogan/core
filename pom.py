@@ -9,28 +9,29 @@
 ########################################################################
 
 from contextlib import suppress
-from dbg import B, PM
-from uuid import UUID, uuid4
+from dbg import *
 from entities import classproperty
 from func import getattr
-import asset, ecommerce
+from uuid import UUID, uuid4
+import asset
 import datetime
 import db
 import dom
-import entities
 import ecommerce
+import entities
 import exc
 import file
 import inspect
 import itertools
+import logs
+import MySQLdb
 import orm
 import os
-import primative
-import textwrap
-import pycountry
 import party
+import primative
+import pycountry
+import textwrap
 import www
-import MySQLdb
 
 # References:
 #
@@ -129,10 +130,11 @@ class site(asset.asset):
     def _ensure(self):
         """ Ensure that the site object is stored in the database as
         well as its proprietor and its association with its proprietor.
-        Normaly, these data will need to be saved once.
+        Normaly, these data will need to be created in the database only
+        once.
 
         This method is called by the constructor to ensure that every
-        time a site is instantiated, its data is saved in the database.
+        time a site is instantiated, its data is saved to the database.
         """
 
         # Only _ensure subtypes of `site`
@@ -175,7 +177,7 @@ class site(asset.asset):
             if not self.Proprietor.name:
                 raise ValueError(
                     "Site's Proprietor constant "
-                    'must have an id an and a name'
+                    'must have an id and a name'
                 )
 
             ''' Create or retrieve site record '''
@@ -201,7 +203,7 @@ class site(asset.asset):
                 ws.directory
                 ws.save()
 
-            # Take the data in ws and copy it self
+            # Take the data in ws and copy it to self
             sup = self
             wssup = ws
             while sup:
@@ -219,8 +221,23 @@ class site(asset.asset):
                         continue
                     
                     # Move the value in wssup's map to sup's 
-                    v = wssup.orm.mappings[map.name].value
-                    sup.orm.mappings[map.name].value = v
+                    try:
+                        v = wssup.orm.mappings[map.name].value
+                    except db.RecordNotFoundError:
+                        # Sometimes during testing, a `pom.site` object
+                        # can have a FK reference to a `file.directory`
+                        # that no longer exists. Ideally, we would
+                        # recreate the object, but let's just ignore it
+                        # for now.
+                        if map.name == 'directory':
+                            logs.warning(
+                                'Was not able to load directory for '
+                                'site.'
+                            )
+                        else:
+                            raise
+                    else:
+                        sup.orm.mappings[map.name].value = v
 
                 # Make sure that self and its supers aren't flag as new,
                 # dirty or markedfordeletion
@@ -244,6 +261,7 @@ class site(asset.asset):
                     sup.proprietor = propr
                     sup.orm.isnew = True
                     sup = sup.orm.super
+
                 propr.save()
                 
             ''' Associate the proprietor '''
@@ -357,7 +375,14 @@ class site(asset.asset):
         method will cascade the persistence operations into the
         directory and any inodes beneath it.
         """
-        dir = attr()
+        try:
+            dir = attr()
+        except db.RecordNotFoundError:
+            # This will happen in testing when the `pom.site` object has
+            # a FK reference to a 'file.directory' object that no longer
+            # exists.
+            dir = None
+
         if dir is None:
             site = file.directories.site
             try:
@@ -701,22 +726,13 @@ function is_nav_link(e){
     /* Returns true if the element `e` is a "nav link",
     i.e., it is an anchor tag nested within a <nav>.
     */
-    var rent = e.parentNode
 
-    var found = false
-    while (rent){
-        if (rent.tagName == 'NAV'){
-            found = true
-            break
-        }
-        rent = rent.parentNode
-    }
-
-    if (found){
+    const nav = e.closest('nav')
+    if (nav){
 '''
 
         r += f'''
-        as = rent.querySelectorAll('{page.IsNavSelector}')
+        as = nav.querySelectorAll('{page.IsNavSelector}')
 '''
 
         r += '''
@@ -763,11 +779,15 @@ function ajax(e){
 
     /* Process the event for the given control.  */
 
+    console.group('ajax()')
+
     // The event trigger (e.g., "blur", "click", etc.)
     var trigger = e.type
 
+    console.debug('on' + trigger)
+
     // The control that the event happened to
-    var src = e.target
+    var src = e.currentTarget
 
     // Is the element a navigation link
     var isnav = is_nav_link(src)
@@ -775,31 +795,73 @@ function ajax(e){
     // Is the element a page link
     var ispg = !isnav && is_page_link(src)
 
-    var nav = src.closest('nav');
+    console.debug('isnav: ' + isnav + ', ispg: ' + ispg)
 
     // If the element being clicked is a nav link
     if (isnav){
         // If we are in SPA mode
         if (inspa){
+            let nav = src.closest('nav');
+
             // Is the link from the Spa menu
-            var isspanav = nav.getAttribute('aria-label') == 'Spa';
+            let isspanav = nav.getAttribute('aria-label') == 'Spa';
 
             if (!isspanav){
                 // If we are in SPA mode but not in the Spa menu, allow
                 // for traditional navigation.
-                return;
+                return
             }
 
         }else{
             // If the user clicked a nav link, but we aren't in SPA
             // mode, allow the browser to navigate to the link in the
             // traditional (non AJAX) way.
-            return;
+            return
         }
     }
 
-    // At this point, preventDefault() because it's all AJAX from here. 
-    e.preventDefault()
+    if (trigger == 'dragstart'){
+        // Don't preventDefault() on dragstart because doing so stops
+        // the native drag chain event on the element. 
+
+        // TODO What if there is no data-drag-target; for example, in
+        // the case of non handle elements (:not(span.handle)).
+        let id = e.target.getAttribute('data-drag-target')
+        let target = document.getElementById(id)
+
+        e.dataTransfer.setData('text/html', target.outerHTML)
+    }else{
+        // At this point, preventDefault() because it's all AJAX from
+        // here. 
+        e.preventDefault()
+    }
+
+    switch(trigger){
+        case 'dragover':
+            e.currentTarget.setAttribute('data-dragentered', true)
+            break
+
+        case 'drop':
+            e.currentTarget.removeAttribute('data-dragentered')
+            break
+
+        case 'dragleave':
+            e.currentTarget.removeAttribute('data-dragentered')
+            break
+    }
+
+    // Get the name of the event handler of the trigger
+    var hnd = src.getAttribute('data-' + trigger + '-handler')
+
+    // If hnd equals 'None', the handler is null, meaning that there are
+    // no server-side events handlers for this event. Null event
+    // handlers are used to ensure that preventDefault() is called
+    // (which it will have been at this point). Nothing further needs to
+    // be done.
+    if (hnd == 'None'){
+        console.groupEnd()
+        return
+    }
 
     // If we have an <input> with a type of "text"...
     if (src.type == 'text'){
@@ -831,9 +893,6 @@ function ajax(e){
         }
     }
 
-    // Get the name of the event handler of the trigger
-    var hnd = src.getAttribute('data-' + trigger + '-handler')
-
     var html = null
     var pg
 
@@ -851,9 +910,30 @@ function ajax(e){
     }else{
         // Concatenate the fragment's HTML
         html = ''
+
+        // Wake up any <form> data 
         wake(els)
+
+        // Create the HTML string to be sent to the server
         for(el of els){
             html += el.outerHTML
+        }
+
+        // When an item is dropped in a drag-and-drop operation, we want
+        // to get element that was dragged (called the `target` below)
+        // and add it as the *last* element to the HTML that will be
+        // sent to the server in the XHR request. The serer-side event
+        // handler should expect to receive this element as the last
+        // entry in the `html` elements collection it is receiving (i.e,
+        // `eargs.html.last`).
+        if (trigger == 'drop'){
+            // NOTE e.dataTransfer can sometimes be null here when
+            // using DevTools to do step-by-step debugging. See:
+            //
+            //     https://stackoverflow.com/questions/43180248/firefox-ondrop-event-datatransfer-is-null-after-update-to-version-52
+            //
+            let target = e.dataTransfer.getData('text/html')
+            html += target
         }
 
         pg = window.location.href
@@ -882,6 +962,14 @@ function ajax(e){
                 // return. Usually, events will return HTML, however it
                 // is possible that, in some cases, they will choose not
                 // to.
+
+                if (this.status == 204){
+                    console.info(
+                        'Page patch abandoned; 204 No Content detected'
+                    )
+                    return
+                }
+
                 if(!xhr.responseText){
                     console.info('No response')
                     return
@@ -891,6 +979,13 @@ function ajax(e){
                 var temp = document.createElement('template')
                 temp.innerHTML = xhr.responseText
                 els = temp.content.children
+
+                // Convert the HTMLCollection `els` into a regurlar
+                // array. The .replaceChild() method below will remove
+                // the elements from `els` if `els` is an HTMLCollection
+                // beause HTMLCollections are "live". However, we don't
+                // want elements from `els` removed.
+                els = [...els]
 
                 // If a <main> tag was returned, we are doing an SPA
                 // page load.
@@ -932,12 +1027,16 @@ function ajax(e){
 
                         // Get the id of the element. `el.id` doesn't
                         // work here.
-                        let id = el.getAttribute('id')
 
-                        // Use the fragment's id to find and replace
-                        let old = document.querySelector('#' + id)
-                        old.parentNode.replaceChild(el, old)
+                        let id
+                        if (id = el.getAttribute('id')){
+                            // Use the fragment's id to find and replace
+                            let old = document.querySelector('#' + id)
+                            old.parentNode.replaceChild(el, old)
+                        }
+                    }
 
+                    for(el of els){
                         // Execute any .instructions in the HTML. If
                         // there is a set-url instruction, the URL will
                         // be set using a history.pushState.
@@ -965,6 +1064,8 @@ function ajax(e){
     xhr.open("POST", pg)
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.send(JSON.stringify(d))
+
+    console.groupEnd()
 }
 '''
         r += f'const TRIGGERS = {list(dom.element.Triggers)}'
@@ -1034,11 +1135,10 @@ function listen(el){
      * `click` events are subscribed to the the `ajax` handler.
     */
 
-    console.group('listen')
+    console.group('listen()')
 
     // For each of the standard triggers (click, blur, submit, etc.)
     for(var trig of TRIGGERS){
-        
         // Create a CSS selector to find elements that have the
         // data-<trigger>-handler. These will be are subjects of the
         // event.
@@ -1174,7 +1274,11 @@ function exec(els){
     for (el of els){
         
         // Get all <article class='instructions'>
-        var instrss = el.querySelectorAll('.instructions')
+        var instrss = [...el.querySelectorAll('.instructions')]
+
+        if (el.classList.contains('instructions')){
+            instrss.push(el)
+        }
 
         // For each instruction set
         for (var instrs of instrss){
@@ -1199,7 +1303,7 @@ function exec(els){
                         var main = document.querySelector('main')
                         var url = instr.getAttribute('content')
 
-                        console.debug('pushState to ' + url)
+                        console.info('pushState to ' + url)
 
                         window.history.pushState(
                             main.outerHTML, null, url
@@ -1209,6 +1313,7 @@ function exec(els){
                     // Process a remove instruction
                     var id = instr.getAttribute('content')
                     el = document.getElementById(id)
+                    console.info('remove ' + id, el)
                     el.remove()
                 }
             }
@@ -2910,7 +3015,7 @@ class set(instruction):
 class remove(instruction):
     """ A remove instruction to be sent to the browser.
 
-    Remove instruction instruct the JavaScript to remove the element
+    `remove` instructions instruct the JavaScript to remove the element
     defined by self.element.
     """
     def __init__(self, el, *args, **kwargs):

@@ -858,7 +858,6 @@ class joins(entitiesmod.entities):
         self.entities = es
         super().__init__(initial=initial)
 
-    # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
         """ Return the table name for this ``joins`` collection. 
@@ -2703,7 +2702,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def __iand__(self, other):
         """ Allows the ORM user to use the &= to join entities classes::
 
-        Instead if explicity calling .innerjoin()::
+        Instead if explicitly calling .innerjoin()::
 
             arts.join(artifacts)
 
@@ -7228,7 +7227,7 @@ class attr:
             return map
 
         def _getset(self, instance, owner=None, value=undef):
-            """ Ultimately invokes the explicity attribute setter or
+            """ Ultimately invokes the explicit attribute setter or
             getter.
             """
             try:
@@ -9746,7 +9745,6 @@ class orm:
                 )
             )
         '''
-        
         # The top entity in the tree
         top = None
 
@@ -10280,7 +10278,6 @@ class orm:
 
         return res
 
-    # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
         """ Returns a ``db.table`` object representing the entity's
@@ -10550,6 +10547,41 @@ class orm:
         finally:
             self.isloaded = True
             self.isloading = False
+
+    def produce(self, id):
+        """ Return a new instance of the entity using `id`. If the
+        entity exists in the database, that entity will be loaded from
+        the database and returned. If the entity with that `id` is not
+        found, a new entity will be instanciated, assigned an id of
+        `id`, and returned. Note that this new instance will not be
+        saved to the database.
+
+        Etymology
+        ---------
+        "Produce" has two meaning is every day speech. Produce can mean
+        to make something. It can also mean to present something to
+        person that already exists (consider the sentence "He produced a
+        piece of silver from his pocket"). This dual meaning captures the
+        intention of this method since the method can return an entity
+        that already exist, or it can make a new one.
+
+        :param: id str|UUID: The id of the entity that the caller
+        intends to be produced.
+        """
+        try:
+            return self.entity(id)
+        except db.RecordNotFoundError:
+            e = self.entity()
+
+            # TODO If we assign id a str that is a valid UUID, it should
+            # return the id as a UUID type, not a str. 
+            if isinstance(id, UUID):
+                pass
+            elif isinstance(id, str):
+                id = UUID(hex=id)
+
+            e.id = id
+            return e
 
     @property
     def abbreviation(self):

@@ -542,6 +542,11 @@ class tester(entities.entity):
                 self._page     =  None
                 self._site     =  None
 
+                # The data transfer object (dom.transfer). This will be
+                # assigned an instance of a new `dom.transfer` object
+                # when a drag-and-drop operation is initiated.
+                self.transfer  = None
+
                 # We are not in SPA mode by default. The `inspa`
                 # analogue for a real browser tab would be something
                 # like a global JavaScript variable. The user may be
@@ -729,10 +734,37 @@ class tester(entities.entity):
                                 el = self['#' + id].only
                                 el.remove()
 
+                    # Make sure any remaning .instructions are removed
+                    instrss.remove()
+
                 ''' Method logic '''
 
                 isnav = is_nav_link(src)
                 nav = src.closest('nav')
+
+                # If this is a dragstart dom event
+                if eargs.trigger == 'dragstart':
+                    # Assume src is a handle (see dom.tr.handle). Its
+                    # data-drag-target attribute will have the ID of the
+                    # element that is being dragged by the handle. Get
+                    # its HTML and put it in the data transfer object
+                    # (self.transfer).
+                    id = src.getattr('data-drag-target')
+                    target = self['#' + id].only
+                    self.transfer['text/html'] = target.html
+
+                # For the various drag-and-drop events, we want to make
+                # sure the `data-dragentered` Boolean attribute is set
+                # correctly to indicate whether or not something is
+                # being drug over (dragover) an element. In a real
+                # browser, this is done by the JavaScript so CSS can
+                # indicate to the user that a drag zone has drag data
+                # hovering above it.
+                if eargs.trigger == 'dragover':
+                    src.setattr('data-dragentered', True)
+
+                elif eargs.trigger in ('drop', 'dragleave'):
+                    del src.attributes['data-dragentered']
 
                 if isnav:
                     pg = src.attributes['href'].value
@@ -760,6 +792,19 @@ class tester(entities.entity):
 
                 # Cancel default event handling
                 eargs.preventDefault()
+
+                # If eargs.handler is 'None', we hav a null handler. No
+                # XHR request should, therefore, be made so return.
+                if eargs.handler == 'None':
+                    return
+
+                # If we are in a drag-and-drop operation, and a drop is
+                # finally made, get the drop data (usually an element
+                # being drug) from the transfer objects. Append this
+                # data to the end of the HTML. The server-side handler
+                # will be expecting this to be the last element.
+                if eargs.trigger == 'drop':
+                    html += self.transfer['text/html']
 
                 # Create a JSON object to send in the XHR request
                 body = {
@@ -799,11 +844,20 @@ class tester(entities.entity):
 
                     # Get the fragement of html in the tab that is the
                     # subject of the event from the tab's DOM (.html)
-                    ids = list('#' + x.id for x in eargs.html)
-                    for i, id in enumerate(ids):
-                        el = res.html[i]
-                        replace(id, res.html[i])
-                        exec(el)
+                    ids = list(x.id for x in eargs.html)
+                    for id in ids:
+                        for el in res.html:
+                            if id != el.id:
+                                continue
+
+                            replace('#' + id, el)
+
+                    for id in ids:
+                        for el in res.html:
+                            if id != el.id:
+                                continue
+
+                            exec(el)
 
                     self.listen(res.html)
 
@@ -953,7 +1007,6 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
-
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onbeforeunload(self, eargs)
 
@@ -968,7 +1021,18 @@ class tester(entities.entity):
 
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onafterload(self, eargs)
+
+                # NOTE I kind of just added these lines so `self.reload`
+                # would work. Some more thought into improving the
+                # usefulness of these may be possible.
+                self._ws = ws
+                self._pg = pg
                 return res
+
+            def reload(self):
+                """ Reload the page that the tab last navigated to.
+                """
+                self.navigate(pg=self._pg, ws=self._ws)
 
             def get(self, pg, ws, hdrs=None):
                 """ Issues an HTTP GET request for the page `pg` to the
@@ -1249,8 +1313,8 @@ class tester(entities.entity):
                 # Create request. Associate with app.
                 req = www.request(app)
 
+                # Record the request/response in a `message` object 
                 msg = tester._browser.message(req=req)
-
                 self.messages += msg
 
                 app.breakonexception = \
@@ -1325,7 +1389,7 @@ class tester(entities.entity):
                     yield msgs
                 finally:
                     self.messages.onadd -= messages_onadd
-                    
+
         ''' Class members of browser'''
         def __init__(
             self, tester, ip=None, useragent=None, *args, **kwargs
@@ -1638,6 +1702,40 @@ class tester(entities.entity):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
 
+    def zip(self, *iters, msg=None):
+        """ A wrapper around builtins.zip. If all the iterators in
+        *iters don't have the same length, a `failure` is recorded.
+
+        A very common pattern in tests is to compare two iterators. But
+        first the tests have to assert that the iterators have the same
+        number of olements:
+
+            self.three(ls)
+            self.three(ls1)
+
+            for e, e1 in zip(ls, ls1):
+                self.eq(e, e1)
+
+        To shorten this, we can user tester.zip without the count
+        assertions:
+
+            for e, e1 in self.zip(ls, ls1):
+                self.eq(e, e1)
+
+        A failure will be recorded if ls and ls1 are not the same size.
+        """
+        lens = [len(x) for x in iters]
+
+        if len(set(lens)) != 1:
+            if msg is None:
+                msg = str()
+
+            msg += 'All iterables must be of the same length'
+            self._failures += failure()
+            return
+
+        return zip(*iters)
+            
     @contextmanager
     def brokentest(self, brs):
         def test2str(attr, type, e, msg=None):
@@ -1813,13 +1911,19 @@ class tester(entities.entity):
             
             self._failures += failure()
 
+    def h204(self, res):
+        if res.status != 204:
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
+
     def h500(self, res):
         if res.status != 500:
             msg = f'Actual status: {res.status}'
             
             self._failures += failure()
 
-    def _trigger(self, trig, e, tab, count):
+    def _trigger(self, trig, e, tab, cnt):
         """ A private method to call the `trig` trigger method on `e`.
         Return the last response the browser recorded.
 
@@ -1829,22 +1933,23 @@ class tester(entities.entity):
         :param: trig str: The name of the trigger, e.g., 'click',
         'submit', 'blur', etc.
 
+        :param e dom.element: The target of the event.
+
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
-
         """
         trig = getattr(e, trig)
 
         with tab.capture() as msgs:
             trig()
 
-        if msgs.count != count:
+        if msgs.count != cnt:
             raise ValueError(
                 'Incorrect HTTP messages count. '
-                f'Expected: {count} Actual: {msgs.count}'
+                f'Expected: {cnt} Actual: {msgs.count}'
             )
 
         if last := msgs.last:
@@ -1852,7 +1957,81 @@ class tester(entities.entity):
 
         return None
 
-    def submit(self, e, tab, count=1):
+    @contextmanager
+    def dragstart(self, e, tab, cnt=0):
+        """ A context manager that calls the dragstart() trigger method
+        on `e`. A data transfer object (self.transfer) is created for
+        the duration of the drag-and-drop opereration.  Return the last
+        response the browser recorded. 
+
+            # Initiate the dragstart on the handler hnd
+            with self.dragstart(hnd, tab) as res:
+                # Ensure that the server-side event handle for the
+                # dragstart event returned 200. If there was no event
+                # handler declared to respond because it was set to a
+                # null handler, `res` will be None.
+                self.h200(res)
+
+                # Drag oven the `zone` element and test reselt
+                res = self.dragover(zone, tab)
+                self.none(res)
+
+                # Drop zone and test result
+                res = self.drop(zone, tab)
+                self.h200(res)
+
+        :param: e dom.element: The element on which to invoke the
+        trigger.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: cnt int: The number of HTTP requests that the trigger
+        is intended to cause. Typically, the dragstart event will have a
+        null handler so 0 responses are expected by default.
+        """
+        try:
+            tab.transfer = dom.transfer()
+            tx = tab.transfer
+
+            yield self._trigger('dragstart', e, tab, cnt)
+
+        finally:
+            self.transfer = None
+
+    def dragover(self, e, tab, cnt=0):
+        """ Call the dragover() trigger method on an element (`e`).
+        Return the last response the browser recorded.
+
+        :param: e dom.element: The element dropped.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: cnt int: The number of HTTP requests that the trigger
+        is intended to cause. This is default because dragover events
+        should probably alwasy have null handlers. Real browsers call
+        the the `dragover` event several times a second during a drag.
+        That would be too many XHR calls to the server from the browser
+        to deal will efficiently.
+        """
+        return self._trigger('dragover', e, tab, cnt)
+
+    def drop(self, e, tab, cnt=1):
+        """ Call the drop() trigger method on an element (`e`). Return
+        the last response the browser recorded.
+
+        :param: e dom.element: The element droped.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: cnt int: The number of HTTP requests that the trigger
+        is intended to cause.
+        """
+        return self._trigger('drop', e, tab, cnt)
+
+    def submit(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on a form (`e`). Return the
         last response the browser recorded.
 
@@ -1862,16 +2041,26 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
+
+        :param: st int: The HTTP status code that is expected. If the
+        last HTTP response of the event has a different status code, an
+        assertion failure is recorded.
         """
         if isinstance(e, dom.form):
             e = e['button[type=submit]'].only
-            return self.click(e, tab, count)
-            
-        return self._trigger('submit', e, tab, count)
+            res = self.click(e, tab, cnt, st, msg)
+        else:
+            res = self._trigger('submit', e, tab, cnt)
 
-    def click(self, e, tab, count=1):
+            if res.status != st:
+                msg = self._stmsg(res, st, msg)
+                self.failure += failure()
+            
+        return res
+
+    def click(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on `e`. Return the last
         response the browser recorded.
 
@@ -1884,10 +2073,35 @@ class tester(entities.entity):
         :param: tab www.browser._tab: The browser tab in which the event
         is triggered.
 
-        :param: count int: The number of HTTP requests that the trigger
+        :param: cnt int: The number of HTTP requests that the trigger
         is intended to cause.
+
+        :param: st int: The HTTP status code that is expected. If the
+        last HTTP response of the event has a different status code, an
+        assertion failure is recorded.
         """
-        return self._trigger('click', e, tab, count)
+        res = self._trigger('click', e, tab, cnt)
+
+        if res.status != st:
+            msg = self._stmsg(res, st, msg)
+            self._failures += failure()
+
+        return res
+
+    @staticmethod
+    def _stmsg(res, st, msg):
+        if msg is None:
+            msg = str()
+        else:
+            msg += ' - '
+
+        msg += tester.dedent(f'''
+            Wrong HTTP status:
+                expected: {st}
+                actual:   {res.status}
+        ''')
+
+        return msg
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance

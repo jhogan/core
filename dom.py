@@ -9,7 +9,7 @@
 ########################################################################
 
 from contextlib import suppress, contextmanager
-from dbg import B
+from dbg import *
 from entities import classproperty
 from func import enumerate
 from textwrap import dedent, indent
@@ -1426,10 +1426,14 @@ class element(entities.entity):
     # A tuple of supported trigger methods. These correspond to DOM
     # methods, such as element.focus(), which trigger a corresponding
     # event (onfocus).
-    Triggers = 'click', 'focus', 'blur', 'input', 'submit'
+    Triggers = (
+        'click',      'focus',     'blur',  'input',      'submit',
+        'dragstart',  'dragover',  'drop',  'dragenter',  'dragleave',
+        'dragover',
+    )
 
     # NOTE If you need to add a new trigger/event (e.g., input/oninput,
-    # keydown/onkeydown), Make sure you add the trigger to the
+    # keydown/onkeydown), make sure you add the trigger to the
     # Triggers tuple above.
 
     @property
@@ -1486,6 +1490,81 @@ class element(entities.entity):
     @oninput.setter
     def oninput(self, v):
         setattr(self, '_oninput', v)
+
+    @property
+    def ondragstart(self):
+        """ Returns the `oninput` event for this element.
+        """
+        return self._on('dragstart')
+
+    def dragstart(self):
+        """ Trigger the `dragstart` event for this element.
+        """
+        return self._trigger('dragstart')()
+                
+    @ondragstart.setter
+    def ondragstart(self, v):
+        setattr(self, '_ondragstart', v)
+
+    @property
+    def ondragover(self):
+        """ Returns the `ondragover` event for this element.
+        """
+        return self._on('dragover')
+
+    @ondragover.setter
+    def ondragover(self, v):
+        setattr(self, '_ondragover', v)
+
+    def dragover(self):
+        """ Trigger the `dragover` event for this element.
+        """
+        return self._trigger('dragover')()
+                
+    @property
+    def ondrop(self):
+        """ Returns the `ondrop` event for this element.
+        """
+        return self._on('drop')
+
+    @ondrop.setter
+    def ondrop(self, v):
+        setattr(self, '_ondrop', v)
+
+    def drop(self):
+        """ Trigger the `drop` event for this element.
+        """
+        return self._trigger('drop')()
+
+    @property
+    def ondragenter(self):
+        """ Returns the `ondragenter` event for this element.
+        """
+        return self._on('dragenter')
+
+    @ondragenter.setter
+    def ondragenter(self, v):
+        setattr(self, '_ondragenter', v)
+
+    @property
+    def ondragleave(self):
+        """ Returns the `ondragleave` event for this element.
+        """
+        return self._on('dragleave')
+
+    @ondragleave.setter
+    def ondragleave(self, v):
+        setattr(self, '_ondragleave', v)
+
+    @property
+    def ondragover(self):
+        """ Returns the `ondragover` event for this element.
+        """
+        return self._on('dragover')
+
+    @ondragover.setter
+    def ondragover(self, v):
+        setattr(self, '_ondragover', v)
 
     def input(self):
         """ Triggers the `input` event for this element.
@@ -1556,17 +1635,37 @@ class element(entities.entity):
             # an element and it removes itself from the DOM.
             return self.parent.remove(self)
 
-    def identify(self, recursive=False):
+    def reidentify(self, recursive=False):
         """ Assigns a new, random values to the id attribute of this
         HTML5 elements and all of its descendants. The id value is a
-        UUID encoded in Base64 with an 'x' prepended to it.
+        UUID encoded in Base64 with an 'x' prepended to it. If the
+        element already has an id, that id will be overwritten. Compare
+        `element.identify()`.
+
+        :param: recursive bool: If True, walk the DOM tree and run
+        `reidentify` on each element. Note that this is currently untested
+        functionality.
+        """
+
+        self.identify(recursive=recursive, override=True)
+
+    def identify(self, recursive=False, override=False):
+        """ Assigns a new, random values to the id attribute of this
+        HTML5 elements and all of its descendants. The id value is a
+        UUID encoded in Base64 with an 'x' prepended to it. If an id
+        already exists on the element, nothing will happen. However, if
+        `override` is True, the id will be overwritten. Compare
+        `element.reidentify()`.
 
         :param: recursive bool: If True, walk the DOM tree run
         `identify` on each element. Note that this is currently
         untested functionality.
+
+        :param: override bool: If True, overwrite an existing id's value
+        if one exist. If False, do nothing if an id already exists.
         """
 
-        if not self.id:
+        if override or not self.id:
             # Set to a random identifier. Prepend an x because HTML5's
             # specification dosen't allow id attributes to start with
             # numbers.
@@ -1577,6 +1676,7 @@ class element(entities.entity):
 
         for el in self.walk():
             # NOTE untested
+            # TODO Pass in `override` argument
             el.identify()
         
     @property
@@ -1875,6 +1975,31 @@ class element(entities.entity):
         self.attributes['id'] = v
 
     @property
+    def draggable(self):
+        """ An enumerated attribute indicating whether the element can
+        be dragged, using the Drag and Drop API. It can have the
+        following values:
+
+            * 'true', which indicates that the element may be dragged
+
+            * 'false', which indicates that the element may not be
+            dragged.
+        """
+        return self.attributes['draggable'].value
+
+    @draggable.setter
+    def draggable(self, v):
+        if not isinstance(v, str):
+            raise TypeError('draggable must be a string')
+            
+        if v not in ('true', 'false'):
+            raise ValueError(
+                'draggable must be either "true" or "false"'
+            )
+            
+        self.attributes['draggable'] = v
+
+    @property
     def dir(self):
         """ Returns the value of the the dir global attribute. dir is an
         enumerated attribute that indicates the directionality of the
@@ -2164,9 +2289,6 @@ class element(entities.entity):
     def next(self):
         """ Return the immediately following sibling.
         """
-        raise NotImplementedError()
-
-        # NOTE The below may work but has not been tested
         sibs = self.getsiblings(accompany=True)
         ix = sibs.getindex(self)
         return sibs(ix + 1)
@@ -2563,14 +2685,169 @@ class element(entities.entity):
     def isplurality(self):
         return self.elements.isplurality
 
+    def dragonize(self, 
+        ondrop       =  None,
+        ondragover   =  None,
+        ondragleave  =  None,
+        ondragstart  =  None,
+        handle       =  None,
+        target       =  None,
+    ):
+        """ Prepares this `element` for a drag-and-drop gesture using
+        the HTML Drag and Drop API
+        (https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API)
+
+        The Event Handler Parameters
+        ----------------------------
+        The parameters that start with `on` are the event handlers for
+        the event. They all can be None, a tuple, or a reference to the
+        handler itself. 
+
+        If they are None, a null handler will be assigned to the event.
+        This means that the browser will catch the event a call
+        `preventDefault()` on the element, but no XHR request will be
+        made.
+
+        If an event handler parameter is a tuple, the first element in
+        the tuple will be the event handler. The rest of the element in
+        the tuple will be the dom.elements that should be sent to the
+        event handler in the XHR request.
+
+        If the event handler paramter in a callable, that callable will
+        be assumed to be the event handler itself. 
+
+        Below is an example to illustrate dragonization.
+
+            tr.dragonize(
+                ondrop = (self.tr_ondrop, tbl, tr),
+                ondragstart = self.tr_ondragstart
+            )
+
+        The `ondrop` will event will be handle by `self.tr_ondrop` and
+        `tbl` and `tr` will be sent to the event handler. `ondragstart`
+        will be handled by `self.tr_ondragstart`. No `dom.elements` will
+        be sent to this event handler. The rest of the event handler
+        parameters will default to None (null) so browsers will call
+        `preventDefault` on the elements but will not make XHR calls.
+
+        :param: ondrop tuple|NoneType|callable: The event handler for
+        this element's ondrop event. 
+
+        :param: ondragover tuple|NoneType|callable: The event handler
+        for this element's ondragover event. 
+
+        :param: ondragleave tuple|NoneType|callable: The event handler
+        for this element's ondragleave event. 
+
+        :param: ondragstart tuple|NoneType|callable: The event handler
+        for this element's ondragstart event. 
+
+        :param: handle dom.element: The element that will be used as the
+        handle for the user to drag this element around. Its
+        `ondragleave` will be given a null handler and the 'handle'
+        class will be added to its class attribute. `handle`'s
+        'draggable' attribute will be set to 'true'.
+
+        :param: target str: The id of the element that the `handle` will
+        drag around.
+        """
+
+        # Unsubscribe any event handlers and remove their data-<event>-*
+        # attributes.
+        self.ondrop.clear()
+        self.ondragover.clear()
+        self.ondragleave.clear()
+
+        self.ondrop       +=  ondrop
+        self.ondragover   +=  ondragover
+        self.ondragleave  +=  ondragleave
+
+        if handle:
+            handle.ondragstart += None
+
+            with suppress(ClassExistsError):
+                handle.classes += 'handle'
+
+            if target:
+                handle.setattr('data-drag-target', target)
+
+            handle.draggable = 'true'
+
+    @property
+    def dragentered(self):
+        """ Returns True if the data-dragentered attribute is present.
+        """
+        return self.getattr('data-dragentered') is True
+
     def __str__(self):
+        """ Return a pretty-printed representation of the HTML in this
+        `element`.
+        """
         return self.pretty
 
     def __repr__(self):
+        """ Return a representation of this `element`.
+        """
         r = '%s(%s)'
         attrs = ', '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
         return r
+
+    @property
+    def entityid(self):
+        """ Return the value of the `data-entity-id` attribute of this
+        element.
+
+        The `data-entity-id` is a common attribute used by the framework
+        to denote the ORM entity that a DOM element is associated with.
+        In the below example, the <tr> would represent the data in an
+        `backlog' object with an id of dca9304489c74e15888b83fdcb09a3c8:
+
+            <tr data-entity="effort.backlog" 
+                data-entity-id="dca9304489c74e15888b83fdcb09a3c8">
+
+                <td>
+                    ...
+                </td>
+            </tr>
+        """
+        return self.getattr('data-entity-id')
+
+    @property
+    def entity(self):
+        """ Return a entity corresponding to this `element`.
+
+        For the entity to be found, this `element` must have a
+        `data-entity` and `data-entity-id` attribute so the entity can
+        be found.
+
+        If the entity exists in the database, it will be loaded and
+        returned. If it doesn't yet exist in the database, a new entity
+        will be created and returned. Note that the caller will need to
+        save this new entity to the database if persistence is desired.
+        """
+        # Get the 'data-entity' attribute. It contains the module and
+        # class name.
+        if not (cls := self.getattr('data-entity')):
+            raise ValueError('Missing data-entity attributes')
+
+        # Get the 'data-entity-id' attribute. It contains the UUID of
+        # the entity
+        if not (id := self.getattr('data-entity-id')):
+            raise ValueError('Missing data-entity-id attributes')
+
+        # Split the data-entity into module and class (mod, cls)
+        mod, cls = cls.split('.')
+
+        # Import the module
+        import importlib
+        mod = importlib.import_module(mod)
+
+        # Get the class reference from the module
+        cls = getattr(mod, cls)
+
+        # Return the persisted or transient entity
+        return cls.orm.produce(id)
 
 class headers(elements):
     """ A class used to contain a collection of ``header`` elements.
@@ -3738,6 +4015,51 @@ class a(element):
         self.attributes['href'].value = v
 
     @property
+    def url(self):
+        """ Returns a `www.url` object that matches the value in
+        `self.href`. Properties of the `url` can be interrogated get
+        parts of the `href`. `self.href` can also be manipulated by
+        manipulating the properties of the `url` object.
+
+            # Create anchor
+            a = dom.a('Click Here', href='http://example.com')
+
+            # Assert host
+            assert a.url.host == 'example.com'
+
+            # Change host
+            a.url.host = 'example.org'
+            assert a.url.host == 'example.org'
+
+            # Add a query string parameter
+            a.url.qs['a'] = '1'
+            assert a.href == 'http://example.org?a=1'
+        """
+        import www
+        url = www.url(self.href)
+
+        def onaftervaluechange(src, eargs):
+            """ An event handler to capture changes to the `url`. We
+            update the `href` here when any changes are made.
+            """
+            self.href = str(eargs.entity)
+
+        # Subscribe to the event handler
+        url.onaftervaluechange += onaftervaluechange
+
+        return url
+
+    @url.setter
+    def url(self, v):
+        """ Set the 'url'. 
+
+        :param: v str|www.url: The object to set the url to, If it is a
+        string, then it should be the URL you want `href` to be. You can
+        also use a `www.url` object.
+        """
+        self.href = str(v)
+
+    @property
     def download(self):
         """ Prompts the user to save the linked URL instead of
         navigating to it.
@@ -4089,16 +4411,6 @@ class img(element):
 # TODO:dea3866d
 images = imgs
 image = img
-
-class trs(elements):
-    """ A class used to contain a collection of ``trs`` elements.
-    """
-
-class tr(element):
-    """ The <tr> HTML element defines a row of cells in a table. The
-    row's cells can then be established using a mix of <td> (data cell)
-    and <th> (header cell) elements.
-    """
 
 class objects(elements):
     """ A class used to contain a collection of ``trs`` elements.
@@ -6269,6 +6581,16 @@ class table(element):
     and columns of cells containing data.
     """
 
+    @property
+    def trs(self):
+        """ Return the collection of `tr` records in this table's body.
+
+        Note that this only returns th `tr` records in the <tbody>. Any
+        <tr> records in the <thead> or <tfoot> will be excluded.
+        """
+        return self['tbody tr']
+
+
 class trs(elements):
     """ A class used to contain a collection of ``tr`` elements."""
 
@@ -6277,6 +6599,38 @@ class tr(element):
     row's cells can then be established using a mix of <td> (data cell)
     and <th> (header cell) elements.
     """
+    def getvalue(self, attr):
+        """ Return the value in the <td> of this `tr` that has a
+        `data-entity-attribute` of `attr'. 
+
+        :param: attr str: The name of the entity's attribute whose value
+        you want to obtain.
+        """
+        return self[f'td[data-entity-attribute={attr}] span.value'].text
+
+    @property
+    def handle(self):
+        """ Return the handle element of this `tr` object. Handle
+        elements are elements that users click to perform drag-and-drop
+        operations:
+            
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="handle">☰</span>
+                        </td>
+                        <td>
+                            Drag me
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+        In the above examle, the <span> in the first <td> would be used
+        to drag the entire <tr>.
+        """
+        return self['span.handle'].only
 
 class selects(elements):
     """ A class used to contain a collection of ``tr`` elements."""
@@ -10097,8 +10451,12 @@ class event(entities.event):
         that DOM object will be sent back up to the server and then
         re-objectified into a DOM object.
 
-        :param: obj callable: A reference to the server-side event
-        handler (e.g. btnok_click).
+        :param: obj callable|NoneType: A reference to the server-side event
+        handler (e.g. btnok_click). If obj is None, a null handler will
+        be used. When the in-browser JavaScript detects a null
+        handler, preventDefault() will be called on the target element,
+        but no XHR request will be made to the server since there is no
+        handler defined to receive the request.
 
         :param: els tuple: The collection of dom.elements whose HTML
         representation will be sent to the server. This tuple can
@@ -10123,7 +10481,16 @@ class event(entities.event):
             # Get the element's attirbutes collection
             attrs = self.element.attributes
 
-            hnd = f.__func__.__name__
+            # If a null-handler is being subscribed to
+            if f is None:
+                # The data-{event}-handler will be set to 'None'
+                hnd = 'None'
+
+                # Pass an empty callable to super().append() below
+                f = lambda: None
+            else:
+                hnd = f.__name__
+
             attrs[f'data-{self.name}-handler'] = hnd
 
             if els:
@@ -10144,12 +10511,28 @@ class event(entities.event):
                 # attribute a valid CSS selector, which will be useful later
                 # on.
                 attrs[f'data-{self.name}-fragments'] = ', '.join(ids)
-
         else:
             # Conventional event subscription.
             f = obj
 
         super().append(f)
+
+    def remove(self, f):
+        """ An override of entities.event.remove for this dom.event.
+        Clears data-<event>-fragments and data-<event>-handler
+        attributes of the element.
+
+        :param: f callable: The event handler that needs to be
+        unsubscribed.
+        """
+        super().remove(f)
+        el = self.element
+
+        # Remove data-{event}-fragments and data-{event}-handler
+        # attributes from element
+        attr = 'data-' + self.name
+        el.delattr(attr + '-fragments')
+        el.delattr(attr + '-handler')
 
 class eventargs(entities.eventargs):
     """ The eventargs class for DOM events. This object is used to move
@@ -10259,6 +10642,8 @@ class eventargs(entities.eventargs):
 
         Note that, at the moment, this method assumes there is only one
         element sent to by the browser.
+
+        :param: el dom.element: The element to be removed.
         """
         from pom import instructions, remove
 
@@ -10384,4 +10769,66 @@ class eventargs(entities.eventargs):
         r += ')'
         return r
 
+class transfer:
+    """ The `transfer` class is a Python implementation of the
+    JavaScript DataTransfer object:
+
+        https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
+
+    It is mainly used in the testing framework, and will probably never
+    be needed for regurlar application development.
+
+    The API is analogous to the JavaScript version, but uses Pythonic
+    idioms:
+        
+        JavaScript version:
+
+            var tx = new DataTransfer()
+            tx.setData("text/plain", 'my data')
+            var mydata = tx.getData('text/plain')
+        
+        Python version
+
+            tx = transfer()
+            tx['text/plain'] = 'my data'
+            mydata = tx['text/plain']
+
+    Note that currently this is a partial implementation.
+    """
+    def __init__(self):
+        """ Create a new `transfer` object.
+        """
+        # NOTE A full implementation would model _items on the
+        # DataTransferItem class.
+        # https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem
+        self._items = {}
+
+    def __getitem__(self, fmt):
+        """ Return the data stored in this `transfer` object for the
+        given format. 
+
+        This is analogous to the `getData` method of the JavaScript
+        version.
+
+        :param fmt str: A string representing the type of data to
+        retrieve.
+        """
+        with suppress(KeyError):
+            return self._items[fmt]
+
+        return None
+
+    def __setitem__(self, fmt, v):
+        """ Return the data stored in this `transfer` object for the
+        given format. 
+
+        This is analogous to the `setData` method of the JavaScript
+        version.
+
+        :param fmt str: The type of drag data to add to the drag object.
+
+        :param v str: The data to add to the drag object.
+        """
+
+        self._items[fmt] = v
 

@@ -21,19 +21,18 @@ from func import enumerate, getattr
 from pprint import pprint
 from primative import datetime, date
 from uuid import uuid4, UUID
+import asset
 import builtins
-import tester
+import db
 import ecommerce
+import effort
+import order
 import orm
 import party
-import order
-import db
-import effort
-import sys
-import testproduct
 import product
 import shipment
-import asset
+import sys
+import tester
 
 class effort_(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -76,6 +75,7 @@ class effort_(tester.tester):
         """ Deliverables here means assets, products and deliverables
         attached to a work ``requirement``.
         """
+        import testproduct
 
         # Create work requirement types
         run = effort.requirementtype(name='Production run')
@@ -615,6 +615,8 @@ class effort_(tester.tester):
             self.eq(rt.ratetype.name, rt1.ratetype.name)
 
     def it_associates_effort_with_inventory_items(self):
+        import testproduct
+
         # Create work effort
         tsk = effort.task(name='Assemble pencil components')
 
@@ -755,6 +757,8 @@ class effort_(tester.tester):
         self.eq('Active', ap1.asset_partystatustype.name)
 
     def it_creates_standards(self):
+        import testproduct
+
         ''' Test good standard '''
         # Create effort type
         pencil = effort.type(name='Large production run of pencils')
@@ -936,27 +940,199 @@ class backlog(tester.tester):
         self.type(str,   bl.goal)
 
     def it_inserts_a_story(self):
-        bl = self.getvalid()
-        st = story.getvalid()
-        bl.insert(st)
+        ''' Insert one story '''
 
+        ###############################################################
+        # st0
+        ###############################################################
+
+        bl = self.getvalid()
+        st0 = story.getvalid()
+        bl.insert(st0)
+
+        for i in range(2):
+            bss = bl.backlog_stories
+
+            self.one(bss)
+            bs = bss.only
+            self.is_(st0, bs.story)
+            self.eq(st0.id, bs.story.id)
+            self.eq(0, bs.rank)
+
+            bl.save()
+            bl1 = bl.orm.reloaded()
+
+        ''' Insert a second story at the begining '''
+
+        ###############################################################
+        # Before
+        #    st0
+        # 
+        # After
+        #    st1  (new)
+        #    st0
+        ###############################################################
+        bl = bl1
         bss = bl.backlog_stories
 
-        self.one(bss)
-        bs = bss.only
-        self.is_(st, bs.story)
-        self.eq(0, bs.rank)
+        st1 = story.getvalid()
+        bl.insert(st1)
 
-        bl.save()
+        for i in range(2):
+            self.two(bss)
+            bss.sort('rank')
 
-        bl1 = bl.orm.reloaded()
+            self.two(bss)
+            self.eq(bss.first.story.id, st1.id)
+            self.eq(bss.second.story.id, st0.id)
+            self.eq([0, 1], bss.pluck('rank'))
 
-        bss = bl1.backlog_stories
+            bl.save()
+            bl = bl.orm.reloaded()
 
-        self.one(bss)
-        bs = bss.only
-        self.eq(st.id, bs.story.id)
-        self.eq(0, bs.rank)
+        ''' Insert a third story in the middle '''
+
+        ###############################################################
+        # Before
+        #    st1
+        #    st0
+        # 
+        # After
+        #    st1
+        #    st2  (new)
+        #    st0
+        ###############################################################
+
+        st2 = story.getvalid()
+        bl.insert(1, st2)
+
+        for i in range(2):
+            bss = bl.backlog_stories
+            bss.sort('rank')
+
+            self.three(bss)
+            self.eq(bss.first.story.id,   st1.id)
+            self.eq(bss.second.story.id,  st2.id)
+            self.eq(bss.third.story.id,   st0.id)
+            self.eq([0, 1, 2], bss.pluck('rank'))
+
+            bl.save()
+            bl = bl.orm.reloaded()
+
+        ''' Insert a fourth story in the the '''
+
+        ###############################################################
+        # Before
+        #    st1
+        #    st2  
+        #    st0
+        # 
+        # After
+        #    st1
+        #    st2 
+        #    st0
+        #    st3
+        ###############################################################
+
+        st3 = story.getvalid()
+        bl.insert(3, st3)
+
+        for i in range(2):
+            bss = bl.backlog_stories
+            self.four(bss)
+
+            bss.sort('rank')
+            self.eq(bss.first.story.id,   st1.id)
+            self.eq(bss.second.story.id,  st2.id)
+            self.eq(bss.third.story.id,   st0.id)
+            self.eq(bss.fourth.story.id,  st3.id)
+            self.eq([0, 1, 2, 3], bss.pluck('rank'))
+
+            bl.save()
+            bl = bl.orm.reloaded()
+
+        ''' Insert a fifth story at the begining'''
+
+        ###############################################################
+        # Before
+        #    st1
+        #    st2 
+        #    st0
+        #    st3
+        # 
+        # After
+        #    st4  (new)
+        #    st1
+        #    st2 
+        #    st0
+        #    st3
+        ###############################################################
+
+        st4 = story.getvalid()
+        bl.insert(0, st4)
+
+        for i in range(2):
+            bss = bl.backlog_stories
+            self.five(bss)
+
+            bss.sort('rank')
+            self.eq(bss.first.story.id,   st4.id)
+            self.eq(bss.second.story.id,  st1.id)
+            self.eq(bss.third.story.id,   st2.id)
+            self.eq(bss.fourth.story.id,  st0.id)
+            self.eq(bss.fifth.story.id,   st3.id)
+            self.eq([0, 1, 2, 3, 4], bss.pluck('rank'))
+
+            bl.save()
+            bl = bl.orm.reloaded()
+
+        ''' Insert six story beyond range '''
+
+        ###############################################################
+        # Before
+        #    st4
+        #    st1
+        #    st2 
+        #    st0
+        #    st3
+        # 
+        # After
+        #    st4
+        #    st1
+        #    st2 
+        #    st0
+        #    st3
+        #    st  (new)
+        #    st  (new)
+        #    st  (new)
+        #    st  (new)
+        ###############################################################
+
+        for i in range(4):
+            st = story.getvalid()
+            cnt = bss.count + 1
+            bl.insert(bss.count + i, st)
+            for _ in range(2):
+                bss = bl.backlog_stories
+                
+                self.count(cnt, bss)
+
+                bss.sort('rank')
+                self.eq(bss.first.story.id,   st4.id)
+                self.eq(bss.second.story.id,  st1.id)
+                self.eq(bss.third.story.id,   st2.id)
+                self.eq(bss.fourth.story.id,  st0.id)
+                self.eq(bss.fifth.story.id,   st3.id)
+
+                self.eq(bss.last.story.id,   st.id)
+
+                self.eq(
+                    list(range(bss.count)), 
+                    bss.pluck('rank')
+                )
+
+                bl.save()
+                bl = bl.orm.reloaded()
 
     def it_inserts_multiple_stories(self):
         ''' Insert multiple stories at the loweset ranking '''
@@ -1179,7 +1355,7 @@ class backlog(tester.tester):
         self.is_(st0, bss.first.story)
         self.is_(st1, bss.second.story)
 
-        # Persist; reload and try again
+        # Persist, reload and try again
         bl.save()
         bl = bl.orm.reloaded()
 
@@ -1194,27 +1370,44 @@ class backlog(tester.tester):
         for i, st in enumerate((st2, st3, st4)):
             bl.insert(i + 2, st)
 
-        # Move st5 from begining to end
+        # Move st5 from begining to end then back. 
         for ord in ('asc', 'desc'):
             if ord == 'asc':
                 seq = range(6)
             elif ord == 'desc':
                 seq = range(4, -1, -1)
 
+            # Use i to start the move from every rank
             for i in seq:
-                bl.insert(rank=i, st=st5)
-                bss = bl.backlog_stories.sorted('rank')
 
-                sts = bss.pluck('story')
-                self.eq(st5.id, sts[i].id, str(i))
+                # Use j to move st5 one rank at a time, two at a time,
+                # three and so on. 
+                for j in range(6):
+                    # Revert to i
+                    bl.insert(rank=i, st=st5)
 
-                bl.save()
-                bl = bl.orm.reloaded()
+                    # Move to j
+                    bl.insert(rank=j, st=st5)
 
-                bss = bl.backlog_stories.sorted('rank')
+                    bl.save()
+                    bl = bl.orm.reloaded()
+                    bss = bl.backlog_stories.sorted('rank')
 
-                sts = bss.pluck('story')
-                self.eq(st5.id, sts[i].id, str(i))
+                    sts = bss.pluck('story')
+                    self.eq(
+                        list(range(6)), bss.pluck('rank'),
+                        f'{(i,j)} {ord}'
+                    )
+                    self.eq(st5.id, sts[j].id, f'{(i,j)} {ord}')
+
+                    bl.save()
+                    bl = bl.orm.reloaded()
+
+                    bss = bl.backlog_stories.sorted('rank')
+
+                    sts = bss.pluck('story')
+
+                    self.eq(st5.id, sts[j].id, f'{(i,j)} {ord}')
 
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
