@@ -2702,7 +2702,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def __iand__(self, other):
         """ Allows the ORM user to use the &= to join entities classes::
 
-        Instead if explicity calling .innerjoin()::
+        Instead if explicitly calling .innerjoin()::
 
             arts.join(artifacts)
 
@@ -7227,7 +7227,7 @@ class attr:
             return map
 
         def _getset(self, instance, owner=None, value=undef):
-            """ Ultimately invokes the explicity attribute setter or
+            """ Ultimately invokes the explicit attribute setter or
             getter.
             """
             try:

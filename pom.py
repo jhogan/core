@@ -10,27 +10,28 @@
 
 from contextlib import suppress
 from dbg import *
-from uuid import UUID, uuid4
 from entities import classproperty
 from func import getattr
-import asset, ecommerce
+from uuid import UUID, uuid4
+import asset
 import datetime
 import db
 import dom
-import entities
 import ecommerce
+import entities
 import exc
 import file
 import inspect
 import itertools
+import logs
+import MySQLdb
 import orm
 import os
-import primative
-import textwrap
-import pycountry
 import party
+import primative
+import pycountry
+import textwrap
 import www
-import MySQLdb
 
 # References:
 #
@@ -129,10 +130,11 @@ class site(asset.asset):
     def _ensure(self):
         """ Ensure that the site object is stored in the database as
         well as its proprietor and its association with its proprietor.
-        Normaly, these data will need to be saved once.
+        Normaly, these data will need to be created in the database only
+        once.
 
         This method is called by the constructor to ensure that every
-        time a site is instantiated, its data is saved in the database.
+        time a site is instantiated, its data is saved to the database.
         """
 
         # Only _ensure subtypes of `site`
@@ -175,7 +177,7 @@ class site(asset.asset):
             if not self.Proprietor.name:
                 raise ValueError(
                     "Site's Proprietor constant "
-                    'must have an id an and a name'
+                    'must have an id and a name'
                 )
 
             ''' Create or retrieve site record '''
@@ -201,7 +203,7 @@ class site(asset.asset):
                 ws.directory
                 ws.save()
 
-            # Take the data in ws and copy it self
+            # Take the data in ws and copy it to self
             sup = self
             wssup = ws
             while sup:
@@ -244,6 +246,7 @@ class site(asset.asset):
                     sup.proprietor = propr
                     sup.orm.isnew = True
                     sup = sup.orm.super
+
                 propr.save()
                 
             ''' Associate the proprietor '''
