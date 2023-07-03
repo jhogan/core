@@ -236,7 +236,7 @@ class effort(orm.entity):
     hoursallowed   = dec
 
     # The actual start datetime, actual completion datetime, and actual
-    # hoursestored to track efficiency.
+    # hours stored to track efficiency.
     actual = timespan(prefix='actual')
 
     # The actual hours the work effort took.
@@ -255,18 +255,18 @@ class effort(orm.entity):
 
     # Make ``efforts`` recursive. Work efforts can be associated with
     # other work efforts using the reflexive association
-    # ``effort_effort`` and its subassociations..  However, the
+    # ``effort_effort`` and its subassociations.  However, the
     # recursive relationship created with the ``efforts`` attribute
-    # belowe is reserved for redos. As the book puts it, "The
+    # below is reserved for redos. As the book puts it, "The
     # one-to-many recursion around WORK EFFORT provides for work efforts
     # to be redone by other work efforts and to capture this
-    # relationshipt."
+    # relationship."
     efforts = efforts
 
     # The collection of statuses that this effort has been in 
     statuses = statuses
 
-    # A work effort my result the repair of a fixed asset.
+    # A work effort may result in the repair of a fixed asset.
     asset = asset.asset
 
 class program(effort): 
@@ -381,10 +381,11 @@ class roletype(party.roletype):
     roles = roles
 
 class item(order.item):
-    """ The work order ``item`` represents the commment to complete some
-    work. Work order ``items`` usually result from work ``requirements``
-    however, they can result from certain ``product.requirements`` such
-    as for a product that needs to be manufactured. jj
+    """ The work order ``item`` represents the commmentment to complete
+    some work. Work order ``items`` usually result from work
+    ``requirements``. However, they can result from certain
+    ``product.requirements`` such as for a product that needs to be
+    manufactured.
 
     Note that this entity was originally called WORK ORDER ITEM in "The
     Data Model Resource Book".
