@@ -12452,7 +12452,7 @@ class orm:
         """
         return self.getcard()
 
-    def getfake(self, cnt=1):
+    def fake(self, cnt=1, f=None):
         """
         """
         from faker import Faker
@@ -12490,6 +12490,9 @@ class orm:
                     )
 
                 setattr(r, map.name, v)
+
+            if f:
+                f(r)
 
         elif cnt > 1:
             r = self.entities()

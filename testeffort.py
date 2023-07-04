@@ -821,6 +821,14 @@ class effort_(tester.tester):
         self.eq(st.asset.id, st1.asset.id)
         self.eq(st.asset.name, st1.asset.name)
 
+class task(tester.tester):
+    @staticmethod
+    def fake(cnt=1):
+        def f(x):
+            x.name = f'Task: {x.id.hex[:8]}'
+
+        return effort.task.orm.fake(cnt, f=f)
+
 class backlogstatustype(tester.tester):
     def __init__(self, *args, **kwargs):
         mods = 'effort',
@@ -948,7 +956,7 @@ class backlog(tester.tester):
         ###############################################################
 
         bl = self.getvalid()
-        st0 = story.getvalid()
+        st0 = story.fake()
         bl.insert(st0)
 
         for i in range(2):
@@ -976,7 +984,7 @@ class backlog(tester.tester):
         bl = bl1
         bss = bl.backlog_stories
 
-        st1 = story.getvalid()
+        st1 = story.fake()
         bl.insert(st1)
 
         for i in range(2):
@@ -1004,7 +1012,7 @@ class backlog(tester.tester):
         #    st0
         ###############################################################
 
-        st2 = story.getvalid()
+        st2 = story.fake()
         bl.insert(1, st2)
 
         for i in range(2):
@@ -1035,7 +1043,7 @@ class backlog(tester.tester):
         #    st3
         ###############################################################
 
-        st3 = story.getvalid()
+        st3 = story.fake()
         bl.insert(3, st3)
 
         for i in range(2):
@@ -1069,7 +1077,7 @@ class backlog(tester.tester):
         #    st3
         ###############################################################
 
-        st4 = story.getvalid()
+        st4 = story.fake()
         bl.insert(0, st4)
 
         for i in range(2):
@@ -1110,7 +1118,7 @@ class backlog(tester.tester):
         ###############################################################
 
         for i in range(4):
-            st = story.getvalid()
+            st = story.fake()
             cnt = bss.count + 1
             bl.insert(bss.count + i, st)
             for _ in range(2):
@@ -1138,8 +1146,8 @@ class backlog(tester.tester):
     def it_inserts_multiple_stories(self):
         ''' Insert multiple stories at the loweset ranking '''
         bl = self.getvalid()
-        st1 = story.getvalid()
-        st2 = story.getvalid()
+        st1 = story.fake()
+        st2 = story.fake()
 
         # This will put st1 at rank 0
         #
@@ -1190,7 +1198,7 @@ class backlog(tester.tester):
             stories
         '''
 
-        st3 = story.getvalid()
+        st3 = story.fake()
 
         # Insert st3 befor st1
         #
@@ -1227,7 +1235,7 @@ class backlog(tester.tester):
 
         ''' Insert the story at the end of the backlog '''
 
-        st4 = story.getvalid()
+        st4 = story.fake()
 
         # Insert st3 befor st1
         #
@@ -1267,7 +1275,7 @@ class backlog(tester.tester):
         ''' Move one story from a backlog of one'''
         bl1 = self.getvalid()
         bl2 = self.getvalid()
-        st = story.getvalid()
+        st = story.fake()
         bl1.insert(st)
 
         st.move(bl1, bl2)
@@ -1303,7 +1311,7 @@ class backlog(tester.tester):
         bl1 = self.getvalid()
         bl2 = self.getvalid()
 
-        for st in story.getvalid(5):
+        for st in story.fake(5):
             bl1.insert(st)
 
         sts = bl1.stories
@@ -1336,7 +1344,7 @@ class backlog(tester.tester):
     def it_moves_a_story_within_a_backlog(self):
         bl = self.getvalid()
 
-        st0, st1, st2, st3, st4, st5 = story.getvalid(6)
+        st0, st1, st2, st3, st4, st5 = story.fake(6)
 
         ''' Add two then switch their order '''
 
@@ -1412,7 +1420,7 @@ class backlog(tester.tester):
 
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
-        st = story.getvalid()
+        st = story.fake()
         bl = self.getvalid()
         bl.insert(st)
         rms = bl.remove(st)
@@ -1422,7 +1430,7 @@ class backlog(tester.tester):
         self.is_(st, rms.only)
 
         ''' Add 2; remove first '''
-        sts = story.getvalid(n=2)
+        sts = story.fake(cnt=2)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1445,7 +1453,7 @@ class backlog(tester.tester):
         self.eq(0, bss.only.rank)
 
         ''' Add 2; remove second '''
-        sts = story.getvalid(n=2)
+        sts = story.fake(cnt=2)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1468,7 +1476,7 @@ class backlog(tester.tester):
         self.eq(0, bss.only.rank)
 
         ''' Add 10; removes first, middle, last '''
-        sts = story.getvalid(n=10)
+        sts = story.fake(cnt=10)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1526,7 +1534,7 @@ class backlog(tester.tester):
 
     def it_removes_persisted_stories(self):
         ''' Add and remove one story '''
-        st = story.getvalid()
+        st = story.fake()
         bl = self.getvalid()
         bl.insert(st)
         bl.save()
@@ -1542,7 +1550,7 @@ class backlog(tester.tester):
         self.eq(st.id, rms.only.id)
 
         ''' Add 2; remove first '''
-        sts = story.getvalid(n=2)
+        sts = story.fake(cnt=2)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1567,7 +1575,7 @@ class backlog(tester.tester):
         self.eq(0, bss.only.rank)
 
         ''' Add 2; remove second '''
-        sts = story.getvalid(n=2)
+        sts = story.fake(cnt=2)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1592,7 +1600,7 @@ class backlog(tester.tester):
         self.eq(0, bss.only.rank)
 
         ''' Add 10; removes first, middle, last '''
-        sts = story.getvalid(n=10)
+        sts = story.fake(cnt=10)
         bl = self.getvalid()
         for st in sts:
             bl.insert(st)
@@ -1680,29 +1688,24 @@ class story(tester.tester):
         orm.security().owner = ecommerce.users.root
 
     @staticmethod
-    def getvalid(n=1):
-        def create():
-            st = effort.story()
-            st.name = 'Radical site redesign'
-            st.description =  (
-                'As a user,'
-                "I want the site's design to be radically different,"
-                "So I can have more things to complain about."
-            )
-            st.points = 64
-            return st
+    def fake(cnt=1):
+        if cnt == 1:
+            from faker import Faker
+            fake = Faker()
 
-        if n == 1:
-            return create()
+            st = effort.story.orm.fake()
+            st.name = fake.catch_phrase()
+            st.points = random.choice((.5, 1, 2, 3, 5, 8, 13, 21))
+            return st
         else:
             sts = effort.stories()
-            for i in range(n):
-                sts += create()
+            for i in range(cnt):
+                sts += story.fake()
 
             return sts
 
     def it_creates(self):
-        st = self.getvalid()
+        st = self.fake()
 
         st.save()
 
@@ -1714,7 +1717,7 @@ class story(tester.tester):
             self.eq(getattr(st, attr), getattr(st1, attr))
 
     def it_updates(self):
-        st = self.getvalid()
+        st = self.fake()
         st.save()
         st1 = st.orm.reloaded()
 
