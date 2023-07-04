@@ -12452,6 +12452,56 @@ class orm:
         """
         return self.getcard()
 
+    def getfake(self, cnt=1):
+        """
+        """
+        from faker import Faker
+        fake = Faker()
+
+        if cnt == 1:
+            r = self.entity()
+            for map in self.mappings.all:
+                if type(map) is not fieldmapping:
+                    continue
+                    
+                if map.name in ('createdat', 'updatedat'):
+                    continue
+
+                if map.isstr:
+                    if map.definition == 'longtext':
+                        v = fake.paragraph()
+                    else:
+                        v = fake.sentence()
+                elif map.isdecimal:
+                    prec = randint(1, 3)
+                    scale = randint(1, 3)
+                    v = fake.pydecimal(
+                        left_digits   =  min(map.precision, prec),
+                        right_digits  =  min(map.scale, scale),
+                        positive      =  not map.signed
+                    )
+                elif map.isdatetime:
+                    v = fake.date_time()
+                elif map.isdate:
+                    v = fake.date()
+                else:
+                    raise NotImplementedError(
+                        'Type not implemented: ' + str(map.type)
+                    )
+
+                setattr(r, map.name, v)
+
+        elif cnt > 1:
+            r = self.entities()
+
+            for _ in range(cnt):
+                r += self.getfake()
+
+        else:
+            raise ValueError('cnt must be greater than 0')
+
+        return r
+
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
 
