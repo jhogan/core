@@ -8915,28 +8915,37 @@ with book('Hacking Carapacian Core'):
 
         An important caveat to the above is that only one bot,
         `sendbot`, has been implemented at the time of this writing.
-        It's job is to read messages from the local queue and dispatch
+        Its job is to read messages from the local queue and dispatch
         them to their intended destination. More bots are planned,
         however, including the following:
 
           * **sysadminbot** The system administrator bot will perform
           routine maintaince on the server at the operating
-          system level.
+          system level such runing updates, ensuring the system remains
+          configured properly, analying logs for issues, etc.
 
           * **dbadminbot** The database admin bot will do the job of a
-          database administer.
+          database administer such as monitoring the consumption of
+          database files, ensuring the correct configuration of the
+          database, etc.
 
-          * **secbot**
+          * **secbot** The cybersecurity bot would Continually monitors
+          log files and system processos for attempted breachs and other
+          forms of tampering.
 
-          * **penbot**
+          * **penbot** The penitration testing bot would spend its days
+          attempting to find hole in the system's security and other
+          weeknesses.
 
-          * **cfgadminbot**
+          * **devopsbot** Maintains source code repositories, deploys
+          source code to servers, ensures unit tests pass, spawn
+          new virtual machines in response to increased demand, etc.
 
-          * **qatesterbot**
-
-          * **loaderbot**
-
-          * **dbadminbot**
+          * **qatesterbot** Tests the production websites externally,
+          i.e., over a literal HTTP connection (instead of through the
+          `tester.browser`). Runs continually looking for basic problems
+          with the website. Can also be used to simulate load on the
+          server.
       '''
       )
 
