@@ -30,6 +30,7 @@ import order
 import orm
 import party
 import product
+import random
 import shipment
 import sys
 import tester

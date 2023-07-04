@@ -1388,7 +1388,6 @@ class ticketsspa_backlogs(tester.tester):
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
 
-
         ''' Move all bl tr rows from the source table (tbl) to the end
         of the destination table (tbl1).
         '''

@@ -476,6 +476,10 @@ class effortpurposetype(apriori.type):
 class effort_requirement(orm.association):
     """ Associates an effort with a requirement.
 
+    This associative entity allows work requirements to be combined into
+    a single effort or a single requirment to be managed in several work
+    efforts.
+
     Note that this entity was originally called WORK REQUIREMENT
     FULFILLMENT in "The Data Model Resource Book".
     """
