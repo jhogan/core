@@ -1740,5 +1740,9 @@ class story(tester.tester):
         self.type(str,   st.description)
         self.type(dec,   st.points)
 
+    def it_has_efforts(self):
+        st = effort.story.orm.getfake()
+        XXXr(st)
+
 if __name__ == '__main__':
     tester.cli().run()
