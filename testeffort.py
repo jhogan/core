@@ -15,7 +15,7 @@ programmer: laziness, impatience, and hubris. """
 
 import apriori; apriori.model()
 
-from dbg import B, PM, PR
+from dbg import *
 from decimal import Decimal as dec
 from func import enumerate, getattr
 from pprint import pprint

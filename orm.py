@@ -256,13 +256,14 @@ TODOs:
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
-from dbg import B, PM
+from dbg import *
 from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
 from func import enumerate
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
+from random import randint
 from shlex import shlex
 from table import table
 from types import ModuleType
@@ -12447,6 +12448,8 @@ class orm:
 
     @property
     def card(self):
+        """ XXX
+        """
         return self.getcard()
 
 # Call orm._invalidate to initialize the ORM caches.
