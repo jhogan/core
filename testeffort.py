@@ -1744,9 +1744,35 @@ class story(tester.tester):
         self.type(str,   st.description)
         self.type(dec,   st.points)
 
-    def it_has_efforts(self):
-        st = effort.story.orm.getfake()
-        XXXr(st)
+    def it_creates_a_test_development_task(self):
+        """
+        """
+        st = story.fake()
+        tsk = task.fake()
+
+        tsk.type = effort.type(name='Unit Test Development')
+
+        ers = st.effort_requirements
+
+        ers += effort.effort_requirement(effort=tsk)
+
+        st.save()
+
+        st1 = st.orm.reloaded()
+
+        ers1 = st1.effort_requirements
+
+        self.one(ers1)
+        er1 = ers1.only
+
+        tsk1 = er1.effort
+
+        self.type(effort.task, tsk1)
+
+        self.eq(st.id, st1.id)
+        self.eq(tsk.id, tsk1.id)
+        self.eq(tsk.type.id, tsk1.type.id)
+        self.eq('Unit Test Development', tsk1.type.name)
 
 if __name__ == '__main__':
     tester.cli().run()
