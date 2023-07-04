@@ -6078,8 +6078,8 @@ class mappings(entitiesmod.entities):
         mappings found from the superentity objects of ``self``.
         """
         if not self._supermappings:
-            e = self.orm.entity.orm.super
             self._supermappings = mappings()
+            e = self.orm.entity.orm.super
 
             while e:
                 self._supermappings += e.orm.mappings
