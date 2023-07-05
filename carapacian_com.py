@@ -1057,19 +1057,49 @@ class ticketsspa(pom.spa):
                 return 'name points description'
 
         def self_onbeforesave(self, src, eargs):
+            """ XXX
+            """
             st = eargs.entity
 
             if st.orm.isnew:
                 st.created = datetime.utcnow()
 
-            if st.backlog:
-                return
+            tsk = effort.task(
+                name = 'Test',
+                type = effort.type(name='Unit Test Development')
+            )
 
-            inp = eargs.html['input[name="story.backlog"]'].only
-            id = inp.getattr('data-entity-id')
-            bl = effort.backlog(id)
-            bl.insert(st)
-            eargs.stead = bl
+            st.effort_requirements += effort.effort_requirement(
+                task = tsk
+            )
+
+            if st.backlog:
+                pass
+            else:
+                inp = eargs.html['input[name="story.backlog"]'].only
+                id = inp.getattr('data-entity-id')
+                bl = effort.backlog(id)
+                bl.insert(st)
+                eargs.stead = bl
+
+        def gethtml(self, id, crud, oncomplete):
+            """ XXX
+            """
+            el = super().gethtml(
+                id=id, crud=crud, oncomplete=oncomplete
+            )
+
+            st = self.instance
+
+            ers = st.effort_requirements
+
+            # TODO Sort by ers dependencies
+
+            for er in ers:
+                pg = self.spa.pages['effort-requirements']
+                pg.clear()
+
+            return el
 
     class search(pom.page):
         def main(self):
