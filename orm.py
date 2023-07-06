@@ -12448,30 +12448,49 @@ class orm:
 
     @property
     def card(self):
-        """ XXX
+        """ Returns a read-only HTML representation of the entity. 
         """
         return self.getcard()
 
     def fake(self, cnt=1, f=None):
-        """
+        """ Instantiate a new instance of the `orm`'s entity with fake
+        data ard return it. If `cnt` is greater than 1, a collection of
+        the entities are returned.
+
+        :param: cnt int: The number of instances to return in the
+        collection. If `cnt` is 1, the entity is returned, not a
+        collection.
+
+        :param: f callable: A callable that is called and passed each
+        instance created after the fake data has been set. This is
+        usufel for the caller to inject its own fake data generation
+        logic.
         """
         from faker import Faker
         fake = Faker()
 
         if cnt == 1:
+            # Instantiate
             r = self.entity()
+
+            # For all mappings including supermappings
             for map in self.mappings.all:
+
+                # Only fake fieldmappings
                 if type(map) is not fieldmapping:
                     continue
                     
+                # Ignore the system datetime
                 if map.name in ('createdat', 'updatedat'):
                     continue
 
+                # Fake data based on type
                 if map.isstr:
                     if map.definition == 'longtext':
                         v = fake.paragraph()
                     else:
                         v = fake.sentence()
+
                 elif map.isdecimal:
                     prec = randint(1, 3)
                     scale = randint(1, 3)
@@ -12480,24 +12499,33 @@ class orm:
                         right_digits  =  min(map.scale, scale),
                         positive      =  not map.signed
                     )
+
                 elif map.isdatetime:
                     v = fake.date_time()
+
                 elif map.isdate:
                     v = fake.date()
+
                 else:
                     raise NotImplementedError(
                         'Type not implemented: ' + str(map.type)
                     )
 
+                # Set the fake data
                 setattr(r, map.name, v)
 
+            # Call the post fake callable sent in by the caller if there
+            # is one.
             if f:
                 f(r)
 
+        # If the caller wants more than one fake
         elif cnt > 1:
+            # Create a collection
             r = self.entities()
 
             for _ in range(cnt):
+                # Recurse with a default cnt of 1
                 r += self.getfake()
 
         else:
