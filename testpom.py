@@ -4145,6 +4145,83 @@ class crud(tester.tester):
                 # Make sure the name was not changed
                 self.eq(per1.name, per.orm.reloaded().name)
 
+class tabs(tester.tester):
+    def it_creates_empty(self):
+        tabs = pom.tabs()
+        self.isinstance(dom.div, tabs)
+        self.in_(tabs.classes, 'tabs')
+        navs = tabs['nav:empty']
+        self.one(navs)
+
+    def it_appends_tab(self):
+        tabs = pom.tabs()
+        tab = pom.tab(id='my-tab')
+        tabs += tab
+
+        nav = tabs['nav'].only
+        self.zero(nav.attributes)
+
+        uls = tabs['nav>ul']
+        self.one(uls)
+        ul = uls.only
+
+        self.eq('tablist', ul.role)
+
+        lis = ul.lis
+        self.one(lis)
+        li = lis.only
+
+        self.eq('tab', li.role)
+        self.eq('0', li.tabindex)
+        self.eq('true', li.aria_selected)
+        self.eq(tab.id, li.aria_controls)
+
+    def it_calls_show(self):
+        tabs = pom.tabs()
+        tab = pom.tab(id='my-tab')
+        tab1 = pom.tab(id='my-tab1')
+
+        self += tab, tab1
+
+        self.is_(tab, tabs.selected)
+
+        tabs.show('my-tab1')
+        self.is_(tab1, tabs.selected)
+
+        tabs.show('my-tab')
+        self.is_(tab, tabs.selected)
+
+    def it_demands_id_from_tab_on_append():
+        """ #XXX
+        """
+        tabs = pom.tabs()
+        tab = pom.tab()
+
+        def f():
+            tabs += tab
+
+        self.expect(ValueError, f)
+
+        tab.id = 'my-id'
+
+        self.expect(None, f)
+
+class tab(tester.tester):
+    def it_creates(self):
+        tab = pom.tab(id='my-tab')
+        self.isinstance(dom.section, tab)
+        self.eq('my-tab', tab.id)
+        self.eq('tabpanel', tab.getattr('role'))
+        self.eq('true', tab.getattr('aria-hidden'))
+
+    def it_calls_show_and_hide(self):
+        tab = pom.tab(id='my-tab')
+        tab.show()
+        self.eq('false', tab.getattr('aria-hidden'))
+
+        tab.hide()
+        self.eq('true', tab.getattr('aria-hidden'))
+
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADZqDwg2ag8uAAAAAAAA

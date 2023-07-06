@@ -4046,10 +4046,38 @@ class dialog(dom.dialog):
         super().__init__(*args, **kwargs)
 
 class pagechangeeventargs(entities.eventargs):
+    """ XXX
+    """
     def __init__(self, pg, *args, **kwargs):
-
+        """ XXX
+        """
         super().__init__(*args, **kwargs)
         
         self.page = pg
+
+class tabs(dom.div):
+    """ XXX
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.classes += 'tabs'
+        self += dom.nav()
+
+class tab(dom.section):
+    """ XXX
+    """
+    def __init__(self, *args, **kwargs):
+        self.role = 'tabpanel'
+        self.aria_hidden = 'true'
+        super().__init__(*args, **kwargs)
+
+    def show(self):
+        self.aria_hidden = 'false'
+
+    def hide(self):
+        self.aria_hidden = 'true'
+
+    
 
 
