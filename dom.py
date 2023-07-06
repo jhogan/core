@@ -2056,6 +2056,31 @@ class element(entities.entity):
         self.attributes['title'] = v
 
     @property
+    def role(self):
+        """ 
+        """
+        return self.attributes['role'].value
+
+    @role.setter
+    def role(self, v):
+        """
+        """
+        self.attributes['role'] = v
+
+    @property
+    def aria_hidden(self):
+        """ 
+        """
+        return self.attributes['aria_hidden'].value
+
+    @aria_hidden.setter
+    def aria_hidden(self, v):
+        """
+        """
+        self.attributes['aria_hidden'] = v
+
+
+    @property
     def aria_label(self):
         """ The aria-label attribute is used to define a string that
         labels the current element. Use it in cases where a text label
