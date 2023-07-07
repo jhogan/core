@@ -4063,6 +4063,28 @@ class tabs(dom.div):
         super().__init__(*args, **kwargs)
         self.classes += 'tabs'
         self += dom.nav()
+        self.last += dom.ul(role="tablist") 
+        self.elements.onbeforeadd += self.elements_onbeforeadd
+
+    def elements_onbeforeadd(self, src, eargs):
+        tab = eargs.entity
+
+        id = tab.id
+
+        if not id:
+            raise ValueError(
+                "The tab's id property is not set"
+            )
+
+        secs = self[f'section#{id}']
+
+        if secs.ispopulated:
+            raise ValueError(
+                'The tab already exists in this collection'
+            )
+            
+        ul = self['nav>ul'].only
+        ul += tab._li
 
 class tab(dom.section):
     """ XXX
@@ -4071,6 +4093,11 @@ class tab(dom.section):
         self.role = 'tabpanel'
         self.aria_hidden = 'true'
         super().__init__(*args, **kwargs)
+
+        self._li = dom.li(role='tab', tabindex='0')
+        self._li.aria_selected = 'false'
+
+        self._li.aria_controls = self.id
 
     def show(self):
         self.aria_hidden = 'false'

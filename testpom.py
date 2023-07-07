@@ -4150,7 +4150,7 @@ class tabs(tester.tester):
         tabs = pom.tabs()
         self.isinstance(dom.div, tabs)
         self.in_(tabs.classes, 'tabs')
-        navs = tabs['nav:empty']
+        navs = tabs['nav>ul:empty']
         self.one(navs)
 
     def it_appends_tab(self):
@@ -4179,6 +4179,134 @@ class tabs(tester.tester):
         self.eq('true', li.aria_selected)
         self.eq(tab.id, li.aria_controls)
 
+        ''' Test <section> '''
+
+        # XXX Can't we do this:
+        #secs = tabs['section:root:empty']
+
+        secs = tabs['section:empty']
+
+        self.one(secs)
+        sec = secs.only
+        self.eq('tabpanel', sec.role)
+        self.eq('true', sec.aria_hidden)
+
+        ''' Add a sectond one '''
+        tab1 = pom.tab(id='my-tab-1')
+
+        tabs += tab1
+
+        ''' Test nav>ul>li '''
+        nav = tabs['nav'].only
+        self.zero(nav.attributes)
+
+        uls = tabs['nav>ul']
+        self.one(uls)
+        ul = uls.only
+
+        self.eq('tablist', ul.role)
+
+        lis = ul.lis
+        self.two(lis)
+
+        for i, li in lis.enumerate():
+            self.eq('tab', li.role)
+            self.eq('0', li.tabindex)
+
+            # The first tab should be selected by default
+
+            if i.first:
+                self.eq('true', li.aria_selected)
+            else:
+                self.eq('false', li.aria_selected)
+
+            self.eq(tab.id, li.aria_controls)
+
+        ''' Test <section> '''
+
+        # XXX Can't we do this:
+        #secs = tabs['section:root:empty']
+
+        secs = tabs['section:empty']
+
+        self.one(secs)
+        sec = secs.only
+        self.eq('tabpanel', sec.role)
+        self.eq('true', sec.aria_hidden)
+
+    def it_removes_tab(self):
+        """ XXX
+        """
+
+    def it_calls_tab(self:
+        tabs = dom.tabs()
+        tab0 = dom.tab(id='my-tab-0')
+        tab1 = dom.tab(id='my-tab1')
+
+        for tabs in tabs.tabs:
+            # XXX
+            ...
+
+    def it_calls_tabs(self:
+        tabs = dom.tabs()
+        tab0 = dom.tab(id='my-tab-0')
+        tab1 = dom.tab(id='my-tab-1')
+
+        for tabs in tabs.tabs:
+            # XXX
+            ...
+        
+    def it_calls_show(self):
+        tabs = dom.tabs()
+        tab0 = dom.tab(id='my-tab-0')
+        tab1 = dom.tab(id='my-tab1')
+
+        for i, tab in tabs.tabs.enumerate():
+            arg = tab if i else tab.id
+            tabs.show(arg)
+            self.is_(tab, tabs.tab)
+            self.eq('false', tab.aria_hidden)
+            self.eq('true', tabs[i - 1].aria_hidden)
+
+            # XXX Check corresponding li['aria-selected']
+                
+
+        tabs.show(tab
+
+    def it_raises_when_same_tab_is_appended_twice(self):
+        tabs = pom.tabs()
+        tab = pom.tab(id='my-tab')
+
+        def f():
+            nonlocal tabs
+            tabs += tab
+
+        self.expect(None, f)
+        self.expect(ValueError, f)
+
+        tab = pom.tab(id='my-tab')
+        self.expect(ValueError, f)
+
+        tab = pom.tab(id='my-tab1')
+        self.expect(None, f)
+
+    def it_raises_when_tab_missing_id_on_append(self):
+        """ #XXX
+        """
+        tabs = pom.tabs()
+        tab = pom.tab()
+
+        def f():
+            nonlocal tabs
+            tabs += tab
+
+        self.expect(ValueError, f)
+
+        tab.id = 'my-id'
+
+        self.expect(None, f)
+
+
     def it_calls_show(self):
         tabs = pom.tabs()
         tab = pom.tab(id='my-tab')
@@ -4194,36 +4322,21 @@ class tabs(tester.tester):
         tabs.show('my-tab')
         self.is_(tab, tabs.selected)
 
-    def it_raises_when_tab_missing_id_on_append(self):
-        """ #XXX
-        """
-        tabs = pom.tabs()
-        tab = pom.tab()
-
-        def f():
-            tabs += tab
-
-        self.expect(ValueError, f)
-
-        tab.id = 'my-id'
-
-        self.expect(None, f)
-
 class tab(tester.tester):
     def it_creates(self):
         tab = pom.tab(id='my-tab')
         self.isinstance(dom.section, tab)
         self.eq('my-tab', tab.id)
         self.eq('tabpanel', tab.getattr('role'))
-        self.eq('true', tab.getattr('aria-hidden'))
+        self.eq('true', tab.aria_hidden)
 
     def it_calls_show_and_hide(self):
         tab = pom.tab(id='my-tab')
         tab.show()
-        self.eq('false', tab.getattr('aria-hidden'))
+        self.eq('false', tab.aria_hidden)
 
         tab.hide()
-        self.eq('true', tab.getattr('aria-hidden'))
+        self.eq('true', tab.aria_hidden)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA
