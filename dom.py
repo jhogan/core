@@ -1975,6 +1975,16 @@ class element(entities.entity):
         self.attributes['id'] = v
 
     @property
+    def tabindex(self):
+        """ XXX
+        """
+        return self.attributes['tabindex'].value
+
+    @tabindex.setter
+    def tabindex(self, v):
+        self.attributes['tabindex'] = v
+
+    @property
     def draggable(self):
         """ An enumerated attribute indicating whether the element can
         be dragged, using the Drag and Drop API. It can have the
