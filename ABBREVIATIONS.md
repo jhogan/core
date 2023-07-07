@@ -35,6 +35,8 @@ query:         qry
 remove:        rm
 result:        res
 return-value:  r
+section:       sec
+security:       sec
 segment:       seg
 selector:      sel
 selectors:     sels

@@ -4158,6 +4158,7 @@ class tabs(tester.tester):
         tab = pom.tab(id='my-tab')
         tabs += tab
 
+        ''' Test nav>ul>li '''
         nav = tabs['nav'].only
         self.zero(nav.attributes)
 
@@ -4173,6 +4174,8 @@ class tabs(tester.tester):
 
         self.eq('tab', li.role)
         self.eq('0', li.tabindex)
+
+        # The first tab should be selected by default
         self.eq('true', li.aria_selected)
         self.eq(tab.id, li.aria_controls)
 
@@ -4191,7 +4194,7 @@ class tabs(tester.tester):
         tabs.show('my-tab')
         self.is_(tab, tabs.selected)
 
-    def it_demands_id_from_tab_on_append():
+    def it_raises_when_tab_missing_id_on_append(self):
         """ #XXX
         """
         tabs = pom.tabs()
