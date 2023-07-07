@@ -2081,14 +2081,13 @@ class element(entities.entity):
     def aria_hidden(self):
         """ 
         """
-        return self.attributes['aria_hidden'].value
+        return self.attributes['aria-hidden'].value
 
     @aria_hidden.setter
     def aria_hidden(self, v):
         """
         """
-        self.attributes['aria_hidden'] = v
-
+        self.attributes['aria-hidden'] = v
 
     @property
     def aria_label(self):
