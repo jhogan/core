@@ -5068,6 +5068,12 @@ class ul(element):
     typically rendered as a bulleted list.
     """
 
+    @property
+    def lis(self):
+        # XXX We should be able to do something like self['ul:root>li']
+        # but it's not working at the moment.
+        return self['li']
+
 # TODO:dea3866d
 unorderedlists = uls
 unorderedlist = ul
