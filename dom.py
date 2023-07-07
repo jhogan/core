@@ -2715,6 +2715,10 @@ class element(entities.entity):
     def last(self):
         return self.elements.last
 
+    @last.setter
+    def last(self, v):
+        self.elements.last = v
+
     @property
     def isplurality(self):
         return self.elements.isplurality
