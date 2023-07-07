@@ -256,13 +256,14 @@ TODOs:
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
-from dbg import B, PM
+from dbg import *
 from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
 from func import enumerate
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
+from random import randint
 from shlex import shlex
 from table import table
 from types import ModuleType
@@ -6077,8 +6078,8 @@ class mappings(entitiesmod.entities):
         mappings found from the superentity objects of ``self``.
         """
         if not self._supermappings:
-            e = self.orm.entity.orm.super
             self._supermappings = mappings()
+            e = self.orm.entity.orm.super
 
             while e:
                 self._supermappings += e.orm.mappings
@@ -12447,7 +12448,90 @@ class orm:
 
     @property
     def card(self):
+        """ Returns a read-only HTML representation of the entity. 
+        """
         return self.getcard()
+
+    def fake(self, cnt=1, f=None):
+        """ Instantiate a new instance of the `orm`'s entity with fake
+        data ard return it. If `cnt` is greater than 1, a collection of
+        the entities are returned.
+
+        :param: cnt int: The number of instances to return in the
+        collection. If `cnt` is 1, the entity is returned, not a
+        collection.
+
+        :param: f callable: A callable that is called and passed each
+        instance created after the fake data has been set. This is
+        usufel for the caller to inject its own fake data generation
+        logic.
+        """
+        from faker import Faker
+        fake = Faker()
+
+        if cnt == 1:
+            # Instantiate
+            r = self.entity()
+
+            # For all mappings including supermappings
+            for map in self.mappings.all:
+
+                # Only fake fieldmappings
+                if type(map) is not fieldmapping:
+                    continue
+                    
+                # Ignore the system datetime
+                if map.name in ('createdat', 'updatedat'):
+                    continue
+
+                # Fake data based on type
+                if map.isstr:
+                    if map.definition == 'longtext':
+                        v = fake.paragraph()
+                    else:
+                        v = fake.sentence()
+
+                elif map.isdecimal:
+                    prec = randint(1, 3)
+                    scale = randint(1, 3)
+                    v = fake.pydecimal(
+                        left_digits   =  min(map.precision, prec),
+                        right_digits  =  min(map.scale, scale),
+                        positive      =  not map.signed
+                    )
+
+                elif map.isdatetime:
+                    v = fake.date_time()
+
+                elif map.isdate:
+                    v = fake.date()
+
+                else:
+                    raise NotImplementedError(
+                        'Type not implemented: ' + str(map.type)
+                    )
+
+                # Set the fake data
+                setattr(r, map.name, v)
+
+            # Call the post fake callable sent in by the caller if there
+            # is one.
+            if f:
+                f(r)
+
+        # If the caller wants more than one fake
+        elif cnt > 1:
+            # Create a collection
+            r = self.entities()
+
+            for _ in range(cnt):
+                # Recurse with a default cnt of 1
+                r += self.getfake()
+
+        else:
+            raise ValueError('cnt must be greater than 0')
+
+        return r
 
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()

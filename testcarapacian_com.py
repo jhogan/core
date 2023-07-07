@@ -991,7 +991,7 @@ class ticketsspa_backlogs(tester.tester):
 
         Count = 4
         for i in range(Count):
-            st = testeffort.story.getvalid()
+            st = testeffort.story.fake()
             bl.insert(st)
 
         bl.save()
@@ -1151,7 +1151,7 @@ class ticketsspa_backlogs(tester.tester):
 
         Count = 4
         for i in range(Count):
-            st = testeffort.story.getvalid()
+            st = testeffort.story.fake()
             bl.insert(st)
 
         bl.save(bl1)
@@ -1252,7 +1252,7 @@ class ticketsspa_backlogs(tester.tester):
         ''' Repopulate source table '''
         Count = 4
         for i in range(Count):
-            st = testeffort.story.getvalid()
+            st = testeffort.story.fake()
             bl.insert(st)
 
         bl.save(bl1)
@@ -1378,7 +1378,7 @@ class ticketsspa_backlogs(tester.tester):
 
         Count = 2
         for i in range(Count):
-            st = testeffort.story.getvalid()
+            st = testeffort.story.fake()
             bl.insert(st)
 
         bl.save(bl1)
@@ -1387,7 +1387,6 @@ class ticketsspa_backlogs(tester.tester):
 
         # Load the backlogs page
         tab.navigate('/en/ticketsspa/backlogs', ws)
-
 
         ''' Move all bl tr rows from the source table (tbl) to the end
         of the destination table (tbl1).
