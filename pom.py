@@ -4061,10 +4061,11 @@ class tabs(dom.div):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._tabs = dom.sections()
         self.classes += 'tabs'
         self += dom.nav()
         self.last += dom.ul(role="tablist") 
-        self.elements.onbeforeadd += self.elements_onbeforeadd
+        self.tabs.onbeforeadd += self.elements_onbeforeadd
 
     def elements_onbeforeadd(self, src, eargs):
         tab = eargs.entity
@@ -4086,6 +4087,40 @@ class tabs(dom.div):
         ul = self['nav>ul'].only
         ul += tab._li
 
+        self += tab
+
+        if self.tabs.count == 1:
+            self.show(self.tabs.only)
+
+    @property
+    def tabs(self):
+        return self._tabs
+
+    @tabs.setter
+    def tabs(self, v):
+        self._tabs = v
+    
+    def show(self, obj):
+        if isinstance(obj, tab):
+            id = obj.id
+        else:
+            id = None
+
+        for tab1 in self.tabs:
+            if id and tab1.id == id:
+                tab1.show()
+            elif not id and tab1.id == obj:
+                tab1.show()
+            else:
+                tab1.hide()
+    @property
+    def isshowing(self):
+        for tab in self.tabs:
+            if tab.isshowing:
+                return tab
+
+        return None
+
 class tab(dom.section):
     """ XXX
     """
@@ -4104,6 +4139,14 @@ class tab(dom.section):
 
     def hide(self):
         self.aria_hidden = 'true'
+
+    @property
+    def isshowing(self):
+        return not self.hidding
+
+    @property
+    def hidding(self):
+        return self.aria_hidden == 'true'
 
     
 

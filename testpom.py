@@ -4156,7 +4156,7 @@ class tabs(tester.tester):
     def it_appends_tab(self):
         tabs = pom.tabs()
         tab = pom.tab(id='my-tab')
-        tabs += tab
+        tabs.tabs += tab
 
         ''' Test nav>ul>li '''
         nav = tabs['nav'].only
@@ -4191,10 +4191,10 @@ class tabs(tester.tester):
         self.eq('tabpanel', sec.role)
         self.eq('true', sec.aria_hidden)
 
-        ''' Add a sectond one '''
+        ''' Add a second one '''
         tab1 = pom.tab(id='my-tab-1')
 
-        tabs += tab1
+        tabs.tabs += tab1
 
         ''' Test nav>ul>li '''
         nav = tabs['nav'].only
@@ -4229,7 +4229,7 @@ class tabs(tester.tester):
 
         secs = tabs['section:empty']
 
-        self.one(secs)
+        self.two(secs)
         sec = secs.only
         self.eq('tabpanel', sec.role)
         self.eq('true', sec.aria_hidden)
@@ -4238,7 +4238,7 @@ class tabs(tester.tester):
         """ XXX
         """
 
-    def it_calls_tab(self:
+    def it_calls_tab(self):
         tabs = dom.tabs()
         tab0 = dom.tab(id='my-tab-0')
         tab1 = dom.tab(id='my-tab1')
@@ -4247,8 +4247,12 @@ class tabs(tester.tester):
             # XXX
             ...
 
-    def it_calls_tabs(self:
+    def it_calls_tabs(self):
         tabs = dom.tabs()
+
+        # Ensure that an empty generator is returne
+        self.zero(tabs.tabs)
+
         tab0 = dom.tab(id='my-tab-0')
         tab1 = dom.tab(id='my-tab-1')
 
@@ -4257,29 +4261,30 @@ class tabs(tester.tester):
             ...
         
     def it_calls_show(self):
-        tabs = dom.tabs()
-        tab0 = dom.tab(id='my-tab-0')
-        tab1 = dom.tab(id='my-tab1')
+        tabs = pom.tabs()
+        tab0 = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab1')
+
+        tabs.tabs += tab0, tab1
+
+        self.two(tabs.tabs)
 
         for i, tab in tabs.tabs.enumerate():
             arg = tab if i else tab.id
             tabs.show(arg)
-            self.is_(tab, tabs.tab)
+            self.is_(tab, tabs.isshowing)
             self.eq('false', tab.aria_hidden)
-            self.eq('true', tabs[i - 1].aria_hidden)
+            self.eq('true', tabs.tabs[i - 1].aria_hidden)
 
             # XXX Check corresponding li['aria-selected']
                 
-
-        tabs.show(tab
-
     def it_raises_when_same_tab_is_appended_twice(self):
         tabs = pom.tabs()
         tab = pom.tab(id='my-tab')
 
         def f():
             nonlocal tabs
-            tabs += tab
+            tabs.tabs += tab
 
         self.expect(None, f)
         self.expect(ValueError, f)
@@ -4298,7 +4303,7 @@ class tabs(tester.tester):
 
         def f():
             nonlocal tabs
-            tabs += tab
+            tabs.tabs += tab
 
         self.expect(ValueError, f)
 
@@ -4307,23 +4312,9 @@ class tabs(tester.tester):
         self.expect(None, f)
 
 
-    def it_calls_show(self):
-        tabs = pom.tabs()
-        tab = pom.tab(id='my-tab')
-        tab1 = pom.tab(id='my-tab1')
-
-        self += tab, tab1
-
-        self.is_(tab, tabs.selected)
-
-        tabs.show('my-tab1')
-        self.is_(tab1, tabs.selected)
-
-        tabs.show('my-tab')
-        self.is_(tab, tabs.selected)
-
 class tab(tester.tester):
     def it_creates(self):
+        # XXX Create with `name`. Render with name in the tab
         tab = pom.tab(id='my-tab')
         self.isinstance(dom.section, tab)
         self.eq('my-tab', tab.id)
