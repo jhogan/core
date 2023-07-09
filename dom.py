@@ -2078,6 +2078,30 @@ class element(entities.entity):
         self.attributes['role'] = v
 
     @property
+    def aria_controls(self):
+        """ 
+        """
+        return self.attributes['aria-controls'].value
+
+    @aria_controls.setter
+    def aria_controls(self, v):
+        """
+        """
+        self.attributes['aria-controls'] = v
+
+    @property
+    def aria_selected(self):
+        """ 
+        """
+        return self.attributes['aria-selected'].value
+
+    @aria_selected.setter
+    def aria_selected(self, v):
+        """
+        """
+        self.attributes['aria-selected'] = v
+
+    @property
     def aria_hidden(self):
         """ 
         """
