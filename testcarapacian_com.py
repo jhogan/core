@@ -1447,5 +1447,32 @@ class ticketsspa_backlogs(tester.tester):
 
             self.eq(name, tr1.getvalue('name'))
 
+class story(tester.tester):
+    def it_shows_tasks(self)
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bl = testeffort.backlog.fake(
+        st = testeffort.story.fake()
+        bls.save()
+        
+        # Load the backlogs page
+        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+
+        cards = tab['article.card[data-entity="effort.backlog"]']
+        card = cards.getrandom()
+        tbl = card['table[data-entity="effort.backlog_story"]'].only
+
+        a = tbl['a[rel=create-form]'].only
+
+        # Click on [Add New] (story)
+        res = self.click(a, tab)
+        self.h200(res)
+
+        main = tab['main'].only
+        self.eq('/ticketsspa/story', main.getattr('data-path'))
+
+        
 if __name__ == '__main__':
     tester.cli().run()

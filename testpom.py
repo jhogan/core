@@ -4155,7 +4155,8 @@ class tabs(tester.tester):
 
     def it_appends_tab(self):
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab')
+        name = 'My Tab 0'
+        tab = pom.tab('my-tab-0', name)
         tabs.tabs += tab
 
         ''' Test nav>ul>li '''
@@ -4174,10 +4175,12 @@ class tabs(tester.tester):
 
         self.eq('tab', li.role)
         self.eq('0', li.tabindex)
+        self.eq(name, li.text)
 
         # The first tab should be selected by default
         self.eq('true', li.aria_selected)
         self.eq(tab.id, li.aria_controls)
+        self.true(tab.isshowing)
 
         ''' Test <section> '''
 
@@ -4189,10 +4192,10 @@ class tabs(tester.tester):
         self.one(secs)
         sec = secs.only
         self.eq('tabpanel', sec.role)
-        self.eq('true', sec.aria_hidden)
+        self.eq('false', sec.aria_hidden)
 
         ''' Add a second one '''
-        tab1 = pom.tab(id='my-tab-1')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
 
         tabs.tabs += tab1
 
@@ -4212,15 +4215,15 @@ class tabs(tester.tester):
         for i, li in lis.enumerate():
             self.eq('tab', li.role)
             self.eq('0', li.tabindex)
+            self.eq('My Tab ' + str(i), li.text)
 
             # The first tab should be selected by default
-
             if i.first:
                 self.eq('true', li.aria_selected)
+                self.eq(tab.id, li.aria_controls)
             else:
                 self.eq('false', li.aria_selected)
-
-            self.eq(tab.id, li.aria_controls)
+                self.eq(tab1.id, li.aria_controls)
 
         ''' Test <section> '''
 
@@ -4230,35 +4233,224 @@ class tabs(tester.tester):
         secs = tabs['section:empty']
 
         self.two(secs)
-        sec = secs.only
-        self.eq('tabpanel', sec.role)
-        self.eq('true', sec.aria_hidden)
+
+        for i, sec in secs.enumerate():
+            if i.first:
+                self.eq('false', sec.aria_hidden)
+            else:
+                self.eq('true', sec.aria_hidden)
+
+            self.eq('tabpanel', sec.role)
 
     def it_removes_tab(self):
-        """ XXX
-        """
+        ''' Add one then remove '''
+        tabs = pom.tabs()
+        tab = pom.tab(id='my-tab')
+        
+        tabs.tabs += tab
+        tabs.tabs -= tab
 
-    def it_calls_tab(self):
-        tabs = dom.tabs()
-        tab0 = dom.tab(id='my-tab-0')
-        tab1 = dom.tab(id='my-tab1')
+        self.zero(tabs.tabs)
+        self.zero(tabs['section'])
+        self.zero(tabs['nav ul li'])
 
-        for tabs in tabs.tabs:
-            # XXX
-            ...
+        ''' Add two and remove one '''
+        tab = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab-1')
+
+        tabs.tabs += tab, tab1
+        tabs.tabs -= tab
+
+        self.one(tabs.tabs)
+        self.one(tabs['section'])
+        tab = tabs.tabs.only
+        self.true(tab.isshowing)
+        lis = tabs['nav ul li']
+        self.one(lis)
+        li = lis.only
+        self.eq('true', li.aria_selected)
+        self.eq(tab.id, li.aria_controls)
+
+        ''' Add three, show them, and remove each going foward to end'''
+        tabs = pom.tabs()
+        tab0 = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab-1')
+        tab2 = pom.tab(id='my-tab-2')
+
+        tabs.tabs += tab0, tab1, tab2
+        for i, tab in tabs.tabs.enumerate():
+            msg = f'i == {str(i)}'
+
+            tabs.show(tab)
+            
+            tabs.tabs -= tab
+
+            self.count(tabs.tabs.count, tabs['section'])
+
+            if i.last:
+                showing = tab
+            else:
+                showing = tabs.tabs.first
+
+            lis = tabs['nav ul li']
+
+            if tabs.tabs.count:
+                self.true(showing.isshowing, msg=msg)
+                self.is_(tabs.showing, showing, msg=msg)
+                self.one(tabs.tabs.where(lambda x: x.isshowing))
+
+                self.one(
+                    lis.where(lambda x: x.aria_selected == 'true'), 
+                    msg = msg
+                )
+
+                self.one(
+                    lis.where(lambda x: x.aria_controls == showing.id)
+                )
+
+            self.count(tabs.tabs.count, lis)
+            self.count(tabs.tabs.count, tabs['section'])
+
+            for tab, li in zip(tabs.tabs, lis):
+                if li.aria_controls == showing.id:
+                    li.aria_selected == 'true'
+                else:
+                    li.aria_selected == 'false'
+
+                self.eq(tab.id, li.aria_controls)
+                self.eq('tabpanel', tab.role)
+                self.eq('0', li.tabindex)
+
+        # XXX Figure out how to make the following possible:
+        #
+        #     for i, tab in tabs.tabs.reversed().enumerate():
+        #
+        # Also, enumerate() probably shouldn't accept a generator since
+        # calculating the number of yields of a generator (see
+        # seqint.last) can't be done without exhausting it.
+
+        ''' Add three, show them, and remove each in revere to end'''
+        tabs = pom.tabs()
+        tab0 = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab-1')
+        tab2 = pom.tab(id='my-tab-2')
+
+        tabs.tabs += tab0, tab1, tab2
+        for i, tab in enumerate(list(tabs.tabs.reversed())):
+            msg = f'i == {str(i)}'
+
+            tabs.show(tab)
+            
+            tabs.tabs -= tab
+
+
+            self.count(tabs.tabs.count, tabs['section'])
+
+            showing = tabs.tabs.last
+
+            lis = tabs['nav ul li']
+
+            if tabs.tabs.count:
+                self.true(showing.isshowing, msg=msg)
+                self.is_(tabs.showing, showing, msg=msg)
+                self.one(tabs.tabs.where(lambda x: x.isshowing))
+
+                self.one(
+                    lis.where(lambda x: x.aria_selected == 'true'), 
+                    msg = msg
+                )
+
+                self.one(
+                    lis.where(lambda x: x.aria_controls == showing.id)
+                )
+
+            self.count(tabs.tabs.count, lis)
+            self.count(tabs.tabs.count, tabs['section'])
+
+            for tab, li in zip(tabs.tabs, lis):
+                if li.aria_controls == showing.id:
+                    li.aria_selected == 'true'
+                else:
+                    li.aria_selected == 'false'
+
+                self.eq(tab.id, li.aria_controls)
+                self.eq('tabpanel', tab.role)
+                self.eq('0', li.tabindex)
+
+        ''' Remove non-showing ''' 
+        tabs = pom.tabs()
+        tab0 = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab-1')
+        tab2 = pom.tab(id='my-tab-2')
+        tab3 = pom.tab(id='my-tab-3')
+
+        tabs.tabs += tab0, tab1, tab2, tab3
+
+        # Remove my-tab-1 (middle one)
+        tabs.tabs -= tab1
+
+        self.three(tabs.tabs)
+        self.true(tab0.isshowing)
+        for tab in tabs.tabs[1:]:
+            self.false(tab.isshowing)
+
+        # Remove my-tab-3 (last one)
+        tabs.tabs -= tab3
+
+        self.two(tabs.tabs)
+        self.true(tab0.isshowing)
+        for tab in tabs.tabs[1:]:
+            self.false(tab.isshowing)
+
+        # Remove my-tab-2 (last one of two)
+        tabs.tabs -= tab2
+
+        self.one(tabs.tabs)
+        self.true(tab0.isshowing)
+        self.true(tabs.tabs.only.isshowing)
+
+    def it_calls_showing(self):
+        tabs = pom.tabs()
+        tab = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab1')
+
+        tabs.tabs += tab, tab1
+
+        lis = tabs['nav>ul>li']
+        self.eq(['true', 'false'], lis.pluck('aria_selected'))
+        self.is_(tab, tabs.showing)
+
+        tabs.show(tab1)
+        self.eq(['false', 'true'], lis.pluck('aria_selected'))
+        self.is_(tab1, tabs.showing)
+
+        tabs.show(tab)
+        self.eq(['true', 'false'], lis.pluck('aria_selected'))
+        self.is_(tab, tabs.showing)
+
+        tabs.show(tab1.id)
+        self.eq(['false', 'true'], lis.pluck('aria_selected'))
+        self.is_(tab1, tabs.showing)
+
+        tabs.show(tab.id)
+        self.eq(['true', 'false'], lis.pluck('aria_selected'))
+        self.is_(tab, tabs.showing)
 
     def it_calls_tabs(self):
-        tabs = dom.tabs()
+        tabs = pom.tabs()
 
         # Ensure that an empty generator is returne
         self.zero(tabs.tabs)
 
-        tab0 = dom.tab(id='my-tab-0')
-        tab1 = dom.tab(id='my-tab-1')
+        tab0 = pom.tab(id='my-tab-0')
+        tab1 = pom.tab(id='my-tab-1')
 
-        for tabs in tabs.tabs:
-            # XXX
-            ...
+        for i, tab in tabs.tabs.enumerate():
+            self.type(pom.tab, tab)
+            if i.first:
+                self.is_(tab0, tab)
+            else:
+                self.is_(tab1, tab)
         
     def it_calls_show(self):
         tabs = pom.tabs()
@@ -4272,12 +4464,17 @@ class tabs(tester.tester):
         for i, tab in tabs.tabs.enumerate():
             arg = tab if i else tab.id
             tabs.show(arg)
-            self.is_(tab, tabs.isshowing)
+            self.is_(tab, tabs.showing)
             self.eq('false', tab.aria_hidden)
             self.eq('true', tabs.tabs[i - 1].aria_hidden)
 
-            # XXX Check corresponding li['aria-selected']
-                
+            lis = tabs['nav>ul>li']
+
+            if i.first:
+                self.eq(['true', 'false'], lis.pluck('aria_selected'))
+            elif i.second:
+                self.eq(['false', 'true'], lis.pluck('aria_selected'))
+
     def it_raises_when_same_tab_is_appended_twice(self):
         tabs = pom.tabs()
         tab = pom.tab(id='my-tab')
@@ -4311,20 +4508,21 @@ class tabs(tester.tester):
 
 class tab(tester.tester):
     def it_creates(self):
-        # XXX Create with `name`. Render with name in the tab
-        tab = pom.tab(id='my-tab')
+        tab = pom.tab('my-tab', 'My Tab')
         self.isinstance(dom.section, tab)
         self.eq('my-tab', tab.id)
         self.eq('tabpanel', tab.getattr('role'))
         self.eq('true', tab.aria_hidden)
 
-    def it_calls_show_and_hide(self):
-        tab = pom.tab(id='my-tab')
+    def it_calls_show(self):
+        tab = pom.tab('my-tab', 'My Tab')
         tab.show()
         self.eq('false', tab.aria_hidden)
 
-        tab.hide()
-        self.eq('true', tab.aria_hidden)
+    def it_calls_name(self):
+        name = 'My Tab'
+        tab = pom.tab('my-tab', name)
+        self.eq(name, tab.name)
 
 Favicon = '''
 AAABAAIAEBAAAAEAIABoBAAAJgAAACAgAAABACAAqBAAAI4EAAAoAAAAEAAAACAAAAABACAA

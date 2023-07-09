@@ -4066,6 +4066,9 @@ class tabs(dom.div):
         self += dom.nav()
         self.last += dom.ul(role="tablist") 
         self.tabs.onbeforeadd += self.elements_onbeforeadd
+        self.tabs.onadd += self.elements_onafteradd
+
+        self.tabs.onremove += self.elements_onafterremove
 
     def elements_onbeforeadd(self, src, eargs):
         tab = eargs.entity
@@ -4090,8 +4093,32 @@ class tabs(dom.div):
 
         self += tab
 
+    def elements_onafteradd(self, src, eargs):
         if self.tabs.count == 1:
             self.show(self.tabs.only)
+
+    def elements_onafterremove(self, src, eargs):
+        tab = eargs.entity
+
+        if tab.isshowing:
+            if self.tabs.count == 1:
+                self.tabs.only.show()
+            elif self.tabs.count > 1:
+                tabpanels = self['section[role=tabpanel]']
+                for i, tab1 in tabpanels.enumerate():
+                    if tab1 is tab:
+                        if i.first:
+                            show = tabpanels(i + 1)
+                        elif i.last:
+                            show = tabpanels(i - 1)
+
+                        show.show()
+            
+        if self.tabs.count:
+            t = self.tabs['#' + tab.id]
+
+        self['section#' + tab.id].remove()
+        self[f'nav ul li[aria-controls="{tab.id}"]'].remove()
 
     @property
     def tabs(self):
@@ -4113,33 +4140,37 @@ class tabs(dom.div):
             elif not id and tab1.id == obj:
                 tab1.show()
             else:
-                tab1.hide()
+                tab1._hide()
     @property
-    def isshowing(self):
-        for tab in self.tabs:
-            if tab.isshowing:
-                return tab
-
-        return None
+    def showing(self):
+        return next(filter(lambda x: x.isshowing, self.tabs), None)
 
 class tab(dom.section):
     """ XXX
     """
-    def __init__(self, *args, **kwargs):
+
+    # TODO Instead of requiring an id, we can automatically create an id
+    # so the user doesn't have to.
+    def __init__(self, id, name, *args, **kwargs):
         self.role = 'tabpanel'
         self.aria_hidden = 'true'
+        self.name = name
+        kwargs['id'] = id
         super().__init__(*args, **kwargs)
 
         self._li = dom.li(role='tab', tabindex='0')
         self._li.aria_selected = 'false'
 
         self._li.aria_controls = self.id
+        self._li.text = name
 
     def show(self):
         self.aria_hidden = 'false'
+        self._li.aria_selected = 'true'
 
-    def hide(self):
+    def _hide(self):
         self.aria_hidden = 'true'
+        self._li.aria_selected = 'false'
 
     @property
     def isshowing(self):
