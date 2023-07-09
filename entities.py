@@ -1020,7 +1020,10 @@ class entities:
         for i in range(len(ls) - 1, -1, -1):
             for rm in rms:
                 if rm is ls[i]:
+                    # TODO Raise onbeforeremove
                     del ls[i]
+                    
+                    # TODO This should be called onafterremove
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
@@ -1115,7 +1118,7 @@ class entities:
 
     def reversed(self):
         """ Return a generator that allows the collection to be
-        iterated over starting from the end to the beginning::
+        iterated over starting from the end to the beginning:
 
             for e in es.reversed():
                 # The first e to be printed will be the last element in

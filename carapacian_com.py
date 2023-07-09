@@ -1095,9 +1095,18 @@ class ticketsspa(pom.spa):
 
             # TODO Sort by ers dependencies
 
+            tabs = pom.tabs()
+
+            el += tabs
             for er in ers:
-                pg = self.spa.pages['effort-requirements']
-                pg.clear()
+                #pg = self.spa.pages['effort-requirements']
+                #pg.clear()
+
+                eff = er.effort
+                #tab = pom.tab(er.id.hex, eff.name)
+
+                #tabs.tabs += tab
+
 
             return el
 

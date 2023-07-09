@@ -9,7 +9,7 @@ import apriori; apriori.model()
 from base64 import b64decode
 from contextlib import suppress
 from datetime import timezone, datetime, date
-from dbg import B
+from dbg import *
 from entities import classproperty
 from func import enumerate, getattr
 from pprint import pprint
@@ -4296,8 +4296,6 @@ class tabs(tester.tester):
         self.expect(None, f)
 
     def it_raises_when_tab_missing_id_on_append(self):
-        """ #XXX
-        """
         tabs = pom.tabs()
         tab = pom.tab()
 
@@ -4310,7 +4308,6 @@ class tabs(tester.tester):
         tab.id = 'my-id'
 
         self.expect(None, f)
-
 
 class tab(tester.tester):
     def it_creates(self):

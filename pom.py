@@ -4084,6 +4084,7 @@ class tabs(dom.div):
                 'The tab already exists in this collection'
             )
             
+        # XXX This can probably be moved to elements_onafteradd
         ul = self['nav>ul'].only
         ul += tab._li
 
