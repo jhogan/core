@@ -1094,9 +1094,9 @@ class ticketsspa(pom.spa):
                 #pg.clear()
 
                 eff = er.effort
-                #tab = pom.tab(er.id.hex, eff.name)
+                tab = pom.tab(er.id.hex, eff.name)
 
-                #tabs.tabs += tab
+                tabs.tabs += tab
 
 
             return el
