@@ -1029,9 +1029,9 @@ class ticketsspa(pom.spa):
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
-            frm = self.main['form'].only
-
             if backlogid:
+                frm = self.main['form'].only
+
                 bl = effort.backlog(backlogid)
 
                 inp = pom.input(
