@@ -1448,31 +1448,41 @@ class ticketsspa_backlogs(tester.tester):
 
             self.eq(name, tr1.getvalue('name'))
 
-class story(tester.tester):
-    def it_shows_tasks(self)
+class ticketsspa_story(tester.tester):
+    def __init__(self, *args, **kwargs):
+        propr = carapacian_com.site().Proprietor
+        mods = 'effort',
+        super().__init__(mods=mods, propr=propr, *args, **kwargs)
+
+        # XXX We have to do this because `mods = 'carapacian_com', ...`
+        # would rebuild pom.site and this causes propblems.
+        if self.rebuildtables:
+            carapacian_com.story.orm.recreate()
+
+    @staticmethod
+    def fake(cnt=1):
+        def f(x):
+            fake = Faker()
+            x.name = fake.catch_phrase()
+            x.points = random.choice((.5, 1, 2, 3, 5, 8, 13, 21))
+
+        return carapacian_com.story.orm.fake(cnt=cnt, f=f)
+
+    def it_shows_tasks(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
 
         import testeffort
-        bl = testeffort.backlog.fake(
-        st = testeffort.story.fake()
-        bls.save()
+        bl = testeffort.backlog.fake()
+        st = ticketsspa_story.fake()
+        bl.backlog_stories += effort.backlog_story(story=st)
+        bl.save()
+        XXX(st.orm.reloaded().id)
         
         # Load the backlogs page
-        res = tab.navigate('/en/ticketsspa/backlogs', ws)
+        tab.navigate(f'/en/ticketsspa/story?id={st.id.hex}', ws)
 
-        cards = tab['article.card[data-entity="effort.backlog"]']
-        card = cards.getrandom()
-        tbl = card['table[data-entity="effort.backlog_story"]'].only
 
-        a = tbl['a[rel=create-form]'].only
-
-        # Click on [Add New] (story)
-        res = self.click(a, tab)
-        self.h200(res)
-
-        main = tab['main'].only
-        self.eq('/ticketsspa/story', main.getattr('data-path'))
 
         
 if __name__ == '__main__':
