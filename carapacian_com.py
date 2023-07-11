@@ -1019,7 +1019,7 @@ class ticketsspa(pom.spa):
 
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
-            super().__init__(e=effort.story, *args, **kwargs)
+            super().__init__(e=story, *args, **kwargs)
             self.onbeforesave += self.self_onbeforesave
 
         def main(self, 
@@ -1063,15 +1063,6 @@ class ticketsspa(pom.spa):
 
             if st.orm.isnew:
                 st.created = datetime.utcnow()
-
-            tsk = effort.task(
-                name = 'Test',
-                type = effort.type(name='Unit Test Development')
-            )
-
-            st.effort_requirements += effort.effort_requirement(
-                task = tsk
-            )
 
             if st.backlog:
                 pass
@@ -1147,6 +1138,25 @@ class ticketsspa(pom.spa):
         )
         mnu.items  +=  pom.menu.item('Search',   'ticketsspa/search')
         mnu.items  +=  pom.menu.item('People',   'ticketsspa/people')
+
+class stories(effort.stories):
+    """
+    """
+
+class story(effort.story):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.orm.isnew:
+            tsk = effort.task(
+                name = 'Test',
+                type = effort.type(name='Unit Test Development')
+            )
+
+            self.effort_requirements += effort.effort_requirement(
+                task = tsk
+            )
+
 
 # The Css for the site. See site.styles
 Css = '''
