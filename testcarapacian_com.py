@@ -9,9 +9,10 @@ import apriori; apriori.model()
 
 from datetime import timezone, datetime, date
 from dbg import *
+from decimal import Decimal as dec
+from faker import Faker
 from func import enumerate, getattr
 from uuid import uuid4, UUID
-from decimal import Decimal as dec
 import carapacian_com
 import db
 import effort

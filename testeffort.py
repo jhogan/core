@@ -21,6 +21,7 @@ from func import enumerate, getattr
 from pprint import pprint
 from primative import datetime, date
 from uuid import uuid4, UUID
+from faker import Faker
 import asset
 import builtins
 import db

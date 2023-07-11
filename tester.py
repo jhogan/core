@@ -1007,6 +1007,9 @@ class tester(entities.entity):
 
                 :param: ws pom.site: The site to get the page from.
                 """
+
+                # XXX Can `navigate()` have an `st` parameter to test
+                # the return status code?
                 eargs = www.browser.loadeventargs(url=self.url)
                 self.onbeforeunload(self, eargs)
 
