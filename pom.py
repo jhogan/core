@@ -3847,9 +3847,10 @@ class crud(page):
                     frm = True
 
                 elif crud == 'retrieve':
-                    raise ValueError(
-                        'Cannot retrieve without id'
-                    )
+                    if not e:
+                        raise ValueError(
+                            'Cannot retrieve without id'
+                        )
                     
                 elif crud == 'update':
                     raise ValueError(
