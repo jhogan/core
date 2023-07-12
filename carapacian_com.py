@@ -1096,11 +1096,24 @@ class ticketsspa(pom.spa):
 
             el += tabs
             for er in ers:
-                #pg = self.spa.pages['effort-requirements']
-                #pg.clear()
-
                 eff = er.effort
-                tab = pom.tab(er.id.hex, eff.name)
+
+                # XXX Let's make the effort here a
+                # 
+                #      case(development(software(task))
+                #
+                # again, and we will decide on the name based on the
+                # effort's subentity instead of its `type` object.
+                name = eff.type.name
+
+                # XXX Remove need to pass in an id. Have it auto
+                # generated.
+                tab = pom.tab('x' + er.id.hex, name=name)
+
+                pg = ticketsspa.effort_requirement()
+                pg.instance = er
+                pg(crud='retrieve')
+                tab += pg.main
 
                 tabs.tabs += tab
 
