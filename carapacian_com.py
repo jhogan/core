@@ -1017,6 +1017,12 @@ class ticketsspa(pom.spa):
         def instance(self, v):
             self._instance = v
 
+    class effort_requirement(pom.crud):
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                e=effort.effort_requirement, *args, **kwargs
+            )
+
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=story, *args, **kwargs)
