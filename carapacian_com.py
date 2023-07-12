@@ -1173,7 +1173,7 @@ class story(effort.story):
             )
 
             self.effort_requirements += effort.effort_requirement(
-                task = tsk
+                effort = tsk
             )
 
 
