@@ -948,7 +948,7 @@ class tester(entities.entity):
                 """
                 self._html = v
 
-                main = v['main'].only
+                main = v['html>body>main'].only
                 self.inspa = main.hasattr('spa-data-path')
 
             @property
