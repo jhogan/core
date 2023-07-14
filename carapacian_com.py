@@ -1023,6 +1023,10 @@ class ticketsspa(pom.spa):
                 e=effort.effort_requirement, *args, **kwargs
             )
 
+        @property
+        def select(self):
+            return 'effort.actual.begin, effort.actual.end'
+
     class story(pom.crud):
         def __init__(self, *args, **kwargs):
             super().__init__(e=story, *args, **kwargs)
