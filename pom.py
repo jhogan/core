@@ -3859,6 +3859,7 @@ class crud(page):
 
                 else:
                     raise ValueError('Invalid crud')
+
             if frm:
                 # If frm is True, add a <form> for the entity to the
                 # page's <main>

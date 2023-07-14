@@ -382,7 +382,7 @@ class span:
     
     Many entities in the General Entity Model (GEM) require date(time)
     fields with names like ``begin`` and ``end`` to record the time an
-    entity has been in a certain state. For example::
+    entity has been in a certain state. For example:
 
         class user(orm.entity):
             # The date the user became active
@@ -6105,7 +6105,7 @@ class mappings(entitiesmod.entities):
         get its `id` order `number`, and customer's (the order's
         composite) name using the following:
             
-            'id number custome.name'
+            'id number customer.name'
 
         :param: f callable: If a callable is passed in for `f`, it will
         be called whenever a mappings is discoverd for selection. The
@@ -6124,7 +6124,6 @@ class mappings(entitiesmod.entities):
                 """ A recursive function to process an attribute.
                 Recursion is only necessary when dot notation is used.
                 """
-
                 # Get access to the outer method's `maps` collection
                 nonlocal maps
 
@@ -6163,7 +6162,7 @@ class mappings(entitiesmod.entities):
                             f'Cannot find attribute "{path[0]}"'
                         )
                     else:
-                        # If f is provided, we need to actually load teh
+                        # If f is provided, we need to actually load the
                         # composite before recursing. 
                         if f:
                             obj = getattr(obj, map.name)

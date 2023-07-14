@@ -1116,8 +1116,6 @@ class ticketsspa(pom.spa):
                 tab += pg.main
 
                 tabs.tabs += tab
-
-
             return el
 
     class search(pom.page):
