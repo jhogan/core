@@ -6156,7 +6156,36 @@ class mappings(entitiesmod.entities):
                 # If there is more dot notation to resolve
                 elif len(path) > 1:
                     try:
-                        map = e.orm.mappings[path[0]]
+                        try:
+                            map = e.orm.mappings[path[0]]
+                        except IndexError:
+                            try:
+                                # XXX Comment
+                                v = getattr(e, path[0])
+                            except AttributeError:
+                                raise IndexError from ex
+                            else:
+                                if len(path) != 2:
+                                    raise IndexError from ex
+                                if not isinstance(v, span):
+                                    raise IndexError from ex
+                                else:
+                                    map = e.orm.mappings[
+                                        v.prefix + path[1]
+                                    ]
+
+                                    # Add to return collection
+                                    maps += map
+
+                                    # Call f if provided
+                                    if f:
+                                        f(e=obj, name=map.name)
+
+                                    return
+
+                        else:
+                            name = map.name
+
                     except IndexError:
                         raise IndexError(
                             f'Cannot find attribute "{path[0]}"'
@@ -6165,7 +6194,7 @@ class mappings(entitiesmod.entities):
                         # If f is provided, we need to actually load the
                         # composite before recursing. 
                         if f:
-                            obj = getattr(obj, map.name)
+                            obj = getattr(obj, name)
                         else:
                             obj = None
 
