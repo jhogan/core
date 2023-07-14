@@ -6185,9 +6185,15 @@ class mappings(entitiesmod.entities):
                                 if not isinstance(v, span):
                                     raise IndexError from ex
 
+                                # Get begin/end map name
+                                if path[1] == 'begin':
+                                    name = v.str_begin
+                                elif path[1] == 'end':
+                                    name = v.str_begin
+
                                 # Get the map
                                 map = e.orm.mappings[
-                                    v.prefix + path[1]
+                                    name
                                 ]
 
                                 # Add to return collection
@@ -6197,6 +6203,8 @@ class mappings(entitiesmod.entities):
                                 if f:
                                     f(e=obj, name=map.name)
 
+                                # Abort since we will have exhausted
+                                # path[]
                                 return
 
                         else:
