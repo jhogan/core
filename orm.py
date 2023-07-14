@@ -431,7 +431,7 @@ class span:
 
         :param: suffix str: The suffix of the span attribute.
 
-        :param: suffix orm.entity: The entity corresponding to span.
+        :param: e orm.entity: The entity corresponding to span.
         entity.__getattribute__ will pass this into the `.clone` method
         to make it aware of its entity. This is important for the
         `.begin` and `.end` methods.
@@ -443,7 +443,7 @@ class span:
     @property
     def isstatic(self):
         """``span``'s are static if they have no entity. The entity would
-        be provide by the clone method when an instance is available to
+        be provided by the clone method when an instance is available to
         associate with the ``span``.
         """
         return not bool(self.entity)
@@ -454,7 +454,7 @@ class span:
         found, `begin`, `end` and a `span` object are added to the
         ``body`` ``dict``.  
 
-        :param: body dict The dict used by the ``entity``'s metaclass
+        :param: body dict: The dict used by the ``entity``'s metaclass
         (entitymeta.__new__).
         """
         mods = list()
@@ -503,6 +503,8 @@ class span:
 
     @property
     def suffix(self):
+        """ XXX
+        """
         return self._suffix
 
     @property
@@ -539,6 +541,8 @@ class span:
 
     @property
     def prefix(self):
+        """ XXX
+        """
         return self._prefix
 
     @property
@@ -584,6 +588,8 @@ class span:
         return primative.utcnow in self
 
     def __repr__(self):
+        """XXX
+        """
         name = type(self).__name__
         begin, end = self.str_begin, self.str_end
         return '%s(begin=%s, end=%s)' % (name, begin, end)
@@ -6160,28 +6166,38 @@ class mappings(entitiesmod.entities):
                             map = e.orm.mappings[path[0]]
                         except IndexError:
                             try:
-                                # XXX Comment
+                                # See if we have a date/timespan. If
+                                # so, we need to get figure out the real
+                                # name of the map. For example, if the
+                                # name of the span is 'actual', then the
+                                # map name would be 'actualbegin' and
+                                # 'actualend'.
                                 v = getattr(e, path[0])
                             except AttributeError:
                                 raise IndexError from ex
                             else:
+                                # If we are looking for a span, we need
+                                # be on the last two path elements.
                                 if len(path) != 2:
                                     raise IndexError from ex
+
+                                # Test if its a span
                                 if not isinstance(v, span):
                                     raise IndexError from ex
-                                else:
-                                    map = e.orm.mappings[
-                                        v.prefix + path[1]
-                                    ]
 
-                                    # Add to return collection
-                                    maps += map
+                                # Get the map
+                                map = e.orm.mappings[
+                                    v.prefix + path[1]
+                                ]
 
-                                    # Call f if provided
-                                    if f:
-                                        f(e=obj, name=map.name)
+                                # Add to return collection
+                                maps += map
 
-                                    return
+                                # Call f if provided
+                                if f:
+                                    f(e=obj, name=map.name)
+
+                                return
 
                         else:
                             name = map.name
