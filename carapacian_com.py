@@ -1098,6 +1098,10 @@ class ticketsspa(pom.spa):
 
             tabs = pom.tabs()
 
+            # HACKCSS This puts a line break before the tabs. We need to
+            # remove this and let CSS make the determination the right
+            # way to do this.
+            el += dom.br()
             el += tabs
             for er in ers:
                 eff = er.effort
