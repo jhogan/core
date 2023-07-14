@@ -1121,7 +1121,8 @@ class ticketsspa(pom.spa):
                 pg = ticketsspa.effort_requirement()
                 pg.instance = er
                 pg(crud='retrieve')
-                tab += pg.main
+                print(tab)
+                tab.source = pg 
 
                 tabs.tabs += tab
             return el

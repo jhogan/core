@@ -4165,6 +4165,7 @@ class tab(dom.section):
 
         self._li.aria_controls = self.id
         self._li.text = name
+        self._source = None
 
     def show(self):
         self.aria_hidden = 'false'
@@ -4182,6 +4183,23 @@ class tab(dom.section):
     def hidding(self):
         return self.aria_hidden == 'true'
 
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, v):
+        if self._source is not v:
+            self._source = v
+
+            src = v
+
+            if isinstance(src, page):
+                self += src.main
+            else:
+                raise NotImplementedError()
+
+                
     
 
 
