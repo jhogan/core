@@ -3887,7 +3887,7 @@ class crud(page):
             else:
                 # If frm is None, add a card to the page so user is able
                 # to read entity values.
-                el = e.orm.card
+                el = e.orm.getcard(select=self.select)
                 card = el
 
                 # NOTE It's unclear at the moment whether a card should
