@@ -6124,6 +6124,9 @@ class mappings(entitiesmod.entities):
         # Create a mappings collection to return
         maps = mappings()
 
+        # XXX 
+        lbl = None
+
         # If a select string was provided
         if select:
             def process(e, path, obj):
@@ -6131,7 +6134,7 @@ class mappings(entitiesmod.entities):
                 Recursion is only necessary when dot notation is used.
                 """
                 # Get access to the outer method's `maps` collection
-                nonlocal maps
+                nonlocal maps, lbl
 
                 # If we are at the end of the dot notation
                 if len(path) == 1:
@@ -6147,7 +6150,7 @@ class mappings(entitiesmod.entities):
 
                             # Call f if provided
                             if f:
-                                f(e=obj, name=map.name)
+                                f(e=obj, name=map.name, lbl=lbl)
 
                             break
                     else:
@@ -6186,22 +6189,18 @@ class mappings(entitiesmod.entities):
                                     raise IndexError from ex
 
                                 # Get begin/end map name
-                                if path[1] == 'begin':
-                                    name = v.str_begin
-                                elif path[1] == 'end':
-                                    name = v.str_begin
+                                name = getattr(v, 'str_' + path[1])
 
                                 # Get the map
-                                map = e.orm.mappings[
-                                    name
-                                ]
+                                map = e.orm.mappings[name]
 
                                 # Add to return collection
                                 maps += map
 
                                 # Call f if provided
                                 if f:
-                                    f(e=obj, name=map.name)
+                                    name = '.'.join(path)
+                                    f(e=obj, name=name, lbl=lbl)
 
                                 # Abort since we will have exhausted
                                 # path[]
@@ -6226,10 +6225,21 @@ class mappings(entitiesmod.entities):
                         process(e=map.entity, obj=obj, path=path[1:])
 
             # Split select over whitespace/commas
-            attrs = re.split(r'[,\s]+', select)
+            args = re.split(r'[,\s]+', select.strip())
 
-            # For each attribute
-            for attr in attrs:
+            # XXX Test select string with lables. Also test select
+            # strings with leading and trailing whitespace.
+            for arg in args:
+                kvp = arg.split(':')
+
+                # XXX Comment
+                if len(kvp) == 2:
+                    lbl, attr = kvp
+                elif len(kvp) == 1:
+                    lbl, attr = None, kvp.pop()
+                else:
+                    raise ValueError('Too many colons in select')
+                   
                 process(
                     e     =  self.orm.entity,
                     path  =  attr.split('.'),
@@ -12389,7 +12399,9 @@ class orm:
         tr.setattr('data-entity', e)
         tr.setattr('data-entity-id', inst.id.hex)
 
-        def f(e, name):
+        def f(e, name, lbl=None):
+            """ XXX
+            """
             nonlocal tr
             td = dom.td()
             td.setattr('data-entity-attribute', name)
@@ -12462,7 +12474,7 @@ class orm:
         card.attributes['data-entity'] = e
         card.attributes['data-entity-id'] = inst.id.hex
 
-        def f(e, name):
+        def f(e, name, lbl=None):
             """ A function called by `mappings.select` (see below) which
             allows us to capture each of the entity's attributes it has
             seleted for us. We use that data to create a <div> for each
@@ -12480,7 +12492,11 @@ class orm:
             div.setattr('data-entity-attribute', name)
 
             # Build the <label>
-            lbl = dom.label(name.capitalize())
+            if lbl:
+                lbl = dom.label(lbl)
+            else:
+                lbl = dom.label(name.replace('.', ' ').capitalize())
+
             div += lbl
 
             # Build the <span>
