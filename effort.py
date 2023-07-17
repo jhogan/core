@@ -512,6 +512,9 @@ class effort_requirement(orm.association):
     effort = effort
     requirement = requirement
 
+    # XXX
+    statuses = apriori.statuses
+
     ''' Accessability '''
     @property
     def creatability(self):
