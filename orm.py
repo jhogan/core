@@ -260,7 +260,7 @@ from dbg import *
 from difflib import SequenceMatcher
 from entities import classproperty
 from enum import Enum, unique
-from func import enumerate
+from func import enumerate, getattr
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
 from random import randint
