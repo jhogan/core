@@ -936,7 +936,13 @@ function ajax(e){
             html += target
         }
 
-        pg = window.location.href
+        let loc = window.location
+        let path = src.closest('main').getAttribute('data-path')
+        let lang = src.closest('html').getAttribute('lang')
+        pg = loc.protocol + '//' + loc.host + '/' + lang + path
+
+        // XXX REMOVE
+        //pg = window.location.href
     }
 
     // Create the dictionary to send to the server

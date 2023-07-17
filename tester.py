@@ -788,7 +788,14 @@ class tester(entities.entity):
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
                     html = eargs.html.html if eargs.html else None
-                    pg = self.page
+
+                    main = src.closest('main')
+                    pg = self.url.clone()
+                    pg.query = None
+                    pg.fragments = None
+                    # XXX:4a0c586d
+                    pg.path = '/' + src.root.lang 
+                    pg.path += main.getattr('data-path')
 
                 # Cancel default event handling
                 eargs.preventDefault()
