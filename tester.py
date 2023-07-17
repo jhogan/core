@@ -1156,6 +1156,10 @@ class tester(entities.entity):
                 arg_hdrs = www.headers(hdrs) if hdrs else None
 
                 isa = isinstance
+
+                if isa(pg, www.url):
+                    pg = str(pg)
+
                 if not isa(pg, str) and not isa(pg, pom.page):
                     raise TypeError(
                         'pg parameter must be a str or page'
