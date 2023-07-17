@@ -9,7 +9,7 @@
 
 from config import config
 from contextlib import contextmanager, suppress
-from dbg import B, PM, PR
+from dbg import *
 from entities import classproperty
 from pprint import pprint
 from textwrap import dedent
@@ -1162,7 +1162,9 @@ class tester(entities.entity):
 
                 def create_environ(env=None):
                     d = {
-                        'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+                        'CONTENT_TYPE': (
+                            'application/x-www-form-urlencoded'
+                        ),
                         'HTTP_ACCEPT': '*/*',
                         'HTTP_USER_AGENT': 'tester/1.0',
                         'RAW_URI': '/',

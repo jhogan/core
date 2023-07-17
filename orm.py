@@ -12468,6 +12468,8 @@ class orm:
             seleted for us. We use that data to create a <div> for each
             of the selected attributes and append them to the card.
             """
+
+            # XXX Add :param:s in docstring
             nonlocal card
 
             # Get the value of the entity 

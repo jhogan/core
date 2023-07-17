@@ -3148,7 +3148,15 @@ class url(entities.entity):
        
             ['path', 'to', 'resource']
         """
-        # TODO Write tests
+        # XXX Write tests
+        # XXX:4a0c586d Make it possible to set paths:
+        #
+        #     assert url.path == '/my/path'
+        #
+        #     url.paths[0] = 'en'
+        #
+        #     assert url.path == '/en/my/path'
+        #
 
         return [x for x in self.path.split(os.sep) if x]
 

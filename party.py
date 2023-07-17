@@ -1380,7 +1380,7 @@ class role_role_type(apriori.type):
     # organization".
     description = text
 
-# TODO Since ``status`` is a universal concept in data modeling, the
+# XXX Since ``status`` is a universal concept in data modeling, the
 # main status class should probably go in the apriori.py file. The same
 # may be true of ``statustype``
 class status(orm.entity):

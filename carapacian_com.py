@@ -7,7 +7,7 @@
 
 from base64 import b64decode
 from datetime import timezone, datetime, date
-from dbg import B, PM
+from dbg import *
 from func import enumerate, getattr
 from uuid import uuid4, UUID
 import db
@@ -1098,15 +1098,11 @@ class ticketsspa(pom.spa):
 
             tabs = pom.tabs()
 
-            # HACKCSS This puts a line break before the tabs. We need to
-            # remove this and let CSS make the determination the right
-            # way to do this.
-            el += dom.br()
             el += tabs
             for er in ers:
                 eff = er.effort
 
-                # XXX Let's make the effort here a
+                # XXX:704077c8 Let's make the effort here a
                 # 
                 #      case(development(software(task))
                 #
@@ -1121,7 +1117,6 @@ class ticketsspa(pom.spa):
                 pg = ticketsspa.effort_requirement()
                 pg.instance = er
                 pg(crud='retrieve')
-                print(tab)
                 tab.source = pg 
 
                 tabs.tabs += tab
@@ -1182,7 +1177,6 @@ class story(effort.story):
             self.effort_requirements += effort.effort_requirement(
                 effort = tsk
             )
-
 
 # The Css for the site. See site.styles
 Css = '''

@@ -538,7 +538,6 @@ class effort_requirement(orm.association):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
-
 class effort_effort(orm.association):
     """ Associates an effort with another effort
 
