@@ -1017,19 +1017,97 @@ class ticketsspa(pom.spa):
         def instance(self, v):
             self._instance = v
 
-    class effort_requirement(pom.crud):
-        def __init__(self, *args, **kwargs):
-            super().__init__(
-                e=effort.effort_requirement, *args, **kwargs
-            )
-
-        @property
-        def select(self):
-            return 'effort.actual.begin, effort.actual.end'
-
     class story(pom.crud):
+        
+        ''' Subpages '''
+
+        class effort_requirement(pom.crud):
+            """ XXX
+            """
+            def __init__(self, *args, **kwargs):
+                super().__init__(
+                    e=effort.effort_requirement, *args, **kwargs
+                )
+
+            def btnactivate_onclick(self, src, eargs):
+                # Get the card
+                card = eargs.html.first
+
+                # Get the confirmation dialog box if there is one 
+                dlgs = card['dialog']
+
+                # If there is no dialog box. This will be the case when the
+                # Active button is first clicked.
+                if dlgs.isempty:
+                    
+                    # Create the dialog to prompt the user to confirm
+                    # closure
+                    card += pom.dialog(
+                        card, 
+                        msg = 'Are you sure you want to activate?',
+                        caption = 'Confirm',
+                        onyes = (self.btnactivate_onclick, card),
+                        onno = (self.btnactivate_onclick, card),
+                    )
+
+                # If there was a dialog box
+                elif dlgs.issingular:
+                    dlg = dlgs.only
+                    btn = eargs.src
+
+                    # If user clicked the Yes button
+                    if btn.getattr('data-yes'):
+                        
+                        # Get effort_requirement id
+                        id = card.getattr('data-entity-id')
+
+                        # Get effort_requirement
+                        er = effort.effort_requirement(id)
+                        req = er.requirement
+                        eff = er.effort
+
+                        # XXX Explain 
+                        # XXX test
+                        for er1 in req.effort_requirements:
+                            if er1.id == er.id:
+                                er.statuses.open(type='active')
+                            else:
+                                er.statuses.close(type='active')
+
+                        req.save()
+
+                        # XXX Remove Active button
+
+                        # XXX Set attribute on <li> to indicate it is
+                        # selected.
+
+                    # Remove the dialog box so the user won't see it anymore
+                    card.remove('dialog')
+
+            def gethtml(self, id, crud, oncomplete):
+                """ XXX
+                """
+                el = super().gethtml(
+                    id=id, crud=crud, oncomplete=oncomplete
+                )
+
+                btn = dom.button('Activate')
+                btn.onclick += self.btnactivate_onclick, el
+                btn.classes += 'activate'
+
+                el += btn
+
+                return el
+
+            @property
+            def select(self):
+                return (
+                    'Notes:effort.description '
+                )
+
         def __init__(self, *args, **kwargs):
             super().__init__(e=story, *args, **kwargs)
+            self.pages += ticketsspa.story.effort_requirement()
             self.onbeforesave += self.self_onbeforesave
 
         def main(self, 
@@ -1097,6 +1175,7 @@ class ticketsspa(pom.spa):
             # TODO Sort by ers dependencies
 
             tabs = pom.tabs()
+            tabs.classes += 'tasks'
 
             el += tabs
             for er in ers:
@@ -1114,7 +1193,12 @@ class ticketsspa(pom.spa):
                 # generated.
                 tab = pom.tab('x' + er.id.hex, name=name)
 
-                pg = ticketsspa.effort_requirement()
+                pg = ticketsspa.story.effort_requirement()
+
+                # XXX Should we be imperating pg a subpage of self?
+                self.pages += pg
+                pg.clear()
+
                 pg.instance = er
                 pg(crud='retrieve')
                 tab.source = pg 

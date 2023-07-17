@@ -1477,13 +1477,86 @@ class ticketsspa_story(tester.tester):
         st = ticketsspa_story.fake()
         bl.backlog_stories += effort.backlog_story(story=st)
         bl.save()
-        XXX(st.orm.reloaded().id)
         
         # Load the backlogs page
         tab.navigate(f'/en/ticketsspa/story?id={st.id.hex}', ws)
+        tabses = tab['div.tabs.tasks']
+        self.one(tabses)
+        tabs = tabses.only
+        secs = tabs['div.tabs.tasks > section']
+
+        # NOTE Currently, we have *one* task, "testing"
+        self.one(secs)
+
+        for sec in secs:
+            card = sec['article.card'].only
+            self.eq(
+                'effort.effort_requirement', 
+                card.getattr('data-entity')
+            )
+            id = card.getattr('data-entity-id')
+
+            div = card['[data-entity-attribute=description]'].only
+
+            self.eq('Notes', div['label'].only.text)
+            self.eq(str(), div['span'].only.text)
+
+            er = effort.effort_requirement(id).orm.leaf
+
+            lis = tabs['div.tabs.tasks > nav > ul >li[role=tab]']
+            self.one(lis)
+
+            li = lis[f'[aria-controls={sec.id}]'].only
+            self.eq('tab', li.role)
+            self.eq('0', li.tabindex)
+            self.eq('Unit Test Development', li.text)
+
+            # XXX:704077c8 
+            # self.type(effort.case, er)
 
 
+    def it_activates(self):
+        """ Test activating the task by clicking the Activate button. 
+        """
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
 
+        import testeffort
+        bl = testeffort.backlog.fake()
+        st = ticketsspa_story.fake()
+        bl.backlog_stories += effort.backlog_story(story=st)
+        bl.save()
+        XXX(st.orm.reloaded().id.hex)
         
+        # Load the backlogs page
+        tab.navigate(f'/en/ticketsspa/story?id={st.id.hex}', ws)
+        tabs = tab['div.tabs.tasks'].only
+
+        secs = tabs['div.tabs.tasks > section']
+
+        for sec in secs:
+            card = sec['article.card'].only
+
+            id = card.getattr('data-entity-id')
+
+            er = effort.effort_requirement(id)
+
+            eff = er.effort
+
+            # XXX Update we we add `effort.case`
+            btn = sec['button.activate'].only
+            if eff.type.name == 'Unit Test Development':
+                btn.click()
+                dia = tab['dialog'].only
+                XXX(dia)
+            else:
+                # NOTE We only have the Test task at the moment
+                raise NotImplementedError()
+
+        XXX(secs)
+
+    def it_submits_notes_field(self):
+        """ XXX
+        """
 if __name__ == '__main__':
     tester.cli().run()
