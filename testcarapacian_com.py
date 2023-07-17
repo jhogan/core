@@ -30,7 +30,7 @@ class sites(tester.tester):
         super().__init__(mods=mods, *args, **kwargs)
     def it_inherits_from_pom_site(self):
         wss = carapacian_com.sites()
-        self.isinstance(wss, pom.sites)
+        self.isinstance(pom.sites, wss)
 
 class site(tester.tester):
     def __init__(self, *args, **kwargs):
