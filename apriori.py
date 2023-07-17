@@ -281,4 +281,25 @@ class logtype(type):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
+class statustypes(types):
+    """ XXX
+    """
 
+class statustype(type):
+    """ XXX
+    """
+
+class statuses(orm.entities):                                
+    """ XXX
+    """
+
+class status(orm.entity):
+    """ Throughout the GEM, there are many statuses for many
+    entity objects (e.g., orders status, shipment status, work effort
+    status, and so on.). Each of these will be have their on subentity
+    classes, e.g., ``party.role_role_status``.
+
+    Note that this is modeled after the STATUS TYPE entity in "The Data
+    Model Resource Book".
+    """
+    time = orm.timespan
