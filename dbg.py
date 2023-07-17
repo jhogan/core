@@ -117,7 +117,7 @@ PR = profile
 # code with this triple-X comment tag aren't allowed in 'main', it is
 # easy to grep this trace code (along with triple-X comments) and remove
 # them.
-XXX = print
+XXX = builtins.print
 
 def XXXr(msg, end='\n'):
     """ Print the output of `repr(msg)` to stdout.
@@ -127,6 +127,11 @@ def XXXr(msg, end='\n'):
 
     :param: end str: A string appended to `msg`.
     """
-    print(repr(msg), end=end)
+    builtins.print(repr(msg), end=end)
+
+def print(msg, end='\n'):
+    raise NotImplementedError(
+        'print() not supported in library module. '
+        'Use XXX() or XXXr() instead.'
+    )
         
-    

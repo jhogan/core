@@ -190,7 +190,7 @@ class testers(entities.entities):
                         # Print exception and put the user in the
                         # debugger at the point where the exception
                         # occured.
-                        print(ex)
+                        builtins.print(ex)
                         pdb.post_mortem(ex.__traceback__)
 
                     # For benchmark tests, just raise exception.
@@ -2160,8 +2160,8 @@ class benchmark(tester):
             # extraneous whitespace
             ass = ' '.join(str(self.assessments.last).split())
 
-            # Print assement
-            print(f'\n* {ass}\n')
+            # Print assessment
+            builtins.print(f'\n* {ass}\n')
 
             # Profile and break
             PR(callable)
@@ -2384,7 +2384,7 @@ class cli:
         go unnoticed if we didn't print them here.
         """
         rec = eargs.record
-        print(f'{self.seconds:.3f} {rec.levelname} {rec.message}')
+        builtins.print(f'{self.seconds:.3f} {rec.levelname} {rec.message}')
 
     @property
     def seconds(self):
@@ -2408,7 +2408,7 @@ class cli:
         ts.run()
 
         # Show results
-        print(ts)
+        builtins.print(ts)
 
         # Return exit code (0=success, 1=fail)
         sys.exit(int(not ts.isok))
@@ -2564,7 +2564,7 @@ class cli:
         meth = eargs.method[0]
 
         # Print stats with current test method being tested
-        print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
+        builtins.print(f'{self.seconds:.3f} {cnts} {mbs}MB -- {cls}.{meth}', flush=True)
 
 class ValueError(builtins.ValueError):
     """ An exception raised by test units to indicate that the values in
