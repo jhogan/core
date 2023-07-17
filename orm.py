@@ -503,7 +503,12 @@ class span:
 
     @property
     def suffix(self):
-        """ XXX
+        """ The portion of the span's name that comes at the end of
+        the field name:
+            
+            * begin{suffix}
+            
+            * end{suffix}
         """
         return self._suffix
 
@@ -541,7 +546,12 @@ class span:
 
     @property
     def prefix(self):
-        """ XXX
+        """ The portion of the span's name that comes at the beginning
+        of the field name:
+            
+            * {prefix}begin
+            
+            * {prefix}end
         """
         return self._prefix
 
@@ -588,7 +598,7 @@ class span:
         return primative.utcnow in self
 
     def __repr__(self):
-        """XXX
+        """ Return a string representation of this `span` object.
         """
         name = type(self).__name__
         begin, end = self.str_begin, self.str_end
@@ -6124,7 +6134,8 @@ class mappings(entitiesmod.entities):
         # Create a mappings collection to return
         maps = mappings()
 
-        # XXX 
+        # The name of the lable currently being processed if there is
+        # one.
         lbl = None
 
         # If a select string was provided
@@ -6132,6 +6143,21 @@ class mappings(entitiesmod.entities):
             def process(e, path, obj):
                 """ A recursive function to process an attribute.
                 Recursion is only necessary when dot notation is used.
+
+                :param: e type: A class reference to the entity being
+                processed.
+
+                :param: path list: The list of portions of an attributes
+                string. Given:
+
+                    "myentity.myattribute'
+
+                path would be
+                    
+                    ['myentity', 'myattribute']
+
+                :param: obj orm.entity: An instantiation of `e`.
+
                 """
                 # Get access to the outer method's `maps` collection
                 nonlocal maps, lbl
@@ -6205,7 +6231,6 @@ class mappings(entitiesmod.entities):
                                 # Abort since we will have exhausted
                                 # path[]
                                 return
-
                         else:
                             name = map.name
 
@@ -6230,16 +6255,24 @@ class mappings(entitiesmod.entities):
             # XXX Test select string with lables. Also test select
             # strings with leading and trailing whitespace.
             for arg in args:
+                
+                # Split the arg over the : delimiter to see if there is
+                # a label provided.
                 kvp = arg.split(':')
 
-                # XXX Comment
+                # If we have 2, the first element will be the label
                 if len(kvp) == 2:
+                    # Note that lbl is used by process but is outside
+                    # its scope.
                     lbl, attr = kvp
+
+                # If we have 1, no lable was provided
                 elif len(kvp) == 1:
                     lbl, attr = None, kvp.pop()
                 else:
                     raise ValueError('Too many colons in select')
                    
+                # process the arg
                 process(
                     e     =  self.orm.entity,
                     path  =  attr.split('.'),
@@ -12400,7 +12433,14 @@ class orm:
         tr.setattr('data-entity-id', inst.id.hex)
 
         def f(e, name, lbl=None):
-            """ XXX
+            """ Handle the attributes in the `select` statement as they
+            are processed.
+
+            :param: e type: The entity being processed.
+
+            :param: name str: The attribute being processed.
+
+            :param: lbl str: The lable being processed (unused here).
             """
             nonlocal tr
             td = dom.td()
@@ -12479,9 +12519,13 @@ class orm:
             allows us to capture each of the entity's attributes it has
             seleted for us. We use that data to create a <div> for each
             of the selected attributes and append them to the card.
-            """
 
-            # XXX Add :param:s in docstring
+            :param: e type: The entity being processed.
+
+            :param: name str: The attribute being processed.
+
+            :param: lbl str: The lable being processed.
+            """
             nonlocal card
 
             # Get the value of the entity 
