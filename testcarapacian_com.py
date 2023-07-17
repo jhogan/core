@@ -312,7 +312,7 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         import testeffort
-        bls = testeffort.backlog.getvalid(10)
+        bls = testeffort.backlog.fake(10)
         bls.save()
         
         res = tab.navigate('/en/ticketsspa/backlogs', ws)
@@ -372,7 +372,7 @@ class ticketsspa_backlogs(tester.tester):
         # nothing to filter on since it pulls from these records to
         # create the checkboxes.
         import testeffort
-        bl = testeffort.backlog.getvalid()
+        bl = testeffort.backlog.fake()
         assert bl.inplanning
         bl.save()
         bl.close()
@@ -407,7 +407,7 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         import testeffort
-        bls = testeffort.backlog.getvalid(4)
+        bls = testeffort.backlog.fake(4)
 
         for i, bl in bls.enumerate():
             if i.even:
@@ -647,7 +647,7 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         import testeffort
-        bls = testeffort.backlog.getvalid(4)
+        bls = testeffort.backlog.fake(4)
 
         for i, bl in bls.enumerate():
             if i.even:
@@ -806,7 +806,7 @@ class ticketsspa_backlogs(tester.tester):
         effort.backlogstatustype(name='planning')
 
         N = 3
-        bls = testeffort.backlog.getvalid(N)
+        bls = testeffort.backlog.fake(N)
         bls.save()
 
         flts = (
@@ -907,7 +907,7 @@ class ticketsspa_backlogs(tester.tester):
         tab = self.browser().tab()
 
         import testeffort
-        bls = testeffort.backlog.getvalid(3)
+        bls = testeffort.backlog.fake(3)
         bls.save()
         
         # Load the backlogs page
@@ -988,7 +988,7 @@ class ticketsspa_backlogs(tester.tester):
 
         # Create a backlog with some stories in it
         import testeffort
-        bl = testeffort.backlog.getvalid()
+        bl = testeffort.backlog.fake()
 
         Count = 4
         for i in range(Count):
@@ -1148,7 +1148,7 @@ class ticketsspa_backlogs(tester.tester):
 
         # Create two backlogs and associate stories with the first one.
         # The other will wil start off with no stories
-        bl, bl1 = testeffort.backlog.getvalid(2)
+        bl, bl1 = testeffort.backlog.fake(2)
 
         Count = 4
         for i in range(Count):
@@ -1375,7 +1375,7 @@ class ticketsspa_backlogs(tester.tester):
 
         # Create two backlogs and associate stories with the first one.
         # The other will wil start off with no stories
-        bl, bl1 = testeffort.backlog.getvalid(2)
+        bl, bl1 = testeffort.backlog.fake(2)
 
         Count = 2
         for i in range(Count):

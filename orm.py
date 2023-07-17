@@ -12596,7 +12596,7 @@ class orm:
 
             for _ in range(cnt):
                 # Recurse with a default cnt of 1
-                r += self.getfake()
+                r += self.fake()
 
         else:
             raise ValueError('cnt must be greater than 0')
