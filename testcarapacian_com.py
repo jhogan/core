@@ -1546,9 +1546,25 @@ class ticketsspa_story(tester.tester):
             # XXX Update we we add `effort.case`
             btn = sec['button.activate'].only
             if eff.type.name == 'Unit Test Development':
-                btn.click()
+                # Test clicking activating but canceling the activation 
+                self.click(btn, tab)
+
                 dia = tab['dialog'].only
-                XXX(dia)
+                no = dia['form button[data-no]'].only
+
+                # Cancel
+                self.click(no, tab)
+
+                self.one(sec['button.activate'])
+
+                er = er.orm.reloaded()
+
+                for st in er.statuses:
+                    if er.iscurrent and er.type.name = 'Active':
+                        self.fail('Found an active status')
+                        break
+                else:
+                    self.pass_()
             else:
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
