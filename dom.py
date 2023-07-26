@@ -1976,12 +1976,18 @@ class element(entities.entity):
 
     @property
     def tabindex(self):
-        """ XXX
+        """ The tabindex global attribute allows developers to make HTML
+        elements focusable, allow or prevent them from being
+        sequentially focusable (usually with the Tab key, hence the
+        name) and determine their relative ordering for sequential focus
+        navigation.
         """
         return self.attributes['tabindex'].value
 
     @tabindex.setter
     def tabindex(self, v):
+        """ Sets the tabindex for this element.
+        """
         self.attributes['tabindex'] = v
 
     @property
@@ -5094,6 +5100,8 @@ class ul(element):
 
     @property
     def lis(self):
+        """ Return all the <li> elements for this <ul> object.
+        """
         # XXX We should be able to do something like self['ul:root>li']
         # but it's not working at the moment.
         return self['li']

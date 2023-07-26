@@ -1022,7 +1022,8 @@ class ticketsspa(pom.spa):
         ''' Subpages '''
 
         class effort_requirement(pom.crud):
-            """ XXX
+            """ A page to handle the effort.effort_requirement objects
+            (tasks) of a story.
             """
             def __init__(self, *args, **kwargs):
                 super().__init__(
@@ -1145,16 +1146,22 @@ class ticketsspa(pom.spa):
                 return 'name points description'
 
         def self_onbeforesave(self, src, eargs):
-            """ XXX
+            """ An event handler to capture the moment before the story
+            page is submitted.
             """
+
+            # Get the story
             st = eargs.entity
 
+            # If story object is new, default the `created` time to now.
             if st.orm.isnew:
                 st.created = datetime.utcnow()
 
             if st.backlog:
                 pass
             else:
+                # Ensure the backlog of the story is correctly
+                # associated to it.
                 inp = eargs.html['input[name="story.backlog"]'].only
                 id = inp.getattr('data-entity-id')
                 bl = effort.backlog(id)

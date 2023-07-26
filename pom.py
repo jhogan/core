@@ -4054,10 +4054,13 @@ class dialog(dom.dialog):
         super().__init__(*args, **kwargs)
 
 class pagechangeeventargs(entities.eventargs):
-    """ XXX
+    """ An eventargs to show that the page has changed in a pom.crud
+    page.
     """
     def __init__(self, pg, *args, **kwargs):
-        """ XXX
+        """ Create the pagechangeeventargs event.
+
+        :param: pg pom.page The new page.
         """
         super().__init__(*args, **kwargs)
         
