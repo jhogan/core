@@ -316,6 +316,12 @@ class status(orm.entity):
     """
     time = orm.timespan
 
+    @property
+    def iscurrent(self):
+        """ XXX
+        """
+        return self.time.iscurrent
+
     ''' Accessability '''
     @property
     def creatability(self):
