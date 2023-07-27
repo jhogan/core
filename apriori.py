@@ -285,6 +285,25 @@ class logtype(type):
 class statuses(orm.entities):                                
     """ XXX
     """
+    def open(self, type):
+        """ XXX
+        """
+        for st in self:
+            # TODO We may want to make this optional
+            if st.iscurrent:
+                raise db.IntegrityError(
+                    'There is already an open status'
+                )
+
+        if isinstance(type, str):
+            B()
+            type = statustype(name=type)
+
+        self += status(
+            statustype  =  type,
+            begin       =  primative.datetime.utcnow(),
+            end         =  None
+        )
 
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
