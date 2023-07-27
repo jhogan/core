@@ -1514,7 +1514,6 @@ class ticketsspa_story(tester.tester):
             # XXX:704077c8 
             # self.type(effort.case, er)
 
-
     def it_activates(self):
         """ Test activating the task by clicking the Activate button. 
         """

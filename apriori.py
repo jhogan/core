@@ -22,6 +22,7 @@ import orm
 from orm import text, date, datetime
 from decimal import Decimal as dec
 from dbg import B
+import primative
 
 def model():
     """ Import all the entity module.
@@ -281,14 +282,6 @@ class logtype(type):
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return orm.violations.empty
 
-class statustypes(types):
-    """ XXX
-    """
-
-class statustype(type):
-    """ XXX
-    """
-
 class statuses(orm.entities):                                
     """ XXX
     """
@@ -303,3 +296,13 @@ class status(orm.entity):
     Model Resource Book".
     """
     time = orm.timespan
+
+class statustypes(types):
+    """ XXX
+    """
+
+class statustype(type):
+    """ XXX
+    """
+    statuses = statuses
+

@@ -18,6 +18,7 @@ import file
 import party
 import pom
 import www
+import apriori
 
 class sites(pom.sites):
     pass
@@ -1086,8 +1087,6 @@ class ticketsspa(pom.spa):
                     card.remove('dialog')
 
             def gethtml(self, id, crud, oncomplete):
-                """ XXX
-                """
                 el = super().gethtml(
                     id=id, crud=crud, oncomplete=oncomplete
                 )
@@ -1256,6 +1255,8 @@ class stories(effort.stories):
     """
 
 class story(effort.story):
+    """ XXX
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
