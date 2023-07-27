@@ -670,7 +670,7 @@ class statustype(apriori.type):
     """
 
     # The collection of status entities that this entity describes.
-    statuses = statuses
+    statuses = statuses 
 
 class time(orm.entity):
     """ A ``time`` entry holds information about how much time was spent
