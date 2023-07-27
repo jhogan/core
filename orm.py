@@ -591,11 +591,12 @@ class span:
         return (self.begin is None or dt >= self.begin) and \
                (self.end   is None or dt <= self.end)
 
+    @property
     def iscurrent(self):
         """ Returns True if the current time, in UTC, is within this
         timespan.
         """
-        return primative.utcnow in self
+        return primative.datetime.utcnow() in self
 
     def __repr__(self):
         """ Return a string representation of this `span` object.
