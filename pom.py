@@ -4067,10 +4067,16 @@ class pagechangeeventargs(entities.eventargs):
         self.page = pg
 
 class tabs(dom.div):
-    """ XXX
-    """
+    """ A tab control.
 
+    `tabs` are used when a web page needs a list of menus (tabs) and
+    content that displays when the menu items are clicked. The tabs
+    controller keeps track of which tab is active, therefore, what
+    content should be displayed.
+    """
     def __init__(self, *args, **kwargs):
+        """ XXX
+        """
         super().__init__(*args, **kwargs)
         self._tabs = dom.sections()
         self.classes += 'tabs'
@@ -4082,6 +4088,8 @@ class tabs(dom.div):
         self.tabs.onremove += self.elements_onafterremove
 
     def elements_onbeforeadd(self, src, eargs):
+        """ XXX
+        """
         tab = eargs.entity
 
         id = tab.id
@@ -4105,10 +4113,14 @@ class tabs(dom.div):
         self += tab
 
     def elements_onafteradd(self, src, eargs):
+        """ XXX
+        """
         if self.tabs.count == 1:
             self.show(self.tabs.only)
 
     def elements_onafterremove(self, src, eargs):
+        """ XXX
+        """
         tab = eargs.entity
 
         if tab.isshowing:
@@ -4133,13 +4145,19 @@ class tabs(dom.div):
 
     @property
     def tabs(self):
+        """ XXX
+        """
         return self._tabs
 
     @tabs.setter
     def tabs(self, v):
+        """ XXX
+        """
         self._tabs = v
     
     def show(self, obj):
+        """ XXX
+        """
         if isinstance(obj, tab):
             id = obj.id
         else:
@@ -4154,6 +4172,8 @@ class tabs(dom.div):
                 tab1._hide()
     @property
     def showing(self):
+        """ XXX
+        """
         return next(filter(lambda x: x.isshowing, self.tabs), None)
 
 class tab(dom.section):
@@ -4163,6 +4183,8 @@ class tab(dom.section):
     # TODO Instead of requiring an id, we can automatically create an id
     # so the user doesn't have to.
     def __init__(self, id, name, *args, **kwargs):
+        """ XXX
+        """
         self.role = 'tabpanel'
         self.aria_hidden = 'true'
         self.name = name
@@ -4177,27 +4199,39 @@ class tab(dom.section):
         self._source = None
 
     def show(self):
+        """ XXX
+        """
         self.aria_hidden = 'false'
         self._li.aria_selected = 'true'
 
     def _hide(self):
+        """ XXX
+        """
         self.aria_hidden = 'true'
         self._li.aria_selected = 'false'
 
     @property
     def isshowing(self):
+        """ XXX
+        """
         return not self.hidding
 
     @property
     def hidding(self):
+        """ XXX
+        """
         return self.aria_hidden == 'true'
 
     @property
     def source(self):
+        """ XXX
+        """
         return self._source
 
     @source.setter
     def source(self, v):
+        """ XXX
+        """
         if self._source is not v:
             self._source = v
 

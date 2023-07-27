@@ -466,6 +466,26 @@ class ticketsspa(pom.spa):
         def gethtml(self, id, crud, oncomplete):
             """ An override of pom.crud.gethtml to produces the HTML
             needed for this `backlogs` page.
+
+            :param: id str: The UUID, in hex format, for the entity that
+            this `crud` page represents. Will be None if the page represents
+            a collection of entities.
+
+            :param: crud str: The crud operation that the HTML needs to
+            support. 
+                
+                if crud == 'create':
+                    We will return an empty <form>.
+
+                if crud == 'retrieve'
+                    A <table>, cards <div> or card <article> will be
+                    returned with the contents of the entity/entities.
+
+                if crud == 'update':
+                    A <form> will be returned to edit the given entity.
+
+            :param: oncomplete str: The path to the page to return to when
+            processing has completed.
             """
             # Get the default cards div
             div = super().gethtml(
@@ -1068,10 +1088,10 @@ class ticketsspa(pom.spa):
                         st = er.requirement
                         eff = er.effort
 
-                        # XXX Explain 
                         # XXX test
                         # For each of the story's tasks
-                        # (effort_requirements)
+                        # (effort_requirements), close all active but
+                        # ensure `er` is open as active.
                         for er1 in st.effort_requirements:
                             if er1.id == er.id:
                                 er1.statuses.open(type='Active')
@@ -1089,6 +1109,29 @@ class ticketsspa(pom.spa):
                     card.remove('dialog')
 
             def gethtml(self, id, crud, oncomplete):
+                """ An override of pom.crud.gethtml to produces the HTML
+                needed for this `effort_requirement` page.
+
+                :param: id str: The UUID, in hex format, for the entity that
+                this `crud` page represents. Will be None if the page represents
+                a collection of entities.
+
+                :param: crud str: The crud operation that the HTML needs to
+                support. 
+                    
+                    if crud == 'create':
+                        We will return an empty <form>.
+
+                    if crud == 'retrieve'
+                        A <table>, cards <div> or card <article> will be
+                        returned with the contents of the entity/entities.
+
+                    if crud == 'update':
+                        A <form> will be returned to edit the given entity.
+
+                :param: oncomplete str: The path to the page to return to when
+                processing has completed.
+                """
                 el = super().gethtml(
                     id=id, crud=crud, oncomplete=oncomplete
                 )
@@ -1170,7 +1213,28 @@ class ticketsspa(pom.spa):
                 eargs.stead = bl
 
         def gethtml(self, id, crud, oncomplete):
-            """ XXX
+            """ An override of pom.crud.gethtml to produces the HTML
+            needed for this `story` page.
+
+            :param: id str: The UUID, in hex format, for the entity that
+            this `crud` page represents. Will be None if the page represents
+            a collection of entities.
+
+            :param: crud str: The crud operation that the HTML needs to
+            support. 
+                
+                if crud == 'create':
+                    We will return an empty <form>.
+
+                if crud == 'retrieve'
+                    A <table>, cards <div> or card <article> will be
+                    returned with the contents of the entity/entities.
+
+                if crud == 'update':
+                    A <form> will be returned to edit the given entity.
+
+            :param: oncomplete str: The path to the page to return to when
+            processing has completed.
             """
             el = super().gethtml(
                 id=id, crud=crud, oncomplete=oncomplete
