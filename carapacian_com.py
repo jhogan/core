@@ -1065,18 +1065,20 @@ class ticketsspa(pom.spa):
 
                         # Get effort_requirement
                         er = effort.effort_requirement(id)
-                        req = er.requirement
+                        st = er.requirement
                         eff = er.effort
 
                         # XXX Explain 
                         # XXX test
-                        for er1 in req.effort_requirements:
+                        # For each of the story's tasks
+                        # (effort_requirements)
+                        for er1 in st.effort_requirements:
                             if er1.id == er.id:
-                                er.statuses.open(type='active')
+                                er1.statuses.open(type='Active')
                             else:
-                                er.statuses.close(type='active')
+                                er1.statuses.close(type='Active')
 
-                        req.save()
+                        st.save()
 
                         # XXX Remove Active button
 

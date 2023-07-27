@@ -1550,20 +1550,32 @@ class ticketsspa_story(tester.tester):
 
                 dia = tab['dialog'].only
                 no = dia['form button[data-no]'].only
+                yes = dia['form button[data-yes]'].only
 
                 # Cancel
                 self.click(no, tab)
 
                 self.one(sec['button.activate'])
 
-                er = er.orm.reloaded()
+                st = st.orm.reloaded()
 
-                for st in er.statuses:
-                    if er.iscurrent and er.type.name = 'Active':
-                        self.fail('Found an active status')
-                        break
-                else:
-                    self.pass_()
+                self.none(st.active)
+
+                # Test activating
+                self.click(btn, tab)
+
+                dia = tab['dialog'].only
+                no = dia['form button[data-no]'].only
+
+                # Confirm activation
+                self.click(yes, tab)
+
+                self.one(sec['button.activate'])
+
+                st = st.orm.reloaded()
+
+                self.eq(eff.id, st.active.id)
+
             else:
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
