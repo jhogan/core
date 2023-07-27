@@ -1272,6 +1272,26 @@ class story(effort.story):
                 effort = tsk
             )
 
+    @property
+    def active(self):
+        """ XXX
+        """
+        active = apriori.statustype(name='Active')
+
+        eff = None
+        for er in self.effort_requirements:
+            for st in er.statuses:
+                if st.iscurrent:
+                    B()
+                    if st.statustype.id == active.id:
+                        if eff:
+                            raise db.IntegrityError(
+                                'Multiple efforts are active'
+                            )
+                        eff = er.effort
+
+        return eff
+
 # The Css for the site. See site.styles
 Css = '''
 body{
