@@ -305,6 +305,8 @@ class statuses(orm.entities):
             end         =  None
         )
 
+        return self.last
+
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
     entity objects (e.g., orders status, shipment status, work effort
