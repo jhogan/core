@@ -22,6 +22,7 @@ import orm
 from orm import text, date, datetime
 from decimal import Decimal as dec
 from dbg import B
+import db
 import primative
 
 def model():
@@ -296,7 +297,6 @@ class statuses(orm.entities):
                 )
 
         if isinstance(type, str):
-            B()
             type = statustype(name=type)
 
         self += status(

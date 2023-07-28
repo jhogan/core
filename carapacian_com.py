@@ -20,6 +20,16 @@ import pom
 import www
 import apriori
 
+# XXX After navigating to 
+#
+# https://c13fa8ce.carapacian.com/en/ticketsspa/story?backlogid=5a19098b385344b0b3782db47ef6d92f&crud=update&id=894cd4ddcf064f31960c8674667d3320&oncomplete=/ticketsspa/backlogs
+#
+# Click on "Tickets Spa" leads us to 
+#
+# https://c13fa8ce.carapacian.com/ticketsspa
+#
+# which 404's
+
 class sites(pom.sites):
     pass
 
@@ -1084,11 +1094,12 @@ class ticketsspa(pom.spa):
                         id = card.getattr('data-entity-id')
 
                         # Get effort_requirement
+                        # XXX Shouldn't er.id == self.instance.id?
                         er = effort.effort_requirement(id)
+
                         st = er.requirement
                         eff = er.effort
 
-                        # XXX test
                         # For each of the story's tasks
                         # (effort_requirements), close all active but
                         # ensure `er` is open as active.
@@ -1097,7 +1108,7 @@ class ticketsspa(pom.spa):
                                 er1.statuses.open(type='Active')
                             else:
                                 er1.statuses.close(type='Active')
-
+                        
                         st.save()
 
                         # XXX Remove Active button
@@ -1346,7 +1357,6 @@ class story(effort.story):
         for er in self.effort_requirements:
             for st in er.statuses:
                 if st.iscurrent:
-                    B()
                     if st.statustype.id == active.id:
                         if eff:
                             raise db.IntegrityError(

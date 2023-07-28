@@ -1580,8 +1580,6 @@ class ticketsspa_story(tester.tester):
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
 
-        XXX(secs)
-
     def it_submits_notes_field(self):
         """ XXX
         """

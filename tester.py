@@ -695,6 +695,7 @@ class tester(entities.entity):
                     # JavaScript-based one in browsers), which has a
                     # `node.replaceChild` method,  we could add a
                     # `replacechild` method to `dom.element`.
+                    # XXX We can use dom.element.replace() now
 
                     # Get the ordinal index of this as a child of it
                     # parent.
