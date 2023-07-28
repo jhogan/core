@@ -4075,12 +4075,15 @@ class tabs(dom.div):
     content should be displayed.
     """
     def __init__(self, *args, **kwargs):
-        """ XXX
+        """ Create a new `tabs` control.
         """
         super().__init__(*args, **kwargs)
         self._tabs = dom.sections()
         self.classes += 'tabs'
+
+        # The tab menu
         self += dom.nav()
+
         self.last += dom.ul(role="tablist") 
         self.tabs.onbeforeadd += self.elements_onbeforeadd
         self.tabs.onadd += self.elements_onafteradd
@@ -4088,7 +4091,9 @@ class tabs(dom.div):
         self.tabs.onremove += self.elements_onafterremove
 
     def elements_onbeforeadd(self, src, eargs):
-        """ XXX
+        """ An event handler that is triggered the moment before a new
+        `tab` is added. Adds the `tab` itself as well as a menu item for
+        the tab.
         """
         tab = eargs.entity
 
@@ -4113,19 +4118,29 @@ class tabs(dom.div):
         self += tab
 
     def elements_onafteradd(self, src, eargs):
-        """ XXX
+        """ An event handler that is triggered the moment after a new
+        `tab` is added. 
         """
+
+        # If we have only one tab...
         if self.tabs.count == 1:
+            
+            # Ensure that it is activated/shown
             self.show(self.tabs.only)
 
     def elements_onafterremove(self, src, eargs):
-        """ XXX
+        """ An event handler that is triggered the moment after a 
+        `tab` is removed. 
         """
         tab = eargs.entity
 
         if tab.isshowing:
+            
+            # Show the last one remaining
             if self.tabs.count == 1:
                 self.tabs.only.show()
+
+            # Show the tab last tab remaining
             elif self.tabs.count > 1:
                 tabpanels = self['section[role=tabpanel]']
                 for i, tab1 in tabpanels.enumerate():
@@ -4140,29 +4155,35 @@ class tabs(dom.div):
         if self.tabs.count:
             t = self.tabs['#' + tab.id]
 
+        # Remove content
         self['section#' + tab.id].remove()
+
+        # Remove menu item
         self[f'nav ul li[aria-controls="{tab.id}"]'].remove()
 
     @property
     def tabs(self):
-        """ XXX
+        """ Return the collection of `tab` objects that have been added.
         """
         return self._tabs
 
     @tabs.setter
     def tabs(self, v):
-        """ XXX
+        """ Set the collection of `tab` objects.
         """
         self._tabs = v
     
     def show(self, obj):
-        """ XXX
+        """ Show (activate) the tab `obj`.
+
+        :param: obj: str|tab: A reference to the tab to show
         """
         if isinstance(obj, tab):
             id = obj.id
         else:
             id = None
 
+        # Show the tab
         for tab1 in self.tabs:
             if id and tab1.id == id:
                 tab1.show()
@@ -4172,18 +4193,26 @@ class tabs(dom.div):
                 tab1._hide()
     @property
     def showing(self):
-        """ XXX
+        """ Return the `tab` that is showing (active). If there are no
+        tabs, return None.
         """
         return next(filter(lambda x: x.isshowing, self.tabs), None)
 
 class tab(dom.section):
-    """ XXX
+    """ A `tab` control. 
+
+    A `tab` represents the content and the menu item in a `tabs`
+    collection.
     """
 
     # TODO Instead of requiring an id, we can automatically create an id
     # so the user doesn't have to.
     def __init__(self, id, name, *args, **kwargs):
-        """ XXX
+        """ Create a tab.
+
+        :param: id str: The value of this tab's `id' attribute.
+
+        :param: name str: The text to be displayed in the menu.
         """
         self.role = 'tabpanel'
         self.aria_hidden = 'true'
@@ -4199,32 +4228,33 @@ class tab(dom.section):
         self._source = None
 
     def show(self):
-        """ XXX
+        """ Show (activate) this tab.
         """
         self.aria_hidden = 'false'
         self._li.aria_selected = 'true'
 
     def _hide(self):
-        """ XXX
+        """ Show (deactivate) this tab.
         """
         self.aria_hidden = 'true'
         self._li.aria_selected = 'false'
 
     @property
     def isshowing(self):
-        """ XXX
+        """ Return True if this `tab` is showing (is activated).
         """
         return not self.hidding
 
     @property
     def hidding(self):
-        """ XXX
+        """ Return True if this `tab` is not showing (not activated).
         """
         return self.aria_hidden == 'true'
 
     @property
     def source(self):
-        """ XXX
+        """ The data source of the tab. `pom.page` objects are
+        considered valid data sources.
         """
         return self._source
 
