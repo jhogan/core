@@ -2917,6 +2917,22 @@ class element(entities.entity):
         # Return the persisted or transient entity
         return cls.orm.produce(id)
 
+    def replace(self, this, that):
+        """ XXX
+        """
+        # Get the parent
+        rent = this.parent
+
+        # Get the ordinal index of this as a child of it
+        # parent.
+        ix = rent.elements.getindex(this)
+
+        # Remove `this` from its parent.
+        this.remove()
+
+        # Put `that` where `this` was
+        rent.elements.insert(ix, that)
+
 class headers(elements):
     """ A class used to contain a collection of ``header`` elements.
     """
