@@ -1570,7 +1570,8 @@ class ticketsspa_story(tester.tester):
                 # Confirm activation
                 self.click(yes, tab)
 
-                self.one(sec['button.activate'])
+                self.zero(sec['button.activate'])
+                self.one(sec['p[data-active]'])
 
                 st = st.orm.reloaded()
 
