@@ -1105,13 +1105,21 @@ class ticketsspa(pom.spa):
                         # ensure `er` is open as active.
                         for er1 in st.effort_requirements:
                             if er1.id == er.id:
-                                er1.statuses.open(type='Active')
+                                status = er1.statuses.open(type='Active')
                             else:
                                 er1.statuses.close(type='Active')
                         
                         st.save()
 
-                        # XXX Remove Active button
+                        btnactivate = card['button.activate'].only
+
+                        p = dom.p(
+                            'Activated: ' + str(status.time.begin),
+                        )
+
+                        p.setattr('data-active', True)
+
+                        card.replace(btnactivate, p)
 
                         # XXX Set attribute on <li> to indicate it is
                         # selected.
