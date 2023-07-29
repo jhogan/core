@@ -1578,6 +1578,9 @@ class ticketsspa_story(tester.tester):
 
                 self.eq(eff.id, st.active.id)
 
+                # Make sure the button is gone after reload
+                tab.reload()
+                self.zero(sec['button[data-activate]'])
             else:
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
