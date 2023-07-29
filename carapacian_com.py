@@ -1180,6 +1180,9 @@ class ticketsspa(pom.spa):
 
                 el += btn
 
+                el['button[type=submit]'].remove()
+                el['button[data-cancel]'].remove()
+
                 return el
 
             @property
@@ -1310,7 +1313,7 @@ class ticketsspa(pom.spa):
                 pg.clear()
 
                 pg.instance = er
-                pg(crud='retrieve')
+                pg(crud='update')
                 tab.source = pg 
 
                 tabs.tabs += tab
