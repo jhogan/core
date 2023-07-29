@@ -3829,6 +3829,10 @@ class crud(page):
         elif self.isitem:
             e = self.instance
 
+            if not id:
+                if not e.orm.isnew:
+                    id = e.id
+
             if id:
                 if crud == 'create':
                     raise ValueError(
