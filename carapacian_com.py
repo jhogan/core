@@ -1306,10 +1306,9 @@ class ticketsspa(pom.spa):
                 # generated.
                 tab = pom.tab('x' + er.id.hex, name=name)
 
-                pg = ticketsspa.story.effort_requirement()
+                pg = self.pages['effort-requirement']
 
                 # XXX Should we be imperating pg a subpage of self?
-                self.pages += pg
                 pg.clear()
 
                 pg.instance = er
