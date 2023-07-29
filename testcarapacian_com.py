@@ -1510,6 +1510,7 @@ class ticketsspa_story(tester.tester):
             self.eq('tab', li.role)
             self.eq('0', li.tabindex)
             self.eq('Unit Test Development', li.text)
+            self.one(sec['article.card button[data-activate]'])
 
             # XXX:704077c8 
             # self.type(effort.case, er)
@@ -1543,7 +1544,7 @@ class ticketsspa_story(tester.tester):
             eff = er.effort
 
             # XXX Update we we add `effort.case`
-            btn = sec['button.activate'].only
+            btn = sec['button[data-activate]'].only
             if eff.type.name == 'Unit Test Development':
                 # Test clicking activating but canceling the activation 
                 self.click(btn, tab)
@@ -1555,7 +1556,7 @@ class ticketsspa_story(tester.tester):
                 # Cancel
                 self.click(no, tab)
 
-                self.one(sec['button.activate'])
+                self.one(sec['button[data-activate]'])
 
                 st = st.orm.reloaded()
 
@@ -1570,7 +1571,7 @@ class ticketsspa_story(tester.tester):
                 # Confirm activation
                 self.click(yes, tab)
 
-                self.zero(sec['button.activate'])
+                self.zero(sec['button[data-activate]'])
                 self.one(sec['p[data-active]'])
 
                 st = st.orm.reloaded()

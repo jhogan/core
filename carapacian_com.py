@@ -1127,7 +1127,7 @@ class ticketsspa(pom.spa):
                         
                         st.save()
 
-                        btnactivate = card['button.activate'].only
+                        btnactivate = card['button[data-activate]'].only
 
                         p = dom.p(
                             'Activated: ' + str(status.time.begin),
@@ -1176,7 +1176,7 @@ class ticketsspa(pom.spa):
 
                 btn = dom.button('Activate')
                 btn.onclick += self.btnactivate_onclick, el
-                btn.classes += 'activate'
+                btn.setattr('data-activate', True) 
 
                 el += btn
 
