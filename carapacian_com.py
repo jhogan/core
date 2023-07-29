@@ -1061,6 +1061,22 @@ class ticketsspa(pom.spa):
                     e=effort.effort_requirement, *args, **kwargs
                 )
 
+            def txtdescription_onblur(self, src, eargs):
+                # Get the card
+                card = eargs.html.first
+
+                # Get effort_requirement id
+                id = card.getattr('data-entity-id')
+
+                # Get effort_requirement
+                # XXX Shouldn't er.id == self.instance.id?
+                er = effort.effort_requirement(id)
+
+                B()
+                er.effort.description = src.text
+
+                er.save()
+
             def btnactivate_onclick(self, src, eargs):
                 # Get the card
                 card = eargs.html.first
@@ -1154,6 +1170,9 @@ class ticketsspa(pom.spa):
                 el = super().gethtml(
                     id=id, crud=crud, oncomplete=oncomplete
                 )
+
+                txt = el['textarea[name=description]'].only
+                txt.onblur += self.txtdescription_onblur, el
 
                 btn = dom.button('Activate')
                 btn.onclick += self.btnactivate_onclick, el
