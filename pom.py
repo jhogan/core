@@ -3864,7 +3864,7 @@ class crud(page):
                     
                 elif crud == 'update':
                     raise ValueError(
-                        'Cannot create when given an id'
+                        'Cannot update without an id'
                     )
 
                 else:
