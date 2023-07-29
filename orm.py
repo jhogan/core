@@ -6177,7 +6177,7 @@ class mappings(entitiesmod.entities):
 
                             # Call f if provided
                             if f:
-                                f(e=obj, name=map.name, lbl=lbl)
+                                f(e=obj, map=map, lbl=lbl)
 
                             break
                     else:
@@ -6307,7 +6307,7 @@ class mappings(entitiesmod.entities):
                         continue
 
                     if f:
-                        f(e=self.orm.instance, name=map.name)
+                        f(e=self.orm.instance, map=map)
 
                     maps += map
 
@@ -12180,24 +12180,28 @@ class orm:
         # prevent access the same attribute twice.
         names = list()
 
-        # TODO Use orm.mappings.select
+        def f(e, map, lbl=None):
+            """ A function called by `mappings.select` (see below) which
+            allows us to capture each of the entity's attributes it has
+            seleted for us. We use that data to create an <inpu> for
+            each of the selected attributes and append them to the form.
 
-        class DuplicateError(Exception):
-            pass
+            :param: e type: The entity being processed.
 
-        class UnsupportedTypeError(Exception):
-            pass
+            :param: map mapping: The mapping object being processed.
 
-        def create_input(map):
+            :param: lbl str: The lable being processed.
+            """
+            nonlocal frm
             name = map.name
 
-            lbl = name.capitalize()
-
-            # Don't revisit the same name
-            if name in names:
-                raise DuplicateError
-
-            names.append(name)
+            if lbl:
+                # If lbl was passed in, it was declared by a developer,
+                # so preserve whatever case they chose.
+                pass
+            else:
+                # If no lbl, just use the map's name capitalized
+                lbl = name.capitalize()
 
             # The `step` attribute of the <input> element
             step = None
@@ -12230,16 +12234,21 @@ class orm:
             elif map.isnumeric:
                 type = 'number'
 
+            elif map.isbytes:
+                type = 'text'
+
             else:
-                raise UnsupportedTypeError
+                raise TypeError('Unsupported type: ' + map.dbtype)
 
             # Create a pom.input object to store the <label> with the
             # <input> field.
             inp = pom.input(name=name, type=type, label=lbl)
 
+            frm += inp
+
             inp.attributes['data-entity-attribute'] = map.name
 
-            # Get the underlying <input>/<textaria> object
+            # Get the underlying <input>/<textarea> object
             dominp = inp.input
 
             # Set some browser validation attributes
@@ -12261,7 +12270,7 @@ class orm:
             if name == 'id':
                 inp.input.value = inst.id.hex
 
-            v = getattr(inst, name)
+            v = getattr(e, name)
             
             # If v not an empty string...
             if v != str() and v is not None:
@@ -12272,61 +12281,10 @@ class orm:
                     # Add the value to the <input>'s `value` attribute
                     dominp.value = v
 
-            return inp
 
-        if select:
-            def process(e, path):
-                nonlocal frm
-                maps = e.orm.mappings.all
-                if len(path) == 1:
-                    for map in maps:
-                        attr = path[0]
-                        if map.name == attr:
-                            try:
-                                frm += create_input(map)
-                            except DuplicateError:
-                                pass
-                            except UnsupportedTypeError:
-                                pass
-                            else:
-                                break
-                    else:
-                        raise IndexError(
-                            f'Cannot find attribute "{attr}"'
-                        )
-                elif len(path) > 1:
-                    if v := getattr(e, path[0]):
-                        process(e=v, path=path[1:])
-
-            attrs = re.split('\W+', select)
-
-            for attr in attrs:
-                process(e=self.instance, path=attr.split('.'))
-        else:
-            # The ascendancy loop
-            while rent:
-                # For each map ...
-                for map in rent.orm.mappings:
-                    if not isinstance(map, fieldmapping):
-                        continue
-
-                    # Skip fields the user should not be responsible for
-                    if map.name == 'createdat':
-                        continue
-
-                    # TODO We will want to include this field but insure
-                    # the element`s `hidden` attribute is set. If the
-                    # browser sends the updatedat field, the
-                    # serever-side logic can guard against dirty reads.
-                    if map.name == 'updatedat':
-                        continue
-
-                    try:
-                        frm += create_input(map)
-                    except (DuplicateError, UnsupportedTypeError):
-                        pass
-
-                rent = rent.orm.super
+        # Call the select method passing in f() to collect the data and
+        # build the <article> (card).
+        self.mappings.select(select=select, f=f)
 
         # Add a <button type="submit">
         frm += dom.button('Submit', type='submit')
@@ -12433,17 +12391,19 @@ class orm:
         tr.setattr('data-entity', e)
         tr.setattr('data-entity-id', inst.id.hex)
 
-        def f(e, name, lbl=None):
+        def f(e, map, lbl=None):
             """ Handle the attributes in the `select` statement as they
             are processed.
 
             :param: e type: The entity being processed.
 
-            :param: name str: The attribute being processed.
+            :param: map mapping: The mapping object being processed.
 
             :param: lbl str: The lable being processed (unused here).
             """
             nonlocal tr
+            name = map.name
+
             td = dom.td()
             td.setattr('data-entity-attribute', name)
 
@@ -12515,7 +12475,7 @@ class orm:
         card.attributes['data-entity'] = e
         card.attributes['data-entity-id'] = inst.id.hex
 
-        def f(e, name, lbl=None):
+        def f(e, map, lbl=None):
             """ A function called by `mappings.select` (see below) which
             allows us to capture each of the entity's attributes it has
             seleted for us. We use that data to create a <div> for each
@@ -12523,11 +12483,13 @@ class orm:
 
             :param: e type: The entity being processed.
 
-            :param: name str: The attribute being processed.
+            :param: map mapping: The mapping object being processed.
 
             :param: lbl str: The lable being processed.
             """
             nonlocal card
+
+            name = map.name
 
             # Get the value of the entity 
             v = getattr(e, name)
