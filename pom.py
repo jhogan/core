@@ -3881,6 +3881,7 @@ class crud(page):
                 # Capture cacelation
                 btncancel = dom.button('Cancel')
                 btncancel.onclick += self.btncancel_onclick, el
+                btncancel.setattr('data-cancel', True)
                 el += btncancel
 
                 # TODO:fc6cd242 I'm not sure if we need to create a
