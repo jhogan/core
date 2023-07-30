@@ -369,6 +369,7 @@ class tester(entities.entity):
         self._failures = failures()
         self.assessments = assessments(self)
         self.testers = testers
+        self._faker = None
 
         # Rebuild tables in `mods`
         if mods and self.rebuildtables:
@@ -2143,6 +2144,16 @@ class tester(entities.entity):
         ''')
 
         return msg
+
+    @property
+    def faker(self):
+        """ XXX
+        """
+        if self._faker is None:
+            from faker import Faker
+            self._faker = Faker()
+
+        return self._faker
 
 class benchmark(tester):
     """ A type of tester class that represents benchmark/performance
