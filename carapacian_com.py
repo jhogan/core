@@ -1170,17 +1170,18 @@ class ticketsspa(pom.spa):
                     id=id, crud=crud, oncomplete=oncomplete
                 )
 
-                txt = el['textarea[name=description]'].only
-                txt.onblur += self.txtdescription_onblur, el
+                if crud == 'update':
+                    txt = el['textarea[name=description]'].only
+                    txt.onblur += self.txtdescription_onblur, el
 
-                btn = dom.button('Activate')
-                btn.onclick += self.btnactivate_onclick, el
-                btn.setattr('data-activate', True) 
+                    btn = dom.button('Activate')
+                    btn.onclick += self.btnactivate_onclick, el
+                    btn.setattr('data-activate', True) 
 
-                el += btn
+                    el += btn
 
-                el['button[type=submit]'].remove()
-                el['button[data-cancel]'].remove()
+                    el['button[type=submit]'].remove()
+                    el['button[data-cancel]'].remove()
 
                 return el
 
@@ -1202,8 +1203,8 @@ class ticketsspa(pom.spa):
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
-            if backlogid:
-                frm = self.main['form'].only
+            if backlogid and crud == 'update':
+                frm = self.main[':root>form'].only
 
                 bl = effort.backlog(backlogid)
 
@@ -1290,6 +1291,12 @@ class ticketsspa(pom.spa):
             tabs.classes += 'tasks'
 
             el += tabs
+
+            if crud == 'update':
+                crud = 'retrieve'
+            else:
+                crud = 'update'
+
             for er in ers:
                 eff = er.effort
 
@@ -1311,7 +1318,8 @@ class ticketsspa(pom.spa):
                 pg.clear()
 
                 pg.instance = er
-                pg(crud='update')
+                
+                pg(crud=crud)
                 tab.source = pg 
 
                 tabs.tabs += tab
