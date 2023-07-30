@@ -2103,6 +2103,32 @@ class tester(entities.entity):
 
         return res
 
+    def blur(self, e, tab, cnt=1, st=200, msg=None):
+        """ Call the blue() trigger method on `e`. Return the last
+        response the browser recorded.
+
+        :param: e dom.textarea|dom.input: The element on which to invoke
+        the trigger.
+
+        :param: tab www.browser._tab: The browser tab in which the event
+        is triggered.
+
+        :param: cnt int: The number of HTTP requests that the trigger
+        is intended to cause. Typically, only one XHR request will be
+        made for each event.
+
+        :param: st int: The HTTP status code that is expected. If the
+        last HTTP response of the event has a different status code, an
+        assertion failure is recorded.
+        """
+        res = self._trigger('blur', e, tab, cnt)
+
+        if res.status != st:
+            msg = self._stmsg(res, st, msg)
+            self._failures += failure()
+
+        return res
+
     @staticmethod
     def _stmsg(res, st, msg):
         if msg is None:
