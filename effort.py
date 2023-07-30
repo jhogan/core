@@ -216,8 +216,8 @@ class effort(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.terms = None
-        self.description = None
+        self.orm.default('terms', None)
+        self.orm.default('description', None)
 
     # The name for the overall work effort, such as a project name
     name = str
