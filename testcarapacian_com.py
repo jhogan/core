@@ -1524,9 +1524,13 @@ class ticketsspa_story(tester.tester):
         import testeffort
         bl = testeffort.backlog.fake()
         st = ticketsspa_story.fake()
+
+        # XXX Make instance if this code an .insert():
+        #
+        #     bl.insert(st)
+        #
         bl.backlog_stories += effort.backlog_story(story=st)
         bl.save()
-        XXX(st.orm.reloaded().id.hex)
         
         # Load the backlogs page
         tab.navigate(f'/en/ticketsspa/story?id={st.id.hex}', ws)

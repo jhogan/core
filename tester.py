@@ -2079,10 +2079,7 @@ class tester(entities.entity):
 
     def click(self, e, tab, cnt=1, st=200, msg=None):
         """ Call the click() trigger method on `e`. Return the last
-        response the browser recorded.
-
-        Testing the return value is important for tests to ensure that
-        dom.events were successful.
+        response the browser recorded. 
 
         :param: e dom.form|dom.button: The element on which to invoke
         the trigger.
@@ -2091,7 +2088,8 @@ class tester(entities.entity):
         is triggered.
 
         :param: cnt int: The number of HTTP requests that the trigger
-        is intended to cause.
+        is intended to cause. Typically, only one XHR request will be
+        made for each event.
 
         :param: st int: The HTTP status code that is expected. If the
         last HTTP response of the event has a different status code, an

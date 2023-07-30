@@ -1072,7 +1072,6 @@ class ticketsspa(pom.spa):
                 # XXX Shouldn't er.id == self.instance.id?
                 er = effort.effort_requirement(id)
 
-                B()
                 er.effort.description = src.text
 
                 er.save()
