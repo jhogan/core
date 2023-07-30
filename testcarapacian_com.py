@@ -1592,5 +1592,32 @@ class ticketsspa_story(tester.tester):
     def it_submits_notes_field(self):
         """ XXX
         """
+        ws = carapacian_com.site()
+        tab = self.browser().tab()
+
+        import testeffort
+        bl = testeffort.backlog.fake()
+        st = ticketsspa_story.fake()
+        bl.insert(st)
+        bl.save()
+        
+        # Load the backlogs page
+        tab.navigate(f'/en/ticketsspa/story?id={st.id.hex}', ws)
+        tabs = tab['div.tabs.tasks'].only
+
+        frms = tabs['form']
+
+        for frm in frms:
+            txtdescription = frm['textarea[name=description]'].only
+
+            txt = self.faker.paragraph()
+            txtdescription.text = txt
+
+            self.blur(txtdescription, tab)
+
+            # Get effort_requirement
+            er = frm.entity.orm.reloaded()
+            self.eq(txt, er.effort.description)
+
 if __name__ == '__main__':
     tester.cli().run()
