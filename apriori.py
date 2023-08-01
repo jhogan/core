@@ -306,6 +306,19 @@ class statuses(orm.entities):
         )
 
         return self.last
+    
+    def currently(self, type):
+        """ XXX
+        """
+        if isinstance(type, str):
+            type = statustype(name=type)
+
+        for st in self:
+            if st.iscurrent:
+                if st.statustype.id == type.id:
+                    return st
+
+        return False
 
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
