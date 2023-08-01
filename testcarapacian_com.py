@@ -656,6 +656,7 @@ class ticketsspa_backlogs(tester.tester):
         res = tab.navigate(
             '/en/ticketsspa/backlogs?types=planning&types=closed', ws
         )
+
         self.h200(res)
 
         flt = tab['div.cards form.filter'].only
