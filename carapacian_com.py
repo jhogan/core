@@ -1170,20 +1170,34 @@ class ticketsspa(pom.spa):
                     id=id, crud=crud, oncomplete=oncomplete
                 )
 
+                st = self.instance.statuses.currently('Active')
+
                 if crud == 'update':
                     txt = el['textarea[name=description]'].only
                     txt.onblur += self.txtdescription_onblur, el
 
-                    btn = dom.button('Activate')
-                    btn.onclick += self.btnactivate_onclick, el
-                    btn.setattr('data-activate', True) 
+                    if not st:
+                        btn = dom.button('Activate')
+                        btn.onclick += self.btnactivate_onclick, el
+                        btn.setattr('data-activate', True) 
 
-                    el += btn
+                        el += btn
 
                     el['button[type=submit]'].remove()
                     el['button[data-cancel]'].remove()
 
+                if st:
+                    p = dom.p(
+                        'Activated: ' + str(st.time.begin),
+                    )
+
+                    p.setattr('data-active', True)
+
+                    el += p
+
+
                 return el
+
 
             @property
             def select(self):
