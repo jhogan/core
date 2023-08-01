@@ -1582,7 +1582,10 @@ class ticketsspa_story(tester.tester):
 
                 # Make sure the button is gone after reload
                 tab.reload()
-                self.zero(sec['button[data-activate]'])
+                secs = tab['div.tabs.tasks > section']
+                frm = secs[f'form[data-entity-id="{id}"]'].only
+                self.zero(frm['button[data-activate]'])
+                self.one(frm['p[data-active]'])
             else:
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
