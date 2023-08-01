@@ -204,7 +204,6 @@ class ticketsspa_ticket(tester.tester):
         inps = frm['input, textarea']
 
         ''' Test with main fields populated '''
-        id         =  frm['input[name=id]'].only
         desc       =  inps['[name=description]'].only
         created    =  inps['[name=created]'].only
         required   =  inps['[name=required]'].only
@@ -213,7 +212,7 @@ class ticketsspa_ticket(tester.tester):
         reason     =  inps['[name=reason]'].only
         btnsubmit  =  frm['button[type=submit]'].only
 
-        id = UUID(id.value)
+        id = UUID(frm.getattr('data-entity-id'))
 
         desc.text = self.dedent('''
             As a user,
@@ -254,8 +253,6 @@ class ticketsspa_ticket(tester.tester):
         self.status(200, res)
 
         frm = tab['form'].only
-
-        inp = frm['input[name=id]'].only
 
         inps = frm['input, textarea']
 
@@ -1489,17 +1486,17 @@ class ticketsspa_story(tester.tester):
         self.one(secs)
 
         for sec in secs:
-            card = sec['article.card'].only
+            frm = sec['form'].only
             self.eq(
                 'effort.effort_requirement', 
-                card.getattr('data-entity')
+                frm.getattr('data-entity')
             )
-            id = card.getattr('data-entity-id')
+            id = frm.getattr('data-entity-id')
 
-            div = card['[data-entity-attribute=description]'].only
+            div = frm['[data-entity-attribute=description]'].only
 
             self.eq('Notes', div['label'].only.text)
-            self.eq(str(), div['span'].only.text)
+            self.eq(str(), div['textarea'].only.text)
 
             er = effort.effort_requirement(id).orm.leaf
 
@@ -1510,7 +1507,7 @@ class ticketsspa_story(tester.tester):
             self.eq('tab', li.role)
             self.eq('0', li.tabindex)
             self.eq('Unit Test Development', li.text)
-            self.one(sec['article.card button[data-activate]'])
+            self.one(sec['form button[data-activate]'])
 
             # XXX:704077c8 
             # self.type(effort.case, er)
@@ -1539,9 +1536,9 @@ class ticketsspa_story(tester.tester):
         secs = tabs['div.tabs.tasks > section']
 
         for sec in secs:
-            card = sec['article.card'].only
+            frm = sec['form'].only
 
-            id = card.getattr('data-entity-id')
+            id = frm.getattr('data-entity-id')
 
             er = effort.effort_requirement(id)
 
