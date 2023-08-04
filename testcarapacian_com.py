@@ -1377,7 +1377,7 @@ class ticketsspa_backlogs(tester.tester):
 
         Count = 2
         for i in range(Count):
-            st = testeffort.story.fake()
+            st = ticketsspa_story.fake()
             bl.insert(st)
 
         bl.save(bl1)
