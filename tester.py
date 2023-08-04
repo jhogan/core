@@ -739,6 +739,32 @@ class tester(entities.entity):
                     # Make sure any remaning .instructions are removed
                     instrss.remove()
 
+                def is_page_link(e):
+                    """ Returns true if the user clicked a page link,
+                    false otherwise.
+
+                    A page link as an anchor that links to another,
+                    internal page in the SPA application. The intention
+                    of clicking one in to navigate to the page through
+                    an XHR call. The page's HTML is put into the
+                    existing <main> tag, replacing <main>'s existing
+                    content.
+                    """
+                    main = self[':root > body > main'].only
+                    spa_path = main.getattr('spa-data-path')
+                    href = e.getattr('href')
+
+                    # If href is null, it's not a page link.
+                    if href is None:
+                        return False
+
+                    # If the anchor is a reference to the current page,
+                    # it is not considered a link.
+                    if href == self.url.path:
+                        return False
+
+                    return href.startswith(spa_path)
+
                 ''' Method logic '''
 
                 isnav = is_nav_link(src)
@@ -768,6 +794,8 @@ class tester(entities.entity):
                 elif eargs.trigger in ('drop', 'dragleave'):
                     del src.attributes['data-dragentered']
 
+                ispg = not isnav and is_page_link(src)
+
                 if isnav:
                     pg = src.attributes['href'].value
                     if self.inspa:
@@ -786,6 +814,9 @@ class tester(entities.entity):
                             return
 
                     html = None
+                elif ispg:
+                    html = str()
+                    pg = src.getattr('href')
                 else:
                     # eargs.html is None when there is no HTML being
                     # sent by the browser.
@@ -806,6 +837,11 @@ class tester(entities.entity):
                 # XHR request should, therefore, be made so return.
                 if eargs.handler == 'None':
                     return
+
+                if eargs.handler == 'element_event':
+                    hnd = None
+                else:
+                    hnd = eargs.handler
 
                 # If we are in a drag-and-drop operation, and a drop is
                 # finally made, get the drop data (usually an element
@@ -844,7 +880,11 @@ class tester(entities.entity):
                     replace(this='main', that=main)
                     self.listen(res.html)
 
-                    self.url = main.getattr('data-url')
+                    if url := main.getattr('data-url'):
+                        B()
+                        self.url = url
+                    else:
+                        self.url.path = pg
                 else:
                     # If no HTML fragments were sent... 
                     if not eargs.html:
@@ -916,9 +956,35 @@ class tester(entities.entity):
                     ev = a.onclick
                     ev.append(obj=self.element_event)
 
+                # XXX Explain
+                main = self[':root >body > main'].only
+
+                spa_path = main.getattr('spa-data-path')
+
+                if spa_path:
+                    sels = 'a[href^="' + spa_path + '"]'
+                    sels += ':not([data-click-handler])'
+                    as_ = el[sels]
+
+                    for a in as_:
+                        # XXX Should this be the default behavior of
+                        # events, i.e., to never subscribe twice to the
+                        # same handler
+                        for ev in a.onclick:
+                            # NOTE We can't use `is` because passing (or
+                            # assigning) the event handler (bound
+                            # method) multiple times results in an
+                            # object reference which is equivalent but
+                            # not identical:
+                            # https://stackoverflow.com/questions/13348031/ids-of-bound-and-unbound-method-objects-sometimes-the-same-for-different-o
+                            if ev == self.element_event:
+                                break
+                        else:
+                            a.onclick += self.element_event
+
                 # Subscribe to default_event for each anchor tag's click
                 # event.
-                as_ = el['a']
+                as1_ = el['a']
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.default_event)
