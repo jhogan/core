@@ -590,10 +590,10 @@ class tester(entities.entity):
                 method will be called.
 
                 Note that currently, only some events are handled,
-                namely hyperclick clicks. Also note that events that
+                namely hyperlink clicks. Also note that events that
                 would be handled by a JavaScript event handler would
-                first go to the `element_event` handler first and then
-                be routed to their Python event handler. 
+                first go to the `element_event` handler and then be
+                routed to their Python event handler. 
 
                 :param: src dom.element: The DOM element that triggered
                 the event.
@@ -816,8 +816,8 @@ class tester(entities.entity):
                     html += self.transfer['text/html']
 
                 # Create a JSON object to send in the XHR request
-                body = {
-                    'hnd':      eargs.handler,
+                d = {
+                    'hnd':      hnd,
                     'html':     html,
                     'src':      src.html,
                     'trigger':  eargs.trigger,
@@ -826,7 +826,7 @@ class tester(entities.entity):
                 # Make the XHR request to the page (pg) (or for the page
                 # if we are refreshing a subpage for an SPA) and site
                 # that the tab is currently pointing to.
-                res = self.xhr(pg, self.site, json=body)
+                res = self.xhr(pg, self.site, json=d)
 
                 # If the event was unsucessful, append a "modal" to the
                 # <main> element of the tab's HTML.

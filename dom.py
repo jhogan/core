@@ -1822,7 +1822,7 @@ class element(entities.entity):
         return self.elements.count
 
     def __getitem__(self, ix):
-        """ Get elements by a CSS3 selector.
+        """ Get elements by a CSS3 selecton for this `element` object.
 
         Example
         -------
@@ -2165,7 +2165,7 @@ class element(entities.entity):
         :param: sels str|dom.selectors: The CSS selector used in
         selection of the ancester.
         """
-        # TODO Write test
+        # XXX Write test
 
         rent = self
         while rent:
@@ -9315,7 +9315,7 @@ class selector(entities.entity):
 
         def match(self, els):
             """ Returns that subset ef the dom.element objects in `els`
-            which match this CSS selector.
+            which match this selector `element` object.
 
             :param: els dom.elements|dom.element: A dom.element or a
             collection of dom.elements (i.e, a DOM object) to be
