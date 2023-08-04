@@ -2185,7 +2185,7 @@ class element(entities.entity):
 
         rent = self
         while rent:
-            if rent[sels].ispopulated:
+            if rent.matches(sels):
                 return rent
             rent = rent.parent
 
