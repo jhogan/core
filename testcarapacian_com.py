@@ -1591,7 +1591,8 @@ class ticketsspa_story(tester.tester):
                 raise NotImplementedError()
 
     def it_submits_notes_field(self):
-        """ XXX
+        """ Test the onblue event of the task's Notes (description)
+        field to ensure it persists to the database.
         """
         ws = carapacian_com.site()
         tab = self.browser().tab()

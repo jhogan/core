@@ -956,20 +956,37 @@ class tester(entities.entity):
                     ev = a.onclick
                     ev.append(obj=self.element_event)
 
-                # XXX Explain
-                main = self[':root >body > main'].only
+                # Get top-most <main> element
+                main = self[':root > body > main'].only
 
                 spa_path = main.getattr('spa-data-path')
 
                 if spa_path:
+                    # Get all anchors that link to pages within the SPA
+                    # application, i.e., page links.
                     sels = 'a[href^="' + spa_path + '"]'
                     sels += ':not([data-click-handler])'
                     as_ = el[sels]
 
+                    # For each page link
                     for a in as_:
                         # XXX Should this be the default behavior of
                         # events, i.e., to never subscribe twice to the
                         # same handler
+
+                        # XXX Remove the data-click-handler that this
+                        # subscription creates on each of the `a`
+                        # elements.
+
+                        # Subscribe to self.element_event unless they
+                        # are already subscribed. This will force
+                        # regular page links, which have no
+                        # data-<event>-handler attribute, to go through
+                        # self.element_event instead of
+                        # self.default_event. This is analogous to how
+                        # page links work in the real JavaScript: they
+                        # are handled by the ajax() function which does
+                        # a page-patch.
                         for ev in a.onclick:
                             # NOTE We can't use `is` because passing (or
                             # assigning) the event handler (bound
@@ -993,7 +1010,6 @@ class tester(entities.entity):
                 """ The event handler that is invoked after the browser
                 tab has loaded a new document.
                 """
-
                 # Add event handlers to elements in the tab's DOM.
                 self.listen(self.html)
 
@@ -2213,7 +2229,13 @@ class tester(entities.entity):
 
     @property
     def faker(self):
-        """ XXX
+        """ Return a memoized Faker object.
+
+        This is convenient for tests to access Faker methods:
+
+            # Create a paragraph (<p>) with some Lorum Ipsum paragraphs.
+            p = dom.p()
+            p.text = self.faker.paragraphs()
         """
         if self._faker is None:
             from faker import Faker

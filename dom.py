@@ -1854,7 +1854,27 @@ class element(entities.entity):
         return els[ix]
 
     def matches(self, sels):
-        """ XXX
+        """ Returns True if this `element` object matchs the CSS3
+        selector `sels`, False otherwise:
+
+            p = dom.p(id='my-paragraph')
+
+            assert p.matches('p[#my-paragraph')
+            assert p.matches('p')
+
+            assert not p.matches('a')
+            assert not p.matches('p[#not-my-paragraph')
+
+        Compared to __getitem__
+        -----------------------
+        Unlike using the indexer (__getitem__), the CSS3 selector is
+        only used to test this `element` object for a match. The indexer
+        is recursive, i.e., it descends into the DOM tree looking for
+        any child elements that match the selector. Instead of Boolean,
+        it returns a collection of matching elements.
+
+        :param: sels str|selectors: The CSS selector to match this
+        element against.
         """
 
         # XXX Add test
@@ -2934,13 +2954,17 @@ class element(entities.entity):
         return cls.orm.produce(id)
 
     def replace(self, this, that):
-        """ XXX
+        """ Replace `this` with `that`.
+
+        :param: this dom.element: The element that needs to be removed
+        from the DOM tree and replaced with `that`.
+
+        :param: that dom.element: The element to replace `this` with.
         """
         # Get the parent
         rent = this.parent
 
-        # Get the ordinal index of this as a child of it
-        # parent.
+        # Get the ordinal index of `thisa` as a child of its parent.
         ix = rent.elements.getindex(this)
 
         # Remove `this` from its parent.
