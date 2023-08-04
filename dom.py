@@ -1853,6 +1853,22 @@ class element(entities.entity):
         els += self
         return els[ix]
 
+    def matches(self, sels):
+        """ XXX
+        """
+
+        # XXX Add test
+        if isinstance(sels, str):
+            sels = selectors(sels)
+
+        els = elements()
+        els += self
+        for sel in sels:
+            if sel.match(els).ispopulated:
+                return True
+
+        return False
+
     def pop(self):
         """ Remove the `element` from the top of the collection and
         return it.
