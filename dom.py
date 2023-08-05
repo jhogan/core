@@ -1884,7 +1884,7 @@ class element(entities.entity):
         els = elements()
         els += self
         for sel in sels:
-            if sel.match(els).ispopulated:
+            if sel.match(els, recursive=False).ispopulated:
                 return True
 
         return False
@@ -9457,7 +9457,7 @@ class selector(entities.entity):
             sel.elements += el.clone()
         return sel
 
-    def match(self, els, el=None, smps=None):
+    def match(self, els, recursive=True):
         """ Of the elements in the `els` collection, return a new
         elements collection containing those elements that match this
         selector.
@@ -9477,8 +9477,14 @@ class selector(entities.entity):
         # under a div. Similar logic is used for the other combinators.
         last = self.elements.last
 
-        # Recursively match els' children
-        els1 = last.match(els.getchildren())
+        if recursive:
+            # Recursively match els' children
+            els1 = last.match(els.getchildren())
+        else:
+            els1 = elements()
+            for el in els:
+                if last.match(el):
+                    els1 += el
 
         # Create a collection of elements to remove later. These will be
         # the elements that were match by the above match but ended up
