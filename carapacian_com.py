@@ -1305,37 +1305,39 @@ class ticketsspa(pom.spa):
 
             el += tabs
 
-            if crud == 'update':
+            if crud in ('update', 'create'):
                 crud = 'retrieve'
             else:
                 crud = 'update'
 
-            for er in ers:
-                eff = er.effort
+            if crud != 'create':
+                for er in ers:
+                    eff = er.effort
 
-                # XXX:704077c8 Let's make the effort here a
-                # 
-                #      case(development(software(task))
-                #
-                # again, and we will decide on the name based on the
-                # effort's subentity instead of its `type` object.
-                name = eff.type.name
+                    # XXX:704077c8 Let's make the effort here a
+                    # 
+                    #      case(development(software(task))
+                    #
+                    # again, and we will decide on the name based on the
+                    # effort's subentity instead of its `type` object.
+                    name = eff.type.name
 
-                # XXX Remove need to pass in an id. Have it auto
-                # generated.
-                tab = pom.tab('x' + er.id.hex, name=name)
+                    # XXX Remove need to pass in an id. Have it auto
+                    # generated.
+                    tab = pom.tab('x' + er.id.hex, name=name)
 
-                pg = self.pages['effort-requirement']
+                    pg = self.pages['effort-requirement']
 
-                # XXX Should we be imperating pg a subpage of self?
-                pg.clear()
+                    # XXX Should we be imperating pg a subpage of self?
+                    pg.clear()
 
-                pg.instance = er
-                
-                pg(crud=crud)
-                tab.source = pg 
+                    pg.instance = er
+                    
+                    pg(crud=crud)
+                    tab.source = pg 
 
-                tabs.tabs += tab
+                    tabs.tabs += tab
+
             return el
 
     class search(pom.page):
