@@ -3711,6 +3711,11 @@ class crud(page):
         """
         frm = False
 
+        if not id:
+            if self._instance:
+                if self.isitem:
+                    id = self._instance.id
+                
         if id:
             self.setattr('data-entity-id', id)
 
