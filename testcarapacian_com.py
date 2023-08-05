@@ -921,7 +921,7 @@ class ticketsspa_backlogs(tester.tester):
         res = self.click(a, tab)
         self.h200(res)
 
-        main = tab['main'].only
+        main = tab['html>body>main'].only
         self.eq('/ticketsspa/story', main.getattr('data-path'))
 
         # Get the form to create a new story

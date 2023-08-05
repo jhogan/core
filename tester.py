@@ -877,7 +877,7 @@ class tester(entities.entity):
                     # Replace the <main> element with the response
                     # (res.html)
                     main = res.html.only
-                    replace(this='main', that=main)
+                    replace(this='html>body>main', that=main)
                     self.listen(res.html)
 
                     if url := main.getattr('data-url'):
