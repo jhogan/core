@@ -1854,7 +1854,7 @@ class element(entities.entity):
         return els[ix]
 
     def matches(self, sels):
-        """ Returns True if this `element` object matchs the CSS3
+        """ Returns True if this `element` object matches the CSS3
         selector `sels`, False otherwise:
 
             p = dom.p(id='my-paragraph')
@@ -9473,7 +9473,7 @@ class selector(entities.entity):
         #
         # We want to first find all the <p> elements - the *last*
         # element - in `els`. For each of the <p> elements we find, we
-        # can use it's ``ancestors`` property to determine if it is
+        # can use its ``ancestors`` property to determine if it is
         # under a div. Similar logic is used for the other combinators.
         last = self.elements.last
 
@@ -9525,6 +9525,7 @@ class selector(entities.entity):
 
                 # Else if combinator is SubsequentSibling (~)
                 elif comb == selector.element.SubsequentSibling:
+                    # XXX Line is too long
                     els2 = selectors(repr(self.elements[:-1 - i])).match(els)
                     for precs in el1.preceding:
                         if precs in els2:

@@ -881,7 +881,6 @@ class tester(entities.entity):
                     self.listen(res.html)
 
                     if url := main.getattr('data-url'):
-                        B()
                         self.url = url
                     else:
                         self.url.path = pg

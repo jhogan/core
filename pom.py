@@ -3683,7 +3683,8 @@ class crud(page):
         self._instance = v
 
     def gethtml(self, id, crud, oncomplete):
-        """ Create and return a DOM object (dom.element) for the page.
+        """ Create and return a DOM object (dom.element) for the `crud`
+        page.
 
         This method is typically called by the `main()` method and some
         event handlers to obtain the page's HTML.

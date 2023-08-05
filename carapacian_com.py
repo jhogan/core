@@ -1198,7 +1198,6 @@ class ticketsspa(pom.spa):
 
                 return el
 
-
             @property
             def select(self):
                 return (
