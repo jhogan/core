@@ -273,7 +273,7 @@ class ticketsspa_ticket(tester.tester):
         art = res.html.first
         id = art.attributes['data-entity-id'].value
 
-        self.eq(f'id={id}&crud=retrieve', tab.url.query)
+        self.eq(f'crud=retrieve&id={id}', tab.url.query)
 
         self.eq(id, tab.url.qs['id'])
 
