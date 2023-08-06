@@ -824,7 +824,7 @@ class tester(entities.entity):
 
                     main = src.closest('main')
                     pg = self.url.clone()
-                    pg.query = None
+                    #pg.query = None
                     pg.fragments = None
                     # XXX:4a0c586d
                     pg.path = '/' + src.root.lang 
