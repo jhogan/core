@@ -120,15 +120,16 @@ PR = profile
 
 XXX = builtins.print
 
-def XXXr(msg, end='\n'):
-    """ Print the output of `repr(msg)` to stdout.
+import sys
 
-    :param: msg str: The message to print whose representation will be
-    printed to stdout.
+def XXXr(*args, sep=' ', end='\n', file=sys.stdout, flush=False):
+    """ 
 
-    :param: end str: A string appended to `msg`.
     """
-    builtins.print(repr(msg), end=end)
+    msg = sep.join(repr(arg) for arg in args) + end
+    file.write(msg)
+    if flush:
+        file.flush()
 
 def print(msg, end='\n'):
     raise NotImplementedError(
