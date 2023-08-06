@@ -123,8 +123,21 @@ XXX = builtins.print
 import sys
 
 def XXXr(*args, sep=' ', end='\n', file=sys.stdout, flush=False):
-    """ 
+    """ Print the representation (repr()) of each object passed in. Uses
+    the same interface as `print()` does. Use this function while
+    debugging when you want to see the repr() of one or mone objects.
 
+    :param: *args sequence<object>: One or more objects to print.
+
+    :param: sep str: Separator between the objects. Default is ' '
+    (space).
+
+    :param: end str: Ending character. Default is '\n' (newline).
+
+    :param: file file-like object: Output stream. Default is sys.stdout.
+
+    :param: flush bool: If True, flush the output stream. Default is
+    False.
     """
     msg = sep.join(repr(arg) for arg in args) + end
     file.write(msg)
