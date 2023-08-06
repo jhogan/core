@@ -6139,6 +6139,9 @@ class mappings(entitiesmod.entities):
         # one.
         lbl = None
 
+        # Maintain a unique set of names
+        names = set()
+
         # If a select string was provided
         if select:
             def process(e, path, obj):
@@ -6304,6 +6307,14 @@ class mappings(entitiesmod.entities):
                     # serever-side logic can guard against dirty reads.
                     if map.name == 'updatedat':
                         continue
+
+                    # Prevent duplicate by default. NOTE that this is
+                    # probably good default behavior but we may want to
+                    # parameterize this feature.
+                    if map.name in names:
+                        continue
+
+                    names.add(map.name)
 
                     if f:
                         f(e=self.orm.instance, map=map)
