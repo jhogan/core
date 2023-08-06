@@ -1217,7 +1217,7 @@ class ticketsspa(pom.spa):
 
             super().main(id=id, crud=crud, oncomplete=oncomplete)
 
-            if backlogid and crud == 'update':
+            if backlogid and crud in ('update', 'create'):
                 frm = self.main[':root>form'].only
 
                 bl = effort.backlog(backlogid)
