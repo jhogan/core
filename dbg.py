@@ -117,6 +117,7 @@ PR = profile
 # code with this triple-X comment tag aren't allowed in 'main', it is
 # easy to grep this trace code (along with triple-X comments) and remove
 # them.
+
 XXX = builtins.print
 
 def XXXr(msg, end='\n'):

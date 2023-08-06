@@ -354,6 +354,7 @@ class tickets(pom.page):
         span.text = 'VALID' if inp.value.isnumeric() else 'INVALID'
 
 class ticketsspa(pom.spa):
+
     ''' Inner classes (pages) '''
     class ticket(pom.crud):
         def __init__(self, *args, **kwargs):

@@ -917,12 +917,18 @@ class tester(entities.entity):
                 will route the element's event to the appropriate
                 handler.
 
-                Note that this is analogous to the `listen()` function
+                Note that this is analogous to 
+
+                    function listen(el){
+                        ...
+                    }
+
                 in the eventjs JavaScript.
 
                 :param: el dom.element: The root of the DOM tree that
                 will be examined for elements whose events will be
                 subscribed to handlers.
+
                 """
                 sels = ', '.join(
                     [

@@ -6135,7 +6135,7 @@ class mappings(entitiesmod.entities):
         # Create a mappings collection to return
         maps = mappings()
 
-        # The name of the lable currently being processed if there is
+        # The name of the label currently being processed if there is
         # one.
         lbl = None
 
@@ -6168,7 +6168,6 @@ class mappings(entitiesmod.entities):
 
                     # For all mappings including supers
                     for map in e.orm.mappings.all:
-                        
                         # If a match was found
                         if map.name == path[0]:
 
@@ -6267,7 +6266,7 @@ class mappings(entitiesmod.entities):
                     # its scope.
                     lbl, attr = kvp
 
-                # If we have 1, no lable was provided
+                # If we have 1, no label was provided
                 elif len(kvp) == 1:
                     lbl, attr = None, kvp.pop()
                 else:
@@ -12183,14 +12182,14 @@ class orm:
         def f(e, map, lbl=None):
             """ A function called by `mappings.select` (see below) which
             allows us to capture each of the entity's attributes it has
-            seleted for us. We use that data to create an <inpu> for
+            selected for us. We use that data to create an <input> for
             each of the selected attributes and append them to the form.
 
             :param: e type: The entity being processed.
 
             :param: map mapping: The mapping object being processed.
 
-            :param: lbl str: The lable being processed.
+            :param: lbl str: The label being processed.
             """
             nonlocal frm
             name = map.name
@@ -12399,7 +12398,7 @@ class orm:
 
             :param: map mapping: The mapping object being processed.
 
-            :param: lbl str: The lable being processed (unused here).
+            :param: lbl str: The label being processed (unused here).
             """
             nonlocal tr
             name = map.name
@@ -12478,14 +12477,14 @@ class orm:
         def f(e, map, lbl=None):
             """ A function called by `mappings.select` (see below) which
             allows us to capture each of the entity's attributes it has
-            seleted for us. We use that data to create a <div> for each
+            selected for us. We use that data to create a <div> for each
             of the selected attributes and append them to the card.
 
             :param: e type: The entity being processed.
 
             :param: map mapping: The mapping object being processed.
 
-            :param: lbl str: The lable being processed.
+            :param: lbl str: The label being processed.
             """
             nonlocal card
 
