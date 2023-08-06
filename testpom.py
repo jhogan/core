@@ -232,7 +232,7 @@ class menus(tester.tester):
 
     def it_is_a_subtype_of_section(self):
         mnus = pom.menus()
-        self.isinstance(mnus, dom.section)
+        self.isinstance(dom.section, mnus)
 
 class menu(tester.tester):
     def it_calls_name(self):
@@ -335,7 +335,7 @@ class menu(tester.tester):
         self.eq(expect, str(mnu))
 
     def it_is_a_subtype_of_nav(self):
-        self.isinstance(pom.menu('name'), dom.nav)
+        self.isinstance(dom.nav, pom.menu('name'))
 
 class menu_items(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -356,7 +356,7 @@ class menu_items(tester.tester):
 
     def it_isinstance_of_ul(self):
         itms = pom.menu.items()
-        self.isinstance(itms, dom.ul)
+        self.isinstance(dom.ul, itms)
 
     def it_preserves_serialized_representation(self):
         """ It was noticed that subsequent calls to menu.pretty,
