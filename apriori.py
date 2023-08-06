@@ -284,10 +284,37 @@ class logtype(type):
         return orm.violations.empty
 
 class statuses(orm.entities):                                
-    """ XXX
+    """ A collection of `status` objects.
     """
     def open(self, type):
-        """ XXX
+        """ Open a status of a given `type`. Returns the `status` object
+        that is created.
+
+        To open a status is to create `status` object and append it to
+        this collection. The `status` object will have the current time
+        as its `begin` property and an `end` property ofNone, and it
+        will have a `statustype` object that corresponds to `type`. If
+        the status of the given type is already open, an IntegrityError
+        will be raised.
+
+        For example, if have a sales order entity, and we want set its
+        current status to `Shipped', we could do this:
+            
+            so = order.salesorder()
+            st = so.statuses.open('Shipped')
+
+        This will put the sales order in Shipped status. You will want
+        to use the `close()` method to close out any prior statuses the
+        order may be in such a "preparing", "assembling', etc.
+
+        Note that this is a transient operation, so the caller must save
+        the `statuses` object in order for the status update to be
+        persisted.
+
+        :param: type str|statustype: The `statustype` object to
+        associate with the new `status` object. If `type` is a str, a
+        `statustype` object will be produced to associated with the
+        `status` object.
         """
         for st in self:
             # TODO We may want to make this optional
@@ -308,7 +335,13 @@ class statuses(orm.entities):
         return self.last
     
     def currently(self, type):
-        """ XXX
+        """ Return the `status` of the given `statustype` (`type`) that
+        is current (i.e., where the current time is between the statuses
+        `begin` and `end` time).
+
+        :param: type str|statustype: The `statustype` object associated
+        with the new `status` object. If `type` is a str, a `statustype`
+        object will be produced to search for the `status` object.
         """
         if isinstance(type, str):
             type = statustype(name=type)
@@ -324,16 +357,19 @@ class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
     entity objects (e.g., orders status, shipment status, work effort
     status, and so on.). Each of these will be have their on subentity
-    classes, e.g., ``party.role_role_status``.
+    classes, e.g., ``party.role_role_status`` which inherits for this
+    base class.
 
     Note that this is modeled after the STATUS TYPE entity in "The Data
     Model Resource Book".
     """
+
+    # The time span that this status is true of its composite.
     time = orm.timespan
 
     @property
     def iscurrent(self):
-        """ XXX
+        """ Returns True if this `status` object is `current`.
         """
         return self.time.iscurrent
 
@@ -361,11 +397,18 @@ class status(orm.entity):
         return orm.violations.empty
 
 class statustypes(types):
-    """ XXX
+    """ A collection of `statustype` objects.
     """
 
 class statustype(type):
-    """ XXX
+    """ A `type` of `status` entity.
+
+        Note that this object is self-ensuring, i.e., instantiating with
+        the same string will produce the same (equivalent) entity.
+
+        active = statustype(name='active')
+        active1 = statustype(name='active')
+        assert active.id == active1.id
     """
     statuses = statuses
 
