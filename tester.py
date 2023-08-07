@@ -1014,7 +1014,7 @@ class tester(entities.entity):
 
                 # Subscribe to default_event for each anchor tag's click
                 # event.
-                as1_ = el['a']
+                as_ = el['a']
                 for a in as_:
                     ev = a.onclick
                     ev.append(obj=self.default_event)
