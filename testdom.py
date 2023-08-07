@@ -443,8 +443,8 @@ class element(tester.tester):
         a = dom.anchor()
         as_ = dom.anchors()
 
-        self.isinstance(as_, dom.elements)
-        self.isinstance(a, dom.element)
+        self.isinstance(dom.elements, as_)
+        self.isinstance(dom.element, a)
 
         attrs = (
             'referrerpolicy',  'target',  'hreflang',
@@ -461,7 +461,7 @@ class element(tester.tester):
     def it_calls_id(self):
         p = dom.p()
         id = primative.uuid(base64=p.id)
-        self.isinstance(id, uuid.UUID)
+        self.isinstance(uuid.UUID, id)
 
     def it_appends(self):
         p = dom.p()
