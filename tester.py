@@ -752,6 +752,12 @@ class tester(entities.entity):
                     """
                     main = self[':root > body > main'].only
                     spa_path = main.getattr('spa-data-path')
+
+                    # If we are not in a SPA application...
+                    if not spa_path:
+                        # The link is not a "page link"
+                        return False
+
                     href = e.getattr('href')
 
                     # If href is null, its not a page link.
