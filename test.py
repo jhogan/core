@@ -15024,6 +15024,43 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # unusual/advanced types like "images", "file", "month",
         # "password", "range", "tel", "time", "url", "week", etc.
 
+    def it_calls_getform(self):
+        art = artist()
+
+        # Select one attribute
+        select = (
+            'First name:firstname'
+        )
+        frm = art.orm.getform(select)
+        divs = frm['div[data-entity-attribute]']
+
+        self.one(divs)
+        self.eq('First name', divs['label'].only.text)
+        self.eq('firstname', divs['input'].only.name)
+
+        # Select three attribute, one with no lable, add leading and
+        # trailing whitespace
+        select = (
+            '   '
+            'First name:firstname,'
+            'Last name:lastname,'
+            'dob'
+            '   '
+        )
+
+        frm = art.orm.getform(select)
+        divs = frm['div[data-entity-attribute]']
+
+        self.three(divs)
+        self.eq('First name', divs['label'].first.text)
+        self.eq('firstname', divs['input'].first.name)
+
+        self.eq('Last name', divs['label'].second.text)
+        self.eq('lastname', divs['input'].second.name)
+
+        self.eq('Dob', divs['label'].third.text)
+        self.eq('dob', divs['input'].third.name)
+
     def it_calls_gettable(self):
         isss = issues()
 

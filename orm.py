@@ -6251,11 +6251,9 @@ class mappings(entitiesmod.entities):
                         # Recurse
                         process(e=map.entity, obj=obj, path=path[1:])
 
-            # Split select over whitespace/commas
-            args = re.split(r'[,\s]+', select.strip())
+            # Split select over comma
+            args = select.strip().split(',')
 
-            # XXX Test select string with lables. Also test select
-            # strings with leading and trailing whitespace.
             for arg in args:
                 # Split the arg over the : delimiter to see if there is
                 # a label provided.
