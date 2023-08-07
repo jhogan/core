@@ -4245,7 +4245,7 @@ class tabs(tester.tester):
     def it_removes_tab(self):
         ''' Add one then remove '''
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab')
+        tab = pom.tab(id='my-tab', name='My Tab')
         
         tabs.tabs += tab
         tabs.tabs -= tab
@@ -4255,8 +4255,8 @@ class tabs(tester.tester):
         self.zero(tabs['nav ul li'])
 
         ''' Add two and remove one '''
-        tab = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab-1')
+        tab = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
 
         tabs.tabs += tab, tab1
         tabs.tabs -= tab
@@ -4273,9 +4273,9 @@ class tabs(tester.tester):
 
         ''' Add three, show them, and remove each going foward to end'''
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab-1')
-        tab2 = pom.tab(id='my-tab-2')
+        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
 
         tabs.tabs += tab0, tab1, tab2
         for i, tab in tabs.tabs.enumerate():
@@ -4331,9 +4331,9 @@ class tabs(tester.tester):
 
         ''' Add three, show them, and remove each in revere to end'''
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab-1')
-        tab2 = pom.tab(id='my-tab-2')
+        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
 
         tabs.tabs += tab0, tab1, tab2
         for i, tab in enumerate(list(tabs.tabs.reversed())):
@@ -4379,10 +4379,10 @@ class tabs(tester.tester):
 
         ''' Remove non-showing ''' 
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab-1')
-        tab2 = pom.tab(id='my-tab-2')
-        tab3 = pom.tab(id='my-tab-3')
+        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
+        tab3 = pom.tab(id='my-tab-3', name='My Tab 3')
 
         tabs.tabs += tab0, tab1, tab2, tab3
 
@@ -4411,8 +4411,8 @@ class tabs(tester.tester):
 
     def it_calls_showing(self):
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab1')
+        tab = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab1', name='My Tab 1')
 
         tabs.tabs += tab, tab1
 
@@ -4442,8 +4442,8 @@ class tabs(tester.tester):
         # Ensure that an empty generator is returne
         self.zero(tabs.tabs)
 
-        tab0 = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab-1')
+        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
 
         for i, tab in tabs.tabs.enumerate():
             self.type(pom.tab, tab)
@@ -4454,8 +4454,8 @@ class tabs(tester.tester):
         
     def it_calls_show(self):
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0')
-        tab1 = pom.tab(id='my-tab1')
+        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
+        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
 
         tabs.tabs += tab0, tab1
 
@@ -4477,7 +4477,7 @@ class tabs(tester.tester):
 
     def it_raises_when_same_tab_is_appended_twice(self):
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab')
+        tab = pom.tab(id='my-tab', name='My Tab')
 
         def f():
             nonlocal tabs
@@ -4486,15 +4486,16 @@ class tabs(tester.tester):
         self.expect(None, f)
         self.expect(ValueError, f)
 
-        tab = pom.tab(id='my-tab')
+        tab = pom.tab(id='my-tab', name='My Tab')
         self.expect(ValueError, f)
 
-        tab = pom.tab(id='my-tab1')
+        tab = pom.tab(id='my-tab1', name='My Tab1')
         self.expect(None, f)
 
     def it_raises_when_tab_missing_id_on_append(self):
         tabs = pom.tabs()
-        tab = pom.tab()
+        tab = pom.tab('my-tab', name='My Tab')
+        tab.id = None
 
         def f():
             nonlocal tabs
