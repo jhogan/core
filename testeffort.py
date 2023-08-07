@@ -849,8 +849,8 @@ class backlogstatustype(tester.tester):
         self.eq(type2.id, type.id)
 
     def it_categorizes(self):
-        bl = backlog.getvalid()
-        bl1 = backlog.getvalid()
+        bl = backlog.fake()
+        bl1 = backlog.fake()
 
         planning = effort.backlogstatustype(name='planning')
         inprogress = effort.backlogstatustype(name='in progress')
@@ -860,7 +860,7 @@ class backlogstatustype(tester.tester):
         for i in range(N):
             type = planning if i % 2 else inprogress
 
-            bl = backlog.getvalid()
+            bl = backlog.fake()
             bl.backlogstatustype = type
             bl.save()
 
@@ -897,7 +897,7 @@ class backlog(tester.tester):
         return effort.backlog.orm.fake(cnt, f=f)
             
     def it_creates(self):
-        bl = self.getvalid()
+        bl = self.fake()
 
         bl.save()
 
@@ -909,7 +909,7 @@ class backlog(tester.tester):
             self.eq(getattr(bl, attr), getattr(bl1, attr))
 
     def it_updates(self):
-        bl = self.getvalid()
+        bl = self.fake()
         bl.save()
 
         bl1 = bl.orm.reloaded()
@@ -928,7 +928,7 @@ class backlog(tester.tester):
             self.eq(getattr(bl, attr), getattr(bl1, attr))
 
     def it_has_correct_types(self):
-        bl = self.getvalid()
+        bl = self.fake()
 
         self.type(str,   bl.name)
         self.type(str,   bl.description)
@@ -943,7 +943,7 @@ class backlog(tester.tester):
         # st0
         ###############################################################
 
-        bl = self.getvalid()
+        bl = self.fake()
         st0 = story.fake()
         bl.insert(st0)
 
@@ -1133,7 +1133,7 @@ class backlog(tester.tester):
 
     def it_inserts_multiple_stories(self):
         ''' Insert multiple stories at the loweset ranking '''
-        bl = self.getvalid()
+        bl = self.fake()
         st1 = story.fake()
         st2 = story.fake()
 
@@ -1261,8 +1261,8 @@ class backlog(tester.tester):
 
     def it_moves_a_story_between_backlogs(self):
         ''' Move one story from a backlog of one'''
-        bl1 = self.getvalid()
-        bl2 = self.getvalid()
+        bl1 = self.fake()
+        bl2 = self.fake()
         st = story.fake()
         bl1.insert(st)
 
@@ -1296,8 +1296,8 @@ class backlog(tester.tester):
         self.eq([0], bl1.backlog_stories.pluck('rank'))
 
         ''' Move stories from a backlog of 5'''
-        bl1 = self.getvalid()
-        bl2 = self.getvalid()
+        bl1 = self.fake()
+        bl2 = self.fake()
 
         for st in story.fake(5):
             bl1.insert(st)
@@ -1330,7 +1330,7 @@ class backlog(tester.tester):
             self.eq(list(range(i+1)), bss2.pluck('rank'))
 
     def it_moves_a_story_within_a_backlog(self):
-        bl = self.getvalid()
+        bl = self.fake()
 
         st0, st1, st2, st3, st4, st5 = story.fake(6)
 
@@ -1409,7 +1409,7 @@ class backlog(tester.tester):
     def it_removes_transient_stories(self):
         ''' Add and remove one story '''
         st = story.fake()
-        bl = self.getvalid()
+        bl = self.fake()
         bl.insert(st)
         rms = bl.remove(st)
 
@@ -1419,7 +1419,7 @@ class backlog(tester.tester):
 
         ''' Add 2; remove first '''
         sts = story.fake(cnt=2)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
@@ -1442,7 +1442,7 @@ class backlog(tester.tester):
 
         ''' Add 2; remove second '''
         sts = story.fake(cnt=2)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
@@ -1465,7 +1465,7 @@ class backlog(tester.tester):
 
         ''' Add 10; removes first, middle, last '''
         sts = story.fake(cnt=10)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
@@ -1523,7 +1523,7 @@ class backlog(tester.tester):
     def it_removes_persisted_stories(self):
         ''' Add and remove one story '''
         st = story.fake()
-        bl = self.getvalid()
+        bl = self.fake()
         bl.insert(st)
         bl.save()
         bl = bl.orm.reloaded()
@@ -1539,7 +1539,7 @@ class backlog(tester.tester):
 
         ''' Add 2; remove first '''
         sts = story.fake(cnt=2)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
@@ -1564,7 +1564,7 @@ class backlog(tester.tester):
 
         ''' Add 2; remove second '''
         sts = story.fake(cnt=2)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
@@ -1589,7 +1589,7 @@ class backlog(tester.tester):
 
         ''' Add 10; removes first, middle, last '''
         sts = story.fake(cnt=10)
-        bl = self.getvalid()
+        bl = self.fake()
         for st in sts:
             bl.insert(st)
 
