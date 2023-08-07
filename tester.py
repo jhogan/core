@@ -745,7 +745,7 @@ class tester(entities.entity):
 
                     A page link as an anchor that links to another,
                     internal page in the SPA application. The intention
-                    of clicking one in to navigate to the page through
+                    of clicking one is to navigate to the page through
                     an XHR call. The page's HTML is put into the
                     existing <main> tag, replacing <main>'s existing
                     content.
@@ -754,7 +754,7 @@ class tester(entities.entity):
                     spa_path = main.getattr('spa-data-path')
                     href = e.getattr('href')
 
-                    # If href is null, it's not a page link.
+                    # If href is null, its not a page link.
                     if href is None:
                         return False
 
@@ -803,6 +803,8 @@ class tester(entities.entity):
                         isspanav = attr.value == 'Spa'
 
                         if not isspanav:
+                            # If we are in SPA mode but not in the Spa
+                            # menu, allow for traditional navigation.
                             return
 
                     else:

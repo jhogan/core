@@ -22,7 +22,7 @@ from auth import jwt
 from config import config
 from contextlib import contextmanager, redirect_stdout
 from datetime import timezone, datetime, date
-from dbg import B, PM, PR
+from dbg import *
 from entities import BrokenRulesError
 from func import enumerate, getattr
 from MySQLdb.constants.CR import SERVER_GONE_ERROR

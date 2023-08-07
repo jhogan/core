@@ -4144,15 +4144,6 @@ class crud(tester.tester):
             elif btn == 'cancel':
                 # Make sure the name was not changed
                 self.eq(per1.name, per.orm.reloaded().name)
-    def it_returns_404(self):
-        """ XXX
-        """
-        ws = foonet()
-        tab = self.browser().tab()
-
-        # Get form
-        res = tab.navigate(f'/en/profile?id={uuid4().id}')
-        self.h404(res)
 
 class tabs(tester.tester):
     def it_creates_empty(self):

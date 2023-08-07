@@ -6110,19 +6110,19 @@ class mappings(entitiesmod.entities):
         called with each mappings name and object reference.
 
         :param: select str: The select string. It contains a list of
-        whitespace or comma seperated attributes to be selected. For
-        example, to obtain the mappings for the orm's entity's `id`,
-        `name` and `createdat` attribute, in that order, you can pass in
-        the following string:
+        comma seperated attributes to be selected. For example, to
+        obtain the mappings for the orm's entity's `id`, `name` and
+        `createdat` attribute, in that order, you can pass in the
+        following string:
             
-            'id name createdat'
+            'id, name, createdat'
 
         You can use dot notation to obtain composite mappings of the
         entity. For example, if the entity was a sales order, you could
         get its `id` order `number`, and customer's (the order's
         composite) name using the following:
             
-            'id number customer.name'
+            'id, number, customer.name'
 
         :param: f callable: If a callable is passed in for `f`, it will
         be called whenever a mappings is discoverd for selection. The
@@ -6131,7 +6131,6 @@ class mappings(entitiesmod.entities):
         argument. The name of the mapping will be passed in as the
         second.
         """
-
         # Create a mappings collection to return
         maps = mappings()
 
@@ -6258,7 +6257,6 @@ class mappings(entitiesmod.entities):
             # XXX Test select string with lables. Also test select
             # strings with leading and trailing whitespace.
             for arg in args:
-                
                 # Split the arg over the : delimiter to see if there is
                 # a label provided.
                 kvp = arg.split(':')

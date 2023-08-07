@@ -750,7 +750,7 @@ function is_page_link(e){
     /* Returns true if the user clicked a page link, false otherwise.
 
     A page link as an anchor that links to another, internal page in the
-    SPA application. The intention of clicking one in to navigate to the
+    SPA application. The intention of clicking one is to navigate to the
     page through an XHR call. The page's HTML is put into the existing
     <main> tag, replacing <main>'s existing content.
     */
@@ -758,7 +758,7 @@ function is_page_link(e){
     var spa_path = main.getAttribute('spa-data-path')
     var href = e.getAttribute('href')
 
-    // If href is null, it's not a page link
+    // If href is null, its not a page link.
     if (href == null){
         return false
     }
@@ -4218,6 +4218,8 @@ class tab(dom.section):
 
     # TODO Instead of requiring an id, we can automatically create an id
     # so the user doesn't have to.
+
+    # TODO s/name/text/
     def __init__(self, id, name, *args, **kwargs):
         """ Create a tab.
 
@@ -4282,8 +4284,3 @@ class tab(dom.section):
                 self += src.main
             else:
                 raise NotImplementedError()
-
-                
-    
-
-
