@@ -4183,11 +4183,7 @@ class tabs(tester.tester):
         self.true(tab.isshowing)
 
         ''' Test <section> '''
-
-        # XXX Can't we do this:
-        #secs = tabs['section:root:empty']
-
-        secs = tabs['section:empty']
+        secs = tabs['.tabs > section:empty']
 
         self.one(secs)
         sec = secs.only
@@ -4226,11 +4222,7 @@ class tabs(tester.tester):
                 self.eq(tab1.id, li.aria_controls)
 
         ''' Test <section> '''
-
-        # XXX Can't we do this:
-        #secs = tabs['section:root:empty']
-
-        secs = tabs['section:empty']
+        secs = tabs[':root > section:empty']
 
         self.two(secs)
 
