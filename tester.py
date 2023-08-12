@@ -90,7 +90,6 @@ class testers(entities.entities):
     def run(self):
         """ Run the tester class
         """
-
         # Don't run in production
         if config().inproduction:
             raise Exception("Won't run in production environment.")

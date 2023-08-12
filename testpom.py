@@ -4321,14 +4321,6 @@ class tabs(tester.tester):
                 self.eq('tabpanel', tab.role)
                 self.eq('0', li.tabindex)
 
-        # XXX Figure out how to make the following possible:
-        #
-        #     for i, tab in tabs.tabs.reversed().enumerate():
-        #
-        # Also, enumerate() probably shouldn't accept a generator since
-        # calculating the number of yields of a generator (see
-        # seqint.last) can't be done without exhausting it.
-
         ''' Add three, show them, and remove each in revere to end'''
         tabs = pom.tabs()
         tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
@@ -4336,6 +4328,15 @@ class tabs(tester.tester):
         tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
 
         tabs.tabs += tab0, tab1, tab2
+
+        # TODO Figure out how to make the following possible:
+        #
+        #     for i, tab in tabs.tabs.reversed().enumerate():
+        #
+        # Also, enumerate() probably shouldn't accept a generator since
+        # calculating the number of yields of a generator (see
+        # seqint.last) can't be done without exhausting it.
+
         for i, tab in enumerate(list(tabs.tabs.reversed())):
             msg = f'i == {str(i)}'
 

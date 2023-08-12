@@ -1380,9 +1380,6 @@ class role_role_type(apriori.type):
     # organization".
     description = text
 
-# XXX Since ``status`` is a universal concept in data modeling, the
-# main status class should probably go in the apriori.py file. The same
-# may be true of ``statustype``
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
     entity objects (e.g., orders status, shipment status, work effort

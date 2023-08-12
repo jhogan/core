@@ -525,7 +525,10 @@ class effort_requirement(orm.association):
     effort = effort
     requirement = requirement
 
-    # XXX
+    # The collection of statuses an effort_requirements has. A typical
+    # statustype would be 'Active', or "In Progress". Note that
+    # `effort_requirement.statuses` was not in the original data model
+    # discussed in "The Data Model Resource Book".
     statuses = apriori.statuses
 
     ''' Accessability '''

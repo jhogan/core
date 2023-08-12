@@ -940,9 +940,6 @@ function ajax(e){
         let path = src.closest('main').getAttribute('data-path')
         let lang = src.closest('html').getAttribute('lang')
         pg = loc.protocol + '//' + loc.host + '/' + lang + path
-
-        // XXX REMOVE
-        //pg = window.location.href
     }
 
     // Create the dictionary to send to the server
@@ -4273,7 +4270,7 @@ class tab(dom.section):
 
     @source.setter
     def source(self, v):
-        """ XXX
+        """ Set the data source of this `tab`.
         """
         if self._source is not v:
             self._source = v
