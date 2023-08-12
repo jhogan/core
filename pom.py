@@ -4119,16 +4119,20 @@ class tabs(dom.div):
                 'The tab already exists in this collection'
             )
             
-        # XXX This can probably be moved to elements_onafteradd
-        ul = self['nav>ul'].only
-        ul += tab._li
-
-        self += tab
 
     def elements_onafteradd(self, src, eargs):
         """ An event handler that is triggered the moment after a new
         `tab` is added. 
         """
+
+        tab = eargs.entity
+
+        # Add <li> for the tab
+        ul = self['nav>ul'].only
+        ul += tab._li
+
+        # Add the `tab` object itself
+        self += tab
 
         # If we have only one tab...
         if self.tabs.count == 1:
