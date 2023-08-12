@@ -681,33 +681,14 @@ class tester(entities.entity):
                     identifies a unique element in self that should be
                     replaced.
 
-                    :param: that dom.elements The elements to will
+                    :param: that dom.elements The elements that will
                     replace `this`.
                     """
 
                     # Find the element object
                     this = self.html[this].only
 
-                    # Get the parent
-                    rent = this.parent
-
-                    # TODO The below could be done in one line. Taking
-                    # insperation from the *real* DOM (the
-                    # JavaScript-based one in browsers), which has a
-                    # `node.replaceChild` method,  we could add a
-                    # `replacechild` method to `dom.element`.
-                    # XXX We can use dom.element.replace() now
-
-                    # Get the ordinal index of this as a child of it
-                    # parent.
-                    ix = rent.elements.getindex(this)
-
-                    # Remove `this` from its parent and thus the DOM
-                    # self.
-                    this.remove()
-
-                    # Put `that` where `this` was
-                    rent.elements.insert(ix, that)
+                    this.replace(that)
 
                 def exec(el):
                     """ Read the <article> with an 'instructions' class

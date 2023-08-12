@@ -1135,7 +1135,7 @@ class ticketsspa(pom.spa):
 
                         p.setattr('data-active', True)
 
-                        card.replace(btnactivate, p)
+                        btnactivate.replace(p)
 
                         # XXX Set attribute on <li> to indicate it is
                         # selected.

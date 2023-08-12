@@ -2953,25 +2953,23 @@ class element(entities.entity):
         # Return the persisted or transient entity
         return cls.orm.produce(id)
 
-    def replace(self, this, that):
-        """ Replace `this` with `that`.
+    def replace(self, replacement):
+        """ Replace `self` with `replacement`.
 
-        :param: this dom.element: The element that needs to be removed
-        from the DOM tree and replaced with `that`.
-
-        :param: that dom.element: The element to replace `this` with.
+        :param: replacement dom.element: The element to replace self
+        with.
         """
         # Get the parent
-        rent = this.parent
+        rent = self.parent
 
-        # Get the ordinal index of `thisa` as a child of its parent.
-        ix = rent.elements.getindex(this)
+        # Get the ordinal index of `self` as a child of its parent.
+        ix = rent.elements.getindex(self)
 
-        # Remove `this` from its parent.
-        this.remove()
+        # Remove `self` from its parent.
+        self.remove()
 
-        # Put `that` where `this` was
-        rent.elements.insert(ix, that)
+        # Put `replacement` where `self` was
+        rent.elements.insert(ix, replacement)
 
 class headers(elements):
     """ A class used to contain a collection of ``header`` elements.
