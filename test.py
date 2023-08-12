@@ -15042,8 +15042,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # trailing whitespace
         select = (
             '   '
-            'First name:firstname,'
-            'Last name:lastname,'
+            'First name:firstname,  '
+            'Last name:lastname, '
             'dob'
             '   '
         )
@@ -15111,12 +15111,12 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # whitespace or both
         selects = (
             'name, assignee',
-            'name assignee',
-            'name\t  assignee',
+            'name , assignee',
+            'name,\t  assignee',
 
             'assignee, name',
-            'assignee name',
-            'assignee\t  name',
+            'assignee, name',
+            'assignee,\t  name',
         )
 
         for select in selects:
@@ -15159,7 +15159,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         for i in range(10):
             art.presentations += presentation.getvalid()
 
-        select = 'name description artist.firstname artist.lastname'
+        select = 'name ,description ,artist.firstname ,artist.lastname'
         tbl = art.presentations.orm.gettable(select=select)
 
         trs = tbl['tbody tr']
@@ -15173,7 +15173,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             tds = tr['td']
             self.four(tds)
 
-            for col, td in zip(select.split(), tds):
+            cols = re.split('\W*,\W*', select.strip())
+            for col, td in zip(cols, tds):
                 col = col.rpartition('artist.')[-1]
                 self.eq(col, td.getattr('data-entity-attribute'))
 
@@ -15245,12 +15246,12 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         # whitespace or both
         selects = (
             'name, assignee',
-            'name assignee',
-            'name\t  assignee',
+            'name , assignee',
+            'name\t  ,  assignee',
 
-            'assignee, name',
-            'assignee name',
-            'assignee\t  name',
+            'assignee , name',
+            'assignee ,name',
+            'assignee\t  ,name',
         )
 
         for select in selects:
@@ -15280,7 +15281,7 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         art = artist.getvalid()
         art.presentations += presentation.getvalid()
 
-        select = 'name description artist.firstname artist.lastname'
+        select = 'name, description , artist.firstname ,artist.lastname'
         pres = art.presentations.first
         card = pres.orm.getcard(select=select)
 
@@ -15291,7 +15292,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
         self.count(4, divs)
 
-        for attr, div in zip(select.split(), divs):
+        attrs = re.split('\W*,\W*', select.strip())
+        for attr, div in zip(attrs, divs):
             lbl = div['label'].only
             span = div['span'].only
             self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)
@@ -15302,7 +15304,13 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         art = artist.getvalid()
         art.presentations += presentation.getvalid()
 
-        select = 'artist.firstname artist.lastname name description'
+        select = (
+            'artist.firstname , '
+            'artist.lastname , '
+            'name ,'
+            'description'
+        )
+
         pres = art.presentations.first
         card = pres.orm.getcard(select=select)
 
@@ -15313,7 +15321,8 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
         self.count(4, divs)
 
-        for attr, div in zip(select.split(), divs):
+        attrs = re.split('\W*,\W*', select.strip())
+        for attr, div in zip(attrs, divs):
             lbl = div['label'].only
             span = div['span'].only
             self.eq(attr.rpartition('.')[-1].capitalize(), lbl.text)

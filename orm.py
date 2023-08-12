@@ -6251,8 +6251,9 @@ class mappings(entitiesmod.entities):
                         # Recurse
                         process(e=map.entity, obj=obj, path=path[1:])
 
-            # Split select over comma
-            args = select.strip().split(',')
+            # Split select over comma with zero or more whitespace
+            # characters
+            args = re.split('\W*,\W*', select.strip())
 
             for arg in args:
                 # Split the arg over the : delimiter to see if there is

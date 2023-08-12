@@ -940,7 +940,7 @@ class ticketsspa(pom.spa):
         def select(self):
             if not self._select:
                 return (
-                    'name, description, goal, begin end'
+                    'name, description, goal, begin, end'
                 )
             return self._select
 
@@ -1031,7 +1031,7 @@ class ticketsspa(pom.spa):
         def select(self):
             if not self._select:
                 return (
-                    'story.name story.points story.created'
+                    'story.name, story.points, story.created'
                 )
             return self._select
 
@@ -1242,7 +1242,7 @@ class ticketsspa(pom.spa):
         @property
         def select(self):
             if not self._select:
-                return 'name points description'
+                return 'name, points, description'
 
         def self_onbeforesave(self, src, eargs):
             """ An event handler to capture the moment before the story
