@@ -6161,7 +6161,6 @@ class selectors(tester.tester):
 
 class event(tester.tester):
     def it_clears(self):
-        
         def hnd(src, eargs):
             pass
 

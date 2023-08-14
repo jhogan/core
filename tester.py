@@ -812,9 +812,7 @@ class tester(entities.entity):
 
                     main = src.closest('main')
                     pg = self.url.clone()
-                    #pg.query = None
                     pg.fragments = None
-                    # XXX:4a0c586d
                     pg.path = '/' + src.root.lang 
                     pg.path += main.getattr('data-path')
 
@@ -963,16 +961,8 @@ class tester(entities.entity):
 
                     # For each page link
                     for a in as_:
-                        # XXX Should this be the default behavior of
-                        # events, i.e., to never subscribe twice to the
-                        # same handler
-
-                        # XXX Remove the data-click-handler that this
-                        # subscription creates on each of the `a`
-                        # elements.
-
-                        # Subscribe to self.element_event unless they
-                        # are already subscribed. This will force
+                        # Subscribe to self.element_event (unless they
+                        # are already subscribed). This will force
                         # regular page links, which have no
                         # data-<event>-handler attribute, to go through
                         # self.element_event instead of
