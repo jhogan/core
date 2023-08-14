@@ -980,17 +980,15 @@ class tester(entities.entity):
                         # page links work in the real JavaScript: they
                         # are handled by the ajax() function which does
                         # a page-patch.
-                        for ev in a.onclick:
-                            # NOTE We can't use `is` because passing (or
-                            # assigning) the event handler (bound
-                            # method) multiple times results in an
-                            # object reference which is equivalent but
-                            # not identical:
-                            # https://stackoverflow.com/questions/13348031/ids-of-bound-and-unbound-method-objects-sometimes-the-same-for-different-o
-                            if ev == self.element_event:
-                                break
-                        else:
-                            a.onclick += self.element_event
+
+                        # NOTE that we use append() instead of |=
+                        # because we want to ensure the `els` parameter
+                        # defaults to None. This indicates to append()
+                        # that we are doing a regular event
+                        # subscription, not a DOM on, therefore, this
+                        # subscription will result in no new HTML
+                        # attributes being appended to `a`.
+                        a.onclick.append(self.element_event, uniq=True)
 
                 # Subscribe to default_event for each anchor tag's click
                 # event.

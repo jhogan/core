@@ -2888,6 +2888,25 @@ class index(tester.tester):
         self.assertEq(3, ix(type(None)).count)
         self.assertEq(1, ix(str).count)
 
+class event(tester.tester):
+    def it_append_unique(self):
+        ks = knights()
+
+        # The onadd event handler
+        def onadd(src, eargs):
+            ...
+
+        # entities begin with one onadd subscription:
+        # entities._self_onadd
+        self.one(ks.onadd)
+
+        for i in range(4):
+            if i >= 2:
+                ks.onadd.append(onadd, uniq=True)
+            else:
+                ks.onadd |= onadd
+
+            self.two(ks.onadd)
 
 if __name__ == '__main__':
     tester.cli().run()

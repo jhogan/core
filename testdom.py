@@ -6189,6 +6189,52 @@ class event(tester.tester):
         # The event's fragments attribute should be remove as well
         self.false(a.hasattr('data-click-fragments'))
 
+    def it_appends_uniquely(self):
+        def hnd(src, eargs):
+            pass
+
+        div = dom.div()
+        p = dom.p()
+
+        self.zero(div.onclick)
+
+        for i in range(4):
+            if i >= 2:
+                div.onclick.append(hnd, tuple(p), uniq=True)
+            else:
+                div.onclick |= hnd, p
+
+            self.one(div.onclick)
+
+    def it_appends_with__ior__(self):
+        def hnd(src, eargs):
+            pass
+
+        def hnd1(src, eargs):
+            pass
+
+        div = dom.div()
+        p = dom.p()
+
+        self.zero(div.onclick)
+
+        # Append without fragments
+        div.onclick |= hnd
+        self.eq(hnd, div.onclick[0])
+        self.eq('hnd', div.getattr('data-click-handler'))
+        self.none(p.id, div.getattr('data-click-fragments'))
+
+
+        # Append with fragments
+        div.onclick |= hnd1, p
+
+        self.eq('hnd1', div.getattr('data-click-handler'))
+        self.eq('#' + p.id, div.getattr('data-click-fragments'))
+
+        self.eq(hnd1, div.onclick[1])
+
+        self.two(div.onclick)
+
 TestHtml = tester.tester.dedent('''
 <html id="myhtml" arbit="trary">
   <!-- This is an HTML document -->

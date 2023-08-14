@@ -1411,7 +1411,7 @@ class entities:
     def __ior__(self, e):
         """ Implements the |= operator on collections. ``e`` will be
         appended to the collection unless it already exists in the
-        collection. This is the canonical way to do unique appends
+        collection. This is the canonical way to do unique appends:
 
             assert e not in es
 
@@ -2860,7 +2860,7 @@ class event(entities):
         for callable in self:
             callable(src, e)
 
-    def append(self, f):
+    def append(self, f, uniq=False):
         """ Subscribe an event handler to the event. The event handler
         will be appended to the event object's internal collection of
         subscribers which will be invoked when the event is fired.
@@ -2875,6 +2875,16 @@ class event(entities):
 
         if isinstance(f, event):
             raise ValueError('Attempted to append event to event collection.')
+
+        if uniq:
+            for f1 in self:
+                # NOTE We can't use `is` because passing (or assigning)
+                # the event handler (bound method) multiple times
+                # results in an object reference which is equivalent but
+                # not identical:
+                # https://stackoverflow.com/questions/13348031/ids-of-bound-and-unbound-method-objects-sometimes-the-same-for-different-o
+                if f == f1:
+                    return
             
         self._ls.append(f)
 

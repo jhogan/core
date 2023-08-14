@@ -10554,7 +10554,36 @@ class event(entities.event):
         self.append(obj=obj, els=els)
         return self
 
-    def append(self, obj, els=None, *args, **kwargs):
+    def __ior__(self, e):
+        """ Implements the |= operator on this dom.event object.. 
+        appended to the collection unless it already exists in the
+        collection. This is the canonical way to do unique appends:
+
+            assert e not in es
+
+            # Noncanonical
+            es.append(e, uniq=True)
+
+            # Canonical 
+            es |= e
+
+            # Either of the above lines will allow the following to be
+            # asserted
+            assert es.last is e
+        """
+        # XXX Update docstring
+        if isinstance(e, tuple):
+            els = e[1:] if len(e) > 1 else None
+            e = e[0]
+
+        elif callable(e):
+            els = tuple()
+
+        self.append(e, els=els, uniq=True)
+
+        return self
+
+    def append(self, obj, els=None, uniq=False, *args, **kwargs):
         """ Appends event handlers to the event.
 
         In the standard entities.event class, handlers are appended
@@ -10652,7 +10681,7 @@ class event(entities.event):
             # Conventional event subscription.
             f = obj
 
-        super().append(f)
+        super().append(f, uniq=uniq)
 
     def remove(self, f):
         """ An override of entities.event.remove for this dom.event.
