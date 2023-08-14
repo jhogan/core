@@ -153,6 +153,33 @@ class url(tester.tester):
         self.eq('www.google.com', url.host)
         self.eq('/' + path, url.path)
 
+    def it_gets_paths(self):
+        paths = 'this/is/the/path'.split('/')
+        
+        url = www.url()
+        url.scheme = 'http'
+        url.host = 'www.google.com'
+
+        str_path = str()
+        for i, path in enumerate(paths):
+            url.paths[i] = path
+            
+            str_path += '/' + path
+
+            self.eq(str_path, url.path)
+
+            paths = [x for x in url.path.split('/') if x]
+            self.eq(paths, url.paths.list)
+
+        paths = [x for x in url.path.split('/') if x]
+        for _ in paths:
+            i = randint(0, len(paths) -1)
+            del paths[i]
+            del url.paths[i]
+
+            self.eq('/' + os.sep.join(paths), url.path)
+            self.eq(paths, url.paths.list)
+
     def it_gets_query(self):
         url = www.url('http://www.google.com')
         self.none(url.query)

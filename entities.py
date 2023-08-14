@@ -2425,6 +2425,12 @@ class kvps(entities):
             d[kvp.name] = kvp.value
 
         return d
+
+    @property
+    def list(self):
+        """ XXX
+        """
+        return [x.value for x in self]
         
 class kvp(entity):
     """ A simple entity which contains a key-value-pair.

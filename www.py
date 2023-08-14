@@ -3148,17 +3148,25 @@ class url(entities.entity):
        
             ['path', 'to', 'resource']
         """
-        # XXX Write tests
-        # XXX:4a0c586d Make it possible to set paths:
-        #
-        #     assert url.path == '/my/path'
-        #
-        #     url.paths[0] = 'en'
-        #
-        #     assert url.path == '/en/my/path'
-        #
+        # XXX:4a0c586d Update docstring
+        kvps = entities.kvps()
 
-        return [x for x in self.path.split(os.sep) if x]
+        if self.path:
+            paths = [x for x in self.path.split(os.sep) if x]
+            for i, path in enumerate(paths):
+                kvps += entities.kvp(k=i, v=path)
+
+        def kvps_onafterset(src, eargs):
+            self.path = os.sep + os.sep.join(src.list)
+
+        def kvps_onremove(src, eargs):
+            self.path = os.sep + os.sep.join(src.list)
+
+        kvps.onafterset += kvps_onafterset
+        kvps.onremove += kvps_onremove
+
+        return kvps
+
 
     @property
     def qs(self):
