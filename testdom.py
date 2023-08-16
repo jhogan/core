@@ -618,6 +618,54 @@ class element(tester.tester):
             self.eq(hnd.getattr('data-drag-target'), div.id)
             self.in_(hnd.classes, 'handle')
 
+    def it_calls_matches(self):
+        html = dom.html(Shakespeare)
+
+        # Get the root <html> tag
+        html = html.only
+
+        # Make sure we are working with the <html> tag
+        if type(html) is not dom.html:
+            raise TypeError('html is not <html>')
+
+        # We expect `html` to stringify as
+        #
+        #     <html 
+        #         xmlns="http://www.w3.org/1999/xhtml" 
+        #         xml:lang="en"
+        #         lang="en" 
+        #         debug="true"
+        #     >
+        #
+
+        self.true(html.matches('html'))
+        self.true(html.matches('[lang]'))
+        self.true(html.matches('[lang=en]'))
+
+        self.false(html.matches('p'))
+        self.false(html.matches('[id]'))
+        self.false(html.matches('[id="scene1.3.125"]'))
+
+    def it_calls_closest(self):
+        html = dom.html(Shakespeare)
+
+        # Ge the scene1 div
+        div = html['div[id=scene1]'].only
+
+        closest = div.closest('div')
+
+        self.isinstance(dom.div, closest)
+        self.true('dialog' in closest.classes)
+
+        closest = div.closest('div[id=test]')
+        self.isinstance(dom.div, closest)
+        self.true('container' in closest.classes)
+        self.eq('test', closest.id)
+
+        # There is no <p> above `div`
+        closest = div.closest('p')
+        self.none(closest)
+
 class comment(tester.tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'

@@ -1877,8 +1877,6 @@ class element(entities.entity):
         :param: sels str|selectors: The CSS selector to match this
         element against.
         """
-
-        # XXX Add test
         if isinstance(sels, str):
             sels = selectors(sels)
 
