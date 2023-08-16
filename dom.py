@@ -1868,10 +1868,11 @@ class element(entities.entity):
         Compared to __getitem__
         -----------------------
         Unlike using the indexer (__getitem__), the CSS3 selector is
-        only used to test this `element` object for a match. The indexer
-        is recursive, i.e., it descends into the DOM tree looking for
-        any child elements that match the selector. Instead of Boolean,
-        it returns a collection of matching elements.
+        only used to test this `element` object for a match. The
+        __getitem__ method is recursive, i.e., it descends into the DOM
+        tree looking for any child elements that match the selector.
+        Instead of returning a Boolean valu.e, it returns a collection
+        of matching elements.
 
         :param: sels str|selectors: The CSS selector to match this
         element against.
