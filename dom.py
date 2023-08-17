@@ -2200,8 +2200,6 @@ class element(entities.entity):
         :param: sels str|dom.selectors: The CSS selector used in
         selection of the ancester.
         """
-        # XXX Write test
-
         rent = self
         while rent:
             if rent.matches(sels):
@@ -5155,9 +5153,13 @@ class ul(element):
     def lis(self):
         """ Return all the <li> elements for this <ul> object.
         """
-        # XXX We should be able to do something like self['ul:root>li']
-        # but it's not working at the moment.
-        return self['li']
+        r = lis()
+
+        for e in self.genchildren():
+            if isinstance(e, li):
+                r += e
+
+        return r
 
 # TODO:dea3866d
 unorderedlists = uls

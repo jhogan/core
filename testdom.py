@@ -6207,6 +6207,35 @@ class selectors(tester.tester):
                 lambda: dom.selectors(sel),
            )
 
+class ul(tester.tester):
+    def it_calls_ul(self):
+        html = dom.html('''
+        <div>
+            <ul>
+                <li class='target'>derp</li>
+                <li class='target'>herp</li>
+
+                <div>
+                    <ul>
+                        <li class='nontarget'>girp</li>
+                        <li class='nontarget'>chirp</li>
+                    </ul>
+                </div>
+            </ul>
+        </div>
+        ''')
+
+        ul = html.only.children.only
+
+        if type(ul) is not dom.ul:
+            raise TypeError('`ul` is not <ul>')
+
+        lis = ul.lis
+        self.two(lis)
+        for li in lis:
+            self.type(dom.li, li)
+            self.true('target' in li.classes)
+    
 class event(tester.tester):
     def it_clears(self):
         def hnd(src, eargs):
