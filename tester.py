@@ -606,8 +606,8 @@ class tester(entities.entity):
                 if eargs.cancel:
                     return
 
-                # If a user clicked a hyperlink (dom.a) navigate the tab
-                # to the the new URL.
+                # If a user clicked a hyperlink (dom.a), navigate the
+                # tab to the new URL.
                 if isinstance(eargs.src, dom.a):
                     pg = src.attributes['href'].value
                     self.navigate(pg=pg, ws=self.site)
@@ -1088,6 +1088,7 @@ class tester(entities.entity):
                 pg = str(pg)
 
                 res = self.get(pg, ws)
+
                 self.html = res.html
 
                 self.url = www.url(
@@ -1217,7 +1218,6 @@ class tester(entities.entity):
                 :param: hdrs www.headers: A collection of headers to be
                 appended to the request.
                 """
-
                 arg_hdrs = www.headers(hdrs) if hdrs else None
 
                 isa = isinstance

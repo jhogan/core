@@ -9530,8 +9530,8 @@ class selector(entities.entity):
 
                 # Else if combinator is SubsequentSibling (~)
                 elif comb == selector.element.SubsequentSibling:
-                    # XXX Line is too long
-                    els2 = selectors(repr(self.elements[:-1 - i])).match(els)
+                    sels = repr(self.elements[:-1 - i])
+                    els2 = selectors(sels).match(els)
                     for precs in el1.preceding:
                         if precs in els2:
                             el1 = precs
