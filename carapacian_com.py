@@ -1384,7 +1384,7 @@ class stories(effort.stories):
     """
 
 class story(effort.story):
-    """ XXX
+    """ A subentity of effort.story for use by carapacian_com.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1401,7 +1401,8 @@ class story(effort.story):
 
     @property
     def active(self):
-        """ XXX
+        """ Return the `effort` (i.e., 'development', 'testing', 'uat',
+        etc) that is currently active for this story.
         """
         active = apriori.statustype(name='Active')
 

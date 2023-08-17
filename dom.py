@@ -10556,9 +10556,13 @@ class event(entities.event):
         return self
 
     def __ior__(self, e):
-        """ Implements the |= operator on this dom.event object.. 
-        appended to the collection unless it already exists in the
-        collection. This is the canonical way to do unique appends:
+        """ Implements the |= operator on this dom.event object. This
+        operator appends an event handler to this `event` object the way
+        the += operator does except that it will not append the same
+        event handler.
+
+        The following demonstrates the canonical and noncanonical way to
+        do unique appends:
 
             assert e not in es
 
@@ -10572,7 +10576,6 @@ class event(entities.event):
             # asserted
             assert es.last is e
         """
-        # XXX Update docstring
         if isinstance(e, tuple):
             els = e[1:] if len(e) > 1 else None
             e = e[0]

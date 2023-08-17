@@ -3138,17 +3138,36 @@ class url(entities.entity):
 
     @property
     def paths(self):
-        """ Returns a list of path elements in the URL.
+        """ Returns a sequence (`kvps`) of path elements in the URL.
+        This collection can be used to iterate over each path element in
+        the path. Given the URL:
+        
+            url = www.url(
+                'scheme://netloc:1234/path/to/resource?query#fragment'
+            )
 
-        Given the URL:
-        
-             scheme://netloc:1234/path/to/resource?query#fragment
-        
-        The return would be:
-       
-            ['path', 'to', 'resource']
+        We can do the following:
+
+            for i, path in url.paths:
+                if i == 0:
+                    assert path.value == 'path'
+
+                if i == 1:
+                    assert path.value == 'to'
+
+                if i == 2:
+                    assert path.value == 'resource'
+
+        A more powerful use of this property, however, is to update the
+        path using index notation:
+
+            assert url.path == '/path/to/resource'
+
+            # Change /to/ to /of/
+            url.paths[1] = 'of'
+
+            assert url.path == '/path/of/resource'
         """
-        # XXX:4a0c586d Update docstring
         kvps = entities.kvps()
 
         if self.path:
@@ -3166,7 +3185,6 @@ class url(entities.entity):
         kvps.onremove += kvps_onremove
 
         return kvps
-
 
     @property
     def qs(self):

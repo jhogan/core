@@ -2428,7 +2428,8 @@ class kvps(entities):
 
     @property
     def list(self):
-        """ XXX
+        """ Creates a new `list` representation of this kvps collection
+        and returns it.
         """
         return [x.value for x in self]
         
