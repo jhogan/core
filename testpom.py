@@ -3047,6 +3047,21 @@ class page(tester.tester):
         # subpage. 
         self.eq('I am the subpage', ps.only.text)
 
+    def it_calls_subpage_which_raises_exception(self):
+        """ 
+        """
+        ws = foonet()
+
+        tab = self.browser().tab()
+
+        tab.inspa = True
+
+        # GET the subpage
+        res = tab.navigate('/en/spa?raise_=true', ws)
+
+        for url in tab.html['a'].pluck('url'):
+            self.eq('en', url.paths[0].value)
+
     def it_navigates_traditionally_from_nonspa_menu(self):
         before = after = None
         def tab_onbeforeunload(src, eargs):
@@ -3172,7 +3187,7 @@ class spa(pom.spa):
         super().__init__()
         self.pages += spa.subpage('subpage')
 
-    def main(self):
+    def main(self, raise_:bool):
         if not self.header.menu:
             self.header.makemain()
 
@@ -3192,6 +3207,9 @@ class spa(pom.spa):
         mnuspa.items += pom.menu.item(
             'Profiles', f'{profs.path}'
         )
+
+        if raise_:
+            raise ValueError('raise_ was True')
 
 class google(pom.page):
     def main(self, **kwargs):

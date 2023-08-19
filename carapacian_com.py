@@ -20,16 +20,6 @@ import pom
 import www
 import apriori
 
-# XXX After navigating to 
-#
-# https://c13fa8ce.carapacian.com/en/ticketsspa/story?backlogid=5a19098b385344b0b3782db47ef6d92f&crud=update&id=894cd4ddcf064f31960c8674667d3320&oncomplete=/ticketsspa/backlogs
-#
-# Click on "Tickets Spa" leads us to 
-#
-# https://c13fa8ce.carapacian.com/ticketsspa
-#
-# which 404's
-
 class sites(pom.sites):
     pass
 

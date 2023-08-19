@@ -313,6 +313,7 @@ class application:
                             # DOCTYPE here. See TODO:10d9a676.
                             res.body = f'<!DOCTYPE html>\n{msg.html}'
                         else:
+                            request.lingualize('en', pg)
                             pg.flash(msg)
                             # HACK:10d9a676 We shoudn't have to prepend
                             # DOCTYPE here. See TODO:10d9a676.
