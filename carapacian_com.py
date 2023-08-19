@@ -1048,14 +1048,15 @@ class ticketsspa(pom.spa):
             (tasks) of a story.
             """
             def __init__(self, *args, **kwargs):
-                """ XXX 
+                """ Create an effort_requirement (task) subpage.
                 """
                 super().__init__(
                     e=effort.effort_requirement, *args, **kwargs
                 )
 
             def txtdescription_onblur(self, src, eargs):
-                """ XXX 
+                """ Capture the task's description's on blur event and
+                persist the new description.
                 """
                 # Get the card
                 card = eargs.html.first
@@ -1071,10 +1072,12 @@ class ticketsspa(pom.spa):
                 er.save()
 
             def btnactivate_onclick(self, src, eargs):
-                """ XXX 
+                """ Capture the Activate button's click event and
+                activate the task (effort_requirement).
                 """
                 # Get the card
                 card = eargs.html.first
+                B()
 
                 # Get the confirmation dialog box if there is one 
                 dlgs = card['dialog']
