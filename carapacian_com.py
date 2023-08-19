@@ -1048,11 +1048,15 @@ class ticketsspa(pom.spa):
             (tasks) of a story.
             """
             def __init__(self, *args, **kwargs):
+                """ XXX 
+                """
                 super().__init__(
                     e=effort.effort_requirement, *args, **kwargs
                 )
 
             def txtdescription_onblur(self, src, eargs):
+                """ XXX 
+                """
                 # Get the card
                 card = eargs.html.first
 
@@ -1060,7 +1064,6 @@ class ticketsspa(pom.spa):
                 id = card.getattr('data-entity-id')
 
                 # Get effort_requirement
-                # XXX Shouldn't er.id == self.instance.id?
                 er = effort.effort_requirement(id)
 
                 er.effort.description = src.text
@@ -1068,6 +1071,8 @@ class ticketsspa(pom.spa):
                 er.save()
 
             def btnactivate_onclick(self, src, eargs):
+                """ XXX 
+                """
                 # Get the card
                 card = eargs.html.first
 
@@ -1077,7 +1082,6 @@ class ticketsspa(pom.spa):
                 # If there is no dialog box. This will be the case when the
                 # Active button is first clicked.
                 if dlgs.isempty:
-                    
                     # Create the dialog to prompt the user to confirm
                     # closure
                     card += pom.dialog(
@@ -1100,7 +1104,6 @@ class ticketsspa(pom.spa):
                         id = card.getattr('data-entity-id')
 
                         # Get effort_requirement
-                        # XXX Shouldn't er.id == self.instance.id?
                         er = effort.effort_requirement(id)
 
                         st = er.requirement
