@@ -1076,14 +1076,15 @@ class ticketsspa(pom.spa):
                 activate the task (effort_requirement).
                 """
                 # Get the card
-                card = eargs.html.first
-                B()
+                sec, li = eargs.html
+
+                card = sec['section>main>*'].only
 
                 # Get the confirmation dialog box if there is one 
                 dlgs = card['dialog']
 
-                # If there is no dialog box. This will be the case when the
-                # Active button is first clicked.
+                # If there is no dialog box. This will be the case when
+                # the Active button is first clicked.
                 if dlgs.isempty:
                     # Create the dialog to prompt the user to confirm
                     # closure
@@ -1091,8 +1092,8 @@ class ticketsspa(pom.spa):
                         card, 
                         msg = 'Are you sure you want to activate?',
                         caption = 'Confirm',
-                        onyes = (self.btnactivate_onclick, card),
-                        onno = (self.btnactivate_onclick, card),
+                        onyes = (self.btnactivate_onclick, sec, li),
+                        onno = (self.btnactivate_onclick, sec, li),
                     )
 
                 # If there was a dialog box
@@ -1102,7 +1103,6 @@ class ticketsspa(pom.spa):
 
                     # If user clicked the Yes button
                     if btn.getattr('data-yes'):
-                        
                         # Get effort_requirement id
                         id = card.getattr('data-entity-id')
 
@@ -1175,7 +1175,6 @@ class ticketsspa(pom.spa):
 
                     if not st:
                         btn = dom.button('Activate')
-                        btn.onclick += self.btnactivate_onclick, el
                         btn.setattr('data-activate', True) 
 
                         el += btn
@@ -1334,6 +1333,20 @@ class ticketsspa(pom.spa):
                     tab.source = pg 
 
                     tabs.tabs += tab
+
+                    btns = tab['button[data-activate]']
+
+                    if btns.issingular:
+                        btn = btns.only
+
+                        id = 'x' + er.id.hex
+                        lis = tabs['nav>ul[role=tablist]>li']
+                        li = lis[f'[aria-controls={id}]'].only
+
+                        sec = tabs[f'section[id={id}]'].only
+
+                        btn.onclick += pg.btnactivate_onclick, sec, li
+
 
             return el
 

@@ -1573,6 +1573,10 @@ class ticketsspa_story(tester.tester):
                 # Confirm activation
                 self.click(yes, tab)
 
+                tabs = tab['div.tabs.tasks'].only
+                secs = tabs[f'div.tabs.tasks > section[id={sec.id}]']
+                sec = secs.only
+
                 self.zero(sec['button[data-activate]'])
                 self.one(sec['p[data-active]'])
 
@@ -1586,6 +1590,9 @@ class ticketsspa_story(tester.tester):
                 frm = secs[f'form[data-entity-id="{id}"]'].only
                 self.zero(frm['button[data-activate]'])
                 self.one(frm['p[data-active]'])
+
+                li = tabs[f'nav>ul>li[aria-controls={sec.id}]'].only
+                self.eq('true', li.aria_selected)
             else:
                 # NOTE We only have the Test task at the moment
                 raise NotImplementedError()
