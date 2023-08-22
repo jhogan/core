@@ -1133,9 +1133,6 @@ class ticketsspa(pom.spa):
 
                         btnactivate.replace(p)
 
-                        # XXX Set attribute on <li> to indicate it is
-                        # selected.
-
                     # Remove the dialog box so the user won't see it anymore
                     card.remove('dialog')
 

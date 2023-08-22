@@ -87,7 +87,6 @@ class  releases(backlogs):                                       pass
 class  sprints(backlogs):                                        pass
 class  stories(requirements):                                    pass
 class  backlogstatustypes(apriori.types):                        pass
-
 class backlog_stories(orm.associations):
     """ A collection of `backlog_story` associations.
 
