@@ -1336,7 +1336,6 @@ class ticketsspa(pom.spa):
 
                         btn.onclick += pg.btnactivate_onclick, sec, li
 
-
             return el
 
     class search(pom.page):

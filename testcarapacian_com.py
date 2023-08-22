@@ -1545,7 +1545,6 @@ class ticketsspa_story(tester.tester):
 
             eff = er.effort
 
-            # XXX Update we we add `effort.case`
             btn = sec['button[data-activate]'].only
             if type(eff) is effort.case:
                 # Test clicking activating but canceling the activation 

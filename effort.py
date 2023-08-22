@@ -320,21 +320,24 @@ class phase(effort):
     pass
 
 class task(effort): 
-    """ XXX
+    """ A subentity of `effort` representing a task.
     """
 
 class software(task): 
-    """ XXX
+    """ A subentity of `task` representing a software task. `software`
+    is used as a base entity of other entity classes, e.g.,
+    `developement` for software development tasks.
     """
 
 class development(software): 
-    """ XXX
+    """ Represents a software development task.
     """
 
 class case(development): 
-    """ XXX
+    """ Represents a test case software development task. Test cases are
+    automated tests that ensure the functionality of software (e.g.,
+    unit tests). A `case` represents the task of developing these tests.
     """
-
 class activity(effort): 
     pass
 
