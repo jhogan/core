@@ -43,6 +43,9 @@ class  projects(efforts):                                        pass
 class  phases(efforts):                                          pass
 class  tasks(efforts):                                           pass
 class  jobs(efforts):                                            pass
+class  softwares(tasks):                                         pass
+class  developments(softwares):                                  pass
+class  cases(developments):                                      pass
 class  activities(efforts):                                      pass
 class  productionruns(efforts):                                  pass
 class  maintenences(productionruns):                             pass
@@ -317,7 +320,20 @@ class phase(effort):
     pass
 
 class task(effort): 
-    pass
+    """ XXX
+    """
+
+class software(task): 
+    """ XXX
+    """
+
+class development(software): 
+    """ XXX
+    """
+
+class case(development): 
+    """ XXX
+    """
 
 class activity(effort): 
     pass

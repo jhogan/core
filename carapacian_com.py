@@ -1307,17 +1307,9 @@ class ticketsspa(pom.spa):
                 for er in ers:
                     eff = er.effort
 
-                    # XXX:704077c8 Let's make the effort here a
-                    # 
-                    #      case(development(software(task))
-                    #
-                    # again, and we will decide on the name based on the
-                    # effort's subentity instead of its `type` object.
-                    name = eff.type.name
-
                     # XXX Remove need to pass in an id. Have it auto
                     # generated.
-                    tab = pom.tab('x' + er.id.hex, name=name)
+                    tab = pom.tab('x' + er.id.hex, name=eff.name)
 
                     pg = self.pages['effort-requirement']
 
@@ -1396,10 +1388,7 @@ class story(effort.story):
         super().__init__(*args, **kwargs)
 
         if self.orm.isnew:
-            tsk = effort.task(
-                name = 'Test',
-                type = effort.type(name='Unit Test Development')
-            )
+            tsk = effort.case(name='Test')
 
             self.effort_requirements += effort.effort_requirement(
                 effort = tsk

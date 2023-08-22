@@ -1507,7 +1507,7 @@ class ticketsspa_story(tester.tester):
             li = lis[f'[aria-controls={sec.id}]'].only
             self.eq('tab', li.role)
             self.eq('0', li.tabindex)
-            self.eq('Unit Test Development', li.text)
+            self.eq('Test', li.text)
             self.one(sec['form button[data-activate]'])
 
             # XXX:704077c8 
@@ -1547,7 +1547,7 @@ class ticketsspa_story(tester.tester):
 
             # XXX Update we we add `effort.case`
             btn = sec['button[data-activate]'].only
-            if eff.type.name == 'Unit Test Development':
+            if type(eff) is effort.case:
                 # Test clicking activating but canceling the activation 
                 self.click(btn, tab)
 
