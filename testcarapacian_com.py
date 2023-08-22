@@ -1510,8 +1510,7 @@ class ticketsspa_story(tester.tester):
             self.eq('Test', li.text)
             self.one(sec['form button[data-activate]'])
 
-            # XXX:704077c8 
-            # self.type(effort.case, er)
+            self.type(effort.case, er.effort)
 
     def it_activates(self):
         """ Test activating the task by clicking the Activate button. 
