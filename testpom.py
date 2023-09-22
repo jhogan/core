@@ -4504,7 +4504,7 @@ class tabs(tester.tester):
         tab = pom.tab(name='My Tab1')
         self.expect(None, f)
 
-    def it_raises_when_tab_missing_id_on_append(self):
+    def it_automatically_creates_an_id(self):
         tabs = pom.tabs()
         tab = pom.tab(name='My Tab')
         id = tab.id
