@@ -4221,25 +4221,34 @@ class tab(dom.section):
     # so the user doesn't have to.
 
     # TODO s/name/text/
-    def __init__(self, id, name, *args, **kwargs):
+    def __init__(self, name):
         """ Create a tab.
-
-        :param: id str: The value of this tab's `id' attribute.
 
         :param: name str: The text to be displayed in the menu.
         """
         self.role = 'tabpanel'
         self.aria_hidden = 'true'
         self.name = name
-        kwargs['id'] = id
-        super().__init__(*args, **kwargs)
+
+        super().__init__()
 
         self._li = dom.li(role='tab', tabindex='0')
         self._li.aria_selected = 'false'
 
         self._li.aria_controls = self.id
         self._li.text = name
+
+        self.identify()
         self._source = None
+
+    @property
+    def id(self):
+        return self.attributes['id'].value
+
+    @id.setter
+    def id(self, v):
+        self.attributes['id'] = v
+        self._li.aria_controls = v
 
     def show(self):
         """ Show (activate) this tab.

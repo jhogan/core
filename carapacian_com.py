@@ -1307,9 +1307,8 @@ class ticketsspa(pom.spa):
                 for er in ers:
                     eff = er.effort
 
-                    # XXX Remove need to pass in an id. Have it auto
-                    # generated.
-                    tab = pom.tab('x' + er.id.hex, name=eff.name)
+                    tab = pom.tab(name=eff.name)
+                    tab.id = 'x' + er.id.hex
 
                     pg = self.pages['effort-requirement']
 

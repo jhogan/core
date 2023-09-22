@@ -4173,7 +4173,7 @@ class tabs(tester.tester):
     def it_appends_tab(self):
         tabs = pom.tabs()
         name = 'My Tab 0'
-        tab = pom.tab('my-tab-0', name)
+        tab = pom.tab(name)
         tabs.tabs += tab
 
         ''' Test nav>ul>li '''
@@ -4208,7 +4208,7 @@ class tabs(tester.tester):
         self.eq('false', sec.aria_hidden)
 
         ''' Add a second one '''
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab1 = pom.tab(name='My Tab 1')
 
         tabs.tabs += tab1
 
@@ -4254,7 +4254,7 @@ class tabs(tester.tester):
     def it_removes_tab(self):
         ''' Add one then remove '''
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab', name='My Tab')
+        tab = pom.tab(name='My Tab')
         
         tabs.tabs += tab
         tabs.tabs -= tab
@@ -4264,8 +4264,8 @@ class tabs(tester.tester):
         self.zero(tabs['nav ul li'])
 
         ''' Add two and remove one '''
-        tab = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
 
         tabs.tabs += tab, tab1
         tabs.tabs -= tab
@@ -4282,9 +4282,9 @@ class tabs(tester.tester):
 
         ''' Add three, show them, and remove each going foward to end'''
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
-        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
+        tab0 = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
+        tab2 = pom.tab(name='My Tab 2')
 
         tabs.tabs += tab0, tab1, tab2
         for i, tab in tabs.tabs.enumerate():
@@ -4332,9 +4332,9 @@ class tabs(tester.tester):
 
         ''' Add three, show them, and remove each in revere to end'''
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
-        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
+        tab0 = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
+        tab2 = pom.tab(name='My Tab 2')
 
         tabs.tabs += tab0, tab1, tab2
 
@@ -4389,10 +4389,10 @@ class tabs(tester.tester):
 
         ''' Remove non-showing ''' 
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
-        tab2 = pom.tab(id='my-tab-2', name='My Tab 2')
-        tab3 = pom.tab(id='my-tab-3', name='My Tab 3')
+        tab0 = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
+        tab2 = pom.tab(name='My Tab 2')
+        tab3 = pom.tab(name='My Tab 3')
 
         tabs.tabs += tab0, tab1, tab2, tab3
 
@@ -4421,8 +4421,8 @@ class tabs(tester.tester):
 
     def it_calls_showing(self):
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab1', name='My Tab 1')
+        tab = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
 
         tabs.tabs += tab, tab1
 
@@ -4452,8 +4452,8 @@ class tabs(tester.tester):
         # Ensure that an empty generator is returne
         self.zero(tabs.tabs)
 
-        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab0 = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
 
         for i, tab in tabs.tabs.enumerate():
             self.type(pom.tab, tab)
@@ -4464,8 +4464,8 @@ class tabs(tester.tester):
         
     def it_calls_show(self):
         tabs = pom.tabs()
-        tab0 = pom.tab(id='my-tab-0', name='My Tab 0')
-        tab1 = pom.tab(id='my-tab-1', name='My Tab 1')
+        tab0 = pom.tab(name='My Tab 0')
+        tab1 = pom.tab(name='My Tab 1')
 
         tabs.tabs += tab0, tab1
 
@@ -4487,7 +4487,7 @@ class tabs(tester.tester):
 
     def it_raises_when_same_tab_is_appended_twice(self):
         tabs = pom.tabs()
-        tab = pom.tab(id='my-tab', name='My Tab')
+        tab = pom.tab(name='My Tab')
 
         def f():
             nonlocal tabs
@@ -4496,43 +4496,40 @@ class tabs(tester.tester):
         self.expect(None, f)
         self.expect(ValueError, f)
 
-        tab = pom.tab(id='my-tab', name='My Tab')
+        id = tab.id
+        tab = pom.tab(name='My Tab')
+        tab.id = id
         self.expect(ValueError, f)
 
-        tab = pom.tab(id='my-tab1', name='My Tab1')
+        tab = pom.tab(name='My Tab1')
         self.expect(None, f)
 
     def it_raises_when_tab_missing_id_on_append(self):
         tabs = pom.tabs()
-        tab = pom.tab('my-tab', name='My Tab')
-        tab.id = None
+        tab = pom.tab(name='My Tab')
+        id = tab.id
+        self.eq(id[0], 'x')
 
-        def f():
-            nonlocal tabs
-            tabs.tabs += tab
-
-        self.expect(ValueError, f)
-
-        tab.id = 'my-id'
-
-        self.expect(None, f)
+        # Override id
+        id = 'x' + uuid4().hex
+        tab.id = id
+        self.eq(id, tab.id)
 
 class tab(tester.tester):
     def it_creates(self):
-        tab = pom.tab('my-tab', 'My Tab')
+        tab = pom.tab('My Tab')
         self.isinstance(dom.section, tab)
-        self.eq('my-tab', tab.id)
         self.eq('tabpanel', tab.getattr('role'))
         self.eq('true', tab.aria_hidden)
 
     def it_calls_show(self):
-        tab = pom.tab('my-tab', 'My Tab')
+        tab = pom.tab('My Tab')
         tab.show()
         self.eq('false', tab.aria_hidden)
 
     def it_calls_name(self):
         name = 'My Tab'
-        tab = pom.tab('my-tab', name)
+        tab = pom.tab(name)
         self.eq(name, tab.name)
 
 Favicon = '''

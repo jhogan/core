@@ -116,7 +116,6 @@ class tickets(tester.tester):
     def it_GETs(self):
         ws = carapacian_com.site()
         tab = self.browser().tab()
-
         res = tab.get('/en/tickets', ws)
         self.status(200, res)
 
