@@ -1521,6 +1521,9 @@ class tester(entities.entity):
     def assertEmpty(self, o, msg=None):
         if o != '': self._failures += failure()
 
+    def notempty(self, o, msg=None):
+        if o == '': self._failures += failure()
+
     def empty(self, o, msg=None):
         if o != '': self._failures += failure()
         
