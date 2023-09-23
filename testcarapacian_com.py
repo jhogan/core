@@ -1516,11 +1516,7 @@ class ticketsspa_story(tester.tester):
         bl = testeffort.backlog.fake()
         st = ticketsspa_story.fake()
 
-        # XXX Make instance of this code an .insert():
-        #
-        #     bl.insert(st)
-        #
-        bl.backlog_stories += effort.backlog_story(story=st)
+        bl.insert(st)
         bl.save()
         
         # Load the backlogs page
