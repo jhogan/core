@@ -1310,9 +1310,10 @@ class ticketsspa(pom.spa):
                     tab = pom.tab(name=eff.name)
                     tab.id = 'x' + er.id.hex
 
+                    # TODO Won't we  need a new page for each tab?
+                    # Otherwise, the same page will p
                     pg = self.pages['effort-requirement']
 
-                    # XXX Should we be imperating pg a subpage of self?
                     pg.clear()
 
                     pg.instance = er

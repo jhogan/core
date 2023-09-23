@@ -650,27 +650,31 @@ reported will be slightly off. This appears to be a bug with `pdb`. You
 can easily correct this by removing the `B()` and rerunning the test to
 see the correct line number.
 
-### Adding trace code ###
-Trace coding is the use of functions such as print() to write
-information about the execution of a program for the purposes of
-debugging. Adding print() statements and the like are fine in feature
-branches, but should almost never be in 'main' - Core is a library after
-all, not a script. You can use the functions dbg.XXX() and dbg.XXXr() to
-print data to stdout. Lines with XXX in them are not allowed in 'main'
-except in rare circumstances (see the section on XXX comments in
-STYLE.md), so using these function will help to ensure that the lines
-are discoverd and removed before merging them into 'main'.
+### Adding trace code ### Trace coding is the use of functions such as
+print() to write information about the execution of a program for the
+purposes of debugging. Adding print() statements and the like are fine
+in feature branches, but should almost never be in 'main' - Core is a
+library after all, not a script. You can use the functions dbg.XXX() <!--ignorexxx--> 
+and dbg.XXXr() <!--ignorexxx--> to print data to
+stdout. Lines with XXX <-ignorexxx--> in them are not allowed in 'main'
+except in rare circumstances (see the section on XXX <!--ignorexxx-->
+comments in STYLE.md), so using these function will help to ensure that
+the lines are discoverd and removed before merging them into 'main'.
 
     from dbg import *
     from uuid import uuid4
 
-    XXX('Creating UUID')
+    XXX('Creating UUID')  # ignorexxx
 
     id = uuid4()
 
-    XXX('printing repr() on UUID')
+    XXX('printing repr() on UUID')  # ignorexxx 
 
-    XXXr(id)
+    XXXr(id)  # ignorexxx  
+
+### Finding files with the XXX in them them. ###
+You will often want to 
+
 
 ### When exceptions are caught ###
 If an exception is raised and caught, you may find yourself in the

@@ -9971,6 +9971,7 @@ class orm:
         else:
             if self in guestbook:
                 return
+
         guestbook += [self]
 
         try: 

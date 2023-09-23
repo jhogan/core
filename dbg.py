@@ -118,11 +118,11 @@ PR = profile
 # easy to grep this trace code (along with triple-X comments) and remove
 # them.
 
-XXX = builtins.print
+XXX = builtins.print  # ignorexxx
 
 import sys
 
-def XXXr(*args, sep=' ', end='\n', file=sys.stdout, flush=False):
+def XXXr(*args, sep=' ', end='\n', file=sys.stdout, flush=False):  # ignorexxx 
     """ Print the representation (repr()) of each object passed in. Uses
     the same interface as `print()` does. Use this function while
     debugging when you want to see the repr() of one or mone objects.
@@ -147,6 +147,6 @@ def XXXr(*args, sep=' ', end='\n', file=sys.stdout, flush=False):
 def print(msg, end='\n'):
     raise NotImplementedError(
         'print() not supported in library module. '
-        'Use XXX() or XXXr() instead.'
+        'Use XXX() or XXXr() instead.'  #  ignorexxx
     )
         

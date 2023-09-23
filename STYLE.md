@@ -439,16 +439,16 @@ to use these in the framework.
         # FIXME:c5248240 The below line will break if a list has zero
         # elements.
     
-    * XXX comments imply that something must be fixed in a feature
-      branch before the branch is merged back into 'main'. It's like a
-      FIXME but more urgent. There is usually no need to give it an
-      identifier.
+    * XXX <--ignorexxx--> comments imply that something must be fixed 
+      in a feature branch before the branch is merged back into 'main'.
+      It's like a FIXME but more urgent. There is usually no need to
+      give it an identifier.
 
-        # XXX This will cause the table to be truncated when called with
-        # an integer. Type checking needs to be used here to avoid data
-        # loss.
+        # XXX <--ignorexxx--> This will cause the table to be truncated
+        # when called with an integer. Type checking needs to be used
+        # here to avoid data loss.
 
-      (See also dbg.XXX and dbg.XXXr.)
+      (See also dbg.XXX and dbg.XXXr.) <!--ignorexxx-->
 
     * Bomb-comments are used to flag sensitive areas of source code.
       They are intended to bring attention to changes made to these
@@ -470,7 +470,7 @@ to use these in the framework.
             💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             """
             ...
-    # XXX  Add SECURITY and HACKCSS
+    # XXX <--ignorexxx-->  Add SECURITY and HACKCSS
 
 ### Justification
 It's normal for bugs and and code optimizations of varying severity to be
