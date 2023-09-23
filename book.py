@@ -8871,7 +8871,7 @@ with book('Hacking Carapacian Core'):
         human operator. 
 
         The Core Framework uses an RPA framework (centralized in
-        `bot.py`) to run bots on webservers. These bots automate common
+        `bot.py`) to run bots on web servers. These bots automate common
         tasks that server adminstrators, QA testers, etc. would normally
         be tasked with.
 
@@ -8893,20 +8893,63 @@ with book('Hacking Carapacian Core'):
            (`orm.security.user`) and belong to a certain proprietor
            (`orm.security.proprietor`).  Thus, restriction can be put on
            their ability to access data in the same way that other
-           actors, such as websites and user, are restricted .
+           actors, such as web sites and user, can be restricted. See
+           the section on [security](#ea38ee04) for more.
 
           * **Interprocess communication** Bots can communicate with one
           another by sending each other messages via the database. Bots
-          are free to coordinate activities with one another.
+          can also use this facility to communicate with humans and
+          third party systems. Note that this facility has not been
+          implemented yet, and it isn't completely clear whether or not
+          it will be needed.
 
           * **Expressive** Since bots are written in Python using the
-          Framework, they can be designed to be significantly
-          expressive, doing anything from small, simple database
-          maintenence operation to to carrying out extremly
+          Framework, they can be designed to be significantly more
+          expressive than a typical Cron job, doing anything from small,
+          simple database maintenence operation to carrying out extremly
           sophisticated artificial intelligence-based behaviours.
 
-          * **Logging** TODO
-      ''')
+          * **Logging** It's easy for bots to be written to log to the
+          database (`bot.bot.logs`) and to syslogd ('logs.py') in a
+          consistent manner.
+
+        An important caveat to the above is that only one bot,
+        `sendbot`, has been implemented at the time of this writing.
+        Its job is to read messages from the local queue and dispatch
+        them to their intended destination. More bots are planned,
+        however, including the following:
+
+          * **sysadminbot** The system administrator bot will perform
+          routine maintaince on the server at the operating
+          system level such runing updates, ensuring the system remains
+          configured properly, analying logs for issues, etc.
+
+          * **dbadminbot** The database admin bot will do the job of a
+          database administer such as monitoring the consumption of
+          database files, ensuring the correct configuration of the
+          database, etc.
+
+          * **secbot** The cybersecurity bot would Continually monitors
+          log files and system processos for attempted breachs and other
+          forms of tampering.
+
+          * **penbot** The penitration testing bot would spend its days
+          attempting to find hole in the system's security and other
+          weeknesses.
+
+          * **devopsbot** Maintains source code repositories, deploys
+          source code to servers, ensures unit tests pass, spawn
+          new virtual machines in response to increased demand, etc.
+
+          * **qatesterbot** Tests the production websites externally,
+          i.e., over a literal HTTP connection (instead of through the
+          `tester.browser`). Runs continually looking for basic problems
+          with the website. Can also be used to simulate load on the
+          server.
+      '''
+      )
+
+
 
     with section('The bots'):
       ...
