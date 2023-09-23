@@ -1451,11 +1451,6 @@ class ticketsspa_story(tester.tester):
         mods = 'effort',
         super().__init__(mods=mods, propr=propr, *args, **kwargs)
 
-        # XXX We have to do this because `mods = 'carapacian_com', ...`
-        # would rebuild pom.site and this causes propblems.
-        if self.rebuildtables:
-            carapacian_com.story.orm.recreate()
-
     @staticmethod
     def fake(cnt=1):
         def f(x):
