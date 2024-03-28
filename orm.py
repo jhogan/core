@@ -12618,6 +12618,66 @@ class orm:
 
         return r
 
+    @classproperty
+    def schema(cls):
+        from graphql import (
+            GraphQLArgument, GraphQLEnumType, GraphQLEnumValue,
+            GraphQLField, GraphQLInterfaceType, GraphQLList, GraphQLNonNull,
+            GraphQLObjectType, GraphQLSchema, 
+            GraphQLBoolean, GraphQLFloat, GraphQLID,
+            GraphQLInt, GraphQLString,
+        ) 
+
+        # XXX We may want to get the name the way orm.table does
+        e = cls.entity
+        name = f'{e.__module__}_{e.__name__}'
+
+        fields = dict()
+        for map in cls.mappings:
+            if isinstance(map, entitiesmapping):
+                continue
+
+            if isinstance(map, entitymapping):
+                continue
+
+            if isinstance(map, associationsmapping):
+                continue
+
+            if map.type is types.str:
+                type = GraphQLString
+            elif map.type is types.date:
+                type = GraphQLString
+            elif map.type is types.datetime:
+                type = GraphQLString
+            elif map.type is types.bytes:
+                type = GraphQLString
+            elif map.type is types.int:
+                type = GraphQLInt
+            elif map.type is types.bool:
+                type = GraphQLBoolean
+            elif map.type is types.float:
+                type = GraphQLFloat
+            elif isinstance(map, primarykeyfieldmapping):
+                type = GraphQLID
+            elif isinstance(map, foreignkeyfieldmapping):
+                type = GraphQLID
+            else:
+                raise NotImplementedError(
+                    'Type not implemented for '
+                    ' GraphQL: ' + types[map.type]
+                )
+
+            fld = GraphQLField(
+                type, description='The id of the human.'
+            )
+
+            fields[map.name] = fld
+        
+        schema = GraphQLInterfaceType(name,{})
+
+        return schema
+        
+
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
 
