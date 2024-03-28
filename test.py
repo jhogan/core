@@ -15349,6 +15349,11 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
 
             self.expect(None, art.orm.reloaded)
 
+    def it_gets_schema(self):
+        schema = artist.orm.schema
+        B()
+
+
 class benchmark_orm_cpu(tester.benchmark):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
