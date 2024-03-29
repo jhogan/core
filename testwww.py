@@ -915,5 +915,18 @@ class url(tester.tester):
         self.is_(url, url1)
         self.eq('derp', url1.fragment)
 
+class graphql(tester.tester):
+    def it_calls_query(self):
+        gql = www.graphql()
+
+        gql.query('''
+            query get_order_item($id: String!){
+                order_item(id: $id){
+                    quantity
+                    price
+                }
+            }
+        ''')
+
 if __name__ == '__main__':
     tester.cli().run()
