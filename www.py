@@ -3381,3 +3381,35 @@ class url(entities.entity):
         r += ')'
         return r
 
+class endpoint:
+    """ XXX
+    """
+    pass
+
+class graphql(endpoint):
+    """ XXX
+    """
+
+    def query(self, qry, **kwargs):
+        from graphql import graphql_sync
+
+        return graphql_sync(self.schema, qry, variable_values=kwargs)
+
+    @property
+    def schema(self):
+        es = orm.orm.getentityclasses(includeassociations=True)
+        for e in es:
+            schema = e.orm.schema
+            # XXX We can expand on the number of queriable arguments
+            # later
+            B()
+            args = dict(
+                id=GraphQLArgument(GraphQLNonNull(GraphQLID)),
+                description = 'my id'
+            )
+
+            qrys = {
+                'get_' + schema.name: GraphQLField(schema)
+            }
+            
+        return GraphQLObjectType('Query', lambda: qrys)
