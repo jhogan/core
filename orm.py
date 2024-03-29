@@ -9477,6 +9477,8 @@ class orm:
 
     @classproperty
     def all(cls):
+        """ XXX
+        """
         return cls.entities(allstream)
 
     def ensure(self, expects, **kwargs):
