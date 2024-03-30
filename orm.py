@@ -12622,10 +12622,11 @@ class orm:
 
     @classproperty
     def schema(cls):
+        """ XXX
+        """
         from graphql import (
-            GraphQLArgument, GraphQLEnumType, GraphQLEnumValue,
-            GraphQLField, GraphQLInterfaceType, GraphQLList, GraphQLNonNull,
-            GraphQLObjectType, GraphQLSchema, 
+            GraphQLField, GraphQLInterfaceType, GraphQLList, 
+            GraphQLNonNull, GraphQLObjectType, GraphQLSchema, 
             GraphQLBoolean, GraphQLFloat, GraphQLID,
             GraphQLInt, GraphQLString,
         ) 
@@ -12634,7 +12635,7 @@ class orm:
         e = cls.entity
         name = f'{e.__module__}_{e.__name__}'
 
-        fields = dict()
+        flds = dict()
         for map in cls.mappings:
             if isinstance(map, entitiesmapping):
                 continue
@@ -12673,12 +12674,11 @@ class orm:
                 type, description='The id of the human.'
             )
 
-            fields[map.name] = fld
+            flds[map.name] = fld
         
         schema = GraphQLInterfaceType(name,{})
 
         return schema
-        
 
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
