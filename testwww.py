@@ -917,16 +917,25 @@ class url(tester.tester):
 
 class graphql(tester.tester):
     def it_calls_query(self):
-        gql = www.graphql()
+        import order, orm
 
-        gql.query('''
-            query get_order_item($id: String!){
-                order_item(id: $id){
-                    quantity
-                    price
+        with orm.sudo():
+            item = order.item()
+            item.save()
+            gql = www.graphql()
+
+            res = gql.query('''
+                query get_order_item($id: ID!){
+                    get_order_item(id: $id){
+                        quantity
+                        price
+                    }
                 }
-            }
-        ''')
+                ''', 
+                id = item.id.hex
+            )
+
+        print(res)
 
 if __name__ == '__main__':
     tester.cli().run()
