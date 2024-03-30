@@ -12660,6 +12660,8 @@ class orm:
                 type = GraphQLBoolean
             elif map.type is types.float:
                 type = GraphQLFloat
+            elif map.type is types.decimal:
+                type = GraphQLFloat
             elif isinstance(map, primarykeyfieldmapping):
                 type = GraphQLID
             elif isinstance(map, foreignkeyfieldmapping):
@@ -12667,7 +12669,7 @@ class orm:
             else:
                 raise NotImplementedError(
                     'Type not implemented for '
-                    ' GraphQL: ' + types[map.type]
+                    ' GraphQL: ' + str(map.type)
                 )
 
             fld = GraphQLField(
@@ -12676,7 +12678,7 @@ class orm:
 
             flds[map.name] = fld
         
-        schema = GraphQLInterfaceType(name,{})
+        schema = GraphQLObjectType(name, lambda: flds)
 
         return schema
 
