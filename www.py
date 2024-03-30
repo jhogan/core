@@ -3397,19 +3397,34 @@ class graphql(endpoint):
 
     @property
     def schema(self):
+        from graphql import (
+            GraphQLArgument, GraphQLNonNull, GraphQLID,
+            GraphQLObjectType, GraphQLField, GraphQLSchema,
+        ) 
+
+        def resolver(root, info, **kargs):
+            cls = info.return_type.name.split('_')
+            mod = cls[0]
+            cls = ''.join(cls[1:])
+            import importlib
+            mod = importlib.import_module(mod)
+            cls = getattr(mod, cls)
+            B()
+
+
+        qrys = dict()
         es = orm.orm.getentityclasses(includeassociations=True)
         for e in es:
             schema = e.orm.schema
             # XXX We can expand on the number of queriable arguments
             # later
-            B()
             args = dict(
                 id=GraphQLArgument(GraphQLNonNull(GraphQLID)),
-                description = 'my id'
             )
 
-            qrys = {
-                'get_' + schema.name: GraphQLField(schema)
-            }
+            qrys['get_' + schema.name] = GraphQLField(
+                schema, args=args, resolve=resolver
+            )
             
-        return GraphQLObjectType('Query', lambda: qrys)
+        qry = GraphQLObjectType('Query', lambda: qrys)
+        return GraphQLSchema(qry) 
