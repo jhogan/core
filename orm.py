@@ -12683,6 +12683,32 @@ class orm:
 
         return schema
 
+    @property
+    def json(self):
+        return self.getjson()
+
+    def getjson(self):
+        import json
+        r = dict()
+        for map in self.mappings.all:
+            if isinstance(map, entitymapping):
+                continue
+            if isinstance(map, entitiesmapping):
+                continue
+            if isinstance(map, associationsmapping):
+                continue
+            if isinstance(map, associationsmapping):
+                continue
+
+            r[map.name] = getattr(self.instance, map.name)
+
+            if isinstance(map, fieldmapping):
+                if not map.isnumeric or map.type is types.decimal:
+                    r[map.name] = str(r[map.name])
+
+        return json.dumps(r)
+            
+
 # Call orm._invalidate to initialize the ORM caches.
 orm._invalidate()
 
