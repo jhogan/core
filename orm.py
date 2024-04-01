@@ -12621,7 +12621,7 @@ class orm:
         return r
 
     @classproperty
-    def schema(cls):
+    def type(cls):
         """ XXX
         """
         from graphql import (
@@ -12631,7 +12631,8 @@ class orm:
             GraphQLInt, GraphQLString,
         ) 
 
-        # XXX We may want to get the name the way orm.table does
+        # XXX:a883e9b6 We may want to get the name the way orm.table
+        # does
         e = cls.entity
         name = f'{e.__module__}_{e.__name__}'
 

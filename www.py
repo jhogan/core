@@ -3409,13 +3409,12 @@ class graphql(endpoint):
             import importlib
             mod = importlib.import_module(mod)
             cls = getattr(mod, cls)
-            B()
 
 
         qrys = dict()
         es = orm.orm.getentityclasses(includeassociations=True)
         for e in es:
-            schema = e.orm.schema
+            type = e.orm.type
             # XXX We can expand on the number of queriable arguments
             # later
             args = dict(

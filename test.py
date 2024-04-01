@@ -84,6 +84,7 @@ import testproduct
 import testsec
 import testthird
 import testwww
+import json
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
@@ -15350,8 +15351,10 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
             self.expect(None, art.orm.reloaded)
 
     def it_gets_schema(self):
+        """ XXX
+        """
         schema = artist.orm.schema
-        B()
+
 
 
 class benchmark_orm_cpu(tester.benchmark):
