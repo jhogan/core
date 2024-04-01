@@ -15355,6 +15355,11 @@ INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, 
         """
         schema = artist.orm.schema
 
+    def it_gets_json(self):
+        art = artist.getvalid()
+        d = json.loads(art.orm.json)
+
+        self.eq(d['id'], str(art.id))
 
 
 class benchmark_orm_cpu(tester.benchmark):
