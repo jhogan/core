@@ -3402,13 +3402,17 @@ class graphql(endpoint):
             GraphQLObjectType, GraphQLField, GraphQLSchema,
         ) 
 
-        def resolver(root, info, **kargs):
+        def resolver(root, info, **kwargs):
+            import importlib
+
             cls = info.return_type.name.split('_')
             mod = cls[0]
             cls = ''.join(cls[1:])
-            import importlib
             mod = importlib.import_module(mod)
             cls = getattr(mod, cls)
+
+            e = cls(kwargs['id'])
+            return json.loads(e.orm.json)
 
 
         qrys = dict()
@@ -3421,8 +3425,8 @@ class graphql(endpoint):
                 id=GraphQLArgument(GraphQLNonNull(GraphQLID)),
             )
 
-            qrys['get_' + schema.name] = GraphQLField(
-                schema, args=args, resolve=resolver
+            qrys[type.name] = GraphQLField(
+                type, args=args, resolve=resolver
             )
             
         qry = GraphQLObjectType('Query', lambda: qrys)

@@ -922,12 +922,14 @@ class graphql(tester.tester):
 
         with orm.sudo():
             item = order.item()
+            item.quantity = randint(0, 100)
+            item.price = randint(0, 100)
             item.save()
             gql = www.graphql()
 
             res = gql.query('''
                 query get_order_item($id: ID!){
-                    get_order_item(id: $id){
+                    order_item(id: $id){
                         quantity
                         price
                     }
@@ -936,7 +938,13 @@ class graphql(tester.tester):
                 id = item.id.hex
             )
 
-        print(res)
+        item1 = res.data['order_item']
+        self.eq(item.quantity, item1['quantity'])
+        self.eq(item.price, item1['price'])
+
+
+        B()
+        pprint(res.data)
 
 if __name__ == '__main__':
     tester.cli().run()
