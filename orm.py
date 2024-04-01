@@ -12707,8 +12707,15 @@ class orm:
             r[map.name] = getattr(self.instance, map.name)
 
             if isinstance(map, fieldmapping):
+                if isinstance(r[map.name], UUID):
+                    r[map.name] = r[map.name].hex
+
+                # XXX Note that we are stringifying decimals. We
+                # shouldn't return them as floats because we would lose
+                # valuable precision. 
                 if not map.isnumeric or map.type is types.decimal:
-                    r[map.name] = str(r[map.name])
+                    if r[map.name] is not None:
+                        r[map.name] = str(r[map.name])
 
         return json.dumps(r)
             
