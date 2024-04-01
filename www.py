@@ -3391,12 +3391,16 @@ class graphql(endpoint):
     """
 
     def query(self, qry, **kwargs):
+        """ XXX
+        """
         from graphql import graphql_sync
 
         return graphql_sync(self.schema, qry, variable_values=kwargs)
 
     @property
     def schema(self):
+        """ XXX
+        """
         from graphql import (
             GraphQLArgument, GraphQLNonNull, GraphQLID,
             GraphQLObjectType, GraphQLField, GraphQLSchema,

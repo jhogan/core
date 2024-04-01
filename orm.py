@@ -12685,9 +12685,13 @@ class orm:
 
     @property
     def json(self):
+        """ XXX
+        """
         return self.getjson()
 
     def getjson(self):
+        """ XXX
+        """
         import json
         r = dict()
         for map in self.mappings.all:

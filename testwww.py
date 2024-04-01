@@ -942,9 +942,5 @@ class graphql(tester.tester):
         self.eq(item.quantity, item1['quantity'])
         self.eq(item.price, item1['price'])
 
-
-        B()
-        pprint(res.data)
-
 if __name__ == '__main__':
     tester.cli().run()
