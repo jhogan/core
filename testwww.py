@@ -930,17 +930,22 @@ class graphql(tester.tester):
             res = gql.query('''
                 query get_order_item($id: ID!){
                     order_item(id: $id){
+                        id
                         quantity
                         price
+                        description
                     }
                 }
                 ''', 
                 id = item.id.hex
             )
 
+        print(res)
         item1 = res.data['order_item']
+        self.eq(item.id.hex, item1['id'])
         self.eq(item.quantity, item1['quantity'])
         self.eq(item.price, item1['price'])
+        self.eq(None, item1['description'])
 
 if __name__ == '__main__':
     tester.cli().run()
