@@ -12620,8 +12620,13 @@ class orm:
 
         return r
 
-    @classproperty
-    def type(cls):
+    @property
+    def type(self):
+        """ XXX
+        """
+        return self.gettype()
+
+    def gettype(self):
         """ XXX
         """
         from graphql import (
@@ -12633,11 +12638,11 @@ class orm:
 
         # XXX:a883e9b6 We may want to get the name the way orm.table
         # does
-        e = cls.entity
+        e = self.entity
         name = f'{e.__module__}_{e.__name__}'
 
         flds = dict()
-        for map in cls.mappings:
+        for map in self.mappings:
             if isinstance(map, entitiesmapping):
                 continue
 
@@ -12647,31 +12652,32 @@ class orm:
             if isinstance(map, associationsmapping):
                 continue
 
-            if map.type is types.str:
-                type = GraphQLString
-            elif map.type is types.date:
-                type = GraphQLString
-            elif map.type is types.datetime:
-                type = GraphQLString
-            elif map.type is types.bytes:
-                type = GraphQLString
-            elif map.type is types.int:
-                type = GraphQLInt
-            elif map.type is types.bool:
-                type = GraphQLBoolean
-            elif map.type is types.float:
-                type = GraphQLFloat
-            elif map.type is types.decimal:
-                type = GraphQLFloat
-            elif isinstance(map, primarykeyfieldmapping):
-                type = GraphQLID
-            elif isinstance(map, foreignkeyfieldmapping):
-                type = GraphQLID
-            else:
-                raise NotImplementedError(
-                    'Type not implemented for '
-                    ' GraphQL: ' + str(map.type)
-                )
+            if isinstance(map, fieldmapping):
+                if map.type is types.str:
+                    type = GraphQLString
+                elif map.type is types.date:
+                    type = GraphQLString
+                elif map.type is types.datetime:
+                    type = GraphQLString
+                elif map.type is types.bytes:
+                    type = GraphQLString
+                elif map.type is types.int:
+                    type = GraphQLInt
+                elif map.type is types.bool:
+                    type = GraphQLBoolean
+                elif map.type is types.float:
+                    type = GraphQLFloat
+                elif map.type is types.decimal:
+                    type = GraphQLFloat
+                elif isinstance(map, primarykeyfieldmapping):
+                    type = GraphQLID
+                elif isinstance(map, foreignkeyfieldmapping):
+                    type = GraphQLID
+                else:
+                    raise NotImplementedError(
+                        'Type not implemented for '
+                        ' GraphQL: ' + str(map.type)
+                    )
 
             fld = GraphQLField(
                 type, description='The id of the human.'
@@ -12679,9 +12685,104 @@ class orm:
 
             flds[map.name] = fld
         
-        schema = GraphQLObjectType(name, lambda: flds)
+        return GraphQLObjectType(name, lambda: flds)
 
-        return schema
+    @classproperty
+    def schema(cls):
+        """ XXX
+        """
+        from graphql import (
+            GraphQLField, GraphQLInterfaceType, GraphQLList, 
+            GraphQLNonNull, GraphQLObjectType, GraphQLSchema, 
+            GraphQLBoolean, GraphQLFloat, GraphQLID,
+            GraphQLInt, GraphQLString, GraphQLArgument
+        ) 
+
+        thunks = cls._thunks
+        es = cls.getentityclasses(includeassociations=True)
+
+        types = dict()
+        for e in es:
+            types[e] = GraphQLObjectType(e.orm.tablename, lambda: {})
+
+        for e in es:
+            thunk = thunks[e]
+
+            for map in e.orm.mappings:
+                if isinstance(map, entitiesmapping):
+                    B()
+                    thunk[map.name] = GraphQLField(
+                        GraphQLList(
+                            types[map.orm.entity]
+                        )
+                    )
+
+            type = types[e]
+
+            type._field = lambda: thunk
+
+        qry = GraphQLObjectType('Query', lambda: flds)
+        return GraphQLSchema(qry) 
+
+    @classproperty
+    def _thunks(cls):
+        """ XXX
+        """
+        import asset
+        from graphql import (
+            GraphQLField, GraphQLInterfaceType, GraphQLList, 
+            GraphQLNonNull, GraphQLObjectType, GraphQLSchema, 
+            GraphQLBoolean, GraphQLFloat, GraphQLID,
+            GraphQLInt, GraphQLString, GraphQLArgument
+        ) 
+        r = dict()
+        es = cls.getentityclasses(includeassociations=True)
+
+        for e in es:
+            r[e] = flds = dict()
+
+            for map in e.orm.mappings:
+                if isinstance(map, entitiesmapping):
+                    continue
+
+                if isinstance(map, entitymapping):
+                    continue
+
+                if isinstance(map, associationsmapping):
+                    continue
+
+                if isinstance(map, fieldmapping):
+                    if map.type is types.str:
+                        type = GraphQLString
+                    elif map.type is types.date:
+                        type = GraphQLString
+                    elif map.type is types.datetime:
+                        type = GraphQLString
+                    elif map.type is types.bytes:
+                        type = GraphQLString
+                    elif map.type is types.int:
+                        type = GraphQLInt
+                    elif map.type is types.bool:
+                        type = GraphQLBoolean
+                    elif map.type is types.float:
+                        type = GraphQLFloat
+                    elif map.type is types.decimal:
+                        type = GraphQLFloat
+                    elif isinstance(map, primarykeyfieldmapping):
+                        type = GraphQLID
+                    elif isinstance(map, foreignkeyfieldmapping):
+                        type = GraphQLID
+                    else:
+                        raise NotImplementedError(
+                            'Type not implemented for '
+                            ' GraphQL: ' + str(map.type)
+                        )
+
+                flds[map.name] = GraphQLField(
+                    type, description='The id of the human.'
+                )
+
+        return r
 
     @property
     def json(self):

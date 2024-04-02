@@ -3401,11 +3401,6 @@ class graphql(endpoint):
     def schema(self):
         """ XXX
         """
-        from graphql import (
-            GraphQLArgument, GraphQLNonNull, GraphQLID,
-            GraphQLObjectType, GraphQLField, GraphQLSchema,
-        ) 
-
         def resolver(root, info, **kwargs):
             import importlib
 
@@ -3418,8 +3413,21 @@ class graphql(endpoint):
             e = cls(kwargs['id'])
             return json.loads(e.orm.json)
 
+        from graphql import (
+            GraphQLArgument, GraphQLNonNull, GraphQLID,
+            GraphQLObjectType, GraphQLField, GraphQLSchema,
+        ) 
 
-        qrys = dict()
+
+
+
+        schema = orm.orm.schema
+        B()
+        return schema
+
+
+
+        flds = dict()
         es = orm.orm.getentityclasses(includeassociations=True)
         for e in es:
             type = e.orm.type
@@ -3429,9 +3437,9 @@ class graphql(endpoint):
                 id=GraphQLArgument(GraphQLNonNull(GraphQLID)),
             )
 
-            qrys[type.name] = GraphQLField(
+            flds[type.name] = GraphQLField(
                 type, args=args, resolve=resolver
             )
             
-        qry = GraphQLObjectType('Query', lambda: qrys)
+        qry = GraphQLObjectType('Query', lambda: flds)
         return GraphQLSchema(qry) 

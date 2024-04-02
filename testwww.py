@@ -940,12 +940,35 @@ class graphql(tester.tester):
                 id = item.id.hex
             )
 
-        print(res)
         item1 = res.data['order_item']
         self.eq(item.id.hex, item1['id'])
         self.eq(item.quantity, item1['quantity'])
         self.eq(item.price, item1['price'])
         self.eq(None, item1['description'])
+
+    def it_calls_query_with_subselections(self):
+        import order, orm
+        from test import artist, presentation
+
+        with orm.sudo():
+            art = artist.getvalid()
+            art.presentations += presentation.getvalid()
+            art.save()
+            gql = www.graphql()
+
+            res = gql.query('''
+                query get_test_artist($id: ID!){
+                    test_artist(id: $id){
+                        presentation
+                        firstname
+                        lastname
+                    }
+                }
+                ''', 
+                id = art.id.hex
+            )
+
+        pprint(res)
 
 if __name__ == '__main__':
     tester.cli().run()
