@@ -3404,7 +3404,19 @@ class graphql(endpoint):
         def resolver(root, info, **kwargs):
             import importlib
 
-            cls = info.return_type.name.split('_')
+            rt = info.return_type
+
+            if isinstance(rt, GraphQLObjectType):
+                name = info.return_type.name
+                id = kwargs['id']
+            elif isinstance(rt, GraphQLList):
+                B()
+                return [{'name': 'derp'}]
+                pt = info.parent_type
+                name = pt.name
+                id = pt['id']
+
+            cls = name.split('_')
             mod = cls[0]
             cls = ''.join(cls[1:])
             mod = importlib.import_module(mod)
@@ -3419,11 +3431,19 @@ class graphql(endpoint):
             GraphQLList,
         ) 
 
-
-
-
         schema = orm.orm.schema
-        B()
+
+        from graphql import utilities
+        with open('/tmp/t', 'w') as f:
+            f.write(utilities.print_schema(schema))
+        
+        for fld in schema.query_type.fields.values():
+            fld.resolve=resolver
+
+            for fld1 in fld.type.fields.values():
+                if isinstance(fld1.type, GraphQLList):
+                    fld1.resolve=resolver
+                    
         return schema
 
 

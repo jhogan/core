@@ -960,7 +960,12 @@ class graphql(tester.tester):
             res = gql.query('''
                 query get_test_artist($id: ID!){
                     test_artist(id: $id){
-                        presentation
+                        presentations{
+                            name
+                            locations{
+                                id
+                            }
+                        }
                         firstname
                         lastname
                     }

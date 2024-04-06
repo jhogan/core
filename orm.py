@@ -12706,23 +12706,37 @@ class orm:
 
         types = dict()
         for e in es:
-            types[e] = GraphQLObjectType(e.orm.tablename, lambda: {})
+            name = f'{e.__module__}_{e.__name__}'
+            types[e] = GraphQLObjectType(name, None)
 
+        flds = dict()  # For the Query
         for e in es:
+            name = f'{e.__module__}_{e.__name__}'
             thunk = thunks[e]
+
 
             for map in e.orm.mappings:
                 if isinstance(map, entitiesmapping):
-                    B()
+                    subentity = types[map.entities.orm.entity]
                     thunk[map.name] = GraphQLField(
-                        GraphQLList(
-                            types[map.orm.entity]
-                        )
+                        GraphQLList(subentity)
                     )
-
             type = types[e]
 
-            type._field = lambda: thunk
+            def get(thunk):
+                return lambda: thunk
+
+            type._fields = get(thunk)
+
+
+            ''' Collect data for the GraphQL 'query' type '''
+            args = dict(
+                id=GraphQLArgument(GraphQLNonNull(GraphQLID)),
+            )
+
+            flds[name] = GraphQLField(
+                type, args=args, resolve=None
+            )
 
         qry = GraphQLObjectType('Query', lambda: flds)
         return GraphQLSchema(qry) 
