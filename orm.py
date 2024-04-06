@@ -10741,6 +10741,8 @@ class orm:
             es.sort(key=lambda x: x.__name__)
 
             for e in es:
+                # TODO: This appears wrong: The key should contain the
+                # module name to avoid inevitable ambiguation.
                 orm._namedict[e.__name__] = e
 
                 suffix = str()
@@ -12691,6 +12693,7 @@ class orm:
     def schema(cls):
         """ XXX
         """
+        import test
         from graphql import (
             GraphQLField, GraphQLInterfaceType, GraphQLList, 
             GraphQLNonNull, GraphQLObjectType, GraphQLSchema, 

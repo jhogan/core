@@ -949,6 +949,7 @@ class graphql(tester.tester):
     def it_calls_query_with_subselections(self):
         import order, orm
         from test import artist, presentation
+        import test
 
         with orm.sudo():
             art = artist.getvalid()

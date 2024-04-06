@@ -3416,6 +3416,7 @@ class graphql(endpoint):
         from graphql import (
             GraphQLArgument, GraphQLNonNull, GraphQLID,
             GraphQLObjectType, GraphQLField, GraphQLSchema,
+            GraphQLList,
         ) 
 
 
