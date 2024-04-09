@@ -33,6 +33,7 @@ from dbg import B, PM
 from entities import classproperty
 from functools import reduce
 from pprint import pprint
+from uuid import uuid4, UUID
 import apriori
 import auth
 import dom

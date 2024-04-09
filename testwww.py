@@ -6,6 +6,7 @@ from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
 from pprint import pprint
+import json
 import os
 from random import randint
 import tester
@@ -946,9 +947,15 @@ class graphql(tester.tester):
         self.eq(item.price, item1['price'])
         self.eq(None, item1['description'])
 
+    def it_calls_query_with_empty_subselections(self):
+        """ XXX """
+
+    def it_calls_query_with_empty_subsubselections(self):
+        """ XXX """
+
     def it_calls_query_with_subselections(self):
         import order, orm
-        from test import artist, presentation
+        from test import artist, presentation, location
         import test
 
         with orm.sudo():
@@ -974,6 +981,8 @@ class graphql(tester.tester):
                 id = art.id.hex
             )
 
+        '''
+        # View results
         pprint(res)
 
 if __name__ == '__main__':

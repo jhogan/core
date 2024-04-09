@@ -12810,6 +12810,7 @@ class orm:
     def getjson(self):
         """ XXX
         """
+        # XXX Test
         import json
         r = dict()
         for map in self.mappings.all:
@@ -13446,4 +13447,6 @@ class violation(entitiesmod.entity):
         return r
 
 class IntegrityError(Exception):
+    """ XXX
+    """
     pass

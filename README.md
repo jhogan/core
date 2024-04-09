@@ -808,7 +808,7 @@ default. Instead of writing a query like:
 
 you will want to specify the columns and decode key fields with `hex()`:
 
-    select hex(id), id(proprietor__partyid), name from party_parties;
+    select hex(id), hex(proprietor__partyid), name from party_parties;
 
 This provides you with hex representations of the binary strings.
 
