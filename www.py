@@ -3407,15 +3407,11 @@ class graphql(endpoint):
 
             rt = info.return_type
 
+
             if isinstance(rt, GraphQLObjectType):
                 name = info.return_type.name
-                id = kwargs['id']
             elif isinstance(rt, GraphQLList):
-                B()
-                return [{'name': 'derp'}]
-                pt = info.parent_type
-                name = pt.name
-                id = pt['id']
+                name = info.return_type.of_type.name
 
             cls = name.split('_')
             mod = cls[0]
@@ -3423,8 +3419,34 @@ class graphql(endpoint):
             mod = importlib.import_module(mod)
             cls = getattr(mod, cls)
 
-            e = cls(kwargs['id'])
-            return json.loads(e.orm.json)
+            if isinstance(rt, GraphQLObjectType):
+                id = kwargs['id']
+                e = cls(kwargs['id'])
+                return json.loads(e.orm.json)
+
+            elif isinstance(rt, GraphQLList):
+                cls = cls.orm.entities
+                rent = info.parent_type.name
+
+                rent = info.parent_type.name.split('_')
+                mod = rent[0]
+                name = ''.join(rent[1:])
+
+                for map in cls.orm.mappings.foreignkeymappings:
+                    if map.entity.__module__ == mod:
+                        if map.entity.__name__ == name:
+                            break
+                else:
+                    raise orm.IntegrityError(
+                        'Parent map of list cannot be found'
+                    )
+                    
+                pred = f'{map.name} = %s'
+                args = UUID(hex=root['id'])
+                e = cls(pred, args)
+                return json.loads(e.orm.json)
+            else:
+                raise TypeError('Invaild return type')
 
         from graphql import (
             GraphQLArgument, GraphQLNonNull, GraphQLID,

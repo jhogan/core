@@ -12812,31 +12812,41 @@ class orm:
         """
         # XXX Test
         import json
-        r = dict()
-        for map in self.mappings.all:
-            if isinstance(map, entitymapping):
-                continue
-            if isinstance(map, entitiesmapping):
-                continue
-            if isinstance(map, associationsmapping):
-                continue
-            if isinstance(map, associationsmapping):
-                continue
+        if isinstance(self.instance, self.entities):
+            r = list()
+            for e in self.instance:
+                r.append(json.loads(e.orm.json))
 
-            r[map.name] = getattr(self.instance, map.name)
+            return json.dumps(r)
 
-            if isinstance(map, fieldmapping):
-                if isinstance(r[map.name], UUID):
-                    r[map.name] = r[map.name].hex
+        elif isinstance(self.instance, self.entity):
+            r = dict()
+            for map in self.mappings.all:
+                if isinstance(map, entitymapping):
+                    continue
+                if isinstance(map, entitiesmapping):
+                    continue
+                if isinstance(map, associationsmapping):
+                    continue
+                if isinstance(map, associationsmapping):
+                    continue
 
-                # XXX Note that we are stringifying decimals. We
-                # shouldn't return them as floats because we would lose
-                # valuable precision. 
-                if not map.isnumeric or map.type is types.decimal:
-                    if r[map.name] is not None:
-                        r[map.name] = str(r[map.name])
+                r[map.name] = getattr(self.instance, map.name)
 
-        return json.dumps(r)
+                if isinstance(map, fieldmapping):
+                    if isinstance(r[map.name], UUID):
+                        r[map.name] = r[map.name].hex
+
+                    # XXX Note that we are stringifying decimals. We
+                    # shouldn't return them as floats because we would
+                    # lose valuable precision. 
+                    if not map.isnumeric or map.type is types.decimal:
+                        if r[map.name] is not None:
+                            r[map.name] = str(r[map.name])
+
+            return json.dumps(r)
+        else:
+            raise TypeError('Invalid entity/entities type')
             
 
 # Call orm._invalidate to initialize the ORM caches.

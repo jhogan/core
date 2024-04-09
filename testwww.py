@@ -960,21 +960,29 @@ class graphql(tester.tester):
 
         with orm.sudo():
             art = artist.getvalid()
-            art.presentations += presentation.getvalid()
-            art.save()
+            press = art.presentations
+            for _ in range(2):
+                press += presentation.getvalid()
+                locs = press.last.locations
+                for _ in range(2):
+                    locs += location.getvalid()
+                    art.save()
+
             gql = www.graphql()
 
             res = gql.query('''
                 query get_test_artist($id: ID!){
                     test_artist(id: $id){
+                        id
+                        firstname
                         presentations{
+                            id
                             name
                             locations{
                                 id
+                                address
                             }
                         }
-                        firstname
-                        lastname
                     }
                 }
                 ''', 
@@ -984,6 +992,31 @@ class graphql(tester.tester):
         '''
         # View results
         pprint(res)
+        j = json.dumps(res.data, sort_keys=True, indent=2)
+        print(j)
+        '''
+
+        art1 = res.data['test_artist']
+        self.eq(art.id.hex, art1['id'])
+        self.eq(art.firstname, art1['firstname'])
+
+        press1 = art1['presentations']
+        self.count(2, press1)
+
+        for pres in art.presentations:
+            for pres1 in press1:
+                if pres1['id'] == pres.id.hex:
+                    self.eq(pres.name, pres1['name'])
+                    for loc in pres.locations:
+                        for loc1 in pres1['locations']:
+                            if loc.id.hex == loc1['id']:
+                                self.eq(loc.address, loc1['address'])
+                                break
+                        else:
+                            self.fail('Cannot find location')
+                    break
+            else:
+                self.fail('Cannot find presentation')
 
 if __name__ == '__main__':
     tester.cli().run()
